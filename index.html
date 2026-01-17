@@ -1057,7 +1057,7 @@
                     peccary.position.z += direction.z * moveSpeed * delta;
 
                     // Rotate to face movement direction
-                    const targetRotation = Math.atan2(-direction.z, direction.x);
+                    const targetRotation = Math.atan2(-direction.z, -direction.x);
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentRotation = peccary.rotation.y;
@@ -1158,7 +1158,7 @@
                     enemy.position.z += direction.z * speed * delta;
 
                     // Rotate to face movement direction
-                    const targetRotation = Math.atan2(-direction.z, direction.x);
+                    const targetRotation = Math.atan2(-direction.z, -direction.x);
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentEnemyRotation = enemy.rotation.y;
