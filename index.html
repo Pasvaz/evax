@@ -1042,8 +1042,8 @@
                     peccary.position.z += direction.z * moveSpeed * delta;
 
                     // Rotate to face movement direction
-                    // Add Math.PI/2 offset because model faces +X, not +Z
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    // Subtract Math.PI/2 because model faces +X, not +Z
+                    const targetRotation = Math.atan2(direction.x, direction.z) - Math.PI / 2;
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentRotation = peccary.rotation.y;
@@ -1143,8 +1143,8 @@
                     enemy.position.x += direction.x * speed * delta;
                     enemy.position.z += direction.z * speed * delta;
 
-                    // Rotate to face movement direction (offset by PI/2 since models face +X)
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    // Rotate to face movement direction (offset by -PI/2 since models face +X)
+                    const targetRotation = Math.atan2(direction.x, direction.z) - Math.PI / 2;
                     enemy.rotation.y = THREE.MathUtils.lerp(enemy.rotation.y, targetRotation, 0.1);
 
                     // Bobbing animation
