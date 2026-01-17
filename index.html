@@ -555,6 +555,7 @@
 
             function createPeccary() {
                 peccary = new THREE.Group();
+                const model = new THREE.Group(); // Inner group for model parts
 
                 // Body (using cylinder + spheres for capsule effect)
                 const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
@@ -565,19 +566,19 @@
                 body.rotation.z = Math.PI / 2;
                 body.position.y = 0.8;
                 body.castShadow = true;
-                peccary.add(body);
+                model.add(body);
 
                 // Body end caps (spheres)
                 const endCapGeo = new THREE.SphereGeometry(0.6, 16, 16);
                 const frontCap = new THREE.Mesh(endCapGeo, bodyMat);
                 frontCap.position.set(0.6, 0.8, 0);
                 frontCap.castShadow = true;
-                peccary.add(frontCap);
+                model.add(frontCap);
 
                 const backCap = new THREE.Mesh(endCapGeo, bodyMat);
                 backCap.position.set(-0.6, 0.8, 0);
                 backCap.castShadow = true;
-                peccary.add(backCap);
+                model.add(backCap);
 
                 // Head
                 const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
@@ -585,7 +586,7 @@
                 head.position.set(1.2, 0.9, 0);
                 head.scale.set(1.2, 1, 0.9);
                 head.castShadow = true;
-                peccary.add(head);
+                model.add(head);
 
                 // Snout
                 const snoutGeo = new THREE.CylinderGeometry(0.15, 0.2, 0.4, 8);
@@ -593,13 +594,13 @@
                 const snout = new THREE.Mesh(snoutGeo, snoutMat);
                 snout.rotation.z = Math.PI / 2;
                 snout.position.set(1.6, 0.8, 0);
-                peccary.add(snout);
+                model.add(snout);
 
                 // Nose
                 const noseMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
                 const nose = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), noseMat);
                 nose.position.set(1.8, 0.8, 0);
-                peccary.add(nose);
+                model.add(nose);
 
                 // Eyes
                 const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
@@ -607,10 +608,10 @@
                 [-0.15, 0.15].forEach(z => {
                     const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), eyeWhiteMat);
                     eyeWhite.position.set(1.35, 1.05, z);
-                    peccary.add(eyeWhite);
+                    model.add(eyeWhite);
                     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
                     eye.position.set(1.4, 1.05, z);
-                    peccary.add(eye);
+                    model.add(eye);
                 });
 
                 // Ears
@@ -619,7 +620,7 @@
                     const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.25, 8), earMat);
                     ear.position.set(1.0, 1.3, z);
                     ear.rotation.x = z > 0 ? 0.3 : -0.3;
-                    peccary.add(ear);
+                    model.add(ear);
                 });
 
                 // Legs
@@ -632,19 +633,19 @@
                     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8), legMat);
                     leg.position.set(pos[0], pos[1], pos[2]);
                     leg.castShadow = true;
-                    peccary.add(leg);
+                    model.add(leg);
 
                     // Hoof
                     const hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.1, 8),
                         new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
                     hoof.position.set(pos[0], 0.05, pos[2]);
-                    peccary.add(hoof);
+                    model.add(hoof);
                 });
 
                 // Tail (small)
                 const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bodyMat);
                 tail.position.set(-1.1, 0.9, 0);
-                peccary.add(tail);
+                model.add(tail);
 
                 // White collar marking (band around neck/shoulder area)
                 const collarGeo = new THREE.TorusGeometry(0.55, 0.1, 12, 32);
@@ -652,7 +653,11 @@
                 const collar = new THREE.Mesh(collarGeo, collarMat);
                 collar.rotation.z = Math.PI / 2;
                 collar.position.set(0.5, 0.8, 0);
-                peccary.add(collar);
+                model.add(collar);
+
+                // Flip the model to face -X (forward in game)
+                model.rotation.y = Math.PI;
+                peccary.add(model);
 
                 peccary.position.set(0, 0, 0);
                 peccary.userData.radius = 1;
@@ -661,6 +666,7 @@
 
             function createBadger(x, z) {
                 const badger = new THREE.Group();
+                const model = new THREE.Group(); // Inner group for model parts
 
                 // Body
                 const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2f2f2f });
@@ -669,50 +675,50 @@
                 body.rotation.z = Math.PI / 2;
                 body.position.y = 0.5;
                 body.castShadow = true;
-                badger.add(body);
+                model.add(body);
 
                 // Body caps
                 const capGeo = new THREE.SphereGeometry(0.4, 16, 16);
                 const frontCap = new THREE.Mesh(capGeo, bodyMat);
                 frontCap.position.set(0.5, 0.5, 0);
-                badger.add(frontCap);
+                model.add(frontCap);
                 const backCap = new THREE.Mesh(capGeo, bodyMat);
                 backCap.position.set(-0.5, 0.5, 0);
-                badger.add(backCap);
+                model.add(backCap);
 
                 // Head
                 const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
                 const head = new THREE.Mesh(headGeo, bodyMat);
                 head.position.set(0.9, 0.55, 0);
                 head.scale.set(1.1, 0.9, 0.9);
-                badger.add(head);
+                model.add(head);
 
                 // White stripes on face
                 const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
                 [-0.12, 0.12].forEach(zPos => {
                     const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.1), stripeMat);
                     stripe.position.set(1.0, 0.6, zPos);
-                    badger.add(stripe);
+                    model.add(stripe);
                 });
 
                 // Black stripe in middle
                 const blackStripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.08), bodyMat);
                 blackStripe.position.set(1.0, 0.65, 0);
-                badger.add(blackStripe);
+                model.add(blackStripe);
 
                 // Snout
                 const snout = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8),
                     new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
                 snout.position.set(1.2, 0.45, 0);
                 snout.scale.set(1.2, 0.8, 0.9);
-                badger.add(snout);
+                model.add(snout);
 
                 // Eyes (red for menacing look)
                 const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0x330000 });
                 [-0.12, 0.12].forEach(zPos => {
                     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
                     eye.position.set(1.1, 0.6, zPos);
-                    badger.add(eye);
+                    model.add(eye);
                 });
 
                 // Legs (short and stubby)
@@ -720,8 +726,12 @@
                 [[0.4, 0.2, 0.25], [0.4, 0.2, -0.25], [-0.4, 0.2, 0.25], [-0.4, 0.2, -0.25]].forEach(pos => {
                     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 8), legMat);
                     leg.position.set(pos[0], pos[1], pos[2]);
-                    badger.add(leg);
+                    model.add(leg);
                 });
+
+                // Flip the model to face forward
+                model.rotation.y = Math.PI;
+                badger.add(model);
 
                 badger.position.set(x, 0, z);
                 badger.userData = {
@@ -736,6 +746,7 @@
 
             function createWeasel(x, z) {
                 const weasel = new THREE.Group();
+                const model = new THREE.Group(); // Inner group for model parts
 
                 // Long body
                 const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
@@ -744,42 +755,42 @@
                 body.rotation.z = Math.PI / 2;
                 body.position.y = 0.35;
                 body.castShadow = true;
-                weasel.add(body);
+                model.add(body);
 
                 // Body caps
                 const capGeo = new THREE.SphereGeometry(0.2, 16, 16);
                 const frontCap = new THREE.Mesh(capGeo, bodyMat);
                 frontCap.position.set(0.6, 0.35, 0);
-                weasel.add(frontCap);
+                model.add(frontCap);
                 const backCap = new THREE.Mesh(capGeo, bodyMat);
                 backCap.position.set(-0.6, 0.35, 0);
-                weasel.add(backCap);
+                model.add(backCap);
 
                 // Head
                 const headGeo = new THREE.SphereGeometry(0.2, 16, 16);
                 const head = new THREE.Mesh(headGeo, bodyMat);
                 head.position.set(0.9, 0.35, 0);
                 head.scale.set(1.2, 1, 0.9);
-                weasel.add(head);
+                model.add(head);
 
                 // Snout
                 const snoutMat = new THREE.MeshStandardMaterial({ color: 0xd2691e });
                 const snout = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), snoutMat);
                 snout.position.set(1.1, 0.3, 0);
-                weasel.add(snout);
+                model.add(snout);
 
                 // Nose
                 const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
                     new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
                 nose.position.set(1.18, 0.3, 0);
-                weasel.add(nose);
+                model.add(nose);
 
                 // Eyes (yellow, predatory)
                 const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x333300 });
                 [-0.08, 0.08].forEach(zPos => {
                     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
                     eye.position.set(1.0, 0.42, zPos);
-                    weasel.add(eye);
+                    model.add(eye);
                 });
 
                 // Ears
@@ -787,7 +798,7 @@
                 [-0.1, 0.1].forEach(zPos => {
                     const ear = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), earMat);
                     ear.position.set(0.8, 0.5, zPos);
-                    weasel.add(ear);
+                    model.add(ear);
                 });
 
                 // Short legs
@@ -795,7 +806,7 @@
                 [[0.4, 0.15, 0.15], [0.4, 0.15, -0.15], [-0.4, 0.15, 0.15], [-0.4, 0.15, -0.15]].forEach(pos => {
                     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8), legMat);
                     leg.position.set(pos[0], pos[1], pos[2]);
-                    weasel.add(leg);
+                    model.add(leg);
                 });
 
                 // Long tail
@@ -803,7 +814,11 @@
                 const tail = new THREE.Mesh(tailGeo, bodyMat);
                 tail.rotation.z = Math.PI / 2 + 0.3;
                 tail.position.set(-1, 0.4, 0);
-                weasel.add(tail);
+                model.add(tail);
+
+                // Flip the model to face forward
+                model.rotation.y = Math.PI;
+                weasel.add(model);
 
                 weasel.position.set(x, 0, z);
                 weasel.userData = {
@@ -1042,8 +1057,7 @@
                     peccary.position.z += direction.z * moveSpeed * delta;
 
                     // Rotate to face movement direction
-                    // Add PI to flip model to face forward
-                    const targetRotation = Math.atan2(-direction.z, direction.x) + Math.PI;
+                    const targetRotation = Math.atan2(-direction.z, direction.x);
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentRotation = peccary.rotation.y;
@@ -1143,8 +1157,8 @@
                     enemy.position.x += direction.x * speed * delta;
                     enemy.position.z += direction.z * speed * delta;
 
-                    // Rotate to face movement direction (add PI to flip forward)
-                    const targetRotation = Math.atan2(-direction.z, direction.x) + Math.PI;
+                    // Rotate to face movement direction
+                    const targetRotation = Math.atan2(-direction.z, direction.x);
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentEnemyRotation = enemy.rotation.y;
