@@ -646,12 +646,12 @@
                 tail.position.set(-1.1, 0.9, 0);
                 peccary.add(tail);
 
-                // White collar marking (full ring around neck)
-                const collarGeo = new THREE.TorusGeometry(0.45, 0.06, 8, 24);
-                const collarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                // White collar marking (band around neck/shoulder area)
+                const collarGeo = new THREE.TorusGeometry(0.55, 0.1, 12, 32);
+                const collarMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
                 const collar = new THREE.Mesh(collarGeo, collarMat);
-                collar.rotation.x = Math.PI / 2;
-                collar.position.set(0.7, 0.85, 0);
+                collar.rotation.z = Math.PI / 2;
+                collar.position.set(0.5, 0.8, 0);
                 peccary.add(collar);
 
                 peccary.position.set(0, 0, 0);
@@ -1042,8 +1042,8 @@
                     peccary.position.z += direction.z * moveSpeed * delta;
 
                     // Rotate to face movement direction
-                    // Model head is at +X, so use atan2(-z, x) to get correct rotation
-                    const targetRotation = Math.atan2(-direction.z, direction.x);
+                    // Add PI to flip model to face forward
+                    const targetRotation = Math.atan2(-direction.z, direction.x) + Math.PI;
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentRotation = peccary.rotation.y;
@@ -1143,8 +1143,8 @@
                     enemy.position.x += direction.x * speed * delta;
                     enemy.position.z += direction.z * speed * delta;
 
-                    // Rotate to face movement direction (model head is at +X)
-                    const targetRotation = Math.atan2(-direction.z, direction.x);
+                    // Rotate to face movement direction (add PI to flip forward)
+                    const targetRotation = Math.atan2(-direction.z, direction.x) + Math.PI;
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentEnemyRotation = enemy.rotation.y;
