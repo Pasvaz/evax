@@ -13,6 +13,7 @@
         body {
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
         }
         #game-container {
             width: 100vw;
@@ -61,7 +62,7 @@
         #health-bar {
             width: 100%;
             height: 100%;
-            background: linear-gradient(to right, #ff4444, #44ff44);
+            background: linear-gradient(to right, #44ff44, #88ff88);
             transition: width 0.3s;
         }
         #controls-info {
@@ -88,7 +89,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -135,6 +136,7 @@
             text-align: center;
             max-width: 600px;
             line-height: 1.6;
+            padding: 0 20px;
         }
         #resource-icons {
             display: flex;
@@ -180,29 +182,53 @@
         .hidden {
             display: none !important;
         }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: #88cc88;
+            font-size: 24px;
+        }
+        @media (max-width: 768px) {
+            #stats-panel {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .stat-box {
+                padding: 8px 12px;
+            }
+        }
     </style>
 </head>
 <body>
+    <div id="loading">Loading game...</div>
     <div id="game-container"></div>
 
-    <div id="start-screen">
+    <div id="start-screen" class="hidden">
         <h1>Peccary Survival</h1>
         <p class="subtitle">
             You are a peccary trying to survive in an arboreal forest.
             Collect berries, nuts, and mushrooms to increase your score while avoiding
             dangerous badgers and weasels! Gather food to restore health and survive as long as possible.
         </p>
-        <button class="game-btn" onclick="startGame()">Start Game</button>
+        <button class="game-btn" id="start-btn">Start Game</button>
     </div>
 
     <div id="game-over-screen" class="hidden">
         <h1>Game Over!</h1>
         <div id="final-score">Score: 0</div>
         <p class="subtitle">The predators caught you!</p>
-        <button class="game-btn" onclick="restartGame()">Play Again</button>
+        <button class="game-btn" id="restart-btn">Play Again</button>
     </div>
 
-    <div id="ui-overlay">
+    <div id="ui-overlay" class="hidden">
         <div id="stats-panel">
             <div class="stat-box">
                 <div class="stat-label">Health</div>
@@ -229,7 +255,7 @@
         </div>
     </div>
 
-    <div id="controls-info">
+    <div id="controls-info" class="hidden">
         <h3>Controls</h3>
         <p>WASD / Arrow Keys - Move</p>
         <p>SHIFT - Sprint</p>
@@ -237,966 +263,1077 @@
         <p>Collect resources to heal!</p>
     </div>
 
-    <div id="minimap">
+    <div id="minimap" class="hidden">
         <canvas id="minimap-canvas"></canvas>
     </div>
 
     <div id="warning-text">DANGER!</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
     <script>
-        // Game state
-        let scene, camera, renderer, clock;
-        let peccary, enemies = [], resources = [], trees = [];
-        let gameRunning = false;
-        let health = 100;
-        let score = 0;
-        let resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
-        let timeElapsed = 0;
-        let keys = {};
-        let velocity = new THREE.Vector3();
-        let isJumping = false;
-        let groundLevel = 0;
+        // Wait for Three.js to load then initialize
+        (function() {
+            'use strict';
 
-        // Game settings
-        const WORLD_SIZE = 200;
-        const ENEMY_SPAWN_RATE = 5000;
-        const RESOURCE_SPAWN_RATE = 3000;
-        const MAX_ENEMIES = 8;
-        const MAX_RESOURCES = 20;
+            // Game state
+            let scene, camera, renderer, clock;
+            let peccary, enemies = [], resources = [], trees = [];
+            let gameRunning = false;
+            let health = 100;
+            let score = 0;
+            let resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
+            let timeElapsed = 0;
+            let keys = {};
+            let velocity;
+            let isJumping = false;
+            let groundLevel = 0;
+            let spawnIntervals = [];
 
-        // Minimap
-        let minimapCanvas, minimapCtx;
-
-        function init() {
-            // Scene setup
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 10, 15);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.getElementById('game-container').appendChild(renderer.domElement);
-
-            // Clock
-            clock = new THREE.Clock();
-
-            // Lighting
-            setupLighting();
-
-            // Ground
-            createGround();
-
-            // Forest
-            createForest();
-
-            // Player
-            createPeccary();
+            // Game settings
+            const WORLD_SIZE = 200;
+            const ENEMY_SPAWN_RATE = 5000;
+            const RESOURCE_SPAWN_RATE = 3000;
+            const MAX_ENEMIES = 8;
+            const MAX_RESOURCES = 20;
 
             // Minimap
-            setupMinimap();
+            let minimapCanvas, minimapCtx;
 
-            // Event listeners
-            window.addEventListener('resize', onWindowResize);
-            window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
-            window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+            function init() {
+                try {
+                    // Initialize velocity after THREE is loaded
+                    velocity = new THREE.Vector3();
 
-            // Start render loop
-            animate();
-        }
+                    // Scene setup
+                    scene = new THREE.Scene();
+                    scene.background = new THREE.Color(0x87ceeb);
+                    scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
 
-        function setupLighting() {
-            // Ambient light
-            const ambient = new THREE.AmbientLight(0x404040, 0.6);
-            scene.add(ambient);
+                    // Camera
+                    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    camera.position.set(0, 10, 15);
 
-            // Directional light (sun)
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(50, 100, 50);
-            sun.castShadow = true;
-            sun.shadow.mapSize.width = 2048;
-            sun.shadow.mapSize.height = 2048;
-            sun.shadow.camera.near = 0.5;
-            sun.shadow.camera.far = 500;
-            sun.shadow.camera.left = -100;
-            sun.shadow.camera.right = 100;
-            sun.shadow.camera.top = 100;
-            sun.shadow.camera.bottom = -100;
-            scene.add(sun);
+                    // Renderer
+                    renderer = new THREE.WebGLRenderer({ antialias: true });
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    renderer.shadowMap.enabled = true;
+                    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                    document.getElementById('game-container').appendChild(renderer.domElement);
 
-            // Hemisphere light for natural outdoor feel
-            const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3d5c3d, 0.4);
-            scene.add(hemi);
-        }
+                    // Clock
+                    clock = new THREE.Clock();
 
-        function createGround() {
-            // Main ground
-            const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2, 50, 50);
+                    // Lighting
+                    setupLighting();
 
-            // Add some height variation
-            const vertices = groundGeo.attributes.position.array;
-            for (let i = 0; i < vertices.length; i += 3) {
-                vertices[i + 2] += Math.random() * 0.5;
+                    // Ground
+                    createGround();
+
+                    // Forest
+                    createForest();
+
+                    // Player
+                    createPeccary();
+
+                    // Minimap
+                    setupMinimap();
+
+                    // Event listeners
+                    window.addEventListener('resize', onWindowResize);
+                    window.addEventListener('keydown', (e) => {
+                        keys[e.key.toLowerCase()] = true;
+                        if (e.key === ' ') e.preventDefault();
+                    });
+                    window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+                    // Button listeners
+                    document.getElementById('start-btn').addEventListener('click', startGame);
+                    document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+                    // Hide loading, show start screen
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('start-screen').classList.remove('hidden');
+
+                    // Start render loop
+                    animate();
+
+                } catch (error) {
+                    console.error('Game initialization error:', error);
+                    document.getElementById('loading').textContent = 'Error loading game: ' + error.message;
+                }
             }
-            groundGeo.computeVertexNormals();
 
-            const groundMat = new THREE.MeshStandardMaterial({
-                color: 0x3d6b3d,
-                roughness: 1,
-                metalness: 0
-            });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            scene.add(ground);
+            function setupLighting() {
+                // Ambient light
+                const ambient = new THREE.AmbientLight(0x404040, 0.6);
+                scene.add(ambient);
 
-            // Add some grass patches
-            for (let i = 0; i < 500; i++) {
-                const grass = createGrassPatch();
-                grass.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                    0.1,
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
-                );
-                scene.add(grass);
+                // Directional light (sun)
+                const sun = new THREE.DirectionalLight(0xffffff, 1);
+                sun.position.set(50, 100, 50);
+                sun.castShadow = true;
+                sun.shadow.mapSize.width = 2048;
+                sun.shadow.mapSize.height = 2048;
+                sun.shadow.camera.near = 0.5;
+                sun.shadow.camera.far = 500;
+                sun.shadow.camera.left = -100;
+                sun.shadow.camera.right = 100;
+                sun.shadow.camera.top = 100;
+                sun.shadow.camera.bottom = -100;
+                scene.add(sun);
+
+                // Hemisphere light for natural outdoor feel
+                const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3d5c3d, 0.4);
+                scene.add(hemi);
             }
-        }
 
-        function createGrassPatch() {
-            const group = new THREE.Group();
-            const grassMat = new THREE.MeshStandardMaterial({
-                color: 0x228b22,
-                side: THREE.DoubleSide
-            });
+            function createGround() {
+                // Main ground
+                const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2, 50, 50);
 
-            for (let i = 0; i < 5; i++) {
-                const blade = new THREE.Mesh(
-                    new THREE.PlaneGeometry(0.1, 0.5 + Math.random() * 0.5),
-                    grassMat
-                );
-                blade.position.set(
-                    (Math.random() - 0.5) * 0.5,
-                    0.25,
-                    (Math.random() - 0.5) * 0.5
-                );
-                blade.rotation.y = Math.random() * Math.PI;
-                group.add(blade);
-            }
-            return group;
-        }
+                // Add some height variation
+                const vertices = groundGeo.attributes.position.array;
+                for (let i = 0; i < vertices.length; i += 3) {
+                    vertices[i + 2] += Math.random() * 0.5;
+                }
+                groundGeo.computeVertexNormals();
 
-        function createTree(x, z) {
-            const tree = new THREE.Group();
-
-            // Trunk
-            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 8 + Math.random() * 4, 8);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 4;
-            trunk.castShadow = true;
-            tree.add(trunk);
-
-            // Foliage layers
-            const foliageColors = [0x228b22, 0x2e8b2e, 0x1e7b1e];
-            for (let i = 0; i < 3; i++) {
-                const foliageGeo = new THREE.ConeGeometry(4 - i * 0.8, 5, 8);
-                const foliageMat = new THREE.MeshStandardMaterial({
-                    color: foliageColors[i % foliageColors.length]
+                const groundMat = new THREE.MeshStandardMaterial({
+                    color: 0x3d6b3d,
+                    roughness: 1,
+                    metalness: 0
                 });
-                const foliage = new THREE.Mesh(foliageGeo, foliageMat);
-                foliage.position.y = 8 + i * 2.5;
-                foliage.castShadow = true;
-                tree.add(foliage);
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                scene.add(ground);
+
+                // Add some grass patches
+                for (let i = 0; i < 500; i++) {
+                    const grass = createGrassPatch();
+                    grass.position.set(
+                        (Math.random() - 0.5) * WORLD_SIZE * 1.5,
+                        0.1,
+                        (Math.random() - 0.5) * WORLD_SIZE * 1.5
+                    );
+                    scene.add(grass);
+                }
             }
 
-            tree.position.set(x, 0, z);
-            tree.userData.radius = 1.5;
-            return tree;
-        }
+            function createGrassPatch() {
+                const group = new THREE.Group();
+                const grassMat = new THREE.MeshStandardMaterial({
+                    color: 0x228b22,
+                    side: THREE.DoubleSide
+                });
 
-        function createForest() {
-            // Create trees avoiding the center spawn area
-            for (let i = 0; i < 150; i++) {
-                let x, z;
-                do {
-                    x = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
-                    z = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
-                } while (Math.sqrt(x * x + z * z) < 15);
-
-                const tree = createTree(x, z);
-                trees.push(tree);
-                scene.add(tree);
+                for (let i = 0; i < 5; i++) {
+                    const blade = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.1, 0.5 + Math.random() * 0.5),
+                        grassMat
+                    );
+                    blade.position.set(
+                        (Math.random() - 0.5) * 0.5,
+                        0.25,
+                        (Math.random() - 0.5) * 0.5
+                    );
+                    blade.rotation.y = Math.random() * Math.PI;
+                    group.add(blade);
+                }
+                return group;
             }
 
-            // Add some rocks
-            for (let i = 0; i < 50; i++) {
-                const rock = createRock();
-                rock.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                    0,
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
-                );
-                scene.add(rock);
+            function createTree(x, z) {
+                const tree = new THREE.Group();
+
+                // Trunk
+                const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 8 + Math.random() * 4, 8);
+                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 4;
+                trunk.castShadow = true;
+                tree.add(trunk);
+
+                // Foliage layers
+                const foliageColors = [0x228b22, 0x2e8b2e, 0x1e7b1e];
+                for (let i = 0; i < 3; i++) {
+                    const foliageGeo = new THREE.ConeGeometry(4 - i * 0.8, 5, 8);
+                    const foliageMat = new THREE.MeshStandardMaterial({
+                        color: foliageColors[i % foliageColors.length]
+                    });
+                    const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+                    foliage.position.y = 8 + i * 2.5;
+                    foliage.castShadow = true;
+                    tree.add(foliage);
+                }
+
+                tree.position.set(x, 0, z);
+                tree.userData.radius = 1.5;
+                return tree;
             }
 
-            // Add fallen logs
-            for (let i = 0; i < 20; i++) {
-                const log = createLog();
-                log.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE,
-                    0.3,
-                    (Math.random() - 0.5) * WORLD_SIZE
-                );
-                log.rotation.y = Math.random() * Math.PI;
-                scene.add(log);
+            function createForest() {
+                // Create trees avoiding the center spawn area
+                for (let i = 0; i < 150; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
+                        z = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
+                    } while (Math.sqrt(x * x + z * z) < 15);
+
+                    const tree = createTree(x, z);
+                    trees.push(tree);
+                    scene.add(tree);
+                }
+
+                // Add some rocks
+                for (let i = 0; i < 50; i++) {
+                    const rock = createRock();
+                    rock.position.set(
+                        (Math.random() - 0.5) * WORLD_SIZE * 1.5,
+                        0,
+                        (Math.random() - 0.5) * WORLD_SIZE * 1.5
+                    );
+                    scene.add(rock);
+                }
+
+                // Add fallen logs
+                for (let i = 0; i < 20; i++) {
+                    const log = createLog();
+                    log.position.set(
+                        (Math.random() - 0.5) * WORLD_SIZE,
+                        0.3,
+                        (Math.random() - 0.5) * WORLD_SIZE
+                    );
+                    log.rotation.y = Math.random() * Math.PI;
+                    scene.add(log);
+                }
             }
-        }
 
-        function createRock() {
-            const rockGeo = new THREE.DodecahedronGeometry(1 + Math.random() * 1.5, 1);
-            const rockMat = new THREE.MeshStandardMaterial({
-                color: 0x666666,
-                roughness: 0.9
-            });
-            const rock = new THREE.Mesh(rockGeo, rockMat);
-            rock.scale.y = 0.5;
-            rock.castShadow = true;
-            rock.receiveShadow = true;
-            return rock;
-        }
+            function createRock() {
+                const rockGeo = new THREE.DodecahedronGeometry(1 + Math.random() * 1.5, 1);
+                const rockMat = new THREE.MeshStandardMaterial({
+                    color: 0x666666,
+                    roughness: 0.9
+                });
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                rock.scale.y = 0.5;
+                rock.castShadow = true;
+                rock.receiveShadow = true;
+                return rock;
+            }
 
-        function createLog() {
-            const log = new THREE.Group();
-            const logGeo = new THREE.CylinderGeometry(0.4, 0.4, 5, 8);
-            const logMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
-            const logMesh = new THREE.Mesh(logGeo, logMat);
-            logMesh.rotation.z = Math.PI / 2;
-            logMesh.castShadow = true;
-            log.add(logMesh);
-            return log;
-        }
+            function createLog() {
+                const log = new THREE.Group();
+                const logGeo = new THREE.CylinderGeometry(0.4, 0.4, 5, 8);
+                const logMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+                const logMesh = new THREE.Mesh(logGeo, logMat);
+                logMesh.rotation.z = Math.PI / 2;
+                logMesh.castShadow = true;
+                log.add(logMesh);
+                return log;
+            }
 
-        function createPeccary() {
-            peccary = new THREE.Group();
+            // Custom capsule geometry for older Three.js compatibility
+            function createCapsuleGeometry(radius, length, capSegments, radialSegments) {
+                const geometry = new THREE.CylinderGeometry(radius, radius, length, radialSegments, 1, true);
+                const topCap = new THREE.SphereGeometry(radius, radialSegments, capSegments, 0, Math.PI * 2, 0, Math.PI / 2);
+                const bottomCap = new THREE.SphereGeometry(radius, radialSegments, capSegments, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
 
-            // Body
-            const bodyGeo = new THREE.CapsuleGeometry(0.6, 1.2, 8, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.rotation.z = Math.PI / 2;
-            body.position.y = 0.8;
-            body.castShadow = true;
-            peccary.add(body);
+                // Position caps
+                topCap.translate(0, length / 2, 0);
+                bottomCap.translate(0, -length / 2, 0);
 
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-            const head = new THREE.Mesh(headGeo, bodyMat);
-            head.position.set(1, 0.9, 0);
-            head.scale.set(1.2, 1, 0.9);
-            head.castShadow = true;
-            peccary.add(head);
+                // Merge geometries
+                const capsule = new THREE.BufferGeometry();
+                const geometries = [geometry, topCap, bottomCap];
 
-            // Snout
-            const snoutGeo = new THREE.CylinderGeometry(0.15, 0.2, 0.4, 8);
-            const snoutMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
-            const snout = new THREE.Mesh(snoutGeo, snoutMat);
-            snout.rotation.z = Math.PI / 2;
-            snout.position.set(1.5, 0.8, 0);
-            peccary.add(snout);
+                // Simple merge by creating a group instead
+                return geometry;
+            }
 
-            // Nose
-            const noseMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
-            const nose = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), noseMat);
-            nose.position.set(1.7, 0.8, 0);
-            peccary.add(nose);
+            function createPeccary() {
+                peccary = new THREE.Group();
 
-            // Eyes
-            const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-            const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            [-0.15, 0.15].forEach(z => {
-                const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), eyeWhiteMat);
-                eyeWhite.position.set(1.25, 1.05, z);
-                peccary.add(eyeWhite);
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
-                eye.position.set(1.3, 1.05, z);
-                peccary.add(eye);
-            });
+                // Body (using cylinder + spheres for capsule effect)
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
 
-            // Ears
-            const earMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
-            [-0.25, 0.25].forEach(z => {
-                const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.25, 8), earMat);
-                ear.position.set(0.9, 1.3, z);
-                ear.rotation.x = z > 0 ? 0.3 : -0.3;
-                peccary.add(ear);
-            });
+                // Main body cylinder
+                const bodyGeo = new THREE.CylinderGeometry(0.6, 0.6, 1.2, 16);
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.rotation.z = Math.PI / 2;
+                body.position.y = 0.8;
+                body.castShadow = true;
+                peccary.add(body);
 
-            // Legs
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
-            const legPositions = [
-                [0.5, 0.3, 0.3], [0.5, 0.3, -0.3],
-                [-0.5, 0.3, 0.3], [-0.5, 0.3, -0.3]
-            ];
-            legPositions.forEach(pos => {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8), legMat);
-                leg.position.set(...pos);
-                leg.castShadow = true;
-                peccary.add(leg);
+                // Body end caps (spheres)
+                const endCapGeo = new THREE.SphereGeometry(0.6, 16, 16);
+                const frontCap = new THREE.Mesh(endCapGeo, bodyMat);
+                frontCap.position.set(0.6, 0.8, 0);
+                frontCap.castShadow = true;
+                peccary.add(frontCap);
 
-                // Hoof
-                const hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.1, 8),
+                const backCap = new THREE.Mesh(endCapGeo, bodyMat);
+                backCap.position.set(-0.6, 0.8, 0);
+                backCap.castShadow = true;
+                peccary.add(backCap);
+
+                // Head
+                const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+                const head = new THREE.Mesh(headGeo, bodyMat);
+                head.position.set(1.2, 0.9, 0);
+                head.scale.set(1.2, 1, 0.9);
+                head.castShadow = true;
+                peccary.add(head);
+
+                // Snout
+                const snoutGeo = new THREE.CylinderGeometry(0.15, 0.2, 0.4, 8);
+                const snoutMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+                const snout = new THREE.Mesh(snoutGeo, snoutMat);
+                snout.rotation.z = Math.PI / 2;
+                snout.position.set(1.6, 0.8, 0);
+                peccary.add(snout);
+
+                // Nose
+                const noseMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+                const nose = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), noseMat);
+                nose.position.set(1.8, 0.8, 0);
+                peccary.add(nose);
+
+                // Eyes
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+                const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                [-0.15, 0.15].forEach(z => {
+                    const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), eyeWhiteMat);
+                    eyeWhite.position.set(1.35, 1.05, z);
+                    peccary.add(eyeWhite);
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
+                    eye.position.set(1.4, 1.05, z);
+                    peccary.add(eye);
+                });
+
+                // Ears
+                const earMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+                [-0.25, 0.25].forEach(z => {
+                    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.25, 8), earMat);
+                    ear.position.set(1.0, 1.3, z);
+                    ear.rotation.x = z > 0 ? 0.3 : -0.3;
+                    peccary.add(ear);
+                });
+
+                // Legs
+                const legMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+                const legPositions = [
+                    [0.5, 0.3, 0.3], [0.5, 0.3, -0.3],
+                    [-0.5, 0.3, 0.3], [-0.5, 0.3, -0.3]
+                ];
+                legPositions.forEach(pos => {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8), legMat);
+                    leg.position.set(pos[0], pos[1], pos[2]);
+                    leg.castShadow = true;
+                    peccary.add(leg);
+
+                    // Hoof
+                    const hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.1, 8),
+                        new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+                    hoof.position.set(pos[0], 0.05, pos[2]);
+                    peccary.add(hoof);
+                });
+
+                // Tail (small)
+                const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bodyMat);
+                tail.position.set(-1.1, 0.9, 0);
+                peccary.add(tail);
+
+                // White collar marking
+                const collarGeo = new THREE.TorusGeometry(0.5, 0.08, 8, 16, Math.PI);
+                const collarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                const collar = new THREE.Mesh(collarGeo, collarMat);
+                collar.rotation.y = Math.PI / 2;
+                collar.rotation.x = Math.PI / 2;
+                collar.position.set(0.7, 0.9, 0);
+                peccary.add(collar);
+
+                peccary.position.set(0, 0, 0);
+                peccary.userData.radius = 1;
+                scene.add(peccary);
+            }
+
+            function createBadger(x, z) {
+                const badger = new THREE.Group();
+
+                // Body
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2f2f2f });
+                const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1, 16);
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.rotation.z = Math.PI / 2;
+                body.position.y = 0.5;
+                body.castShadow = true;
+                badger.add(body);
+
+                // Body caps
+                const capGeo = new THREE.SphereGeometry(0.4, 16, 16);
+                const frontCap = new THREE.Mesh(capGeo, bodyMat);
+                frontCap.position.set(0.5, 0.5, 0);
+                badger.add(frontCap);
+                const backCap = new THREE.Mesh(capGeo, bodyMat);
+                backCap.position.set(-0.5, 0.5, 0);
+                badger.add(backCap);
+
+                // Head
+                const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+                const head = new THREE.Mesh(headGeo, bodyMat);
+                head.position.set(0.9, 0.55, 0);
+                head.scale.set(1.1, 0.9, 0.9);
+                badger.add(head);
+
+                // White stripes on face
+                const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                [-0.12, 0.12].forEach(zPos => {
+                    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.1), stripeMat);
+                    stripe.position.set(1.0, 0.6, zPos);
+                    badger.add(stripe);
+                });
+
+                // Black stripe in middle
+                const blackStripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.08), bodyMat);
+                blackStripe.position.set(1.0, 0.65, 0);
+                badger.add(blackStripe);
+
+                // Snout
+                const snout = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8),
                     new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-                hoof.position.set(pos[0], 0.05, pos[2]);
-                peccary.add(hoof);
-            });
+                snout.position.set(1.2, 0.45, 0);
+                snout.scale.set(1.2, 0.8, 0.9);
+                badger.add(snout);
 
-            // Tail (small)
-            const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bodyMat);
-            tail.position.set(-1, 0.9, 0);
-            peccary.add(tail);
+                // Eyes (red for menacing look)
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0x330000 });
+                [-0.12, 0.12].forEach(zPos => {
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
+                    eye.position.set(1.1, 0.6, zPos);
+                    badger.add(eye);
+                });
 
-            // White collar marking
-            const collarGeo = new THREE.TorusGeometry(0.5, 0.08, 8, 16, Math.PI);
-            const collarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-            const collar = new THREE.Mesh(collarGeo, collarMat);
-            collar.rotation.y = Math.PI / 2;
-            collar.rotation.x = Math.PI / 2;
-            collar.position.set(0.6, 0.9, 0);
-            peccary.add(collar);
+                // Legs (short and stubby)
+                const legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+                [[0.4, 0.2, 0.25], [0.4, 0.2, -0.25], [-0.4, 0.2, 0.25], [-0.4, 0.2, -0.25]].forEach(pos => {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 8), legMat);
+                    leg.position.set(pos[0], pos[1], pos[2]);
+                    badger.add(leg);
+                });
 
-            peccary.position.set(0, 0, 0);
-            peccary.userData.radius = 1;
-            scene.add(peccary);
-        }
+                badger.position.set(x, 0, z);
+                badger.userData = {
+                    type: 'badger',
+                    speed: 3 + Math.random() * 1,
+                    radius: 0.8,
+                    damage: 15
+                };
 
-        function createBadger(x, z) {
-            const badger = new THREE.Group();
+                return badger;
+            }
 
-            // Body
-            const bodyGeo = new THREE.CapsuleGeometry(0.4, 1, 8, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2f2f2f });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.rotation.z = Math.PI / 2;
-            body.position.y = 0.5;
-            body.castShadow = true;
-            badger.add(body);
+            function createWeasel(x, z) {
+                const weasel = new THREE.Group();
 
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
-            const head = new THREE.Mesh(headGeo, bodyMat);
-            head.position.set(0.8, 0.55, 0);
-            head.scale.set(1.1, 0.9, 0.9);
-            badger.add(head);
+                // Long body
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+                const bodyGeo = new THREE.CylinderGeometry(0.2, 0.2, 1.2, 16);
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.rotation.z = Math.PI / 2;
+                body.position.y = 0.35;
+                body.castShadow = true;
+                weasel.add(body);
 
-            // White stripes on face
-            const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            [-0.12, 0.12].forEach(z => {
-                const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.1), stripeMat);
-                stripe.position.set(0.9, 0.6, z);
-                badger.add(stripe);
-            });
+                // Body caps
+                const capGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                const frontCap = new THREE.Mesh(capGeo, bodyMat);
+                frontCap.position.set(0.6, 0.35, 0);
+                weasel.add(frontCap);
+                const backCap = new THREE.Mesh(capGeo, bodyMat);
+                backCap.position.set(-0.6, 0.35, 0);
+                weasel.add(backCap);
 
-            // Black stripe in middle
-            const blackStripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.08), bodyMat);
-            blackStripe.position.set(0.9, 0.65, 0);
-            badger.add(blackStripe);
+                // Head
+                const headGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                const head = new THREE.Mesh(headGeo, bodyMat);
+                head.position.set(0.9, 0.35, 0);
+                head.scale.set(1.2, 1, 0.9);
+                weasel.add(head);
 
-            // Snout
-            const snout = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8),
-                new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-            snout.position.set(1.1, 0.45, 0);
-            snout.scale.set(1.2, 0.8, 0.9);
-            badger.add(snout);
+                // Snout
+                const snoutMat = new THREE.MeshStandardMaterial({ color: 0xd2691e });
+                const snout = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), snoutMat);
+                snout.position.set(1.1, 0.3, 0);
+                weasel.add(snout);
 
-            // Eyes (red for menacing look)
-            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0x330000 });
-            [-0.12, 0.12].forEach(z => {
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
-                eye.position.set(1, 0.6, z);
-                badger.add(eye);
-            });
+                // Nose
+                const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+                nose.position.set(1.18, 0.3, 0);
+                weasel.add(nose);
 
-            // Legs (short and stubby)
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
-            [[0.4, 0.2, 0.25], [0.4, 0.2, -0.25], [-0.4, 0.2, 0.25], [-0.4, 0.2, -0.25]].forEach(pos => {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 8), legMat);
-                leg.position.set(...pos);
-                badger.add(leg);
-            });
+                // Eyes (yellow, predatory)
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x333300 });
+                [-0.08, 0.08].forEach(zPos => {
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
+                    eye.position.set(1.0, 0.42, zPos);
+                    weasel.add(eye);
+                });
 
-            badger.position.set(x, 0, z);
-            badger.userData = {
-                type: 'badger',
-                speed: 3 + Math.random() * 1,
-                radius: 0.8,
-                damage: 15
-            };
+                // Ears
+                const earMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+                [-0.1, 0.1].forEach(zPos => {
+                    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), earMat);
+                    ear.position.set(0.8, 0.5, zPos);
+                    weasel.add(ear);
+                });
 
-            return badger;
-        }
+                // Short legs
+                const legMat = new THREE.MeshStandardMaterial({ color: 0x6b3310 });
+                [[0.4, 0.15, 0.15], [0.4, 0.15, -0.15], [-0.4, 0.15, 0.15], [-0.4, 0.15, -0.15]].forEach(pos => {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8), legMat);
+                    leg.position.set(pos[0], pos[1], pos[2]);
+                    weasel.add(leg);
+                });
 
-        function createWeasel(x, z) {
-            const weasel = new THREE.Group();
+                // Long tail
+                const tailGeo = new THREE.CylinderGeometry(0.05, 0.03, 0.8, 8);
+                const tail = new THREE.Mesh(tailGeo, bodyMat);
+                tail.rotation.z = Math.PI / 2 + 0.3;
+                tail.position.set(-1, 0.4, 0);
+                weasel.add(tail);
 
-            // Long body
-            const bodyGeo = new THREE.CapsuleGeometry(0.2, 1.2, 8, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.rotation.z = Math.PI / 2;
-            body.position.y = 0.35;
-            body.castShadow = true;
-            weasel.add(body);
+                weasel.position.set(x, 0, z);
+                weasel.userData = {
+                    type: 'weasel',
+                    speed: 4.5 + Math.random() * 1.5,
+                    radius: 0.6,
+                    damage: 10
+                };
 
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.2, 16, 16);
-            const head = new THREE.Mesh(headGeo, bodyMat);
-            head.position.set(0.9, 0.35, 0);
-            head.scale.set(1.2, 1, 0.9);
-            weasel.add(head);
+                return weasel;
+            }
 
-            // Snout
-            const snoutMat = new THREE.MeshStandardMaterial({ color: 0xd2691e });
-            const snout = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), snoutMat);
-            snout.position.set(1.1, 0.3, 0);
-            weasel.add(snout);
+            function createResource(type) {
+                const resource = new THREE.Group();
+                let color, value, healAmount;
 
-            // Nose
-            const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
-                new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-            nose.position.set(1.18, 0.3, 0);
-            weasel.add(nose);
+                switch(type) {
+                    case 'berry':
+                        color = 0x4169e1;
+                        healAmount = 5;
+                        value = 10;
+                        // Cluster of berries
+                        for (let i = 0; i < 5; i++) {
+                            const berry = new THREE.Mesh(
+                                new THREE.SphereGeometry(0.15, 8, 8),
+                                new THREE.MeshStandardMaterial({ color: color })
+                            );
+                            berry.position.set(
+                                (Math.random() - 0.5) * 0.3,
+                                0.2 + Math.random() * 0.2,
+                                (Math.random() - 0.5) * 0.3
+                            );
+                            resource.add(berry);
+                        }
+                        // Leaves
+                        const leafMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+                        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), leafMat);
+                        leaf.scale.set(1, 0.3, 1);
+                        leaf.position.y = 0.5;
+                        resource.add(leaf);
+                        break;
 
-            // Eyes (yellow, predatory)
-            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x333300 });
-            [-0.08, 0.08].forEach(z => {
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
-                eye.position.set(1, 0.42, z);
-                weasel.add(eye);
-            });
-
-            // Ears
-            const earMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-            [-0.1, 0.1].forEach(z => {
-                const ear = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), earMat);
-                ear.position.set(0.8, 0.5, z);
-                weasel.add(ear);
-            });
-
-            // Short legs
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x6b3310 });
-            [[0.4, 0.15, 0.15], [0.4, 0.15, -0.15], [-0.4, 0.15, 0.15], [-0.4, 0.15, -0.15]].forEach(pos => {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8), legMat);
-                leg.position.set(...pos);
-                weasel.add(leg);
-            });
-
-            // Long tail
-            const tailGeo = new THREE.CylinderGeometry(0.05, 0.03, 0.8, 8);
-            const tail = new THREE.Mesh(tailGeo, bodyMat);
-            tail.rotation.z = Math.PI / 2 + 0.3;
-            tail.position.set(-1, 0.4, 0);
-            weasel.add(tail);
-
-            weasel.position.set(x, 0, z);
-            weasel.userData = {
-                type: 'weasel',
-                speed: 4.5 + Math.random() * 1.5,
-                radius: 0.6,
-                damage: 10
-            };
-
-            return weasel;
-        }
-
-        function createResource(type) {
-            const resource = new THREE.Group();
-            let color, geometry, value, healAmount;
-
-            switch(type) {
-                case 'berry':
-                    color = 0x4169e1;
-                    healAmount = 5;
-                    value = 10;
-                    // Cluster of berries
-                    for (let i = 0; i < 5; i++) {
-                        const berry = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.15, 8, 8),
+                    case 'nut':
+                        color = 0x8b4513;
+                        healAmount = 8;
+                        value = 15;
+                        // Acorn-like nut
+                        const nutBody = new THREE.Mesh(
+                            new THREE.SphereGeometry(0.2, 8, 8),
                             new THREE.MeshStandardMaterial({ color: color })
                         );
-                        berry.position.set(
-                            (Math.random() - 0.5) * 0.3,
-                            0.2 + Math.random() * 0.2,
-                            (Math.random() - 0.5) * 0.3
+                        nutBody.position.y = 0.2;
+                        nutBody.scale.y = 1.3;
+                        resource.add(nutBody);
+                        // Cap
+                        const cap = new THREE.Mesh(
+                            new THREE.SphereGeometry(0.18, 8, 8),
+                            new THREE.MeshStandardMaterial({ color: 0x5c3317 })
                         );
-                        resource.add(berry);
-                    }
-                    // Leaves
-                    const leafMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), leafMat);
-                    leaf.scale.set(1, 0.3, 1);
-                    leaf.position.y = 0.5;
-                    resource.add(leaf);
-                    break;
-
-                case 'nut':
-                    color = 0x8b4513;
-                    healAmount = 8;
-                    value = 15;
-                    // Acorn-like nut
-                    const nutBody = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.2, 8, 8),
-                        new THREE.MeshStandardMaterial({ color: color })
-                    );
-                    nutBody.position.y = 0.2;
-                    nutBody.scale.y = 1.3;
-                    resource.add(nutBody);
-                    // Cap
-                    const cap = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.18, 8, 8),
-                        new THREE.MeshStandardMaterial({ color: 0x5c3317 })
-                    );
-                    cap.position.y = 0.35;
-                    cap.scale.y = 0.4;
-                    resource.add(cap);
-                    // Stem
-                    const stem = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.03, 0.03, 0.1, 8),
-                        new THREE.MeshStandardMaterial({ color: 0x3d2314 })
-                    );
-                    stem.position.y = 0.45;
-                    resource.add(stem);
-                    break;
-
-                case 'mushroom':
-                    color = 0xff6347;
-                    healAmount = 12;
-                    value = 20;
-                    // Stem
-                    const mushroomStem = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.1, 0.12, 0.3, 8),
-                        new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
-                    );
-                    mushroomStem.position.y = 0.15;
-                    resource.add(mushroomStem);
-                    // Cap
-                    const mushroomCap = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.25, 16, 16),
-                        new THREE.MeshStandardMaterial({ color: color })
-                    );
-                    mushroomCap.scale.y = 0.5;
-                    mushroomCap.position.y = 0.35;
-                    resource.add(mushroomCap);
-                    // Spots
-                    const spotMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-                    for (let i = 0; i < 5; i++) {
-                        const spot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), spotMat);
-                        const angle = (i / 5) * Math.PI * 2;
-                        spot.position.set(
-                            Math.cos(angle) * 0.15,
-                            0.4,
-                            Math.sin(angle) * 0.15
+                        cap.position.y = 0.35;
+                        cap.scale.y = 0.4;
+                        resource.add(cap);
+                        // Stem
+                        const stem = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.03, 0.03, 0.1, 8),
+                            new THREE.MeshStandardMaterial({ color: 0x3d2314 })
                         );
-                        resource.add(spot);
-                    }
-                    break;
+                        stem.position.y = 0.45;
+                        resource.add(stem);
+                        break;
+
+                    case 'mushroom':
+                        color = 0xff6347;
+                        healAmount = 12;
+                        value = 20;
+                        // Stem
+                        const mushroomStem = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.1, 0.12, 0.3, 8),
+                            new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
+                        );
+                        mushroomStem.position.y = 0.15;
+                        resource.add(mushroomStem);
+                        // Cap
+                        const mushroomCap = new THREE.Mesh(
+                            new THREE.SphereGeometry(0.25, 16, 16),
+                            new THREE.MeshStandardMaterial({ color: color })
+                        );
+                        mushroomCap.scale.y = 0.5;
+                        mushroomCap.position.y = 0.35;
+                        resource.add(mushroomCap);
+                        // Spots
+                        const spotMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                        for (let i = 0; i < 5; i++) {
+                            const spot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), spotMat);
+                            const angle = (i / 5) * Math.PI * 2;
+                            spot.position.set(
+                                Math.cos(angle) * 0.15,
+                                0.4,
+                                Math.sin(angle) * 0.15
+                            );
+                            resource.add(spot);
+                        }
+                        break;
+                }
+
+                resource.userData = {
+                    type: type,
+                    value: value,
+                    healAmount: healAmount,
+                    radius: 0.5,
+                    bobOffset: Math.random() * Math.PI * 2
+                };
+
+                // Position randomly in world
+                let rx, rz;
+                do {
+                    rx = (Math.random() - 0.5) * WORLD_SIZE;
+                    rz = (Math.random() - 0.5) * WORLD_SIZE;
+                } while (Math.sqrt(rx * rx + rz * rz) < 10);
+
+                resource.position.set(rx, 0, rz);
+
+                return resource;
             }
 
-            resource.userData = {
-                type: type,
-                value: value,
-                healAmount: healAmount,
-                radius: 0.5,
-                bobOffset: Math.random() * Math.PI * 2
-            };
+            function setupMinimap() {
+                minimapCanvas = document.getElementById('minimap-canvas');
+                minimapCanvas.width = 150;
+                minimapCanvas.height = 150;
+                minimapCtx = minimapCanvas.getContext('2d');
+            }
 
-            // Position randomly in world
-            let x, z;
-            do {
-                x = (Math.random() - 0.5) * WORLD_SIZE;
-                z = (Math.random() - 0.5) * WORLD_SIZE;
-            } while (Math.sqrt(x * x + z * z) < 10);
+            function updateMinimap() {
+                const ctx = minimapCtx;
+                const size = 150;
+                const scale = size / WORLD_SIZE;
 
-            resource.position.set(x, 0, z);
+                // Clear
+                ctx.fillStyle = '#1a3d1a';
+                ctx.fillRect(0, 0, size, size);
 
-            return resource;
-        }
+                // Draw trees as small dots
+                ctx.fillStyle = '#0a2a0a';
+                trees.forEach(tree => {
+                    const tx = (tree.position.x + WORLD_SIZE / 2) * scale;
+                    const ty = (tree.position.z + WORLD_SIZE / 2) * scale;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
 
-        function setupMinimap() {
-            minimapCanvas = document.getElementById('minimap-canvas');
-            minimapCanvas.width = 150;
-            minimapCanvas.height = 150;
-            minimapCtx = minimapCanvas.getContext('2d');
-        }
+                // Draw resources
+                resources.forEach(res => {
+                    let color;
+                    switch(res.userData.type) {
+                        case 'berry': color = '#4169e1'; break;
+                        case 'nut': color = '#8b4513'; break;
+                        case 'mushroom': color = '#ff6347'; break;
+                    }
+                    ctx.fillStyle = color;
+                    const rx = (res.position.x + WORLD_SIZE / 2) * scale;
+                    const ry = (res.position.z + WORLD_SIZE / 2) * scale;
+                    ctx.beginPath();
+                    ctx.arc(rx, ry, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
 
-        function updateMinimap() {
-            const ctx = minimapCtx;
-            const size = 150;
-            const scale = size / WORLD_SIZE;
+                // Draw enemies
+                enemies.forEach(enemy => {
+                    ctx.fillStyle = enemy.userData.type === 'badger' ? '#ff4444' : '#ff8800';
+                    const ex = (enemy.position.x + WORLD_SIZE / 2) * scale;
+                    const ey = (enemy.position.z + WORLD_SIZE / 2) * scale;
+                    ctx.beginPath();
+                    ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
 
-            // Clear
-            ctx.fillStyle = '#1a3d1a';
-            ctx.fillRect(0, 0, size, size);
-
-            // Draw trees as small dots
-            ctx.fillStyle = '#0a2a0a';
-            trees.forEach(tree => {
-                const x = (tree.position.x + WORLD_SIZE / 2) * scale;
-                const y = (tree.position.z + WORLD_SIZE / 2) * scale;
+                // Draw player
+                ctx.fillStyle = '#44ff44';
+                const px = (peccary.position.x + WORLD_SIZE / 2) * scale;
+                const py = (peccary.position.z + WORLD_SIZE / 2) * scale;
                 ctx.beginPath();
-                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.arc(px, py, 5, 0, Math.PI * 2);
                 ctx.fill();
-            });
 
-            // Draw resources
-            resources.forEach(res => {
-                let color;
-                switch(res.userData.type) {
-                    case 'berry': color = '#4169e1'; break;
-                    case 'nut': color = '#8b4513'; break;
-                    case 'mushroom': color = '#ff6347'; break;
-                }
-                ctx.fillStyle = color;
-                const x = (res.position.x + WORLD_SIZE / 2) * scale;
-                const y = (res.position.z + WORLD_SIZE / 2) * scale;
+                // Player direction indicator
+                ctx.strokeStyle = '#88ff88';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw enemies
-            enemies.forEach(enemy => {
-                ctx.fillStyle = enemy.userData.type === 'badger' ? '#ff4444' : '#ff8800';
-                const x = (enemy.position.x + WORLD_SIZE / 2) * scale;
-                const y = (enemy.position.z + WORLD_SIZE / 2) * scale;
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw player
-            ctx.fillStyle = '#44ff44';
-            const px = (peccary.position.x + WORLD_SIZE / 2) * scale;
-            const py = (peccary.position.z + WORLD_SIZE / 2) * scale;
-            ctx.beginPath();
-            ctx.arc(px, py, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Player direction indicator
-            ctx.strokeStyle = '#88ff88';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(
-                px + Math.sin(peccary.rotation.y) * 10,
-                py + Math.cos(peccary.rotation.y) * 10
-            );
-            ctx.stroke();
-        }
-
-        function spawnEnemy() {
-            if (enemies.length >= MAX_ENEMIES) return;
-
-            // Spawn at edge of world
-            const angle = Math.random() * Math.PI * 2;
-            const distance = WORLD_SIZE * 0.4 + Math.random() * 20;
-            const x = Math.cos(angle) * distance;
-            const z = Math.sin(angle) * distance;
-
-            const enemy = Math.random() > 0.5 ? createBadger(x, z) : createWeasel(x, z);
-            enemies.push(enemy);
-            scene.add(enemy);
-        }
-
-        function spawnResource() {
-            if (resources.length >= MAX_RESOURCES) return;
-
-            const types = ['berry', 'nut', 'mushroom'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            const resource = createResource(type);
-            resources.push(resource);
-            scene.add(resource);
-        }
-
-        function updatePlayer(delta) {
-            const moveSpeed = keys['shift'] ? 12 : 6;
-            const direction = new THREE.Vector3();
-
-            if (keys['w'] || keys['arrowup']) direction.z -= 1;
-            if (keys['s'] || keys['arrowdown']) direction.z += 1;
-            if (keys['a'] || keys['arrowleft']) direction.x -= 1;
-            if (keys['d'] || keys['arrowright']) direction.x += 1;
-
-            if (direction.length() > 0) {
-                direction.normalize();
-
-                // Move peccary
-                peccary.position.x += direction.x * moveSpeed * delta;
-                peccary.position.z += direction.z * moveSpeed * delta;
-
-                // Rotate to face movement direction
-                const targetRotation = Math.atan2(direction.x, direction.z);
-                peccary.rotation.y = THREE.MathUtils.lerp(
-                    peccary.rotation.y,
-                    targetRotation,
-                    0.15
+                ctx.moveTo(px, py);
+                ctx.lineTo(
+                    px + Math.sin(peccary.rotation.y) * 10,
+                    py + Math.cos(peccary.rotation.y) * 10
                 );
-
-                // Bobbing animation
-                peccary.position.y = Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.1;
+                ctx.stroke();
             }
 
-            // Jump
-            if ((keys[' '] || keys['space']) && !isJumping) {
-                velocity.y = 8;
-                isJumping = true;
+            function spawnEnemy() {
+                if (enemies.length >= MAX_ENEMIES) return;
+
+                // Spawn at edge of world
+                const angle = Math.random() * Math.PI * 2;
+                const distance = WORLD_SIZE * 0.4 + Math.random() * 20;
+                const ex = Math.cos(angle) * distance;
+                const ez = Math.sin(angle) * distance;
+
+                const enemy = Math.random() > 0.5 ? createBadger(ex, ez) : createWeasel(ex, ez);
+                enemies.push(enemy);
+                scene.add(enemy);
             }
 
-            // Apply gravity
-            if (isJumping) {
-                velocity.y -= 20 * delta;
-                peccary.position.y += velocity.y * delta;
+            function spawnResource() {
+                if (resources.length >= MAX_RESOURCES) return;
 
-                if (peccary.position.y <= groundLevel) {
-                    peccary.position.y = groundLevel;
-                    isJumping = false;
-                    velocity.y = 0;
+                const types = ['berry', 'nut', 'mushroom'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const resource = createResource(type);
+                resources.push(resource);
+                scene.add(resource);
+            }
+
+            function updatePlayer(delta) {
+                const moveSpeed = keys['shift'] ? 12 : 6;
+                const direction = new THREE.Vector3();
+
+                if (keys['w'] || keys['arrowup']) direction.z -= 1;
+                if (keys['s'] || keys['arrowdown']) direction.z += 1;
+                if (keys['a'] || keys['arrowleft']) direction.x -= 1;
+                if (keys['d'] || keys['arrowright']) direction.x += 1;
+
+                if (direction.length() > 0) {
+                    direction.normalize();
+
+                    // Move peccary
+                    peccary.position.x += direction.x * moveSpeed * delta;
+                    peccary.position.z += direction.z * moveSpeed * delta;
+
+                    // Rotate to face movement direction
+                    const targetRotation = Math.atan2(direction.x, direction.z);
+                    peccary.rotation.y = THREE.MathUtils.lerp(
+                        peccary.rotation.y,
+                        targetRotation,
+                        0.15
+                    );
+
+                    // Bobbing animation when moving
+                    if (!isJumping) {
+                        peccary.position.y = Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.1;
+                    }
                 }
+
+                // Jump
+                if ((keys[' '] || keys['space']) && !isJumping) {
+                    velocity.y = 8;
+                    isJumping = true;
+                }
+
+                // Apply gravity
+                if (isJumping) {
+                    velocity.y -= 20 * delta;
+                    peccary.position.y += velocity.y * delta;
+
+                    if (peccary.position.y <= groundLevel) {
+                        peccary.position.y = groundLevel;
+                        isJumping = false;
+                        velocity.y = 0;
+                    }
+                }
+
+                // World bounds
+                const bound = WORLD_SIZE * 0.7;
+                peccary.position.x = Math.max(-bound, Math.min(bound, peccary.position.x));
+                peccary.position.z = Math.max(-bound, Math.min(bound, peccary.position.z));
+
+                // Tree collision
+                trees.forEach(tree => {
+                    const dist = peccary.position.distanceTo(tree.position);
+                    if (dist < tree.userData.radius + peccary.userData.radius) {
+                        const pushDir = new THREE.Vector3()
+                            .subVectors(peccary.position, tree.position)
+                            .normalize();
+                        peccary.position.add(pushDir.multiplyScalar(0.1));
+                    }
+                });
             }
 
-            // World bounds
-            const bound = WORLD_SIZE * 0.7;
-            peccary.position.x = Math.max(-bound, Math.min(bound, peccary.position.x));
-            peccary.position.z = Math.max(-bound, Math.min(bound, peccary.position.z));
+            function updateEnemies(delta) {
+                let closestDistance = Infinity;
 
-            // Tree collision
-            trees.forEach(tree => {
-                const dist = peccary.position.distanceTo(tree.position);
-                if (dist < tree.userData.radius + peccary.userData.radius) {
-                    const pushDir = new THREE.Vector3()
-                        .subVectors(peccary.position, tree.position)
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const enemy = enemies[i];
+
+                    // Move towards player
+                    const direction = new THREE.Vector3()
+                        .subVectors(peccary.position, enemy.position)
                         .normalize();
-                    peccary.position.add(pushDir.multiplyScalar(0.1));
-                }
-            });
-        }
 
-        function updateEnemies(delta) {
-            let closestDistance = Infinity;
+                    const distance = enemy.position.distanceTo(peccary.position);
+                    closestDistance = Math.min(closestDistance, distance);
 
-            enemies.forEach((enemy, index) => {
-                // Move towards player
-                const direction = new THREE.Vector3()
-                    .subVectors(peccary.position, enemy.position)
-                    .normalize();
+                    // Speed increases when close
+                    let speed = enemy.userData.speed;
+                    if (distance < 20) speed *= 1.3;
 
-                const distance = enemy.position.distanceTo(peccary.position);
-                closestDistance = Math.min(closestDistance, distance);
+                    enemy.position.x += direction.x * speed * delta;
+                    enemy.position.z += direction.z * speed * delta;
 
-                // Speed increases when close
-                let speed = enemy.userData.speed;
-                if (distance < 20) speed *= 1.3;
+                    // Rotate to face player
+                    enemy.rotation.y = Math.atan2(direction.x, direction.z);
 
-                enemy.position.x += direction.x * speed * delta;
-                enemy.position.z += direction.z * speed * delta;
+                    // Bobbing animation
+                    enemy.position.y = Math.abs(Math.sin(clock.elapsedTime * 12 + i)) * 0.05;
 
-                // Rotate to face player
-                enemy.rotation.y = Math.atan2(direction.x, direction.z);
+                    // Collision with player
+                    if (distance < enemy.userData.radius + peccary.userData.radius) {
+                        takeDamage(enemy.userData.damage * delta);
+                    }
 
-                // Bobbing animation
-                enemy.position.y = Math.abs(Math.sin(clock.elapsedTime * 12 + index)) * 0.05;
-
-                // Collision with player
-                if (distance < enemy.userData.radius + peccary.userData.radius) {
-                    takeDamage(enemy.userData.damage * delta);
+                    // Remove if too far
+                    if (distance > WORLD_SIZE) {
+                        scene.remove(enemy);
+                        enemies.splice(i, 1);
+                    }
                 }
 
-                // Remove if too far
-                if (distance > WORLD_SIZE) {
-                    scene.remove(enemy);
-                    enemies.splice(index, 1);
+                // Warning indicator
+                const warningEl = document.getElementById('warning-text');
+                if (closestDistance < 15) {
+                    warningEl.style.opacity = Math.max(0, 1 - closestDistance / 15);
+                } else {
+                    warningEl.style.opacity = 0;
                 }
-            });
-
-            // Warning indicator
-            const warningEl = document.getElementById('warning-text');
-            if (closestDistance < 15) {
-                warningEl.style.opacity = Math.max(0, 1 - closestDistance / 15);
-            } else {
-                warningEl.style.opacity = 0;
-            }
-        }
-
-        function updateResources(delta) {
-            resources.forEach((resource, index) => {
-                // Bobbing animation
-                resource.position.y = 0.1 + Math.sin(clock.elapsedTime * 2 + resource.userData.bobOffset) * 0.1;
-                resource.rotation.y += delta * 0.5;
-
-                // Check collection
-                const distance = peccary.position.distanceTo(resource.position);
-                if (distance < resource.userData.radius + peccary.userData.radius) {
-                    collectResource(resource);
-                    scene.remove(resource);
-                    resources.splice(index, 1);
-                }
-            });
-        }
-
-        function collectResource(resource) {
-            const type = resource.userData.type;
-            const value = resource.userData.value;
-            const heal = resource.userData.healAmount;
-
-            // Update counts
-            if (type === 'berry') resourceCounts.berries++;
-            else if (type === 'nut') resourceCounts.nuts++;
-            else if (type === 'mushroom') resourceCounts.mushrooms++;
-
-            // Update score
-            score += value;
-
-            // Heal player
-            health = Math.min(100, health + heal);
-
-            updateUI();
-        }
-
-        function takeDamage(amount) {
-            health -= amount;
-            updateUI();
-
-            if (health <= 0) {
-                gameOver();
-            }
-        }
-
-        function updateCamera() {
-            // Third person follow camera
-            const offset = new THREE.Vector3(0, 8, 12);
-            const targetPosition = new THREE.Vector3()
-                .copy(peccary.position)
-                .add(offset);
-
-            camera.position.lerp(targetPosition, 0.05);
-            camera.lookAt(peccary.position.x, peccary.position.y + 1, peccary.position.z);
-        }
-
-        function updateUI() {
-            document.getElementById('health-bar').style.width = `${health}%`;
-            document.getElementById('score-display').textContent = score;
-            document.getElementById('berries-count').textContent = resourceCounts.berries;
-            document.getElementById('nuts-count').textContent = resourceCounts.nuts;
-            document.getElementById('mushrooms-count').textContent = resourceCounts.mushrooms;
-
-            const minutes = Math.floor(timeElapsed / 60);
-            const seconds = Math.floor(timeElapsed % 60);
-            document.getElementById('time-display').textContent =
-                `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            document.getElementById('game-over-screen').classList.remove('hidden');
-            document.getElementById('final-score').textContent = `Score: ${score}`;
-        }
-
-        function startGame() {
-            document.getElementById('start-screen').classList.add('hidden');
-            gameRunning = true;
-
-            // Spawn initial resources
-            for (let i = 0; i < 10; i++) {
-                spawnResource();
             }
 
-            // Start spawn timers
-            setInterval(() => {
-                if (gameRunning) spawnEnemy();
-            }, ENEMY_SPAWN_RATE);
+            function updateResources(delta) {
+                for (let i = resources.length - 1; i >= 0; i--) {
+                    const resource = resources[i];
 
-            setInterval(() => {
-                if (gameRunning) spawnResource();
-            }, RESOURCE_SPAWN_RATE);
+                    // Bobbing animation
+                    resource.position.y = 0.1 + Math.sin(clock.elapsedTime * 2 + resource.userData.bobOffset) * 0.1;
+                    resource.rotation.y += delta * 0.5;
 
-            // Spawn first enemies after delay
-            setTimeout(() => {
-                if (gameRunning) {
-                    spawnEnemy();
-                    spawnEnemy();
+                    // Check collection
+                    const distance = peccary.position.distanceTo(resource.position);
+                    if (distance < resource.userData.radius + peccary.userData.radius) {
+                        collectResource(resource);
+                        scene.remove(resource);
+                        resources.splice(i, 1);
+                    }
                 }
-            }, 3000);
-        }
-
-        function restartGame() {
-            // Reset game state
-            health = 100;
-            score = 0;
-            resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
-            timeElapsed = 0;
-
-            // Clear enemies and resources
-            enemies.forEach(e => scene.remove(e));
-            resources.forEach(r => scene.remove(r));
-            enemies = [];
-            resources = [];
-
-            // Reset player position
-            peccary.position.set(0, 0, 0);
-            peccary.rotation.y = 0;
-
-            // Hide game over screen
-            document.getElementById('game-over-screen').classList.add('hidden');
-
-            updateUI();
-            gameRunning = true;
-
-            // Spawn initial resources
-            for (let i = 0; i < 10; i++) {
-                spawnResource();
             }
 
-            // Spawn enemies after delay
-            setTimeout(() => {
-                if (gameRunning) {
-                    spawnEnemy();
-                    spawnEnemy();
-                }
-            }, 3000);
-        }
+            function collectResource(resource) {
+                const type = resource.userData.type;
+                const value = resource.userData.value;
+                const heal = resource.userData.healAmount;
 
-        function animate() {
-            requestAnimationFrame(animate);
+                // Update counts
+                if (type === 'berry') resourceCounts.berries++;
+                else if (type === 'nut') resourceCounts.nuts++;
+                else if (type === 'mushroom') resourceCounts.mushrooms++;
 
-            const delta = Math.min(clock.getDelta(), 0.1);
+                // Update score
+                score += value;
 
-            if (gameRunning) {
-                timeElapsed += delta;
-                updatePlayer(delta);
-                updateEnemies(delta);
-                updateResources(delta);
-                updateCamera();
-                updateMinimap();
+                // Heal player
+                health = Math.min(100, health + heal);
+
                 updateUI();
             }
 
-            renderer.render(scene, camera);
-        }
+            function takeDamage(amount) {
+                health -= amount;
+                updateUI();
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+                if (health <= 0) {
+                    gameOver();
+                }
+            }
 
-        // Initialize game
-        init();
+            function updateCamera() {
+                // Third person follow camera
+                const offset = new THREE.Vector3(0, 8, 12);
+                const targetPosition = new THREE.Vector3()
+                    .copy(peccary.position)
+                    .add(offset);
+
+                camera.position.lerp(targetPosition, 0.05);
+                camera.lookAt(peccary.position.x, peccary.position.y + 1, peccary.position.z);
+            }
+
+            function updateUI() {
+                document.getElementById('health-bar').style.width = Math.max(0, health) + '%';
+                document.getElementById('score-display').textContent = score;
+                document.getElementById('berries-count').textContent = resourceCounts.berries;
+                document.getElementById('nuts-count').textContent = resourceCounts.nuts;
+                document.getElementById('mushrooms-count').textContent = resourceCounts.mushrooms;
+
+                const minutes = Math.floor(timeElapsed / 60);
+                const seconds = Math.floor(timeElapsed % 60);
+                document.getElementById('time-display').textContent =
+                    minutes + ':' + seconds.toString().padStart(2, '0');
+            }
+
+            function gameOver() {
+                gameRunning = false;
+                document.getElementById('game-over-screen').classList.remove('hidden');
+                document.getElementById('final-score').textContent = 'Score: ' + score;
+
+                // Hide game UI
+                document.getElementById('ui-overlay').classList.add('hidden');
+                document.getElementById('controls-info').classList.add('hidden');
+                document.getElementById('minimap').classList.add('hidden');
+
+                // Clear intervals
+                spawnIntervals.forEach(id => clearInterval(id));
+                spawnIntervals = [];
+            }
+
+            function startGame() {
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('ui-overlay').classList.remove('hidden');
+                document.getElementById('controls-info').classList.remove('hidden');
+                document.getElementById('minimap').classList.remove('hidden');
+
+                gameRunning = true;
+
+                // Spawn initial resources
+                for (let i = 0; i < 10; i++) {
+                    spawnResource();
+                }
+
+                // Start spawn timers
+                spawnIntervals.push(setInterval(() => {
+                    if (gameRunning) spawnEnemy();
+                }, ENEMY_SPAWN_RATE));
+
+                spawnIntervals.push(setInterval(() => {
+                    if (gameRunning) spawnResource();
+                }, RESOURCE_SPAWN_RATE));
+
+                // Spawn first enemies after delay
+                setTimeout(() => {
+                    if (gameRunning) {
+                        spawnEnemy();
+                        spawnEnemy();
+                    }
+                }, 3000);
+            }
+
+            function restartGame() {
+                // Reset game state
+                health = 100;
+                score = 0;
+                resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
+                timeElapsed = 0;
+
+                // Clear enemies and resources
+                enemies.forEach(e => scene.remove(e));
+                resources.forEach(r => scene.remove(r));
+                enemies = [];
+                resources = [];
+
+                // Reset player position
+                peccary.position.set(0, 0, 0);
+                peccary.rotation.y = 0;
+
+                // Hide game over screen, show game UI
+                document.getElementById('game-over-screen').classList.add('hidden');
+                document.getElementById('ui-overlay').classList.remove('hidden');
+                document.getElementById('controls-info').classList.remove('hidden');
+                document.getElementById('minimap').classList.remove('hidden');
+
+                updateUI();
+                gameRunning = true;
+
+                // Spawn initial resources
+                for (let i = 0; i < 10; i++) {
+                    spawnResource();
+                }
+
+                // Start spawn timers
+                spawnIntervals.push(setInterval(() => {
+                    if (gameRunning) spawnEnemy();
+                }, ENEMY_SPAWN_RATE));
+
+                spawnIntervals.push(setInterval(() => {
+                    if (gameRunning) spawnResource();
+                }, RESOURCE_SPAWN_RATE));
+
+                // Spawn enemies after delay
+                setTimeout(() => {
+                    if (gameRunning) {
+                        spawnEnemy();
+                        spawnEnemy();
+                    }
+                }, 3000);
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const delta = Math.min(clock.getDelta(), 0.1);
+
+                if (gameRunning) {
+                    timeElapsed += delta;
+                    updatePlayer(delta);
+                    updateEnemies(delta);
+                    updateResources(delta);
+                    updateCamera();
+                    updateMinimap();
+                    updateUI();
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            // Initialize game when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
     </script>
 </body>
 </html>
