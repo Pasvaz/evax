@@ -179,6 +179,74 @@
             transition: opacity 0.3s;
             pointer-events: none;
         }
+        #interact-prompt {
+            position: fixed;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffcc00;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-size: 18px;
+            border: 2px solid #ffcc00;
+            pointer-events: none;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        #dialog-box {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            max-width: 90%;
+            background: linear-gradient(to bottom, rgba(60, 40, 20, 0.95), rgba(40, 25, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            color: #f5deb3;
+            font-size: 18px;
+            line-height: 1.6;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+        }
+        #dialog-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #8b7355;
+        }
+        #dialog-text {
+            margin-bottom: 15px;
+            min-height: 60px;
+        }
+        #dialog-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dialog-option {
+            background: rgba(100, 80, 50, 0.6);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #8b7355;
+            transition: background 0.2s;
+        }
+        .dialog-option:hover {
+            background: rgba(139, 115, 85, 0.8);
+        }
+        #dialog-hint {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+        }
         .hidden {
             display: none !important;
         }
@@ -195,6 +263,274 @@
             z-index: 300;
             color: #88cc88;
             font-size: 24px;
+        }
+        #craft-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            max-width: 90%;
+            max-height: 80vh;
+            background: linear-gradient(to bottom, rgba(40, 30, 20, 0.95), rgba(30, 20, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            color: #f5deb3;
+            z-index: 150;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #craft-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #8b7355;
+        }
+        #craft-header h2 {
+            color: #ffcc00;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .craft-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin: 0;
+        }
+        #craft-recipes {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .craft-recipe {
+            background: rgba(60, 50, 40, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8b7355;
+            transition: all 0.2s;
+        }
+        .craft-recipe:hover {
+            background: rgba(80, 65, 50, 0.8);
+            border-color: #b59875;
+        }
+        .craft-recipe.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .craft-recipe.disabled:hover {
+            background: rgba(60, 50, 40, 0.6);
+            border-color: #8b7355;
+        }
+        .craft-recipe-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 8px;
+        }
+        .craft-recipe-desc {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+        .craft-recipe-cost {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .craft-cost-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .craft-cost-item.insufficient {
+            color: #ff6666;
+        }
+        .craft-btn {
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .craft-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            transform: translateY(-2px);
+        }
+        .craft-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #craft-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #8b7355;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+        #shop-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            background: linear-gradient(to bottom, rgba(40, 30, 20, 0.95), rgba(30, 20, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            color: #f5deb3;
+            z-index: 150;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #shop-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #8b7355;
+        }
+        #shop-header h2 {
+            color: #ffcc00;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .shop-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin: 5px 0;
+        }
+        .shop-balance {
+            font-size: 18px;
+            color: #ffd700;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #shop-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .shop-tab {
+            flex: 1;
+            background: rgba(60, 50, 40, 0.6);
+            color: #f5deb3;
+            border: 2px solid #8b7355;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .shop-tab:hover {
+            background: rgba(80, 65, 50, 0.8);
+        }
+        .shop-tab.active {
+            background: rgba(139, 115, 85, 0.8);
+            border-color: #ffcc00;
+        }
+        .shop-panel {
+            display: none;
+        }
+        .shop-panel.active {
+            display: block;
+        }
+        .shop-item {
+            background: rgba(60, 50, 40, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8b7355;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .shop-item:hover {
+            background: rgba(80, 65, 50, 0.8);
+            border-color: #b59875;
+        }
+        .shop-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .shop-item-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .shop-item-price {
+            font-size: 16px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .shop-item-stock {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        .shop-item-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .shop-quantity {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .shop-quantity-btn {
+            background: rgba(100, 80, 50, 0.8);
+            color: white;
+            border: 1px solid #8b7355;
+            padding: 5px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .shop-quantity-btn:hover {
+            background: rgba(139, 115, 85, 0.9);
+        }
+        .shop-quantity-value {
+            font-size: 16px;
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .shop-buy-btn, .shop-sell-btn {
+            flex: 1;
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .shop-buy-btn:hover:not(:disabled), .shop-sell-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            transform: translateY(-2px);
+        }
+        .shop-buy-btn:disabled, .shop-sell-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #shop-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #8b7355;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
         }
         @media (max-width: 768px) {
             #stats-panel {
@@ -249,6 +585,10 @@
                 </div>
             </div>
             <div class="stat-box">
+                <div class="stat-label">Pig Coins</div>
+                <div class="stat-value" id="coins-display">🪙 0</div>
+            </div>
+            <div class="stat-box">
                 <div class="stat-label">Time Survived</div>
                 <div class="stat-value" id="time-display">0:00</div>
             </div>
@@ -260,7 +600,9 @@
         <p>WASD / Arrow Keys - Move</p>
         <p>SHIFT - Sprint</p>
         <p>SPACE - Jump</p>
-        <p>Collect resources to heal!</p>
+        <p>1/2/3 - Use Berry/Nut/Mushroom</p>
+        <p>E - Talk to villagers</p>
+        <p>TAB - Open Craft Menu</p>
     </div>
 
     <div id="minimap" class="hidden">
@@ -269,112 +611,566 @@
 
     <div id="warning-text">DANGER!</div>
 
+    <!-- Interaction prompt -->
+    <div id="interact-prompt" class="hidden">Press E to talk</div>
+
+    <!-- Dialog box for villager conversations -->
+    <div id="dialog-box" class="hidden">
+        <div id="dialog-name"></div>
+        <div id="dialog-text"></div>
+        <div id="dialog-options"></div>
+        <div id="dialog-hint">Press E to continue / ESC to close</div>
+    </div>
+
+    <!-- Crafting menu -->
+    <div id="craft-menu" class="hidden">
+        <div id="craft-header">
+            <h2>Crafting Menu</h2>
+            <p class="craft-subtitle">Combine resources to create useful items</p>
+        </div>
+        <div id="craft-recipes"></div>
+        <div id="craft-footer">Press TAB to close</div>
+    </div>
+
+    <!-- Shop menu -->
+    <div id="shop-menu" class="hidden">
+        <div id="shop-header">
+            <h2>Patches' Trading Post</h2>
+            <p class="shop-subtitle">Buy and sell resources for pig coins 🪙</p>
+            <div class="shop-balance">Your coins: <span id="shop-coins-display">0</span> 🪙</div>
+        </div>
+        <div id="shop-tabs">
+            <button class="shop-tab active" data-tab="buy">Buy Items</button>
+            <button class="shop-tab" data-tab="sell">Sell Resources</button>
+        </div>
+        <div id="shop-content">
+            <div id="shop-buy" class="shop-panel active"></div>
+            <div id="shop-sell" class="shop-panel"></div>
+        </div>
+        <div id="shop-footer">Press ESC to close</div>
+    </div>
+
+    <!--
+        ============================================================
+        THREE.JS LIBRARY
+        ============================================================
+        Three.js is a 3D graphics library that makes WebGL easier to use.
+        We load it from a CDN (content delivery network) for convenience.
+        Version 0.160.0 is stable and well-documented.
+    -->
     <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
     <script>
-        // Wait for Three.js to load then initialize
+        /*
+        ================================================================
+        PECCARY SURVIVAL GAME
+        ================================================================
+        A 3D survival game where you play as a peccary (a pig-like animal)
+        trying to survive in a forest while collecting food and avoiding
+        predators (badgers and weasels).
+
+        HOW TO MODIFY THIS GAME:
+        - Game balance: Adjust the GAME SETTINGS constants below
+        - Player speed: Look in updatePlayer() function
+        - Enemy behavior: Look in updateEnemies() function
+        - Sounds: Modify playSound() function
+        - 3D models: Look at create___() functions (createPeccary, createBadger, etc.)
+        - UI: Modify the HTML above and updateUI() function
+        ================================================================
+        */
+
+        // Wrap everything in an IIFE (Immediately Invoked Function Expression)
+        // This prevents our variables from polluting the global scope
         (function() {
-            'use strict';
+            'use strict'; // Enables strict mode for better error catching
 
-            // Game state
-            let scene, camera, renderer, clock;
-            let peccary, enemies = [], resources = [], trees = [];
-            let gameRunning = false;
-            let health = 100;
-            let score = 0;
-            let resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
-            let timeElapsed = 0;
-            let keys = {};
-            let velocity;
-            let isJumping = false;
-            let groundLevel = 0;
-            let spawnIntervals = [];
+            /*
+            ============================================================
+            GAME STATE VARIABLES
+            ============================================================
+            These variables track the current state of the game.
+            They change as the game runs.
+            */
 
-            // Game settings
-            const WORLD_SIZE = 200;
-            const ENEMY_SPAWN_RATE = 5000;
-            const RESOURCE_SPAWN_RATE = 3000;
-            const MAX_ENEMIES = 8;
-            const MAX_RESOURCES = 20;
-            const ENEMY_DETECTION_RANGE = 35; // Enemies only chase when player is within this range
+            // Three.js core objects (initialized in init() function)
+            let scene;      // The 3D world container - all objects are added here
+            let camera;     // The player's viewpoint into the 3D world
+            let renderer;   // Draws the 3D scene to the screen
+            let clock;      // Tracks time for animations and physics
 
-            // Minimap
-            let minimapCanvas, minimapCtx;
+            // Game objects
+            let peccary;            // The player character (THREE.Group)
+            let enemies = [];       // Array of all enemy objects (badgers and weasels)
+            let resources = [];     // Array of collectible items (berries, nuts, mushrooms)
+            let trees = [];         // Array of tree objects (used for collision)
+            let villagers = [];     // Array of pig villagers in the village
 
+            // Game status
+            let gameRunning = false;    // Is the game currently active?
+            let health = 100;           // Player health (0-100, game over at 0)
+            let score = 0;              // Player's score (increases when collecting resources)
+            let resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };  // Track collected items
+            let pigCoins = 0;           // Currency for trading in the shop
+            let timeElapsed = 0;        // How long the player has survived (seconds)
+
+            // Input handling
+            let keys = {};              // Object tracking which keys are currently pressed
+                                        // Example: keys['w'] = true when W is held down
+
+            // Physics
+            let velocity;               // THREE.Vector3 for player movement (used for jumping)
+            let isJumping = false;      // Is the player currently in the air?
+            let groundLevel = 0;        // Y position of the ground (0 = ground level)
+
+            // Timers
+            let spawnIntervals = [];    // Array of setInterval IDs (for cleanup on game over)
+
+            // Sprint sound control
+            let wasSprinting = false;   // Was the player sprinting last frame? (for one-time sound)
+
+            // Villager interaction
+            let nearbyVillager = null;  // The villager currently close enough to interact with
+            let isDialogOpen = false;   // Is a dialog box currently shown?
+            let currentDialogNode = null;        // Current node ID in the conversation tree
+            let currentDialogVillager = null;    // Reference to the villager being talked to
+
+            // Crafting system
+            let isCraftMenuOpen = false;  // Is the craft menu currently shown?
+
+            // Shop system
+            let isShopOpen = false;  // Is the shop menu currently shown?
+            let shopQuantities = {};  // Track selected quantities for shop items
+
+            // Shop data - items you can BUY with pig coins
+            const SHOP_ITEMS = [
+                {
+                    id: 'health_potion',
+                    name: 'Health Potion',
+                    description: 'Restore 30 health',
+                    price: 15,
+                    icon: '💊',
+                    effect: () => {
+                        health = Math.min(100, health + 30);
+                    }
+                },
+                {
+                    id: 'speed_boost',
+                    name: 'Speed Boost',
+                    description: 'Temporarily increase movement speed',
+                    price: 25,
+                    icon: '⚡',
+                    effect: () => {
+                        // TODO: Implement speed boost effect
+                        score += 50;
+                    }
+                },
+                {
+                    id: 'super_heal',
+                    name: 'Super Healing Elixir',
+                    description: 'Restore health to maximum',
+                    price: 40,
+                    icon: '✨',
+                    effect: () => {
+                        health = 100;
+                    }
+                },
+                {
+                    id: 'lucky_charm',
+                    name: 'Lucky Charm',
+                    description: 'Gain 200 score points',
+                    price: 30,
+                    icon: '🍀',
+                    effect: () => {
+                        score += 200;
+                    }
+                }
+            ];
+
+            // Resource prices - how many pig coins you get/pay per resource
+            const RESOURCE_PRICES = {
+                berries: 2,    // 2 coins per berry
+                nuts: 5,       // 5 coins per nut
+                mushrooms: 10  // 10 coins per mushroom
+            };
+
+            // Crafting recipes
+            const CRAFT_RECIPES = [
+                {
+                    id: 'health_potion',
+                    name: 'Health Potion',
+                    description: 'Restore 40 health instantly',
+                    cost: { berries: 5, nuts: 3, mushrooms: 2 },
+                    effect: () => {
+                        health = Math.min(100, health + 40);
+                        playSound('collect');
+                    }
+                },
+                {
+                    id: 'energy_boost',
+                    name: 'Energy Boost',
+                    description: 'Gain 100 score points',
+                    cost: { berries: 10, nuts: 5, mushrooms: 0 },
+                    effect: () => {
+                        score += 100;
+                        playSound('collect');
+                    }
+                },
+                {
+                    id: 'super_heal',
+                    name: 'Super Healing Elixir',
+                    description: 'Restore health to maximum',
+                    cost: { berries: 15, nuts: 10, mushrooms: 8 },
+                    effect: () => {
+                        health = 100;
+                        playSound('collect');
+                    }
+                },
+                {
+                    id: 'score_multiplier',
+                    name: 'Fortune Charm',
+                    description: 'Gain 250 score points',
+                    cost: { berries: 20, nuts: 15, mushrooms: 10 },
+                    effect: () => {
+                        score += 250;
+                        playSound('collect');
+                    }
+                }
+            ];
+
+            /*
+            ============================================================
+            GAME SETTINGS (EASY TO MODIFY!)
+            ============================================================
+            Change these values to adjust game difficulty and behavior.
+            */
+
+            const WORLD_SIZE = 500;             // Size of the playable area (larger = more space)
+            const ENEMY_SPAWN_RATE = 4000;      // Milliseconds between enemy spawns (lower = harder)
+            const RESOURCE_SPAWN_RATE = 2500;   // Milliseconds between resource spawns
+            const MAX_ENEMIES = 15;             // Maximum enemies on screen at once
+            const MAX_RESOURCES = 40;           // Maximum resources on screen at once
+            const ENEMY_DETECTION_RANGE = 40;   // How close before enemies start chasing you
+
+            // Village location (corner of the map)
+            const VILLAGE_CENTER = { x: -WORLD_SIZE * 0.6, z: -WORLD_SIZE * 0.6 };
+            const VILLAGE_RADIUS = 60;          // Size of the village area
+
+            /*
+            ============================================================
+            MINIMAP VARIABLES
+            ============================================================
+            */
+            let minimapCanvas;  // The HTML canvas element for the minimap
+            let minimapCtx;     // The 2D drawing context for the minimap
+
+            /*
+            ============================================================
+            AUDIO SYSTEM
+            ============================================================
+            Uses Web Audio API to generate sounds programmatically.
+            No external audio files needed!
+            */
+            let audioCtx;       // The Web Audio API context
+
+            // Cooldown timers to prevent sounds from playing too frequently
+            // Values are timestamps - sound won't play until current time > cooldown
+            const soundCooldowns = { peccary: 0, badger: 0, weasel: 0 };
+
+            /*
+            ============================================================
+            AUDIO FUNCTIONS
+            ============================================================
+            */
+
+            /**
+             * Initialize the Web Audio API context.
+             * Must be called after a user interaction (click/keypress) due to browser policies.
+             */
+            function initAudio() {
+                // Create audio context (with fallback for older browsers)
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            /**
+             * Play a synthesized sound effect.
+             *
+             * HOW SOUNDS WORK:
+             * - oscillator.type: Wave shape ('sine' = smooth, 'sawtooth' = buzzy, 'square' = harsh)
+             * - oscillator.frequency: Pitch in Hz (higher = higher pitch)
+             * - gainNode.gain: Volume (0-1, use low values like 0.1-0.2)
+             * - exponentialRampToValueAtTime: Smoothly change a value over time
+             *
+             * TO ADD A NEW SOUND:
+             * 1. Add a new case in the switch statement
+             * 2. Set oscillator.type to desired wave shape
+             * 3. Set starting frequency and optional ramp
+             * 4. Set gain (volume) and fade out
+             * 5. Call oscillator.start() and oscillator.stop()
+             *
+             * @param {string} type - Sound type: 'peccary', 'badger', 'weasel', 'collect', 'hurt', 'jump'
+             */
+            function playSound(type) {
+                // Don't play sounds if audio isn't initialized or game isn't running
+                if (!audioCtx || !gameRunning) return;
+
+                const now = audioCtx.currentTime;
+
+                // Check cooldowns to prevent sound spam (some sounds have minimum intervals)
+                if (soundCooldowns[type] && now < soundCooldowns[type]) return;
+
+                // Create audio nodes
+                const oscillator = audioCtx.createOscillator();  // Generates the sound wave
+                const gainNode = audioCtx.createGain();          // Controls volume
+                oscillator.connect(gainNode);                     // Connect oscillator -> gain
+                gainNode.connect(audioCtx.destination);           // Connect gain -> speakers
+
+                switch(type) {
+                    case 'peccary':
+                        // Low grunt sound - plays when sprinting
+                        // Sawtooth wave gives a rough, animal-like quality
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(80, now);   // Start at 80 Hz (low)
+                        oscillator.frequency.exponentialRampToValueAtTime(60, now + 0.15);  // Drop to 60 Hz
+                        gainNode.gain.setValueAtTime(0.15, now);        // Start at 15% volume
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);  // Fade out
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.2);                     // Total duration: 0.2 seconds
+                        soundCooldowns.peccary = now + 0.3;             // Can play again after 0.3s
+                        break;
+
+                    case 'badger':
+                        // Deep growl sound - plays when badger attacks
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(100, now);  // Start at 100 Hz
+                        oscillator.frequency.exponentialRampToValueAtTime(70, now + 0.3);  // Drop lower
+                        gainNode.gain.setValueAtTime(0.12, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.35);
+                        soundCooldowns.badger = now + 1.5;              // Long cooldown (1.5s)
+                        break;
+
+                    case 'weasel':
+                        // High-pitched squeak - plays when weasel attacks
+                        // Sine wave is smoother, good for high-pitched sounds
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(800, now);   // Start high
+                        oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.05);  // Go higher
+                        oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.15);   // Then drop
+                        gainNode.gain.setValueAtTime(0.1, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.15);
+                        soundCooldowns.weasel = now + 1.2;
+                        break;
+
+                    case 'collect':
+                        // Pleasant rising tone - plays when collecting resources
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(400, now);   // Start at 400 Hz
+                        oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.1);  // Rise to 800 Hz
+                        gainNode.gain.setValueAtTime(0.15, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.15);
+                        // No cooldown - can play rapidly
+                        break;
+
+                    case 'hurt':
+                        // Harsh buzz - plays when taking damage
+                        // Square wave is harsh and attention-grabbing
+                        oscillator.type = 'square';
+                        oscillator.frequency.setValueAtTime(200, now);
+                        oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                        gainNode.gain.setValueAtTime(0.1, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.15);
+                        break;
+
+                    case 'jump':
+                        // Rising whoosh - plays when jumping
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(150, now);
+                        oscillator.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                        gainNode.gain.setValueAtTime(0.08, now);         // Quieter than other sounds
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.12);
+                        break;
+                }
+            }
+
+            /*
+            ============================================================
+            INITIALIZATION
+            ============================================================
+            */
+
+            /**
+             * Main initialization function - sets up the entire game.
+             * Called once when the page loads.
+             */
             function init() {
                 try {
-                    // Initialize velocity after THREE is loaded
+                    // Initialize velocity vector for player physics (jumping)
                     velocity = new THREE.Vector3();
 
-                    // Scene setup
+                    /*
+                    ----------------------------------------
+                    THREE.JS SCENE SETUP
+                    ----------------------------------------
+                    A scene is like a container for all 3D objects.
+                    */
                     scene = new THREE.Scene();
-                    scene.background = new THREE.Color(0x87ceeb);
-                    scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
+                    scene.background = new THREE.Color(0x87ceeb);  // Sky blue background
+                    // Fog makes distant objects fade out (creates atmosphere)
+                    // Parameters: color, near distance, far distance
+                    scene.fog = new THREE.Fog(0x87ceeb, 80, 300);
 
-                    // Camera
-                    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                    camera.position.set(0, 10, 15);
+                    /*
+                    ----------------------------------------
+                    CAMERA SETUP
+                    ----------------------------------------
+                    PerspectiveCamera simulates human eye view.
+                    Parameters: field of view (degrees), aspect ratio, near clip, far clip
+                    */
+                    camera = new THREE.PerspectiveCamera(
+                        75,                                     // FOV: 75 degrees (wider = more peripheral vision)
+                        window.innerWidth / window.innerHeight, // Aspect ratio (screen width/height)
+                        0.1,                                    // Near clip: don't render closer than 0.1 units
+                        1000                                    // Far clip: don't render farther than 1000 units
+                    );
+                    camera.position.set(0, 10, 15);  // Start position: slightly above and behind origin
 
-                    // Renderer
-                    renderer = new THREE.WebGLRenderer({ antialias: true });
+                    /*
+                    ----------------------------------------
+                    RENDERER SETUP
+                    ----------------------------------------
+                    The renderer draws the 3D scene to a canvas element.
+                    */
+                    renderer = new THREE.WebGLRenderer({ antialias: true });  // antialias smooths edges
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    renderer.shadowMap.enabled = true;
-                    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                    renderer.shadowMap.enabled = true;                         // Enable shadows
+                    renderer.shadowMap.type = THREE.PCFSoftShadowMap;          // Soft shadow edges
+                    // Add the renderer's canvas to the page
                     document.getElementById('game-container').appendChild(renderer.domElement);
 
-                    // Clock
+                    // Clock tracks elapsed time for animations
                     clock = new THREE.Clock();
 
-                    // Lighting
-                    setupLighting();
+                    /*
+                    ----------------------------------------
+                    CREATE GAME WORLD
+                    ----------------------------------------
+                    */
+                    setupLighting();    // Add lights to the scene
+                    createGround();     // Create the ground plane
+                    createForest();     // Create trees, rocks, and logs
+                    createPeccary();    // Create the player character
+                    setupMinimap();     // Initialize the minimap
 
-                    // Ground
-                    createGround();
-
-                    // Forest
-                    createForest();
-
-                    // Player
-                    createPeccary();
-
-                    // Minimap
-                    setupMinimap();
-
-                    // Event listeners
+                    /*
+                    ----------------------------------------
+                    EVENT LISTENERS
+                    ----------------------------------------
+                    */
+                    // Handle window resize
                     window.addEventListener('resize', onWindowResize);
+
+                    // Track key presses (store in 'keys' object)
                     window.addEventListener('keydown', (e) => {
                         keys[e.key.toLowerCase()] = true;
+                        // Prevent spacebar from scrolling the page
                         if (e.key === ' ') e.preventDefault();
+
+                        // Handle E key for villager interaction
+                        if (e.key.toLowerCase() === 'e') {
+                            if (isDialogOpen) {
+                                advanceDialog();
+                            } else if (nearbyVillager) {
+                                openDialog(nearbyVillager);
+                            }
+                        }
+
+                        // Handle ESC key to close dialog or shop
+                        if (e.key === 'Escape') {
+                            if (isDialogOpen) {
+                                closeDialog();
+                            } else if (isShopOpen) {
+                                closeShop();
+                            }
+                        }
+
+                        // Handle Tab key to toggle craft menu
+                        if (e.key === 'Tab') {
+                            e.preventDefault(); // Prevent default tab behavior
+                            if (gameRunning && !isDialogOpen) {
+                                toggleCraftMenu();
+                            }
+                        }
+
+                        // Handle number keys 1-9 for dialog choice selection
+                        if (isDialogOpen && /^[1-9]$/.test(e.key)) {
+                            const optionNumber = parseInt(e.key);
+                            const optionDiv = document.querySelector(`[data-option-number="${optionNumber}"]`);
+                            if (optionDiv) {
+                                optionDiv.click();
+                            }
+                        }
                     });
                     window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
-                    // Button listeners
+                    // Button click handlers
                     document.getElementById('start-btn').addEventListener('click', startGame);
                     document.getElementById('restart-btn').addEventListener('click', restartGame);
 
-                    // Hide loading, show start screen
+                    // Hide loading screen, show start screen
                     document.getElementById('loading').classList.add('hidden');
                     document.getElementById('start-screen').classList.remove('hidden');
 
-                    // Start render loop
+                    // Start the game loop (runs every frame)
                     animate();
 
                 } catch (error) {
+                    // If anything goes wrong, show error message
                     console.error('Game initialization error:', error);
                     document.getElementById('loading').textContent = 'Error loading game: ' + error.message;
                 }
             }
 
+            /*
+            ============================================================
+            LIGHTING SETUP
+            ============================================================
+            Good lighting makes 3D scenes look realistic.
+            We use three types of lights for a natural outdoor feel.
+            */
+
+            /**
+             * Set up scene lighting.
+             *
+             * LIGHT TYPES:
+             * - AmbientLight: Illuminates everything equally (no shadows)
+             * - DirectionalLight: Like the sun, casts parallel rays and shadows
+             * - HemisphereLight: Sky/ground color gradient for outdoor scenes
+             */
             function setupLighting() {
-                // Ambient light
+                // AMBIENT LIGHT: Base illumination so nothing is completely dark
+                // Parameters: color, intensity (0-1)
                 const ambient = new THREE.AmbientLight(0x404040, 0.6);
                 scene.add(ambient);
 
-                // Directional light (sun)
+                // DIRECTIONAL LIGHT (SUN): Main light source with shadows
+                // Parameters: color, intensity
                 const sun = new THREE.DirectionalLight(0xffffff, 1);
-                sun.position.set(50, 100, 50);
-                sun.castShadow = true;
-                sun.shadow.mapSize.width = 2048;
+                sun.position.set(50, 100, 50);  // Position in the sky
+                sun.castShadow = true;           // Enable shadow casting
+
+                // Shadow quality settings (higher = better quality, more GPU usage)
+                sun.shadow.mapSize.width = 2048;   // Shadow map resolution
                 sun.shadow.mapSize.height = 2048;
+
+                // Shadow camera bounds (area where shadows are calculated)
                 sun.shadow.camera.near = 0.5;
                 sun.shadow.camera.far = 500;
                 sun.shadow.camera.left = -100;
@@ -383,67 +1179,98 @@
                 sun.shadow.camera.bottom = -100;
                 scene.add(sun);
 
-                // Hemisphere light for natural outdoor feel
+                // HEMISPHERE LIGHT: Sky (top) and ground (bottom) colors
+                // Creates natural outdoor lighting gradient
+                // Parameters: sky color, ground color, intensity
                 const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3d5c3d, 0.4);
                 scene.add(hemi);
             }
 
+            /*
+            ============================================================
+            GROUND AND ENVIRONMENT
+            ============================================================
+            */
+
+            /**
+             * Create the ground plane with height variation and grass.
+             */
             function createGround() {
-                // Main ground
+                // Create a flat plane for the ground
+                // PlaneGeometry(width, height, widthSegments, heightSegments)
+                // More segments = more vertices = smoother terrain deformation
                 const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2, 50, 50);
 
-                // Add some height variation
+                // Add random height variation to make terrain look natural
+                // Access the vertex positions directly
                 const vertices = groundGeo.attributes.position.array;
                 for (let i = 0; i < vertices.length; i += 3) {
-                    vertices[i + 2] += Math.random() * 0.5;
+                    // Every 3rd value is Z (height when plane is rotated)
+                    vertices[i + 2] += Math.random() * 0.5;  // Add 0 to 0.5 height variation
                 }
-                groundGeo.computeVertexNormals();
+                groundGeo.computeVertexNormals();  // Recalculate normals for proper lighting
 
+                // Ground material (green, non-shiny)
                 const groundMat = new THREE.MeshStandardMaterial({
-                    color: 0x3d6b3d,
-                    roughness: 1,
-                    metalness: 0
+                    color: 0x3d6b3d,    // Dark green
+                    roughness: 1,        // Maximum roughness (not shiny)
+                    metalness: 0         // Not metallic
                 });
+
                 const ground = new THREE.Mesh(groundGeo, groundMat);
-                ground.rotation.x = -Math.PI / 2;
-                ground.receiveShadow = true;
+                ground.rotation.x = -Math.PI / 2;  // Rotate to be horizontal (planes are vertical by default)
+                ground.receiveShadow = true;        // Ground receives shadows from other objects
                 scene.add(ground);
 
-                // Add some grass patches
+                // Scatter grass patches across the ground
                 for (let i = 0; i < 500; i++) {
                     const grass = createGrassPatch();
                     grass.position.set(
-                        (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                        0.1,
-                        (Math.random() - 0.5) * WORLD_SIZE * 1.5
+                        (Math.random() - 0.5) * WORLD_SIZE * 1.5,  // Random X position
+                        0.1,                                         // Slightly above ground
+                        (Math.random() - 0.5) * WORLD_SIZE * 1.5   // Random Z position
                     );
                     scene.add(grass);
                 }
             }
 
+            /**
+             * Create a small cluster of grass blades.
+             * @returns {THREE.Group} A group containing several grass blade meshes
+             */
             function createGrassPatch() {
                 const group = new THREE.Group();
                 const grassMat = new THREE.MeshStandardMaterial({
-                    color: 0x228b22,
-                    side: THREE.DoubleSide
+                    color: 0x228b22,         // Forest green
+                    side: THREE.DoubleSide   // Render both sides of the plane
                 });
 
+                // Create 5 grass blades per patch
                 for (let i = 0; i < 5; i++) {
                     const blade = new THREE.Mesh(
-                        new THREE.PlaneGeometry(0.1, 0.5 + Math.random() * 0.5),
+                        new THREE.PlaneGeometry(0.1, 0.5 + Math.random() * 0.5),  // Thin, variable height
                         grassMat
                     );
                     blade.position.set(
-                        (Math.random() - 0.5) * 0.5,
-                        0.25,
-                        (Math.random() - 0.5) * 0.5
+                        (Math.random() - 0.5) * 0.5,  // Random X offset within patch
+                        0.25,                          // Height (half the blade sticks up)
+                        (Math.random() - 0.5) * 0.5   // Random Z offset within patch
                     );
-                    blade.rotation.y = Math.random() * Math.PI;
+                    blade.rotation.y = Math.random() * Math.PI;  // Random rotation
                     group.add(blade);
                 }
                 return group;
             }
 
+            /**
+             * Create a tree at the specified position.
+             *
+             * Tree structure: Trunk (cylinder) + 3 cone-shaped foliage layers
+             *
+             * @param {number} x - X position
+             * @param {number} z - Z position
+             * @returns {THREE.Group} The tree object
+             */
             function createTree(x, z) {
                 const tree = new THREE.Group();
 
@@ -473,42 +1300,1409 @@
                 return tree;
             }
 
+            /**
+             * Check if a position is inside the village area.
+             * Used to avoid placing trees/rocks in the village.
+             */
+            function isInVillage(x, z) {
+                const dx = x - VILLAGE_CENTER.x;
+                const dz = z - VILLAGE_CENTER.z;
+                return Math.sqrt(dx * dx + dz * dz) < VILLAGE_RADIUS + 10;
+            }
+
             function createForest() {
-                // Create trees avoiding the center spawn area
-                for (let i = 0; i < 150; i++) {
+                // Create trees avoiding the center spawn area AND the village
+                for (let i = 0; i < 400; i++) {  // More trees for bigger map
                     let x, z;
                     do {
                         x = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
                         z = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
-                    } while (Math.sqrt(x * x + z * z) < 15);
+                    } while (Math.sqrt(x * x + z * z) < 15 || isInVillage(x, z));
 
                     const tree = createTree(x, z);
                     trees.push(tree);
                     scene.add(tree);
                 }
 
-                // Add some rocks
-                for (let i = 0; i < 50; i++) {
+                // Add some rocks (avoiding village)
+                for (let i = 0; i < 120; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
+                        z = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
+                    } while (isInVillage(x, z));
+
                     const rock = createRock();
-                    rock.position.set(
-                        (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                        0,
-                        (Math.random() - 0.5) * WORLD_SIZE * 1.5
-                    );
+                    rock.position.set(x, 0, z);
                     scene.add(rock);
                 }
 
-                // Add fallen logs
-                for (let i = 0; i < 20; i++) {
+                // Add fallen logs (avoiding village)
+                for (let i = 0; i < 50; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * WORLD_SIZE;
+                        z = (Math.random() - 0.5) * WORLD_SIZE;
+                    } while (isInVillage(x, z));
+
                     const log = createLog();
-                    log.position.set(
-                        (Math.random() - 0.5) * WORLD_SIZE,
-                        0.3,
-                        (Math.random() - 0.5) * WORLD_SIZE
-                    );
+                    log.position.set(x, 0.3, z);
                     log.rotation.y = Math.random() * Math.PI;
                     scene.add(log);
                 }
+
+                // Create the village
+                createVillage();
+            }
+
+            /*
+            ============================================================
+            VILLAGE
+            ============================================================
+            A small village in the corner of the map with huts, fences,
+            a well, and decorations. The village is a safe reference point.
+            */
+
+            /**
+             * Create a simple hut/cottage building.
+             * @param {number} x - X position
+             * @param {number} z - Z position
+             * @param {number} size - Scale factor (1 = normal)
+             * @param {number} rotation - Y rotation in radians
+             */
+            function createHut(x, z, size = 1, rotation = 0) {
+                const hut = new THREE.Group();
+
+                // Base/floor
+                const floorGeo = new THREE.BoxGeometry(6 * size, 0.3, 5 * size);
+                const floorMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+                const floor = new THREE.Mesh(floorGeo, floorMat);
+                floor.position.y = 0.15;
+                floor.receiveShadow = true;
+                hut.add(floor);
+
+                // Walls
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0xdeb887 });  // Tan/wood color
+
+                // Front and back walls
+                const wallFrontGeo = new THREE.BoxGeometry(6 * size, 3 * size, 0.3);
+                const wallFront = new THREE.Mesh(wallFrontGeo, wallMat);
+                wallFront.position.set(0, 1.5 * size + 0.3, 2.5 * size);
+                wallFront.castShadow = true;
+                hut.add(wallFront);
+
+                const wallBack = wallFront.clone();
+                wallBack.position.z = -2.5 * size;
+                hut.add(wallBack);
+
+                // Side walls
+                const wallSideGeo = new THREE.BoxGeometry(0.3, 3 * size, 5 * size);
+                const wallLeft = new THREE.Mesh(wallSideGeo, wallMat);
+                wallLeft.position.set(-3 * size, 1.5 * size + 0.3, 0);
+                wallLeft.castShadow = true;
+                hut.add(wallLeft);
+
+                const wallRight = wallLeft.clone();
+                wallRight.position.x = 3 * size;
+                hut.add(wallRight);
+
+                // Roof (triangular prism shape)
+                const roofMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });  // Brown
+                const roofGeo = new THREE.ConeGeometry(4.5 * size, 2.5 * size, 4);
+                const roof = new THREE.Mesh(roofGeo, roofMat);
+                roof.position.y = 4 * size + 0.3;
+                roof.rotation.y = Math.PI / 4;  // Rotate to align with walls
+                roof.castShadow = true;
+                hut.add(roof);
+
+                // Door (dark opening)
+                const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
+                const doorGeo = new THREE.BoxGeometry(1.2 * size, 2 * size, 0.4);
+                const door = new THREE.Mesh(doorGeo, doorMat);
+                door.position.set(0, 1 * size + 0.3, 2.5 * size);
+                hut.add(door);
+
+                // Window (on side)
+                const windowMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, emissive: 0x222233 });
+                const windowGeo = new THREE.BoxGeometry(0.4, 0.8 * size, 0.8 * size);
+                const windowMesh = new THREE.Mesh(windowGeo, windowMat);
+                windowMesh.position.set(3 * size, 2 * size, 0);
+                hut.add(windowMesh);
+
+                hut.position.set(x, 0, z);
+                hut.rotation.y = rotation;
+
+                return hut;
+            }
+
+            /**
+             * Create a wooden fence segment.
+             */
+            function createFence(x, z, length = 8, rotation = 0) {
+                const fence = new THREE.Group();
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+
+                // Fence posts
+                const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.5, 8);
+                const numPosts = Math.floor(length / 2) + 1;
+
+                for (let i = 0; i < numPosts; i++) {
+                    const post = new THREE.Mesh(postGeo, woodMat);
+                    post.position.set(i * 2 - length / 2, 0.75, 0);
+                    post.castShadow = true;
+                    fence.add(post);
+                }
+
+                // Horizontal rails
+                const railGeo = new THREE.BoxGeometry(length, 0.15, 0.1);
+                const rail1 = new THREE.Mesh(railGeo, woodMat);
+                rail1.position.y = 0.5;
+                fence.add(rail1);
+
+                const rail2 = new THREE.Mesh(railGeo, woodMat);
+                rail2.position.y = 1.1;
+                fence.add(rail2);
+
+                fence.position.set(x, 0, z);
+                fence.rotation.y = rotation;
+
+                return fence;
+            }
+
+            /**
+             * Create a well structure.
+             */
+            function createWell(x, z) {
+                const well = new THREE.Group();
+
+                // Stone base (cylinder)
+                const stoneMat = new THREE.MeshStandardMaterial({ color: 0x696969 });
+                const baseGeo = new THREE.CylinderGeometry(1.5, 1.8, 1, 12);
+                const base = new THREE.Mesh(baseGeo, stoneMat);
+                base.position.y = 0.5;
+                base.castShadow = true;
+                well.add(base);
+
+                // Inner dark (water)
+                const waterMat = new THREE.MeshStandardMaterial({ color: 0x1a3d5c });
+                const waterGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.5, 12);
+                const water = new THREE.Mesh(waterGeo, waterMat);
+                water.position.y = 0.8;
+                well.add(water);
+
+                // Roof supports
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+                const supportGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.5, 8);
+
+                [-1, 1].forEach(side => {
+                    const support = new THREE.Mesh(supportGeo, woodMat);
+                    support.position.set(side * 1.2, 2.25, 0);
+                    support.castShadow = true;
+                    well.add(support);
+                });
+
+                // Roof beam
+                const beamGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.8, 8);
+                const beam = new THREE.Mesh(beamGeo, woodMat);
+                beam.position.y = 3.5;
+                beam.rotation.z = Math.PI / 2;
+                well.add(beam);
+
+                // Small roof
+                const roofGeo = new THREE.ConeGeometry(1.8, 1, 4);
+                const roofMat = new THREE.MeshStandardMaterial({ color: 0x654321 });
+                const roof = new THREE.Mesh(roofGeo, roofMat);
+                roof.position.y = 4.2;
+                roof.rotation.y = Math.PI / 4;
+                roof.castShadow = true;
+                well.add(roof);
+
+                // Bucket
+                const bucketMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
+                const bucketGeo = new THREE.CylinderGeometry(0.25, 0.2, 0.4, 8);
+                const bucket = new THREE.Mesh(bucketGeo, bucketMat);
+                bucket.position.set(0, 2.5, 0.5);
+                well.add(bucket);
+
+                well.position.set(x, 0, z);
+                return well;
+            }
+
+            /**
+             * Create the entire village with multiple buildings and decorations.
+             */
+            function createVillage() {
+                const vx = VILLAGE_CENTER.x;
+                const vz = VILLAGE_CENTER.z;
+
+                // Main hut (larger, center)
+                const mainHut = createHut(vx, vz, 1.2, 0);
+                scene.add(mainHut);
+
+                // Surrounding smaller huts
+                const hut2 = createHut(vx + 20, vz + 15, 0.9, Math.PI / 6);
+                scene.add(hut2);
+
+                const hut3 = createHut(vx - 18, vz + 20, 1.0, -Math.PI / 4);
+                scene.add(hut3);
+
+                const hut4 = createHut(vx + 25, vz - 12, 0.85, Math.PI / 3);
+                scene.add(hut4);
+
+                const hut5 = createHut(vx - 22, vz - 18, 0.95, Math.PI);
+                scene.add(hut5);
+
+                // Well in the village center area
+                const well = createWell(vx + 5, vz + 8);
+                scene.add(well);
+
+                // Fences around parts of the village
+                scene.add(createFence(vx + 35, vz, 12, 0));
+                scene.add(createFence(vx + 35, vz + 15, 12, 0));
+                scene.add(createFence(vx + 41, vz + 7.5, 15, Math.PI / 2));
+
+                scene.add(createFence(vx - 35, vz, 12, 0));
+                scene.add(createFence(vx - 35, vz - 15, 12, 0));
+                scene.add(createFence(vx - 41, vz - 7.5, 15, Math.PI / 2));
+
+                // Village ground (dirt/path area)
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+                const villageGround = new THREE.Mesh(
+                    new THREE.CircleGeometry(VILLAGE_RADIUS * 0.8, 32),
+                    groundMat
+                );
+                villageGround.rotation.x = -Math.PI / 2;
+                villageGround.position.set(vx, 0.05, vz);
+                villageGround.receiveShadow = true;
+                scene.add(villageGround);
+
+                // Path from village toward center of map
+                const pathMat = new THREE.MeshStandardMaterial({ color: 0x9b8b75 });
+                const pathLength = WORLD_SIZE * 0.4;
+                const pathGeo = new THREE.PlaneGeometry(4, pathLength);
+                const path = new THREE.Mesh(pathGeo, pathMat);
+                path.rotation.x = -Math.PI / 2;
+                path.rotation.z = Math.PI / 4;  // Diagonal toward center
+                path.position.set(vx + pathLength * 0.35, 0.06, vz + pathLength * 0.35);
+                path.receiveShadow = true;
+                scene.add(path);
+
+                // Some decorative elements around village
+                // Hay bales
+                const hayMat = new THREE.MeshStandardMaterial({ color: 0xdaa520 });
+                for (let i = 0; i < 5; i++) {
+                    const hayGeo = new THREE.CylinderGeometry(0.8, 0.8, 1.2, 12);
+                    const hay = new THREE.Mesh(hayGeo, hayMat);
+                    hay.rotation.x = Math.PI / 2;
+                    hay.position.set(
+                        vx + 30 + Math.random() * 8,
+                        0.6,
+                        vz - 25 + Math.random() * 8
+                    );
+                    hay.castShadow = true;
+                    scene.add(hay);
+                }
+
+                // Barrels
+                const barrelMat = new THREE.MeshStandardMaterial({ color: 0x654321 });
+                for (let i = 0; i < 4; i++) {
+                    const barrelGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 12);
+                    const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+                    barrel.position.set(
+                        vx - 25 + i * 1.5,
+                        0.6,
+                        vz + 28
+                    );
+                    barrel.castShadow = true;
+                    scene.add(barrel);
+                }
+
+                // Torches/lantern posts
+                const poleMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
+                const torchPositions = [
+                    [vx + 15, vz + 5],
+                    [vx - 15, vz + 5],
+                    [vx + 15, vz - 15],
+                    [vx - 15, vz - 15],
+                ];
+                torchPositions.forEach(([tx, tz]) => {
+                    // Pole
+                    const poleGeo = new THREE.CylinderGeometry(0.1, 0.15, 3, 8);
+                    const pole = new THREE.Mesh(poleGeo, poleMat);
+                    pole.position.set(tx, 1.5, tz);
+                    pole.castShadow = true;
+                    scene.add(pole);
+
+                    // Lantern (glowing top)
+                    const lanternMat = new THREE.MeshStandardMaterial({
+                        color: 0xffaa00,
+                        emissive: 0xff6600,
+                        emissiveIntensity: 0.5
+                    });
+                    const lanternGeo = new THREE.BoxGeometry(0.4, 0.5, 0.4);
+                    const lantern = new THREE.Mesh(lanternGeo, lanternMat);
+                    lantern.position.set(tx, 3.2, tz);
+                    scene.add(lantern);
+                });
+
+                // Create pig villagers
+                createVillagers();
+            }
+
+            /*
+            ============================================================
+            PIG VILLAGERS
+            ============================================================
+            Bipedal pot-bellied pig villagers that live in the village.
+            They have different roles, outfits, and dialog.
+            */
+
+            const VILLAGER_DATA = [
+                {
+                    name: "Elder Hamsworth",
+                    role: "Village Elder",
+                    skinColor: 0xffb6c1,
+                    outfitColor: 0x4a0080,
+                    hatColor: 0x2a0050,
+                    position: { x: 0, z: 0 },
+                    conversationTree: {
+                        startNode: 'greeting',
+                        nodes: {
+                            'greeting': {
+                                text: "Welcome, young traveler! Our village has stood here for generations.",
+                                choices: [
+                                    { text: "Tell me about the village.", nextNode: 'village_history' },
+                                    { text: "What dangers are out there?", nextNode: 'dangers' },
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'village_history': {
+                                text: "We've lived here peacefully for decades, surviving off the forest bounty.",
+                                choices: [
+                                    { text: "How do you survive?", nextNode: 'survival_tips' },
+                                    { text: "Tell me more.", nextNode: 'more_lore' },
+                                    { text: "Thanks. Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'survival_tips': {
+                                text: "Collect food to stay healthy. Press 1, 2, or 3 to eat from your supplies!",
+                                choices: [
+                                    { text: "Good to know!", nextNode: 'farewell' },
+                                    { text: "What else?", nextNode: 'more_lore' }
+                                ]
+                            },
+                            'more_lore': {
+                                text: "This forest is ancient. Many secrets lie hidden in its depths.",
+                                choices: [
+                                    { text: "Interesting!", nextNode: 'farewell' },
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'dangers': {
+                                text: "Badgers and weasels lurk in the shadows. They're aggressive predators!and other predators of uncomprehendable horror stalk the wilds.my father died by the hands of one",
+                                choices: [
+                                    { text: "How do I defend myself?", nextNode: 'defense' },
+                                    { text: "I'll be careful.", nextNode: 'farewell' }
+                                ]
+                            },
+                            'defense': {
+                                text: "Run! Sprint with SHIFT. Stay healthy by eating. The village is always safe.",
+                                choices: [
+                                    { text: "Thank you!", nextNode: 'farewell' }
+                                ]
+                            },
+                            'farewell': {
+                                text: "Visit us anytime. You are always welcome here, young one.",
+                                choices: [
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "Rosie",
+                    role: "Farmer",
+                    skinColor: 0xffc0cb,
+                    outfitColor: 0x228b22,
+                    hatColor: 0xdaa520,
+                    position: { x: 25, z: -15 },
+                    conversationTree: {
+                        startNode: 'greeting',
+                        nodes: {
+                            'greeting': {
+                                text: "Oink oink! Welcome to my farm! I grow the finest vegetables!",
+                                choices: [
+                                    { text: "Tell me about your farm.", nextNode: 'farm_info' },
+                                    { text: "I have berries to trade.", nextNode: 'trade_check' },
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'farm_info': {
+                                text: "I grow carrots, potatoes, and beans. Hard work, but rewarding!",
+                                choices: [
+                                    { text: "Do you trade?", nextNode: 'trade_check' },
+                                    { text: "Sounds nice. Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'trade_check': {
+                                text: "I'd love to trade! Bring me 10 berries and I'll give you something.",
+                                choices: [
+                                    { text: "Trade berries for health.", nextNode: 'trade_berries', action: 'trade_berries' },
+                                    { text: "Maybe later.", nextNode: null }
+                                ]
+                            },
+                            'trade_berries': {
+                                text: "Thank you! Here, this will help you feel better.",
+                                choices: [
+                                    { text: "Thanks!", nextNode: null }
+                                ]
+                            },
+                            'trade_fail': {
+                                text: "You don't have enough berries. Come back when you have 10!",
+                                choices: [
+                                    { text: "I'll be back.", nextNode: null }
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "Bruno",
+                    role: "Blacksmith",
+                    skinColor: 0xcd853f,
+                    outfitColor: 0x2f2f2f,
+                    hatColor: null,
+                    position: { x: -20, z: 18 },
+                    conversationTree: {
+                        startNode: 'greeting',
+                        nodes: {
+                            'greeting': {
+                                text: "*CLANG CLANG* Oh! Didn't see you there, little one.",
+                                choices: [
+                                    { text: "What are you making?", nextNode: 'forge_info' },
+                                    { text: "Any combat tips?", nextNode: 'combat_tips' },
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'forge_info': {
+                                text: "I forge tools and horseshoes. Tough work but honest living!",
+                                choices: [
+                                    { text: "Can you make weapons?", nextNode: 'weapons' },
+                                    { text: "Impressive!", nextNode: null }
+                                ]
+                            },
+                            'weapons': {
+                                text: "We're peaceful folk. No weapons here, just good sturdy tools.",
+                                choices: [
+                                    { text: "I understand.", nextNode: null }
+                                ]
+                            },
+                            'combat_tips': {
+                                text: "Those badgers have thick hides. Best to run than fight!",
+                                choices: [
+                                    { text: "What about weasels?", nextNode: 'weasel_advice' },
+                                    { text: "Got it. Thanks!", nextNode: null }
+                                ]
+                            },
+                            'weasel_advice': {
+                                text: "Weasels are fast but smaller. Still, running is your best bet!",
+                                choices: [
+                                    { text: "Thanks for the advice!", nextNode: null }
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "Patches",
+                    role: "Merchant",
+                    skinColor: 0xffe4e1,
+                    outfitColor: 0x8b4513,
+                    hatColor: 0x006400,
+                    position: { x: 18, z: 12 },
+                    conversationTree: {
+                        startNode: 'greeting',
+                        nodes: {
+                            'greeting': {
+                                text: "Psst! Hey there! Looking to trade?",
+                                choices: [
+                                    { text: "🪙 Open Shop", nextNode: 'open_shop', action: 'open_shop' },
+                                    { text: "What do you trade?", nextNode: 'trade_info' },
+                                    { text: "I have nuts to trade.", nextNode: 'trade_nuts_check' },
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'open_shop': {
+                                text: "Welcome to my shop! Browse my wares!",
+                                choices: [
+                                    { text: "Thanks!", nextNode: null }
+                                ]
+                            },
+                            'trade_info': {
+                                text: "I collect nuts and mushrooms. Very valuable! I'll trade for them.",
+                                choices: [
+                                    { text: "Trade nuts?", nextNode: 'trade_nuts_check' },
+                                    { text: "Trade mushrooms?", nextNode: 'trade_mushrooms_check' },
+                                    { text: "Not now.", nextNode: null }
+                                ]
+                            },
+                            'trade_nuts_check': {
+                                text: "I'll give you health and score for 5 nuts!",
+                                choices: [
+                                    { text: "Trade 5 nuts.", nextNode: 'trade_nuts', action: 'trade_nuts' },
+                                    { text: "Maybe later.", nextNode: null }
+                                ]
+                            },
+                            'trade_nuts': {
+                                text: "Perfect! I've been looking for these. Here's your reward!",
+                                choices: [
+                                    { text: "Thanks!", nextNode: null }
+                                ]
+                            },
+                            'trade_mushrooms_check': {
+                                text: "Mushrooms are rare! I'll give you 3 health for 30 mushrooms.",
+                                choices: [
+                                    { text: "Trade 3 mushrooms.", nextNode: 'trade_mushrooms', action: 'trade_mushrooms' },
+                                    { text: "Not right now.", nextNode: null }
+                                ]
+                            },
+                            'trade_mushrooms': {
+                                text: "Excellent! These are worth a lot!",
+                                choices: [
+                                    { text: "Great!", nextNode: null }
+                                ]
+                            },
+                            'trade_fail': {
+                                text: "You don't have enough. Come back later!",
+                                choices: [
+                                    { text: "I'll return.", nextNode: null }
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "Granny Trotter",
+                    role: "Healer",
+                    skinColor: 0xffdab9,
+                    outfitColor: 0xffffff,
+                    hatColor: 0xff69b4,
+                    position: { x: -18, z: -20 },
+                    conversationTree: {
+                        startNode: 'greeting',
+                        nodes: {
+                            'greeting': {
+                                text: "Oh dearie, you look tired! How can I help you?",
+                                choices: [
+                                    { text: "Tell me about healing.", nextNode: 'health_advice' },
+                                    { text: "Can you heal me?", nextNode: 'healing_check' },
+                                    { text: "Goodbye.", nextNode: null }
+                                ]
+                            },
+                            'health_advice': {
+                                text: "Mushrooms have healing properties! Berries and nuts help too.",
+                                choices: [
+                                    { text: "Any recipes?", nextNode: 'recipes' },
+                                    { text: "Good to know!", nextNode: null }
+                                ]
+                            },
+                            'recipes': {
+                                text: "Mix berries with mushrooms for a powerful remedy. Nature provides!",
+                                choices: [
+                                    { text: "Thank you!", nextNode: null }
+                                ]
+                            },
+                            'healing_check': {
+                                text: "Let me see... Yes, I can help you feel better, dearie!",
+                                choices: [
+                                    { text: "Please heal me!", nextNode: 'heal', action: 'heal_player' },
+                                    { text: "I'm okay for now.", nextNode: null }
+                                ]
+                            },
+                            'heal': {
+                                text: "There you go! All better now. Take care of yourself!",
+                                choices: [
+                                    { text: "Thank you so much!", nextNode: null }
+                                ]
+                            },
+                            'heal_fail': {
+                                text: "You're already in perfect health, dearie!",
+                                choices: [
+                                    { text: "Thanks anyway!", nextNode: null }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ];
+
+            /**
+             * Create a bipedal pot-bellied pig villager.
+             */
+            function createPigVillager(data) {
+                const villager = new THREE.Group();
+                const model = new THREE.Group();
+
+                const skinMat = new THREE.MeshStandardMaterial({ color: data.skinColor });
+                const outfitMat = new THREE.MeshStandardMaterial({ color: data.outfitColor });
+
+                // POT BELLY
+                const bellyGeo = new THREE.SphereGeometry(0.8, 16, 16);
+                const belly = new THREE.Mesh(bellyGeo, outfitMat);
+                belly.scale.set(1, 1.1, 0.9);
+                belly.position.y = 1.2;
+                belly.castShadow = true;
+                model.add(belly);
+
+                // Upper chest
+                const chestGeo = new THREE.SphereGeometry(0.6, 16, 16);
+                const chest = new THREE.Mesh(chestGeo, outfitMat);
+                chest.position.y = 2.0;
+                chest.castShadow = true;
+                model.add(chest);
+
+                // HEAD
+                const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                const head = new THREE.Mesh(headGeo, skinMat);
+                head.position.y = 2.8;
+                head.castShadow = true;
+                model.add(head);
+
+                // SNOUT
+                const snoutGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.3, 8);
+                const snout = new THREE.Mesh(snoutGeo, skinMat);
+                snout.rotation.x = Math.PI / 2;
+                snout.position.set(0, 2.7, 0.5);
+                model.add(snout);
+
+                // Nose tip
+                const noseMat = new THREE.MeshStandardMaterial({ color: 0xcc8899 });
+                const noseGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.05, 8);
+                const nose = new THREE.Mesh(noseGeo, noseMat);
+                nose.rotation.x = Math.PI / 2;
+                nose.position.set(0, 2.7, 0.67);
+                model.add(nose);
+
+                // Nostrils
+                const nostrilMat = new THREE.MeshStandardMaterial({ color: 0x4a3030 });
+                [-0.06, 0.06].forEach(offset => {
+                    const nostril = new THREE.Mesh(new THREE.CircleGeometry(0.04, 8), nostrilMat);
+                    nostril.position.set(offset, 2.7, 0.7);
+                    model.add(nostril);
+                });
+
+                // EYES
+                const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a });
+                [-0.18, 0.18].forEach(offset => {
+                    const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), eyeWhiteMat);
+                    eyeWhite.position.set(offset, 2.95, 0.35);
+                    model.add(eyeWhite);
+
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
+                    eye.position.set(offset, 2.95, 0.42);
+                    model.add(eye);
+                });
+
+                // EARS
+                [-0.35, 0.35].forEach(offset => {
+                    const earGeo = new THREE.ConeGeometry(0.15, 0.3, 8);
+                    const ear = new THREE.Mesh(earGeo, skinMat);
+                    ear.position.set(offset, 3.15, 0);
+                    ear.rotation.z = offset > 0 ? -0.5 : 0.5;
+                    ear.rotation.x = 0.3;
+                    model.add(ear);
+                });
+
+                // HAT (if specified)
+                if (data.hatColor) {
+                    const hatMat = new THREE.MeshStandardMaterial({ color: data.hatColor });
+                    const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.08, 16), hatMat);
+                    hatBrim.position.y = 3.2;
+                    model.add(hatBrim);
+
+                    const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.35, 16), hatMat);
+                    hatTop.position.y = 3.4;
+                    model.add(hatTop);
+                }
+
+                // ARMS
+                [-0.7, 0.7].forEach(offset => {
+                    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.5, 8), outfitMat);
+                    upperArm.position.set(offset, 1.9, 0);
+                    upperArm.rotation.z = offset > 0 ? -0.3 : 0.3;
+                    model.add(upperArm);
+
+                    const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.4, 8), skinMat);
+                    lowerArm.position.set(offset * 1.15, 1.5, 0);
+                    model.add(lowerArm);
+
+                    const hoofMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+                    const hoof = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), hoofMat);
+                    hoof.position.set(offset * 1.15, 1.25, 0);
+                    model.add(hoof);
+                });
+
+                // LEGS
+                [-0.3, 0.3].forEach(offset => {
+                    const upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.18, 0.5, 8), outfitMat);
+                    upperLeg.position.set(offset, 0.65, 0);
+                    model.add(upperLeg);
+
+                    const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.4, 8), skinMat);
+                    lowerLeg.position.set(offset, 0.3, 0);
+                    model.add(lowerLeg);
+
+                    const footMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
+                    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.3), footMat);
+                    foot.position.set(offset, 0.05, 0.05);
+                    model.add(foot);
+                });
+
+                // CURLY TAIL
+                const tailGeo = new THREE.TorusGeometry(0.15, 0.05, 8, 12, Math.PI * 1.5);
+                const tail = new THREE.Mesh(tailGeo, skinMat);
+                tail.position.set(0, 1.2, -0.7);
+                tail.rotation.y = Math.PI / 2;
+                model.add(tail);
+
+                villager.add(model);
+
+                villager.userData = {
+                    type: 'villager',
+                    name: data.name,
+                    role: data.role,
+                    conversationTree: data.conversationTree,
+                    radius: 1.5,
+                    interactRange: 5
+                };
+
+                return villager;
+            }
+
+            /**
+             * Create all villagers in the village.
+             */
+            function createVillagers() {
+                const vx = VILLAGE_CENTER.x;
+                const vz = VILLAGE_CENTER.z;
+
+                VILLAGER_DATA.forEach(data => {
+                    const villager = createPigVillager(data);
+                    villager.position.set(vx + data.position.x, 0, vz + data.position.z);
+                    villager.rotation.y = Math.random() * Math.PI * 2;
+                    villagers.push(villager);
+                    scene.add(villager);
+                });
+            }
+
+            /**
+             * Update villagers - animations and proximity check.
+             */
+            function updateVillagers(delta) {
+                nearbyVillager = null;
+                const interactPrompt = document.getElementById('interact-prompt');
+
+                villagers.forEach((villager, index) => {
+                    // Idle sway animation
+                    villager.children[0].rotation.y = Math.sin(clock.elapsedTime * 0.5 + index) * 0.1;
+                    villager.position.y = Math.sin(clock.elapsedTime * 1.5 + index) * 0.05;
+
+                    // Check distance to player
+                    const dist = villager.position.distanceTo(peccary.position);
+
+                    if (dist < villager.userData.interactRange) {
+                        nearbyVillager = villager;
+                        // Face the player
+                        const dx = peccary.position.x - villager.position.x;
+                        const dz = peccary.position.z - villager.position.z;
+                        villager.rotation.y = Math.atan2(dx, dz);
+                    }
+                });
+
+                // Show/hide interact prompt
+                if (nearbyVillager && !isDialogOpen) {
+                    interactPrompt.classList.remove('hidden');
+                } else {
+                    interactPrompt.classList.add('hidden');
+                }
+            }
+
+            /**
+             * Open dialog with a villager.
+             */
+            function openDialog(villager) {
+                if (!villager) return;
+
+                isDialogOpen = true;
+                currentDialogVillager = villager;
+
+                // Check if villager has conversation tree
+                if (villager.userData.conversationTree) {
+                    currentDialogNode = villager.userData.conversationTree.startNode;
+                    const node = villager.userData.conversationTree.nodes[currentDialogNode];
+                    renderDialogNode(node, villager);
+                }
+
+                const dialogBox = document.getElementById('dialog-box');
+                dialogBox.classList.remove('hidden');
+                document.getElementById('interact-prompt').classList.add('hidden');
+                playSound('collect');
+            }
+
+            /**
+             * Render a dialog node with choices.
+             */
+            function renderDialogNode(node, villager) {
+                const dialogName = document.getElementById('dialog-name');
+                const dialogText = document.getElementById('dialog-text');
+                const dialogOptions = document.getElementById('dialog-options');
+                const dialogHint = document.getElementById('dialog-hint');
+
+                dialogName.textContent = `${villager.userData.name} - ${villager.userData.role}`;
+                dialogText.textContent = node.text;
+
+                // Clear previous options
+                dialogOptions.innerHTML = '';
+
+                // Render choices
+                node.choices.forEach((choice, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'dialog-option';
+                    optionDiv.setAttribute('data-option-number', index + 1);
+                    optionDiv.textContent = `${index + 1}. ${choice.text}`;
+                    optionDiv.onclick = () => selectDialogChoice(choice, villager);
+                    dialogOptions.appendChild(optionDiv);
+                });
+
+                // Update hint
+                dialogHint.textContent = 'Click option or press number key (1, 2, 3...)';
+            }
+
+            /**
+             * Handle selecting a dialog choice.
+             */
+            function selectDialogChoice(choice, villager) {
+                // Execute action if present
+                if (choice.action) {
+                    const success = executeDialogAction(choice.action, villager);
+
+                    // If action failed, show fail node instead
+                    if (!success) {
+                        const failNode = villager.userData.conversationTree.nodes['trade_fail'] ||
+                                         villager.userData.conversationTree.nodes['heal_fail'];
+                        if (failNode) {
+                            renderDialogNode(failNode, villager);
+                            playSound('hurt');
+                            return;
+                        }
+                    }
+                }
+
+                // Navigate to next node or close
+                if (choice.nextNode) {
+                    currentDialogNode = choice.nextNode;
+                    const nextNode = villager.userData.conversationTree.nodes[choice.nextNode];
+                    if (nextNode) {
+                        renderDialogNode(nextNode, villager);
+                        playSound('collect');
+                    } else {
+                        closeDialog();
+                    }
+                } else {
+                    closeDialog();
+                }
+            }
+
+            /**
+             * Execute a dialog action (trading, healing, etc.)
+             */
+            function executeDialogAction(actionName, villager) {
+                switch (actionName) {
+                    case 'open_shop':
+                        openShop();
+                        return true;
+
+                    case 'trade_berries':
+                        if (resourceCounts.berries >= 10) {
+                            resourceCounts.berries -= 10;
+                            health = Math.min(100, health + 20);
+                            updateUI();
+                            return true;
+                        }
+                        return false;
+
+                    case 'trade_nuts':
+                        if (resourceCounts.nuts >= 5) {
+                            resourceCounts.nuts -= 5;
+                            health = Math.min(100, health + 15);
+                            score += 50;
+                            updateUI();
+                            return true;
+                        }
+                        return false;
+
+                    case 'trade_mushrooms':
+                        if (resourceCounts.mushrooms >= 3) {
+                            resourceCounts.mushrooms -= 3;
+                            health = Math.min(100, health + 30);
+                            updateUI();
+                            return true;
+                        }
+                        return false;
+
+                    case 'heal_player':
+                        if (health < 100) {
+                            health = 100;
+                            updateUI();
+                            return true;
+                        }
+                        return false;
+
+                    default:
+                        return true;
+                }
+            }
+
+            /**
+             * Advance dialog or close if finished.
+             */
+            function advanceDialog() {
+                // This is now handled by selectDialogChoice
+                // Keep for backwards compatibility if needed
+                closeDialog();
+            }
+
+            /**
+             * Close the dialog box.
+             */
+            function closeDialog() {
+                isDialogOpen = false;
+                currentDialogNode = null;
+                currentDialogVillager = null;
+                document.getElementById('dialog-box').classList.add('hidden');
+                document.getElementById('dialog-options').innerHTML = '';
+            }
+
+            /*
+            ============================================================
+            CRAFTING SYSTEM
+            ============================================================
+            */
+
+            /**
+             * Toggle the craft menu open/closed.
+             */
+            function toggleCraftMenu() {
+                isCraftMenuOpen = !isCraftMenuOpen;
+                const craftMenu = document.getElementById('craft-menu');
+
+                if (isCraftMenuOpen) {
+                    renderCraftMenu();
+                    craftMenu.classList.remove('hidden');
+                } else {
+                    craftMenu.classList.add('hidden');
+                }
+            }
+
+            /**
+             * Render the craft menu with all recipes.
+             */
+            function renderCraftMenu() {
+                const recipesContainer = document.getElementById('craft-recipes');
+                recipesContainer.innerHTML = '';
+
+                CRAFT_RECIPES.forEach(recipe => {
+                    const recipeDiv = document.createElement('div');
+                    recipeDiv.className = 'craft-recipe';
+
+                    // Check if player has enough resources
+                    const canCraft =
+                        resourceCounts.berries >= recipe.cost.berries &&
+                        resourceCounts.nuts >= recipe.cost.nuts &&
+                        resourceCounts.mushrooms >= recipe.cost.mushrooms;
+
+                    if (!canCraft) {
+                        recipeDiv.classList.add('disabled');
+                    }
+
+                    // Recipe name
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'craft-recipe-name';
+                    nameDiv.textContent = recipe.name;
+                    recipeDiv.appendChild(nameDiv);
+
+                    // Recipe description
+                    const descDiv = document.createElement('div');
+                    descDiv.className = 'craft-recipe-desc';
+                    descDiv.textContent = recipe.description;
+                    recipeDiv.appendChild(descDiv);
+
+                    // Recipe cost
+                    const costDiv = document.createElement('div');
+                    costDiv.className = 'craft-recipe-cost';
+
+                    // Berries
+                    if (recipe.cost.berries > 0) {
+                        const berryCost = document.createElement('div');
+                        berryCost.className = 'craft-cost-item';
+                        if (resourceCounts.berries < recipe.cost.berries) {
+                            berryCost.classList.add('insufficient');
+                        }
+                        berryCost.innerHTML = `<span>🫐</span><span>${recipe.cost.berries}</span>`;
+                        costDiv.appendChild(berryCost);
+                    }
+
+                    // Nuts
+                    if (recipe.cost.nuts > 0) {
+                        const nutCost = document.createElement('div');
+                        nutCost.className = 'craft-cost-item';
+                        if (resourceCounts.nuts < recipe.cost.nuts) {
+                            nutCost.classList.add('insufficient');
+                        }
+                        nutCost.innerHTML = `<span>🥜</span><span>${recipe.cost.nuts}</span>`;
+                        costDiv.appendChild(nutCost);
+                    }
+
+                    // Mushrooms
+                    if (recipe.cost.mushrooms > 0) {
+                        const mushroomCost = document.createElement('div');
+                        mushroomCost.className = 'craft-cost-item';
+                        if (resourceCounts.mushrooms < recipe.cost.mushrooms) {
+                            mushroomCost.classList.add('insufficient');
+                        }
+                        mushroomCost.innerHTML = `<span>🍄</span><span>${recipe.cost.mushrooms}</span>`;
+                        costDiv.appendChild(mushroomCost);
+                    }
+
+                    recipeDiv.appendChild(costDiv);
+
+                    // Craft button
+                    const craftBtn = document.createElement('button');
+                    craftBtn.className = 'craft-btn';
+                    craftBtn.textContent = 'Craft';
+                    craftBtn.disabled = !canCraft;
+                    craftBtn.onclick = () => craftItem(recipe);
+                    recipeDiv.appendChild(craftBtn);
+
+                    recipesContainer.appendChild(recipeDiv);
+                });
+            }
+
+            /**
+             * Craft an item from a recipe.
+             * @param {Object} recipe - The recipe to craft
+             */
+            function craftItem(recipe) {
+                // Check if player has enough resources
+                if (resourceCounts.berries < recipe.cost.berries ||
+                    resourceCounts.nuts < recipe.cost.nuts ||
+                    resourceCounts.mushrooms < recipe.cost.mushrooms) {
+                    return;
+                }
+
+                // Deduct resources
+                resourceCounts.berries -= recipe.cost.berries;
+                resourceCounts.nuts -= recipe.cost.nuts;
+                resourceCounts.mushrooms -= recipe.cost.mushrooms;
+
+                // Apply effect
+                recipe.effect();
+
+                // Update UI
+                updateUI();
+                renderCraftMenu(); // Re-render to update button states
+            }
+
+            /*
+            ============================================================
+            SHOP SYSTEM
+            ============================================================
+            */
+
+            /**
+             * Open the shop menu.
+             */
+            function openShop() {
+                isShopOpen = true;
+                const shopMenu = document.getElementById('shop-menu');
+
+                // Initialize quantities
+                SHOP_ITEMS.forEach(item => {
+                    shopQuantities[item.id] = 1;
+                });
+                Object.keys(RESOURCE_PRICES).forEach(resource => {
+                    shopQuantities['sell_' + resource] = 1;
+                });
+
+                renderShop();
+                shopMenu.classList.remove('hidden');
+                playSound('collect');
+            }
+
+            /**
+             * Close the shop menu.
+             */
+            function closeShop() {
+                isShopOpen = false;
+                document.getElementById('shop-menu').classList.add('hidden');
+            }
+
+            /**
+             * Render the shop with all items and resources.
+             */
+            function renderShop() {
+                // Update coin display
+                document.getElementById('shop-coins-display').textContent = pigCoins;
+
+                // Render buy tab
+                renderShopBuyTab();
+
+                // Render sell tab
+                renderShopSellTab();
+
+                // Set up tab switching
+                document.querySelectorAll('.shop-tab').forEach(tab => {
+                    tab.onclick = () => switchShopTab(tab.dataset.tab);
+                });
+            }
+
+            /**
+             * Switch between buy and sell tabs.
+             */
+            function switchShopTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.shop-tab').forEach(tab => {
+                    if (tab.dataset.tab === tabName) {
+                        tab.classList.add('active');
+                    } else {
+                        tab.classList.remove('active');
+                    }
+                });
+
+                // Update panels
+                document.querySelectorAll('.shop-panel').forEach(panel => {
+                    if (panel.id === 'shop-' + tabName) {
+                        panel.classList.add('active');
+                    } else {
+                        panel.classList.remove('active');
+                    }
+                });
+            }
+
+            /**
+             * Render the buy tab with items.
+             */
+            function renderShopBuyTab() {
+                const buyPanel = document.getElementById('shop-buy');
+                buyPanel.innerHTML = '';
+
+                SHOP_ITEMS.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'shop-item';
+
+                    // Header
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'shop-item-header';
+                    headerDiv.innerHTML = `
+                        <div class="shop-item-name">${item.icon} ${item.name}</div>
+                        <div class="shop-item-price">${item.price} 🪙</div>
+                    `;
+                    itemDiv.appendChild(headerDiv);
+
+                    // Description
+                    const descDiv = document.createElement('div');
+                    descDiv.className = 'shop-item-stock';
+                    descDiv.textContent = item.description;
+                    itemDiv.appendChild(descDiv);
+
+                    // Actions
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'shop-item-actions';
+
+                    // Quantity selector
+                    const qtyDiv = document.createElement('div');
+                    qtyDiv.className = 'shop-quantity';
+
+                    const minusBtn = document.createElement('button');
+                    minusBtn.className = 'shop-quantity-btn';
+                    minusBtn.textContent = '-';
+                    minusBtn.onclick = () => {
+                        if (shopQuantities[item.id] > 1) {
+                            shopQuantities[item.id]--;
+                            renderShop();
+                        }
+                    };
+                    qtyDiv.appendChild(minusBtn);
+
+                    const qtyValue = document.createElement('span');
+                    qtyValue.className = 'shop-quantity-value';
+                    qtyValue.textContent = shopQuantities[item.id];
+                    qtyDiv.appendChild(qtyValue);
+
+                    const plusBtn = document.createElement('button');
+                    plusBtn.className = 'shop-quantity-btn';
+                    plusBtn.textContent = '+';
+                    plusBtn.onclick = () => {
+                        shopQuantities[item.id]++;
+                        renderShop();
+                    };
+                    qtyDiv.appendChild(plusBtn);
+
+                    actionsDiv.appendChild(qtyDiv);
+
+                    // Buy button
+                    const buyBtn = document.createElement('button');
+                    buyBtn.className = 'shop-buy-btn';
+                    const totalPrice = item.price * shopQuantities[item.id];
+                    buyBtn.textContent = `Buy (${totalPrice} 🪙)`;
+                    buyBtn.disabled = pigCoins < totalPrice;
+                    buyBtn.onclick = () => buyItem(item);
+                    actionsDiv.appendChild(buyBtn);
+
+                    itemDiv.appendChild(actionsDiv);
+                    buyPanel.appendChild(itemDiv);
+                });
+            }
+
+            /**
+             * Render the sell tab with resources.
+             */
+            function renderShopSellTab() {
+                const sellPanel = document.getElementById('shop-sell');
+                sellPanel.innerHTML = '';
+
+                const resourceInfo = {
+                    berries: { name: 'Berries', icon: '🫐' },
+                    nuts: { name: 'Nuts', icon: '🥜' },
+                    mushrooms: { name: 'Mushrooms', icon: '🍄' }
+                };
+
+                Object.keys(RESOURCE_PRICES).forEach(resourceType => {
+                    const info = resourceInfo[resourceType];
+                    const price = RESOURCE_PRICES[resourceType];
+                    const available = resourceCounts[resourceType];
+                    const qtyKey = 'sell_' + resourceType;
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'shop-item';
+
+                    // Header
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'shop-item-header';
+                    headerDiv.innerHTML = `
+                        <div class="shop-item-name">${info.icon} ${info.name}</div>
+                        <div class="shop-item-price">${price} 🪙 each</div>
+                    `;
+                    itemDiv.appendChild(headerDiv);
+
+                    // Stock
+                    const stockDiv = document.createElement('div');
+                    stockDiv.className = 'shop-item-stock';
+                    stockDiv.textContent = `You have: ${available}`;
+                    itemDiv.appendChild(stockDiv);
+
+                    // Actions
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'shop-item-actions';
+
+                    // Quantity selector
+                    const qtyDiv = document.createElement('div');
+                    qtyDiv.className = 'shop-quantity';
+
+                    const minusBtn = document.createElement('button');
+                    minusBtn.className = 'shop-quantity-btn';
+                    minusBtn.textContent = '-';
+                    minusBtn.onclick = () => {
+                        if (shopQuantities[qtyKey] > 1) {
+                            shopQuantities[qtyKey]--;
+                            renderShop();
+                        }
+                    };
+                    qtyDiv.appendChild(minusBtn);
+
+                    const qtyValue = document.createElement('span');
+                    qtyValue.className = 'shop-quantity-value';
+                    qtyValue.textContent = shopQuantities[qtyKey];
+                    qtyDiv.appendChild(qtyValue);
+
+                    const plusBtn = document.createElement('button');
+                    plusBtn.className = 'shop-quantity-btn';
+                    plusBtn.textContent = '+';
+                    plusBtn.onclick = () => {
+                        if (shopQuantities[qtyKey] < available) {
+                            shopQuantities[qtyKey]++;
+                            renderShop();
+                        }
+                    };
+                    qtyDiv.appendChild(plusBtn);
+
+                    actionsDiv.appendChild(qtyDiv);
+
+                    // Sell button
+                    const sellBtn = document.createElement('button');
+                    sellBtn.className = 'shop-sell-btn';
+                    const totalPrice = price * shopQuantities[qtyKey];
+                    sellBtn.textContent = `Sell (${totalPrice} 🪙)`;
+                    sellBtn.disabled = available < shopQuantities[qtyKey];
+                    sellBtn.onclick = () => sellResource(resourceType);
+                    actionsDiv.appendChild(sellBtn);
+
+                    itemDiv.appendChild(actionsDiv);
+                    sellPanel.appendChild(itemDiv);
+                });
+            }
+
+            /**
+             * Buy an item from the shop.
+             */
+            function buyItem(item) {
+                const quantity = shopQuantities[item.id];
+                const totalPrice = item.price * quantity;
+
+                if (pigCoins < totalPrice) {
+                    playSound('hurt');
+                    return;
+                }
+
+                // Deduct coins
+                pigCoins -= totalPrice;
+
+                // Apply effect for each quantity
+                for (let i = 0; i < quantity; i++) {
+                    item.effect();
+                }
+
+                // Play sound and update UI
+                playSound('collect');
+                updateUI();
+                renderShop();
+            }
+
+            /**
+             * Sell a resource to the shop.
+             */
+            function sellResource(resourceType) {
+                const qtyKey = 'sell_' + resourceType;
+                const quantity = shopQuantities[qtyKey];
+                const price = RESOURCE_PRICES[resourceType];
+
+                if (resourceCounts[resourceType] < quantity) {
+                    playSound('hurt');
+                    return;
+                }
+
+                // Deduct resources
+                resourceCounts[resourceType] -= quantity;
+
+                // Add coins
+                pigCoins += price * quantity;
+
+                // Play sound and update UI
+                playSound('collect');
+                updateUI();
+                renderShop();
             }
 
             function createRock() {
@@ -553,12 +2747,39 @@
                 return geometry;
             }
 
-            function createPeccary() {
-                peccary = new THREE.Group();
-                const model = new THREE.Group(); // Inner group for model parts
+            /*
+            ============================================================
+            PLAYER CHARACTER (PECCARY)
+            ============================================================
+            The peccary is built from multiple 3D primitives:
+            - Body: Cylinder with spheres on each end (capsule shape)
+            - Head: Sphere with snout, nose, eyes, ears
+            - Legs: 4 cylinders with hoof cylinders
+            - Collar: Torus (donut shape) for the white collar marking
 
-                // Body (using cylinder + spheres for capsule effect)
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+            MODEL ORIENTATION:
+            - The model is built facing +X direction
+            - We rotate the inner group by PI (180°) so it faces -X
+            - This allows the rotation formula to work correctly
+
+            TO MODIFY THE PECCARY:
+            - Change colors by modifying the material color values (hex format: 0xRRGGBB)
+            - Change size by adjusting geometry dimensions
+            - Add new body parts by creating new meshes and adding to 'model'
+            */
+
+            /**
+             * Create the player character (peccary).
+             * The peccary is stored in the global 'peccary' variable.
+             */
+            function createPeccary() {
+                // Outer group for world position/rotation
+                peccary = new THREE.Group();
+                // Inner group for model parts (rotated to face correct direction)
+                const model = new THREE.Group();
+
+                // BODY: Dark gray, capsule-shaped (cylinder + sphere end caps)
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });  // Dark gray
 
                 // Main body cylinder
                 const bodyGeo = new THREE.CylinderGeometry(0.6, 0.6, 1.2, 16);
@@ -954,19 +3175,27 @@
             function updateMinimap() {
                 const ctx = minimapCtx;
                 const size = 150;
-                const scale = size / WORLD_SIZE;
+                const scale = size / (WORLD_SIZE * 1.4);  // Adjusted scale for bigger map
 
                 // Clear
                 ctx.fillStyle = '#1a3d1a';
                 ctx.fillRect(0, 0, size, size);
 
+                // Draw village area
+                const vx = (VILLAGE_CENTER.x + WORLD_SIZE * 0.7) * scale;
+                const vy = (VILLAGE_CENTER.z + WORLD_SIZE * 0.7) * scale;
+                ctx.fillStyle = '#8b7355';
+                ctx.beginPath();
+                ctx.arc(vx, vy, VILLAGE_RADIUS * scale * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+
                 // Draw trees as small dots
                 ctx.fillStyle = '#0a2a0a';
                 trees.forEach(tree => {
-                    const tx = (tree.position.x + WORLD_SIZE / 2) * scale;
-                    const ty = (tree.position.z + WORLD_SIZE / 2) * scale;
+                    const tx = (tree.position.x + WORLD_SIZE * 0.7) * scale;
+                    const ty = (tree.position.z + WORLD_SIZE * 0.7) * scale;
                     ctx.beginPath();
-                    ctx.arc(tx, ty, 2, 0, Math.PI * 2);
+                    ctx.arc(tx, ty, 1.5, 0, Math.PI * 2);
                     ctx.fill();
                 });
 
@@ -979,29 +3208,29 @@
                         case 'mushroom': color = '#ff6347'; break;
                     }
                     ctx.fillStyle = color;
-                    const rx = (res.position.x + WORLD_SIZE / 2) * scale;
-                    const ry = (res.position.z + WORLD_SIZE / 2) * scale;
+                    const rx = (res.position.x + WORLD_SIZE * 0.7) * scale;
+                    const ry = (res.position.z + WORLD_SIZE * 0.7) * scale;
                     ctx.beginPath();
-                    ctx.arc(rx, ry, 3, 0, Math.PI * 2);
+                    ctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
                     ctx.fill();
                 });
 
                 // Draw enemies
                 enemies.forEach(enemy => {
                     ctx.fillStyle = enemy.userData.type === 'badger' ? '#ff4444' : '#ff8800';
-                    const ex = (enemy.position.x + WORLD_SIZE / 2) * scale;
-                    const ey = (enemy.position.z + WORLD_SIZE / 2) * scale;
+                    const ex = (enemy.position.x + WORLD_SIZE * 0.7) * scale;
+                    const ey = (enemy.position.z + WORLD_SIZE * 0.7) * scale;
                     ctx.beginPath();
-                    ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+                    ctx.arc(ex, ey, 3, 0, Math.PI * 2);
                     ctx.fill();
                 });
 
                 // Draw player
                 ctx.fillStyle = '#44ff44';
-                const px = (peccary.position.x + WORLD_SIZE / 2) * scale;
-                const py = (peccary.position.z + WORLD_SIZE / 2) * scale;
+                const px = (peccary.position.x + WORLD_SIZE * 0.7) * scale;
+                const py = (peccary.position.z + WORLD_SIZE * 0.7) * scale;
                 ctx.beginPath();
-                ctx.arc(px, py, 5, 0, Math.PI * 2);
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Player direction indicator
@@ -1040,50 +3269,197 @@
                 scene.add(resource);
             }
 
+            /*
+            ============================================================
+            USE STORED RESOURCES
+            ============================================================
+            Players can use collected resources from inventory to heal.
+            Press 1/2/3 to use Berry/Nut/Mushroom.
+
+            HEAL AMOUNTS (same as when collecting):
+            - Berry:    +5 health
+            - Nut:      +8 health
+            - Mushroom: +12 health
+            */
+
+            // Track which resource keys were pressed last frame (to detect key down)
+            let resourceKeyStates = { '1': false, '2': false, '3': false };
+
+            /**
+             * Use a stored resource from inventory to heal.
+             * @param {string} type - 'berry', 'nut', or 'mushroom'
+             * @returns {boolean} - True if resource was used, false if none available
+             */
+            function useStoredResource(type) {
+                // Check if player has this resource and isn't at full health
+                let hasResource = false;
+                let healAmount = 0;
+
+                switch(type) {
+                    case 'berry':
+                        if (resourceCounts.berries > 0) {
+                            resourceCounts.berries--;
+                            hasResource = true;
+                            healAmount = 5;     // Same as collecting a berry
+                        }
+                        break;
+                    case 'nut':
+                        if (resourceCounts.nuts > 0) {
+                            resourceCounts.nuts--;
+                            hasResource = true;
+                            healAmount = 8;     // Same as collecting a nut
+                        }
+                        break;
+                    case 'mushroom':
+                        if (resourceCounts.mushrooms > 0) {
+                            resourceCounts.mushrooms--;
+                            hasResource = true;
+                            healAmount = 12;    // Same as collecting a mushroom
+                        }
+                        break;
+                }
+
+                if (hasResource) {
+                    // Only heal if not at full health
+                    if (health < 100) {
+                        health = Math.min(100, health + healAmount);
+                        playSound('collect');   // Play positive feedback sound
+                    }
+                    updateUI();
+                    return true;
+                }
+
+                return false;
+            }
+
+            /**
+             * Check for resource use key presses (1, 2, 3).
+             * Called every frame from updatePlayer.
+             */
+            function checkResourceUseKeys() {
+                // Key 1 = Use Berry
+                if (keys['1'] && !resourceKeyStates['1']) {
+                    useStoredResource('berry');
+                }
+                // Key 2 = Use Nut
+                if (keys['2'] && !resourceKeyStates['2']) {
+                    useStoredResource('nut');
+                }
+                // Key 3 = Use Mushroom
+                if (keys['3'] && !resourceKeyStates['3']) {
+                    useStoredResource('mushroom');
+                }
+
+                // Update key states for next frame (to detect key down, not hold)
+                resourceKeyStates['1'] = keys['1'] || false;
+                resourceKeyStates['2'] = keys['2'] || false;
+                resourceKeyStates['3'] = keys['3'] || false;
+            }
+
+            /*
+            ============================================================
+            PLAYER MOVEMENT AND PHYSICS
+            ============================================================
+            This is the main player control function. Called every frame.
+
+            TO MODIFY PLAYER CONTROLS:
+            - Change moveSpeed values to adjust walking/sprinting speed
+            - Change velocity.y initial value (8) to adjust jump height
+            - Change gravity (20) to adjust how fast player falls
+            - Change the 0.15 rotation lerp factor for faster/slower turning
+            */
+
+            /**
+             * Update player position, rotation, and physics.
+             * Called every frame with delta time for smooth movement.
+             *
+             * @param {number} delta - Time elapsed since last frame (in seconds)
+             */
             function updatePlayer(delta) {
-                const moveSpeed = keys['shift'] ? 12 : 6;
+                // Check for resource use keys (1, 2, 3)
+                checkResourceUseKeys();
+
+                // Check if player is holding shift to sprint
+                const isSprinting = keys['shift'];
+
+                // MOVEMENT SPEED: Adjust these values to change how fast the player moves
+                // Normal speed: 6 units/second, Sprint speed: 12 units/second
+                const moveSpeed = isSprinting ? 12 : 6;
+
+                // Build direction vector from key presses
                 const direction = new THREE.Vector3();
 
-                if (keys['w'] || keys['arrowup']) direction.z -= 1;
-                if (keys['s'] || keys['arrowdown']) direction.z += 1;
-                if (keys['a'] || keys['arrowleft']) direction.x -= 1;
-                if (keys['d'] || keys['arrowright']) direction.x += 1;
+                // WASD and Arrow key movement
+                // In Three.js: -Z is forward (into screen), +Z is backward
+                //              -X is left, +X is right
+                if (keys['w'] || keys['arrowup']) direction.z -= 1;      // Forward
+                if (keys['s'] || keys['arrowdown']) direction.z += 1;    // Backward
+                if (keys['a'] || keys['arrowleft']) direction.x -= 1;    // Left
+                if (keys['d'] || keys['arrowright']) direction.x += 1;   // Right
 
+                // Only move if a direction key is pressed
                 if (direction.length() > 0) {
+                    // Normalize so diagonal movement isn't faster
                     direction.normalize();
 
-                    // Move peccary
+                    // Apply movement (position += direction * speed * time)
                     peccary.position.x += direction.x * moveSpeed * delta;
                     peccary.position.z += direction.z * moveSpeed * delta;
 
-                    // Rotate to face movement direction
-                    const targetRotation = Math.atan2(-direction.z, -direction.x);
+                    /*
+                    ROTATION CALCULATION:
+                    - atan2(x, z) gives angle in radians from the +Z axis
+                    - We add PI/2 (90 degrees) because our model faces -X, not -Z
+                    - This makes the model face the direction it's moving
+                    */
+                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
 
-                    // Handle rotation wrapping for smooth interpolation
+                    // SMOOTH ROTATION: Interpolate between current and target rotation
+                    // This prevents jerky rotation changes
                     let currentRotation = peccary.rotation.y;
                     let diff = targetRotation - currentRotation;
+
+                    // Handle rotation wrapping (e.g., going from 350° to 10°)
                     while (diff > Math.PI) diff -= Math.PI * 2;
                     while (diff < -Math.PI) diff += Math.PI * 2;
 
+                    // Lerp factor: 0.15 = move 15% toward target each frame
+                    // Higher = snappier turning, Lower = smoother turning
                     peccary.rotation.y = currentRotation + diff * 0.15;
 
-                    // Bobbing animation when moving
+                    // BOBBING ANIMATION: Makes character look like it's walking
+                    // Uses sine wave based on elapsed time
                     if (!isJumping) {
                         peccary.position.y = Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.1;
                     }
+
+                    // Play grunt sound when starting to sprint (70% chance)
+                    if (isSprinting && !wasSprinting && Math.random() < 0.7) {
+                        playSound('peccary');
+                    }
                 }
 
-                // Jump
+                // Track sprinting state for next frame (to detect sprint start)
+                wasSprinting = isSprinting;
+
+                /*
+                JUMPING PHYSICS:
+                - Space key starts jump with initial upward velocity
+                - Gravity pulls player down each frame
+                - When player hits ground, stop falling
+                */
                 if ((keys[' '] || keys['space']) && !isJumping) {
-                    velocity.y = 8;
+                    velocity.y = 8;         // Initial jump velocity (higher = higher jump)
                     isJumping = true;
+                    playSound('jump');
                 }
 
-                // Apply gravity
+                // Apply gravity while in the air
                 if (isJumping) {
-                    velocity.y -= 20 * delta;
-                    peccary.position.y += velocity.y * delta;
+                    velocity.y -= 20 * delta;                    // Gravity: 20 units/second²
+                    peccary.position.y += velocity.y * delta;    // Apply velocity to position
 
+                    // Check if landed
                     if (peccary.position.y <= groundLevel) {
                         peccary.position.y = groundLevel;
                         isJumping = false;
@@ -1091,23 +3467,44 @@
                     }
                 }
 
-                // World bounds
+                // WORLD BOUNDS: Keep player inside the playable area
                 const bound = WORLD_SIZE * 0.7;
                 peccary.position.x = Math.max(-bound, Math.min(bound, peccary.position.x));
                 peccary.position.z = Math.max(-bound, Math.min(bound, peccary.position.z));
 
-                // Tree collision
+                // TREE COLLISION: Push player away from tree trunks
                 trees.forEach(tree => {
                     const dist = peccary.position.distanceTo(tree.position);
                     if (dist < tree.userData.radius + peccary.userData.radius) {
+                        // Calculate push direction (away from tree)
                         const pushDir = new THREE.Vector3()
                             .subVectors(peccary.position, tree.position)
                             .normalize();
+                        // Push player away
                         peccary.position.add(pushDir.multiplyScalar(0.1));
                     }
                 });
             }
 
+            /*
+            ============================================================
+            ENEMY AI SYSTEM
+            ============================================================
+            Enemies have two behaviors:
+            1. WANDERING: When player is far away, enemies walk randomly
+            2. CHASING: When player is within ENEMY_DETECTION_RANGE, enemies chase
+
+            TO MODIFY ENEMY BEHAVIOR:
+            - Adjust ENEMY_DETECTION_RANGE to change aggro distance
+            - Adjust speed values in createBadger/createWeasel for faster/slower enemies
+            - Adjust damage values for harder/easier gameplay
+            - Change the 1.3 speed multiplier for close-range chase speed
+            */
+
+            /**
+             * Update all enemies - AI behavior, movement, and collision.
+             * @param {number} delta - Time since last frame
+             */
             function updateEnemies(delta) {
                 let closestDistance = Infinity;
 
@@ -1157,8 +3554,8 @@
                     enemy.position.x += direction.x * speed * delta;
                     enemy.position.z += direction.z * speed * delta;
 
-                    // Rotate to face movement direction
-                    const targetRotation = Math.atan2(-direction.z, -direction.x);
+                    // Rotate to face movement direction (add PI/2 because model faces -X, not -Z)
+                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
 
                     // Handle rotation wrapping for smooth interpolation
                     let currentEnemyRotation = enemy.rotation.y;
@@ -1172,7 +3569,7 @@
 
                     // Collision with player
                     if (distance < enemy.userData.radius + peccary.userData.radius) {
-                        takeDamage(enemy.userData.damage * delta);
+                        takeDamage(enemy.userData.damage * delta, enemy.userData.type);
                     }
 
                     // Keep enemies within world bounds (bounce off edges)
@@ -1220,34 +3617,82 @@
                 }
             }
 
+            /*
+            ============================================================
+            RESOURCE COLLECTION AND DAMAGE SYSTEM
+            ============================================================
+            Resources (berries, nuts, mushrooms) are collected into inventory.
+            Use 1/2/3 keys to consume them and heal.
+            Damage is dealt continuously while touching an enemy.
+
+            RESOURCE VALUES (defined in createResource):
+            - Berry:    +10 score, +5 health when used
+            - Nut:      +15 score, +8 health when used
+            - Mushroom: +20 score, +12 health when used
+
+            TO MODIFY:
+            - Change score amounts in createResource() function
+            - Change heal amounts in useStoredResource() function
+            - Adjust enemy damage in createBadger/createWeasel userData
+            */
+
+            /**
+             * Handle resource collection - add to inventory and score.
+             * Resources are stored and can be used later with 1/2/3 keys.
+             * @param {THREE.Group} resource - The resource being collected
+             */
             function collectResource(resource) {
                 const type = resource.userData.type;
-                const value = resource.userData.value;
-                const heal = resource.userData.healAmount;
+                const value = resource.userData.value;         // Score points
 
-                // Update counts
-                if (type === 'berry') resourceCounts.berries++;
-                else if (type === 'nut') resourceCounts.nuts++;
-                else if (type === 'mushroom') resourceCounts.mushrooms++;
+                playSound('collect');
 
-                // Update score
+                // Add to inventory (use 1/2/3 keys to consume and heal)
+                if (type === 'berry') {
+                    resourceCounts.berries++;
+                    pigCoins += RESOURCE_PRICES.berries;
+                } else if (type === 'nut') {
+                    resourceCounts.nuts++;
+                    pigCoins += RESOURCE_PRICES.nuts;
+                } else if (type === 'mushroom') {
+                    resourceCounts.mushrooms++;
+                    pigCoins += RESOURCE_PRICES.mushrooms;
+                }
+
+                // Add to score
                 score += value;
-
-                // Heal player
-                health = Math.min(100, health + heal);
 
                 updateUI();
             }
 
-            function takeDamage(amount) {
+            /**
+             * Handle player taking damage from an enemy.
+             * @param {number} amount - Damage amount (multiplied by delta time)
+             * @param {string} enemyType - 'badger' or 'weasel' (for sound effect)
+             */
+            function takeDamage(amount, enemyType) {
                 health -= amount;
+                playSound('hurt');
+                if (enemyType) playSound(enemyType);  // Play enemy attack sound
                 updateUI();
 
+                // Check for death
                 if (health <= 0) {
                     gameOver();
                 }
             }
 
+            /*
+            ============================================================
+            CAMERA SYSTEM
+            ============================================================
+            Uses a third-person follow camera that smoothly tracks the player.
+            */
+
+            /**
+             * Update camera position to follow the player.
+             * Uses lerp (linear interpolation) for smooth movement.
+             */
             function updateCamera() {
                 // Third person follow camera
                 const offset = new THREE.Vector3(0, 8, 12);
@@ -1265,6 +3710,7 @@
                 document.getElementById('berries-count').textContent = resourceCounts.berries;
                 document.getElementById('nuts-count').textContent = resourceCounts.nuts;
                 document.getElementById('mushrooms-count').textContent = resourceCounts.mushrooms;
+                document.getElementById('coins-display').textContent = '🪙 ' + pigCoins;
 
                 const minutes = Math.floor(timeElapsed / 60);
                 const seconds = Math.floor(timeElapsed % 60);
@@ -1282,6 +3728,17 @@
                 document.getElementById('controls-info').classList.add('hidden');
                 document.getElementById('minimap').classList.add('hidden');
 
+                // Close craft menu if open
+                if (isCraftMenuOpen) {
+                    isCraftMenuOpen = false;
+                    document.getElementById('craft-menu').classList.add('hidden');
+                }
+
+                // Close shop if open
+                if (isShopOpen) {
+                    closeShop();
+                }
+
                 // Clear intervals
                 spawnIntervals.forEach(id => clearInterval(id));
                 spawnIntervals = [];
@@ -1292,6 +3749,13 @@
                 document.getElementById('ui-overlay').classList.remove('hidden');
                 document.getElementById('controls-info').classList.remove('hidden');
                 document.getElementById('minimap').classList.remove('hidden');
+
+                // Initialize audio on user interaction
+                if (!audioCtx) initAudio();
+
+                // Give player starting coins
+                pigCoins = 50;
+                updateUI();
 
                 gameRunning = true;
 
@@ -1323,7 +3787,19 @@
                 health = 100;
                 score = 0;
                 resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
+                pigCoins = 50;
                 timeElapsed = 0;
+
+                // Close craft menu if open
+                if (isCraftMenuOpen) {
+                    isCraftMenuOpen = false;
+                    document.getElementById('craft-menu').classList.add('hidden');
+                }
+
+                // Close shop if open
+                if (isShopOpen) {
+                    closeShop();
+                }
 
                 // Clear enemies and resources
                 enemies.forEach(e => scene.remove(e));
@@ -1367,37 +3843,72 @@
                 }, 3000);
             }
 
+            /*
+            ============================================================
+            GAME LOOP
+            ============================================================
+            The animate() function runs continuously (about 60 times per second).
+            This is the heart of the game - it updates everything each frame.
+            */
+
+            /**
+             * Main game loop - called every frame by requestAnimationFrame.
+             *
+             * GAME LOOP STRUCTURE:
+             * 1. Request next frame (before doing work, for smooth 60fps)
+             * 2. Calculate time since last frame (delta)
+             * 3. Update game state (player, enemies, resources)
+             * 4. Update visuals (camera, minimap, UI)
+             * 5. Render the scene
+             */
             function animate() {
+                // Schedule next frame FIRST (ensures smooth 60fps)
                 requestAnimationFrame(animate);
 
+                // Get time since last frame (capped at 0.1 to prevent huge jumps)
+                // If game was paused or tabbed away, this prevents physics glitches
                 const delta = Math.min(clock.getDelta(), 0.1);
 
+                // Only update game logic if the game is actually running
                 if (gameRunning) {
-                    timeElapsed += delta;
-                    updatePlayer(delta);
-                    updateEnemies(delta);
-                    updateResources(delta);
-                    updateCamera();
-                    updateMinimap();
-                    updateUI();
+                    timeElapsed += delta;           // Track survival time
+                    updatePlayer(delta);            // Player movement and physics
+                    updateEnemies(delta);           // Enemy AI and movement
+                    updateResources(delta);         // Resource animations and collection
+                    updateVillagers(delta);         // Villager animations and proximity check
+                    updateCamera();                 // Follow camera
+                    updateMinimap();                // Update minimap display
+                    updateUI();                     // Update health bar, score, etc.
                 }
 
+                // Render the 3D scene (always render, even on menu screens)
                 renderer.render(scene, camera);
             }
 
+            /**
+             * Handle window resize - update camera and renderer to match new size.
+             */
             function onWindowResize() {
                 camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
+                camera.updateProjectionMatrix();    // Apply aspect ratio change
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
 
-            // Initialize game when page loads
+            /*
+            ============================================================
+            GAME INITIALIZATION
+            ============================================================
+            Wait for the page to fully load, then start the game.
+            */
             if (document.readyState === 'loading') {
+                // Page still loading - wait for it
                 document.addEventListener('DOMContentLoaded', init);
             } else {
+                // Page already loaded - start immediately
                 init();
             }
-        })();
+
+        })(); // End of IIFE (game code is fully encapsulated)
     </script>
 </body>
 </html>
