@@ -59,7 +59,8 @@ window.UI = (function() {
         });
 
         GameState.enemies.forEach(enemy => {
-            ctx.fillStyle = enemy.userData.type === 'badger' ? '#ff4444' : '#ff8800';
+            // Use minimap color from enemy data (set by ANIMAL_TYPES in enemies.js)
+            ctx.fillStyle = enemy.userData.minimapColor || '#ff4444';
             const ex = (enemy.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
             const ey = (enemy.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
             ctx.beginPath();

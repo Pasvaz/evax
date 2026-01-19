@@ -317,30 +317,136 @@ Colors use **hex codes**: `0xRRGGBB`
 
 ---
 
-## Change Enemy Stats (js/data/enemies.js)
+## Change Enemies (js/data/enemies.js)
 
-Open `js/data/enemies.js` to make enemies easier or harder:
+Each enemy in the `ENEMIES` array has everything in one place: stats AND colors!
+
+### Enemy Properties Explained
 
 ```javascript
-badger: {
-    speed: 3,              // How fast (player walks at 6)
-    speedVariation: 1,     // Random 0-1 added to speed
-    damage: 15,            // Health lost per second when touching
-    radius: 0.8,           // Size of hitbox
-    // ... colors too!
-},
+{
+    id: 'badger',              // Unique name for this enemy
+    type: 'badger',            // Which 3D model ('badger' or 'weasel')
+    speed: 3,                  // How fast (player walks at 6)
+    speedVariation: 1,         // Random 0-1 added to speed
+    damage: 15,                // Health lost per second when touching
+    radius: 0.8,               // Collision hitbox size
+    size: 1,                   // Model scale (1 = normal, 2 = double)
+    health: 1,                 // Hits to kill (1 = one hit)
+    spawnWeight: 1,            // Spawn frequency (see below)
+    minimapColor: '#ff4444',   // Color on the minimap
 
-weasel: {
-    speed: 4.5,            // Faster than badger!
-    speedVariation: 1.5,
-    damage: 10,            // Less damage than badger
-    radius: 0.6,           // Smaller than badger
+    // Colors for the 3D model
+    colors: {
+        body: 0x2f2f2f,        // Dark gray body
+        stripes: 0xffffff,     // White face stripes
+        eyes: 0xff3333,        // Red eyes
+        // ... more colors depending on type
+    }
 }
 ```
 
-**PEACEFUL MODE (no damage):**
+### Spawn Weight (Rarity)
+
+`spawnWeight` controls how often each enemy spawns:
+
+- `spawnWeight: 1` = Normal (baseline)
+- `spawnWeight: 2` = Twice as common
+- `spawnWeight: 0.5` = Half as common
+- `spawnWeight: 0.1` = Very rare (10% as common)
+- `spawnWeight: 0.01` = Extremely rare
+
+### Add a New Enemy (Easy!)
+
+Just copy an existing enemy and change the values:
+
 ```javascript
-damage: 0
+// Add this to the ENEMIES array:
+{
+    id: 'fast_weasel',
+    type: 'weasel',            // Uses weasel 3D model
+    speed: 7,                  // Much faster!
+    speedVariation: 1,
+    damage: 5,                 // Less damage to balance
+    radius: 0.6,
+    size: 0.8,                 // Smaller (80% size)
+    health: 1,
+    spawnWeight: 0.5,          // Rarer (spawns half as often)
+    minimapColor: '#ffcc00',   // Yellow dot
+
+    // Same colors as regular weasel, or customize!
+    colors: {
+        body: 0x8b4513,
+        snout: 0xd2691e,
+        nose: 0x1a1a1a,
+        eyes: 0xffff00,
+        eyeGlow: 0x333300,
+        ears: 0x8b4513,
+        legs: 0x6b3310
+    }
+}
+```
+
+### Make a Giant Boss Enemy
+
+Use `size` and `health` for tough enemies:
+
+```javascript
+{
+    id: 'alpha_badger',
+    type: 'badger',
+    speed: 4,
+    speedVariation: 1,
+    damage: 25,
+    radius: 1.2,
+    size: 1.5,                 // 50% bigger!
+    health: 3,                 // Takes 3 hits to kill!
+    spawnWeight: 0.1,          // Very rare
+    minimapColor: '#ff0000',
+
+    colors: {
+        body: 0x1a1a1a,        // Almost black (scarier!)
+        stripes: 0xcccccc,
+        snout: 0x0a0a0a,
+        eyes: 0xff0000,        // Blood red eyes
+        eyeGlow: 0x660000,
+        legs: 0x0a0a0a
+    }
+}
+```
+
+### Make Tiny Enemies
+
+```javascript
+{
+    id: 'tiny_weasel',
+    type: 'weasel',
+    speed: 6,
+    speedVariation: 1,
+    damage: 3,
+    radius: 0.3,
+    size: 0.5,                 // Half size!
+    health: 1,
+    spawnWeight: 0.3,
+    minimapColor: '#ffcc00',
+    colors: { /* weasel colors */ }
+}
+```
+
+### Make Peaceful Enemies
+
+Set damage to 0:
+
+```javascript
+{
+    id: 'friendly_badger',
+    type: 'badger',
+    speed: 2,
+    damage: 0,                 // No damage!
+    size: 1,
+    health: 1,
+    // ...
+}
 ```
 
 ---
@@ -392,16 +498,37 @@ FOOD_HEALING: {
 ```
 
 ### Peaceful Enemies (enemies.js)
+
+Change the damage to 0 in your enemies:
+
 ```javascript
-badger: {
-    speed: 2,
-    damage: 0,    // No damage!
-    // ...
-},
-weasel: {
-    speed: 3,
-    damage: 0,    // No damage!
-    // ...
+damage: 0,    // No damage!
+```
+
+### Add a Rare Boss Enemy (enemies.js)
+
+Add this to the ENEMIES array for a challenging rare enemy:
+
+```javascript
+{
+    id: 'alpha_badger',
+    type: 'badger',
+    speed: 5,
+    speedVariation: 1,
+    damage: 25,
+    radius: 1.2,
+    size: 1.5,             // 50% larger!
+    health: 3,             // Takes 3 hits to kill!
+    spawnWeight: 0.1,      // Very rare (10% as common)
+    minimapColor: '#ff0000',
+    colors: {
+        body: 0x1a1a1a,
+        stripes: 0xcccccc,
+        snout: 0x0a0a0a,
+        eyes: 0xff0000,
+        eyeGlow: 0x660000,
+        legs: 0x0a0a0a
+    }
 }
 ```
 

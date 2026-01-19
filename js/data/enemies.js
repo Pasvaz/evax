@@ -1,74 +1,90 @@
 /**
  * ============================================================================
- * ENEMY TYPES - Pure Data File
+ * ENEMY DATA - Pure Data File
  * ============================================================================
  *
- * This file contains all the enemy types in the game.
- * Change these values to make enemies easier or harder!
+ * This file defines all enemies that spawn in the game.
+ * Each enemy has stats AND colors - everything in one place!
  *
  * ============================================================================
- * HOW ENEMIES WORK
+ * HOW TO ADD A NEW ENEMY
  * ============================================================================
  *
- * 1. Enemies spawn at the edge of the world
- * 2. They wander around randomly until they spot you
- * 3. When you're within DETECTION_RANGE, they chase you!
- * 4. If they touch you, they deal damage every second
- * 5. Run away or hide in the village (it's safe there!)
+ * Just copy an existing enemy and change the values!
+ *
+ * Example - A giant rare weasel:
+ *
+ *   {
+ *       id: 'giant_weasel',
+ *       type: 'weasel',          // Which 3D model to use
+ *       speed: 3,
+ *       speedVariation: 1,
+ *       damage: 20,
+ *       radius: 1.0,
+ *       size: 1.5,               // 50% bigger!
+ *       health: 3,               // Takes 3 hits to kill
+ *       spawnWeight: 0.1,        // Very rare (10% as common as normal)
+ *       minimapColor: '#ff0000'  // Red dot on minimap
+ *   }
  *
  * ============================================================================
- * STATS EXPLAINED
+ * SPAWN WEIGHT EXPLAINED
  * ============================================================================
  *
- * speed: How fast the enemy moves
- *   - Higher = faster = harder to escape!
- *   - Player walks at 6, sprints at 12
- *   - So speed 4 = can outrun easily, speed 10 = hard to escape!
+ * spawnWeight controls how often each enemy spawns relative to others.
  *
- * speedVariation: Random bonus to speed
- *   - Adds 0 to this amount randomly
- *   - Makes each enemy slightly different
+ *   spawnWeight: 1    = Normal (baseline)
+ *   spawnWeight: 2    = Twice as common
+ *   spawnWeight: 0.5  = Half as common
+ *   spawnWeight: 0.1  = Very rare (10% as common)
+ *   spawnWeight: 0.01 = Extremely rare (1% as common)
  *
- * damage: Health lost per second when touching enemy
- *   - Higher = more dangerous!
- *   - 10 = 10% health per second
- *   - 25 = 25% health per second (very dangerous!)
- *
- * radius: How big the enemy's hitbox is
- *   - Bigger = easier to get hit
- *   - Player radius is about 0.5
- *
- * ============================================================================
- * COLOR CODES
- * ============================================================================
- *
- * Colors use 0xRRGGBB format:
- *   0xff0000 = Red       0x00ff00 = Green     0x0000ff = Blue
- *   0xffff00 = Yellow    0x800080 = Purple    0xffa500 = Orange
- *   0x2f2f2f = Dark Gray 0x8b4513 = Brown     0x1a1a1a = Almost Black
+ * Example with 3 enemies:
+ *   - Badger (weight 1) + Weasel (weight 1) + Giant (weight 0.1)
+ *   - Total weight = 2.1
+ *   - Badger spawns 1/2.1 = 47.6% of the time
+ *   - Weasel spawns 1/2.1 = 47.6% of the time
+ *   - Giant spawns 0.1/2.1 = 4.8% of the time
  *
  * ============================================================================
  */
 
-window.ENEMY_TYPES = {
+
+// ============================================================================
+// ENEMIES - All enemies that can spawn in the game
+// ============================================================================
+//
+// STATS EXPLAINED:
+//   id: Unique name for this enemy
+//   type: Which 3D model to use ('badger' or 'weasel')
+//   speed: How fast (player walks at 6, sprints at 12)
+//   speedVariation: Random 0 to this amount added to speed
+//   damage: Health lost per second when touching
+//   radius: Collision hitbox size (player is ~0.5)
+//   size: Scale of the 3D model (1 = normal, 2 = double, 0.5 = half)
+//   health: Hits to kill (1 = one hit kill)
+//   spawnWeight: Spawn frequency (1 = normal, 0.1 = rare, 0.01 = very rare)
+//   minimapColor: Color of the dot on the minimap
+//   colors: (optional) Custom colors to override the default model colors
+
+window.ENEMIES = [
 
     // ========================================================================
-    // BADGER
+    // BADGER - Slow but hits hard
     // ========================================================================
-    // Slow but tough! Deals more damage.
-    // Visual: Dark gray body with white face stripes, red eyes
-    badger: {
-        // --------------------------------------------------------------------
-        // STATS - How the badger behaves
-        // --------------------------------------------------------------------
-        speed: 3,                      // Base movement speed (slow)
-        speedVariation: 1,             // Random 0-1 added (so 3-4 total)
-        damage: 15,                    // Damage per second (high!)
-        radius: 0.8,                   // Collision radius (chunky)
+    {
+        id: 'badger',
+        type: 'badger',                // Uses badger 3D model
+        speed: 3,                      // Slow (player walks at 6)
+        speedVariation: 1,             // Final speed: 3-4
+        damage: 15,                    // High damage per second!
+        radius: 0.8,                   // Chunky hitbox
+        size: 1,                       // Normal size
+        health: 1,                     // Dies in one hit
+        spawnWeight: 1,                // Normal spawn rate
+        minimapColor: '#ff4444',       // Red dot on minimap
 
-        // --------------------------------------------------------------------
-        // COLORS - How the badger looks
-        // --------------------------------------------------------------------
+        // Badger colors (dark gray with white face stripes)
         colors: {
             body: 0x2f2f2f,            // Dark gray body
             stripes: 0xffffff,         // White face stripes
@@ -80,93 +96,147 @@ window.ENEMY_TYPES = {
     },
 
     // ========================================================================
-    // WEASEL
+    // WEASEL - Fast but weaker
     // ========================================================================
-    // Fast but weaker! Quick and hard to escape.
-    // Visual: Brown body, tan snout, yellow predator eyes
-    weasel: {
-        // --------------------------------------------------------------------
-        // STATS
-        // --------------------------------------------------------------------
-        speed: 4.5,                    // Base speed (fast!)
-        speedVariation: 1.5,           // Random 0-1.5 added (so 4.5-6 total)
-        damage: 10,                    // Damage per second (lower than badger)
-        radius: 0.6,                   // Collision radius (slim)
+    {
+        id: 'weasel',
+        type: 'weasel',                // Uses weasel 3D model
+        speed: 4.5,                    // Faster than badger
+        speedVariation: 1.5,           // Final speed: 4.5-6
+        damage: 10,                    // Less damage than badger
+        radius: 0.6,                   // Slim hitbox
+        size: 1,                       // Normal size
+        health: 1,                     // Dies in one hit
+        spawnWeight: 1,                // Normal spawn rate
+        minimapColor: '#ff8800',       // Orange dot on minimap
 
-        // --------------------------------------------------------------------
-        // COLORS
-        // --------------------------------------------------------------------
+        // Weasel colors (brown with yellow eyes)
         colors: {
             body: 0x8b4513,            // Saddle brown body
             snout: 0xd2691e,           // Chocolate tan snout
             nose: 0x1a1a1a,            // Black nose
             eyes: 0xffff00,            // Yellow predator eyes
             eyeGlow: 0x333300,         // Yellow eye glow
-            ears: 0x8b4513,            // Brown ears
+            ears: 0x8b4513,            // Brown ears (same as body)
             legs: 0x6b3310             // Darker brown legs
         }
     }
 
     // ========================================================================
-    // ADD MORE ENEMY TYPES HERE!
+    // ADD MORE ENEMIES HERE!
     // ========================================================================
     //
-    // Want to add a new enemy? Here's a template:
+    // Example: A giant rare weasel (just copy and modify!)
     //
-    // wolf: {
-    //     speed: 5,
-    //     speedVariation: 2,
-    //     damage: 20,
-    //     radius: 1.0,
+    // ,{
+    //     id: 'giant_weasel',
+    //     type: 'weasel',            // Same 3D model as regular weasel
+    //     speed: 3,                  // Slower because it's big
+    //     speedVariation: 1,
+    //     damage: 20,                // Hits harder!
+    //     radius: 1.0,               // Bigger hitbox
+    //     size: 1.5,                 // 50% larger model!
+    //     health: 3,                 // Takes 3 hits to kill!
+    //     spawnWeight: 0.1,          // Very rare! (10% as common)
+    //     minimapColor: '#ff0000',   // Red dot (danger!)
+    //
+    //     // Can use same colors as regular weasel, or customize:
     //     colors: {
-    //         body: 0x808080,        // Gray
-    //         snout: 0x606060,
-    //         eyes: 0x00ff00,        // Green eyes
-    //         eyeGlow: 0x003300,
-    //         legs: 0x505050
+    //         body: 0x4a2508,        // Darker brown
+    //         snout: 0xd2691e,
+    //         nose: 0x1a1a1a,
+    //         eyes: 0xff0000,        // Red eyes!
+    //         eyeGlow: 0x330000,
+    //         ears: 0x4a2508,
+    //         legs: 0x3a1800
     //     }
     // }
     //
-    // NOTE: Adding a new enemy type also requires adding code in enemies.js
-    // to create the 3D model. The data here only stores the stats and colors!
+    // Example: A tiny fast weasel
+    //
+    // ,{
+    //     id: 'tiny_weasel',
+    //     type: 'weasel',
+    //     speed: 7,                  // Super fast!
+    //     speedVariation: 1,
+    //     damage: 3,                 // Low damage
+    //     radius: 0.3,               // Tiny hitbox
+    //     size: 0.5,                 // Half size!
+    //     health: 1,
+    //     spawnWeight: 0.3,          // Uncommon
+    //     minimapColor: '#ffcc00',   // Yellow dot
+    //     colors: {
+    //         body: 0xd2691e,        // Lighter brown
+    //         snout: 0xffa500,
+    //         nose: 0x1a1a1a,
+    //         eyes: 0xffff00,
+    //         eyeGlow: 0x333300,
+    //         ears: 0xd2691e,
+    //         legs: 0xb8860b
+    //     }
+    // }
+    //
+    // Example: An alpha badger boss
+    //
+    // ,{
+    //     id: 'alpha_badger',
+    //     type: 'badger',
+    //     speed: 4,
+    //     speedVariation: 1,
+    //     damage: 25,                // Dangerous!
+    //     radius: 1.2,
+    //     size: 1.8,                 // Almost double size!
+    //     health: 5,                 // Very tough!
+    //     spawnWeight: 0.05,         // Extremely rare (5% as common)
+    //     minimapColor: '#ff0000',
+    //     colors: {
+    //         body: 0x1a1a1a,        // Almost black
+    //         stripes: 0xcccccc,     // Gray stripes
+    //         snout: 0x0a0a0a,
+    //         eyes: 0xff0000,        // Blood red eyes
+    //         eyeGlow: 0x660000,
+    //         legs: 0x0a0a0a
+    //     }
+    // }
 
-};
+];
+
 
 // ============================================================================
 // DIFFICULTY PRESETS
 // ============================================================================
 // Quick ways to change game difficulty!
-// To use: Copy one preset's values into ENEMY_TYPES above
+// To use: Apply preset values to enemies in your game settings
 
 window.ENEMY_PRESETS = {
 
     // EASY MODE - Slow enemies, low damage
     easy: {
-        badger: { speed: 2, speedVariation: 0.5, damage: 8, radius: 0.8 },
-        weasel: { speed: 3, speedVariation: 1, damage: 5, radius: 0.6 }
+        speedMultiplier: 0.7,
+        damageMultiplier: 0.5
     },
 
     // NORMAL MODE - Default settings
     normal: {
-        badger: { speed: 3, speedVariation: 1, damage: 15, radius: 0.8 },
-        weasel: { speed: 4.5, speedVariation: 1.5, damage: 10, radius: 0.6 }
+        speedMultiplier: 1,
+        damageMultiplier: 1
     },
 
     // HARD MODE - Fast enemies, high damage!
     hard: {
-        badger: { speed: 4, speedVariation: 1.5, damage: 25, radius: 0.8 },
-        weasel: { speed: 6, speedVariation: 2, damage: 18, radius: 0.6 }
+        speedMultiplier: 1.3,
+        damageMultiplier: 1.5
     },
 
     // NIGHTMARE MODE - Good luck!
     nightmare: {
-        badger: { speed: 5, speedVariation: 2, damage: 35, radius: 1.0 },
-        weasel: { speed: 8, speedVariation: 2, damage: 25, radius: 0.7 }
+        speedMultiplier: 1.6,
+        damageMultiplier: 2
     },
 
     // PEACEFUL MODE - Enemies don't hurt you (for exploring)
     peaceful: {
-        badger: { speed: 2, speedVariation: 0, damage: 0, radius: 0.8 },
-        weasel: { speed: 3, speedVariation: 0, damage: 0, radius: 0.6 }
+        speedMultiplier: 0.5,
+        damageMultiplier: 0
     }
 };

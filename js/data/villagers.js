@@ -138,7 +138,7 @@ window.VILLAGERS = [
             nodes: {
                 // The first node - player sees this when talking
                 'greeting': {
-                    text: "Welcome, young traveler! Our village has stood here for generations.",
+                    text: "Welcome, young traveler! Our village has stood here for generations. Badgers,weasels and other wild animals dont come too close.",
                     choices: [
                         { text: "Tell me about the village.", nextNode: 'village_history' },
                         { text: "What dangers are out there?", nextNode: 'dangers' },
@@ -147,7 +147,7 @@ window.VILLAGERS = [
                 },
 
                 'village_history': {
-                    text: "We've lived here peacefully for decades, surviving off the forest bounty.",
+                    text: "We've lived here peacefully for decades, surviving off the forest bounty. Animals dont threaten our lifestyle , ",
                     choices: [
                         { text: "How do you survive?", nextNode: 'survival_tips' },
                         { text: "Tell me more.", nextNode: 'more_lore' },

@@ -191,19 +191,21 @@ window.CONFIG = {
     }),
 
     // ========================================================================
-    // ENEMY TYPES
+    // ENEMIES (Spawnable Enemy Definitions)
     // ========================================================================
     // These come from js/data/enemies.js
-    // Contains stats and colors for badgers and weasels
+    // Each enemy has a "type" field that determines which 3D model to use,
+    // plus stats (speed, damage, health) and colors for the model.
+    // You can have multiple enemies sharing the same model type!
 
-    ENEMY_TYPES: ENEMY_TYPES
+    ENEMIES: ENEMIES,
+
+    // ========================================================================
+    // ENEMY PRESETS (Difficulty Modifiers)
+    // ========================================================================
+    // These come from js/data/enemies.js
+    // Use these to quickly adjust difficulty.
+
+    ENEMY_PRESETS: ENEMY_PRESETS
 
 };
-
-// ============================================================================
-// SHORTCUTS FOR ENEMY DATA
-// ============================================================================
-// Quick access to individual enemy types
-
-CONFIG.ENEMY_BADGER = ENEMY_TYPES.badger;
-CONFIG.ENEMY_WEASEL = ENEMY_TYPES.weasel;
