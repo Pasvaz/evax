@@ -653,8 +653,23 @@
     <!-- Three.js Library -->
     <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 
-    <!-- Game Modules (load order matters) -->
+    <!-- ================================================================== -->
+    <!-- DATA FILES - Pure data, no logic (load first!) -->
+    <!-- ================================================================== -->
+    <!-- These files contain settings, villagers, recipes, etc. -->
+    <!-- Edit these to customize the game without touching logic! -->
+    <script src="js/data/settings.js"></script>
+    <script src="js/data/enemies.js"></script>
+    <script src="js/data/villagers.js"></script>
+    <script src="js/data/recipes.js"></script>
+    <script src="js/data/shop-items.js"></script>
+
+    <!-- ================================================================== -->
+    <!-- LOGIC FILES - Game behavior (load after data!) -->
+    <!-- ================================================================== -->
+    <!-- These files contain the game logic that uses the data above -->
     <script src="js/config.js"></script>
+    <script src="js/effects.js"></script>
     <script src="js/game.js"></script>
     <script src="js/environment.js"></script>
     <script src="js/player.js"></script>

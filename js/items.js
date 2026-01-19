@@ -8,31 +8,37 @@ window.Items = (function() {
 
     /**
      * Use a stored resource from inventory to heal.
+     *
+     * Healing amounts come from CONFIG.FOOD_HEALING (set in js/data/settings.js)
+     * This lets you change healing values without editing this file!
      */
     function useStoredResource(type) {
         let hasResource = false;
         let healAmount = 0;
+
+        // Get healing amounts from config (or use defaults if not set)
+        const foodHealing = CONFIG.FOOD_HEALING || { berries: 5, nuts: 8, mushrooms: 12 };
 
         switch(type) {
             case 'berry':
                 if (GameState.resourceCounts.berries > 0) {
                     GameState.resourceCounts.berries--;
                     hasResource = true;
-                    healAmount = 5;
+                    healAmount = foodHealing.berries;
                 }
                 break;
             case 'nut':
                 if (GameState.resourceCounts.nuts > 0) {
                     GameState.resourceCounts.nuts--;
                     hasResource = true;
-                    healAmount = 8;
+                    healAmount = foodHealing.nuts;
                 }
                 break;
             case 'mushroom':
                 if (GameState.resourceCounts.mushrooms > 0) {
                     GameState.resourceCounts.mushrooms--;
                     hasResource = true;
-                    healAmount = 12;
+                    healAmount = foodHealing.mushrooms;
                 }
                 break;
         }

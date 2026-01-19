@@ -22,114 +22,287 @@ A fun 3D game where you play as a peccary (a wild pig) in a forest! Collect food
 
 # How to Change the Game
 
-This section shows you how to make the game YOUR game! Each example shows exactly what to change.
+This game is split into **DATA files** and **LOGIC files**.
+
+**DATA files** = What you edit! Simple settings, no coding needed.
+**LOGIC files** = How the game works. You don't need to touch these!
 
 ---
 
-## Easy Changes (config.js)
+## File Guide (What to Edit)
 
-Open `js/config.js` to change these. This file has all the game settings!
+### DATA FILES (Edit these!)
+
+| File | What's inside | Examples |
+|------|---------------|----------|
+| `js/data/settings.js` | Game settings (numbers) | World size, enemy speed, spawn rates |
+| `js/data/villagers.js` | Villager characters | Names, colors, conversations, trades |
+| `js/data/recipes.js` | Crafting recipes | What ingredients make what items |
+| `js/data/shop-items.js` | Shop items | What you can buy with pig coins |
+| `js/data/enemies.js` | Enemy stats | Badger/weasel speed, damage, colors |
+
+### LOGIC FILES (Don't edit unless you know what you're doing)
+
+| File | What it does |
+|------|--------------|
+| `js/config.js` | Connects data files to game |
+| `js/effects.js` | Makes effects work |
+| `js/game.js` | Game loop, sounds |
+| `js/player.js` | Player movement |
+| `js/enemies.js` | Enemy behavior |
+| `js/dialogs.js` | Conversation system |
+| `js/ui.js` | Menus and HUD |
+| `js/items.js` | Resource collection |
+| `js/environment.js` | Trees, ground, village |
+
+---
+
+## Easy Changes (js/data/settings.js)
+
+Open `js/data/settings.js` to change game difficulty!
 
 ### Make the Game Easier or Harder
 
-Find these lines at the top:
+Find these lines:
 
 ```javascript
-ENEMY_SPAWN_RATE: 4000,      // How often enemies appear (milliseconds)
-MAX_ENEMIES: 15,              // How many enemies at once
-ENEMY_DETECTION_RANGE: 40,    // How close before enemies chase you
+// How often do new enemies appear? (in milliseconds)
+ENEMY_SPAWN_RATE: 4000,    // 4000 = 4 seconds
+
+// Maximum number of enemies at once
+MAX_ENEMIES: 15,
+
+// How close before enemies notice you and start chasing?
+ENEMY_DETECTION_RANGE: 40,
 ```
 
-**Easy mode:**
+**EASY MODE:**
 ```javascript
-ENEMY_SPAWN_RATE: 10000,     // Enemies appear less often
-MAX_ENEMIES: 5,               // Fewer enemies
-ENEMY_DETECTION_RANGE: 20,    // Enemies don't see you until very close
+ENEMY_SPAWN_RATE: 10000,    // Enemies appear less often
+MAX_ENEMIES: 5,              // Fewer enemies
+ENEMY_DETECTION_RANGE: 20,   // Enemies have bad eyesight
 ```
 
-**Hard mode:**
+**HARD MODE:**
 ```javascript
-ENEMY_SPAWN_RATE: 2000,      // Enemies appear very often!
-MAX_ENEMIES: 25,              // Lots of enemies!
-ENEMY_DETECTION_RANGE: 60,    // Enemies see you from far away
+ENEMY_SPAWN_RATE: 2000,     // Enemies appear every 2 seconds!
+MAX_ENEMIES: 25,             // Lots of enemies!
+ENEMY_DETECTION_RANGE: 60,   // Enemies see you from far away!
 ```
 
 ### Change Resource Prices
 
 ```javascript
 RESOURCE_PRICES: {
-    berries: 2,      // Berries give you 2 coins
-    nuts: 5,         // Nuts give you 5 coins
-    mushrooms: 10    // Mushrooms give you 10 coins
+    berries: 2,      // Collecting a berry gives you 2 coins
+    nuts: 5,         // Collecting a nut gives you 5 coins
+    mushrooms: 10    // Collecting a mushroom gives you 10 coins
 },
 ```
 
-**Make everything worth more:**
+### Change Food Healing
+
 ```javascript
-RESOURCE_PRICES: {
-    berries: 10,
-    nuts: 20,
-    mushrooms: 50
+FOOD_HEALING: {
+    berries: 5,      // Eating a berry heals 5 health
+    nuts: 8,         // Eating a nut heals 8 health
+    mushrooms: 12    // Eating a mushroom heals 12 health
 },
 ```
 
-### Add a New Shop Item
+---
 
-Find `SHOP_ITEMS` and add a new item:
+## Add a Shop Item (js/data/shop-items.js)
+
+Open `js/data/shop-items.js` and add a new item:
 
 ```javascript
-SHOP_ITEMS: [
-    // ... existing items ...
-    {
-        id: 'mega_heal',           // Unique name (no spaces!)
-        name: 'Mega Heal',         // What players see
-        description: 'Full health + 50 bonus points!',
-        price: 100,                // Cost in pig coins
-        icon: '💖',                // Any emoji works!
-        effect: function() {
-            GameState.health = 100;
-            GameState.score += 50;
-        }
+{
+    id: 'mega_heal',           // Unique name (no spaces!)
+    name: 'Mega Heal',         // What players see
+    description: 'Full health + 100 bonus points!',
+    price: 75,                 // Cost in pig coins
+    icon: '💖',                // Any emoji works!
+
+    // What happens when you buy it:
+    effect: {
+        type: 'combo',         // 'combo' = do multiple things
+        effects: [
+            { type: 'full_heal' },           // Heal to 100
+            { type: 'give_score', amount: 100 }  // +100 points
+        ]
     }
-]
+}
 ```
 
-### Add a New Crafting Recipe
+### Effect Types You Can Use
 
-Find `CRAFT_RECIPES` and add:
+| Effect | What it does | Example |
+|--------|--------------|---------|
+| `heal` | Add health | `{ type: 'heal', amount: 30 }` |
+| `full_heal` | Set health to 100 | `{ type: 'full_heal' }` |
+| `give_coins` | Add pig coins | `{ type: 'give_coins', amount: 50 }` |
+| `give_score` | Add score points | `{ type: 'give_score', amount: 100 }` |
+| `combo` | Do multiple things | See example above |
+
+---
+
+## Add a Crafting Recipe (js/data/recipes.js)
+
+Open `js/data/recipes.js` and add a new recipe:
 
 ```javascript
-CRAFT_RECIPES: [
-    // ... existing recipes ...
-    {
-        id: 'super_snack',
-        name: 'Super Snack',
-        description: 'Heals 50 health and gives 100 points!',
-        cost: { berries: 8, nuts: 4, mushrooms: 3 },
-        effect: function() {
-            GameState.health = Math.min(100, GameState.health + 50);
-            GameState.score += 100;
-            Game.playSound('collect');
+{
+    id: 'super_snack',
+    name: 'Super Snack',
+    description: 'Heals 50 health and gives 100 points!',
+
+    // What resources are needed:
+    cost: {
+        berries: 8,
+        nuts: 4,
+        mushrooms: 3
+    },
+
+    // What happens when crafted:
+    effect: {
+        type: 'combo',
+        effects: [
+            { type: 'heal', amount: 50 },
+            { type: 'give_score', amount: 100 }
+        ]
+    }
+}
+```
+
+---
+
+## Create Your Own Villager (js/data/villagers.js)
+
+Open `js/data/villagers.js` and add a new villager!
+
+### Simple Villager (Just Talks)
+
+```javascript
+{
+    name: "Max",
+    role: "Adventurer",
+
+    // Colors (see color guide below)
+    skinColor: 0xffccaa,       // Peachy skin
+    outfitColor: 0x0066ff,     // Blue clothes
+    hatColor: 0xff0000,        // Red hat (use null for no hat)
+
+    // Where they stand in the village
+    position: { x: 30, z: 10 },
+
+    // What they say
+    conversation: {
+        start: 'hello',        // Which node to start with
+
+        nodes: {
+            'hello': {
+                text: "Hey there! I'm Max the adventurer!",
+                choices: [
+                    { text: "Hi Max!", nextNode: 'chat' },
+                    { text: "Bye!", nextNode: null }    // null = end conversation
+                ]
+            },
+            'chat': {
+                text: "I've explored the whole forest! It's dangerous out there.",
+                choices: [
+                    { text: "Any tips?", nextNode: 'tips' },
+                    { text: "Cool! Bye!", nextNode: null }
+                ]
+            },
+            'tips': {
+                text: "Always keep food in your inventory! Press 1, 2, or 3 to eat.",
+                choices: [
+                    { text: "Thanks!", nextNode: null }
+                ]
+            }
         }
     }
-]
+}
+```
+
+### Trading Villager (Trades Resources for Rewards)
+
+```javascript
+{
+    name: "Doc Hooves",
+    role: "Village Doctor",
+
+    skinColor: 0xffc0cb,       // Pink skin
+    outfitColor: 0xffffff,     // White coat
+    hatColor: null,            // No hat
+
+    position: { x: -25, z: 5 },
+
+    conversation: {
+        start: 'greeting',
+
+        nodes: {
+            'greeting': {
+                text: "Hello! I'm the village doctor. Need healing?",
+                choices: [
+                    {
+                        text: "Heal me! (costs 5 berries)",
+                        nextNode: 'healed',
+
+                        // This is the trade!
+                        effect: {
+                            type: 'trade',
+                            cost: { berries: 5, nuts: 0, mushrooms: 0 },
+                            reward: { health: 100, coins: 0, score: 0 }
+                        },
+
+                        // If player doesn't have enough, go here:
+                        failNode: 'not_enough'
+                    },
+                    { text: "No thanks", nextNode: null }
+                ]
+            },
+
+            'healed': {
+                text: "There you go! All better now!",
+                choices: [
+                    { text: "Thanks doc!", nextNode: null }
+                ]
+            },
+
+            'not_enough': {
+                text: "Sorry, you need 5 berries for healing!",
+                choices: [
+                    { text: "I'll come back later", nextNode: null }
+                ]
+            }
+        }
+    }
+}
+```
+
+### How Conversations Flow
+
+```
+start: 'greeting'
+     │
+     ▼
+┌─────────────────────────────────────────┐
+│  'greeting' node:                       │
+│  text: "Hello! Need healing?"           │
+│                                         │
+│  [Heal me!] ────► 'healed' (if success) │
+│              └──► 'not_enough' (if fail)│
+│  [No thanks] ───► null (end)            │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
 ## Change Colors
 
-Colors in this game use **hex codes**. Here's how they work:
-
-```
-0xRRGGBB
-  ││││││
-  ││││└└── Blue  (00 to FF)
-  ││└└──── Green (00 to FF)
-  └└────── Red   (00 to FF)
-```
-
-### Common Colors
+Colors use **hex codes**: `0xRRGGBB`
 
 | Color | Code | Color | Code |
 |-------|------|-------|------|
@@ -144,354 +317,31 @@ Colors in this game use **hex codes**. Here's how they work:
 
 ---
 
-## Create Your Own Villager
+## Change Enemy Stats (js/data/enemies.js)
 
-Villagers are friendly pigs you can talk to. Here's how to add one!
-
-### Step 1: Add Villager Data
-
-In `js/config.js`, find `VILLAGER_DATA` and add:
+Open `js/data/enemies.js` to make enemies easier or harder:
 
 ```javascript
-VILLAGER_DATA: [
-    // ... existing villagers ...
-    {
-        name: "Max",                    // Villager's name
-        role: "Adventurer",             // Their job
-        skinColor: 0xffccaa,            // Skin color (pinkish)
-        outfitColor: 0x0066ff,          // Clothes color (blue)
-        hatColor: 0xff0000,             // Hat color (red) - remove this line for no hat
-        position: { x: 30, z: 10 },     // Where they stand in the village
-        conversationTree: {
-            startNode: 'hello',
-            nodes: {
-                'hello': {
-                    text: "Hey there! I'm Max the adventurer!",
-                    choices: [
-                        { text: "Hi Max!", nextNode: 'chat' },
-                        { text: "Bye!", nextNode: null }
-                    ]
-                },
-                'chat': {
-                    text: "I've explored the whole forest! It's dangerous out there.",
-                    choices: [
-                        { text: "Any tips?", nextNode: 'tips' },
-                        { text: "Cool! Bye!", nextNode: null }
-                    ]
-                },
-                'tips': {
-                    text: "Always keep food in your inventory! Press 1, 2, or 3 to eat when hurt.",
-                    choices: [
-                        { text: "Thanks!", nextNode: null }
-                    ]
-                }
-            }
-        }
-    }
-]
-```
+badger: {
+    speed: 3,              // How fast (player walks at 6)
+    speedVariation: 1,     // Random 0-1 added to speed
+    damage: 15,            // Health lost per second when touching
+    radius: 0.8,           // Size of hitbox
+    // ... colors too!
+},
 
-### How Conversations Work
-
-```
-startNode: 'hello'     <-- This is where the conversation begins
-     │
-     ▼
-┌─────────────────────────────────────────┐
-│  'hello' node:                          │
-│  text: "Hey there!"                     │
-│  choices:                               │
-│    ├── "Hi Max!" ──────► goes to 'chat' │
-│    └── "Bye!" ─────────► null = end     │
-└─────────────────────────────────────────┘
-     │
-     ▼ (if player picks "Hi Max!")
-┌─────────────────────────────────────────┐
-│  'chat' node:                           │
-│  text: "I've explored..."               │
-│  choices:                               │
-│    ├── "Any tips?" ────► goes to 'tips' │
-│    └── "Cool! Bye!" ───► null = end     │
-└─────────────────────────────────────────┘
-```
-
-### Villager That Trades With You
-
-Want your villager to actually DO something? Add an `action`:
-
-```javascript
-{
-    name: "Healer Pigsworth",
-    role: "Doctor",
-    skinColor: 0xffc0cb,
-    outfitColor: 0xffffff,    // White coat
-    position: { x: -20, z: 15 },
-    conversationTree: {
-        startNode: 'greeting',
-        nodes: {
-            'greeting': {
-                text: "Hello! I'm the village doctor. Need healing?",
-                choices: [
-                    { text: "Heal me! (costs 5 berries)", action: 'heal_with_berries', nextNode: 'healed' },
-                    { text: "No thanks", nextNode: null }
-                ]
-            },
-            'healed': {
-                text: "There you go! All better now!",
-                choices: [
-                    { text: "Thanks doc!", nextNode: null }
-                ]
-            },
-            'heal_fail': {
-                text: "Sorry, you need 5 berries for healing!",
-                choices: [
-                    { text: "I'll come back later", nextNode: null }
-                ]
-            }
-        }
-    }
+weasel: {
+    speed: 4.5,            // Faster than badger!
+    speedVariation: 1.5,
+    damage: 10,            // Less damage than badger
+    radius: 0.6,           // Smaller than badger
 }
 ```
 
-Then in `js/dialogs.js`, find `executeDialogAction` and add your action:
-
+**PEACEFUL MODE (no damage):**
 ```javascript
-case 'heal_with_berries':
-    if (GameState.resourceCounts.berries >= 5) {
-        GameState.resourceCounts.berries -= 5;  // Take 5 berries
-        GameState.health = 100;                  // Full health!
-        UI.updateUI();
-        return true;   // Success!
-    }
-    return false;      // Failed - not enough berries
+damage: 0
 ```
-
-### More Action Examples
-
-```javascript
-// Give the player coins
-case 'give_coins':
-    GameState.pigCoins += 50;
-    UI.updateUI();
-    return true;
-
-// Trade nuts for health
-case 'trade_nuts':
-    if (GameState.resourceCounts.nuts >= 3) {
-        GameState.resourceCounts.nuts -= 3;
-        GameState.health = Math.min(100, GameState.health + 25);
-        UI.updateUI();
-        return true;
-    }
-    return false;
-
-// Give score points
-case 'bonus_points':
-    GameState.score += 100;
-    UI.updateUI();
-    return true;
-
-// Open the shop
-case 'open_shop':
-    UI.openShop();
-    return true;
-```
-
----
-
-## Change the Player (Peccary)
-
-Open `js/player.js` to change how your character looks and moves.
-
-### Change Player Speed
-
-Find this line (around line 143):
-
-```javascript
-const moveSpeed = isSprinting ? 12 : 6;
-```
-
-- `12` = speed when sprinting (holding SHIFT)
-- `6` = normal walking speed
-
-**Make player super fast:**
-```javascript
-const moveSpeed = isSprinting ? 25 : 15;
-```
-
-### Change Jump Height
-
-Find this line (around line 175):
-
-```javascript
-GameState.velocity.y = 8;
-```
-
-**Jump higher:**
-```javascript
-GameState.velocity.y = 15;
-```
-
-**Super bouncy:**
-```javascript
-GameState.velocity.y = 25;
-```
-
-### Change Player Colors
-
-Find these lines in the `createPeccary` function:
-
-```javascript
-// Body color (dark gray)
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
-
-// Collar color (white)
-const collarMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
-```
-
-**Make a blue peccary with gold collar:**
-```javascript
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0066ff });
-const collarMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
-```
-
----
-
-## Change Enemies
-
-Open `js/enemies.js` to change enemy behavior.
-
-### Make Enemies Slower/Faster
-
-Find these lines:
-
-```javascript
-// In createBadger (around line 70)
-badger.userData = {
-    type: 'badger',
-    speed: 3 + Math.random() * 1,    // Speed: 3-4
-    radius: 0.8,
-    damage: 15                        // Damage per second
-};
-
-// In createWeasel (around line 140)
-weasel.userData = {
-    type: 'weasel',
-    speed: 4.5 + Math.random() * 1.5, // Speed: 4.5-6
-    radius: 0.6,
-    damage: 10
-};
-```
-
-**Slow, weak enemies:**
-```javascript
-speed: 1,
-damage: 5
-```
-
-**Fast, dangerous enemies:**
-```javascript
-speed: 10,
-damage: 30
-```
-
-### Change Enemy Colors
-
-In `createBadger`, find:
-```javascript
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2f2f2f });
-```
-
-In `createWeasel`, find:
-```javascript
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-```
-
-**Make a purple badger:**
-```javascript
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x800080 });
-```
-
----
-
-## Change the World
-
-### Change World Size
-
-In `js/config.js`:
-
-```javascript
-WORLD_SIZE: 500,    // Current size
-```
-
-**Bigger world:**
-```javascript
-WORLD_SIZE: 1000,
-```
-
-**Tiny world:**
-```javascript
-WORLD_SIZE: 200,
-```
-
-### Change Starting Health/Coins
-
-In `js/game.js`, find the `startGame` function:
-
-```javascript
-GameState.health = 100;
-GameState.pigCoins = 50;
-```
-
-**Start with more:**
-```javascript
-GameState.health = 100;
-GameState.pigCoins = 500;    // Rich!
-```
-
----
-
-## Add Sounds
-
-Open `js/game.js` and find the `playSound` function. Each sound has:
-- **frequency** = pitch (higher number = higher sound)
-- **gain** = volume (0 to 1)
-- **duration** = how long it plays
-
-```javascript
-case 'collect':
-    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    duration = 0.15;
-    break;
-```
-
-**Make a deeper sound:**
-```javascript
-oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);  // Lower pitch
-```
-
-**Make it louder:**
-```javascript
-gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);  // Louder (max 1.0)
-```
-
----
-
-## File Guide
-
-| File | What's inside | When to edit |
-|------|---------------|--------------|
-| `js/config.js` | All settings, shop items, recipes, villagers | Most changes go here! |
-| `js/player.js` | Player looks and movement | Change speed, jump, colors |
-| `js/enemies.js` | Enemy looks and behavior | Change enemy speed, damage |
-| `js/items.js` | Resources and crafting | Add new collectibles |
-| `js/dialogs.js` | How conversations work | Add dialog actions |
-| `js/ui.js` | Screen displays | Change HUD, minimap |
-| `js/game.js` | Game loop, sounds | Change sounds, starting values |
-| `js/environment.js` | Trees, ground, village | Change world looks |
-| `index.html` | Page layout, CSS styles | Change colors, fonts, layout |
 
 ---
 
@@ -515,33 +365,44 @@ gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);  // Louder (max 1.0)
 
 ## Quick Copy-Paste Examples
 
-### Easy Mode Settings
+### Easy Mode Settings (settings.js)
 ```javascript
-// In config.js
 ENEMY_SPAWN_RATE: 15000,
 MAX_ENEMIES: 3,
 ENEMY_DETECTION_RANGE: 15,
 ```
 
-### Give Player Lots of Starting Stuff
+### Rich Start (settings.js)
 ```javascript
-// In game.js, in startGame function
-GameState.health = 100;
-GameState.pigCoins = 1000;
-GameState.resourceCounts = { berries: 50, nuts: 50, mushrooms: 50 };
+STARTING_COINS: 1000,
+STARTING_RESOURCES: {
+    berries: 50,
+    nuts: 50,
+    mushrooms: 50
+},
 ```
 
-### Super Jump + Super Speed
+### Super Healing Food (settings.js)
 ```javascript
-// In player.js
-const moveSpeed = isSprinting ? 30 : 20;  // Super fast!
-GameState.velocity.y = 20;                 // Super jump!
+FOOD_HEALING: {
+    berries: 20,
+    nuts: 35,
+    mushrooms: 50
+},
 ```
 
-### Friendly Enemies (No Damage)
+### Peaceful Enemies (enemies.js)
 ```javascript
-// In enemies.js, for both badger and weasel
-damage: 0
+badger: {
+    speed: 2,
+    damage: 0,    // No damage!
+    // ...
+},
+weasel: {
+    speed: 3,
+    damage: 0,    // No damage!
+    // ...
+}
 ```
 
 ---

@@ -231,10 +231,45 @@ window.Dialogs = (function() {
 
     /**
      * Handle selecting a dialog choice.
+     *
+     * Choices can have effects defined in two ways:
+     * 1. NEW WAY: effectData object (from data files) - handled by Effects.execute()
+     * 2. OLD WAY: action string (for backwards compatibility)
+     *
+     * If an effect fails (player can't afford it), we go to failNode instead.
      */
     function selectDialogChoice(choice, villager) {
+        let success = true;
+
+        // ====================================================================
+        // NEW EFFECT SYSTEM
+        // ====================================================================
+        // If the choice has effectData, use the Effects system
+        if (choice.effectData) {
+            success = Effects.execute(choice.effectData);
+
+            // If effect failed, go to fail node
+            if (!success) {
+                // Use specific failNode if provided, otherwise try common fail nodes
+                const failNodeId = choice.failNode ||
+                                   'trade_fail' ||
+                                   'heal_fail';
+                const failNode = villager.userData.conversationTree.nodes[failNodeId];
+
+                if (failNode) {
+                    renderDialogNode(failNode, villager);
+                    Game.playSound('hurt');
+                    return;
+                }
+            }
+        }
+
+        // ====================================================================
+        // OLD ACTION SYSTEM (for backwards compatibility)
+        // ====================================================================
+        // If choice has an action string, use the old executeDialogAction
         if (choice.action) {
-            const success = executeDialogAction(choice.action, villager);
+            success = executeDialogAction(choice.action, villager);
 
             if (!success) {
                 const failNode = villager.userData.conversationTree.nodes['trade_fail'] ||
@@ -247,6 +282,10 @@ window.Dialogs = (function() {
             }
         }
 
+        // ====================================================================
+        // NAVIGATE TO NEXT NODE
+        // ====================================================================
+        // If there's a next node, go to it; otherwise close dialog
         if (choice.nextNode) {
             GameState.currentDialogNode = choice.nextNode;
             const nextNode = villager.userData.conversationTree.nodes[choice.nextNode];
@@ -257,6 +296,7 @@ window.Dialogs = (function() {
                 closeDialog();
             }
         } else {
+            // nextNode is null - end the conversation
             closeDialog();
         }
     }
