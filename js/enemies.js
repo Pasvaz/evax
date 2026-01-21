@@ -485,33 +485,35 @@ window.Enemies = (function() {
     function createNest(x, z) {
         const nest = new THREE.Group();
 
-        // Create twig circle (nest base)
+        // Create twig circle (nest base) - much larger for visibility
         const twigMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
-        for (let i = 0; i < 12; i++) {
-            const angle = (i / 12) * Math.PI * 2;
-            const radius = 0.5;
+        for (let i = 0; i < 16; i++) {
+            const angle = (i / 16) * Math.PI * 2;
+            const radius = 1.5; // Increased from 0.5
             const twig = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6),
+                new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6), // Increased from 0.02, 0.3
                 twigMat
             );
             twig.position.set(
                 Math.cos(angle) * radius,
-                0.05,
+                0.3, // Raised up
                 Math.sin(angle) * radius
             );
             twig.rotation.y = angle;
             twig.rotation.z = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+            twig.castShadow = true;
             nest.add(twig);
         }
 
-        // Add moss lining inside nest
+        // Add moss lining inside nest - much larger
         const mossMat = new THREE.MeshStandardMaterial({ color: 0x6b8e23 });
         const moss = new THREE.Mesh(
-            new THREE.SphereGeometry(0.3, 12, 12),
+            new THREE.SphereGeometry(1.2, 16, 16), // Increased from 0.3
             mossMat
         );
         moss.scale.set(1, 0.3, 1);
-        moss.position.y = 0.05;
+        moss.position.y = 0.2;
+        moss.castShadow = true;
         nest.add(moss);
 
         nest.position.set(x, 0, z);
@@ -581,10 +583,31 @@ window.Enemies = (function() {
         baby.userData.birthTime = GameState.clock.elapsedTime;
         baby.userData.maturityTime = GameState.clock.elapsedTime + 120; // 2 minutes
         baby.userData.entityId = 'baby_goose_' + Date.now() + '_' + Math.random();
+        baby.userData.isBaby = true; // Mark as baby for predator targeting
+
+        // Make baby goose grey by changing material colors
+        baby.traverse((child) => {
+            if (child.isMesh && child.material) {
+                if (child.material.color) {
+                    // Change to grey tones
+                    const currentColor = child.material.color.getHex();
+                    // If it's a body part (not beak or legs which are orange)
+                    if (currentColor !== 0xff8c00) {
+                        child.material.color.setHex(0x999999); // Medium grey
+                    }
+                }
+            }
+        });
 
         // Add to game
         GameState.enemies.push(baby);
         GameState.scene.add(baby);
+
+        // Mark parent as having offspring (double detection range)
+        const parent = GameState.enemies.find(e => e.userData.entityId === nest.ownerId);
+        if (parent) {
+            parent.userData.hasOffspring = true;
+        }
 
         // Reset nest state
         nest.egg.exists = false;
@@ -729,8 +752,13 @@ window.Enemies = (function() {
                         const distToNest = enemy.position.distanceTo(nestVec);
 
                         // Find closest hostile enemy within attack range
+                        // Double detection range if goose has offspring
+                        const detectionRange = enemy.userData.hasOffspring ?
+                            enemy.userData.attackRange * 2 :
+                            enemy.userData.attackRange;
+
                         let closestEnemy = null;
-                        let closestEnemyDist = enemy.userData.attackRange;
+                        let closestEnemyDist = detectionRange;
 
                         for (let j = 0; j < GameState.enemies.length; j++) {
                             const other = GameState.enemies[j];
@@ -854,6 +882,12 @@ window.Enemies = (function() {
 
                     // Check if mature
                     if (currentTime >= enemy.userData.maturityTime) {
+                        // Clear parent's hasOffspring flag
+                        const parent = GameState.enemies.find(e => e.userData.entityId === enemy.userData.parentId);
+                        if (parent) {
+                            parent.userData.hasOffspring = false;
+                        }
+
                         // Grow to full size
                         enemy.scale.set(1, 1, 1);
                         enemy.userData.size = 1;
@@ -863,6 +897,21 @@ window.Enemies = (function() {
                         enemy.userData.targetNestPos = null;
                         enemy.userData.nestId = null;
                         enemy.userData.entityId = 'goose_' + Date.now() + '_' + Math.random();
+                        enemy.userData.isBaby = false; // No longer a baby
+
+                        // Restore adult colors
+                        enemy.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                if (child.material.color) {
+                                    const currentColor = child.material.color.getHex();
+                                    // Restore body color if it's grey
+                                    if (currentColor === 0x999999) {
+                                        child.material.color.setHex(0xf5deb3); // Wheat/beige
+                                    }
+                                }
+                            }
+                        });
+
                         console.log('Baby goose matured into adult');
                     }
                 }
@@ -920,18 +969,75 @@ window.Enemies = (function() {
                     direction = enemy.userData.wanderDir;
                 }
             }
-            // Hostile enemies chase the player
-            else if (!enemy.userData.friendly && distance < CONFIG.ENEMY_DETECTION_RANGE) {
-                direction = new THREE.Vector3()
-                    .subVectors(GameState.peccary.position, enemy.position)
-                    .normalize();
+            // Hostile enemies (badgers/weasels) hunt baby geese or chase player
+            else if (!enemy.userData.friendly) {
+                // First check for baby geese within range
+                let targetBaby = null;
+                let closestBabyDist = CONFIG.ENEMY_DETECTION_RANGE;
 
-                speed = enemy.userData.speed;
-                if (distance < 15) speed *= 1.3;
+                for (let j = 0; j < GameState.enemies.length; j++) {
+                    const other = GameState.enemies[j];
+                    if (other === enemy || !other.userData.isBaby) continue;
 
-                enemy.userData.isChasing = true;
+                    const dist = enemy.position.distanceTo(other.position);
+                    if (dist < closestBabyDist) {
+                        closestBabyDist = dist;
+                        targetBaby = other;
+                    }
+                }
+
+                if (targetBaby) {
+                    // Chase baby goose
+                    direction = new THREE.Vector3()
+                        .subVectors(targetBaby.position, enemy.position)
+                        .normalize();
+                    speed = enemy.userData.speed * 1.2; // Faster when hunting babies
+                    enemy.userData.isChasing = true;
+
+                    // Attack baby on contact
+                    if (closestBabyDist < enemy.userData.radius + targetBaby.userData.radius) {
+                        targetBaby.userData.health -= enemy.userData.damage * delta;
+                        if (targetBaby.userData.health <= 0) {
+                            // Clear parent's hasOffspring flag
+                            const parent = GameState.enemies.find(e => e.userData.entityId === targetBaby.userData.parentId);
+                            if (parent) {
+                                parent.userData.hasOffspring = false;
+                            }
+
+                            // Kill baby goose
+                            const idx = GameState.enemies.indexOf(targetBaby);
+                            if (idx !== -1) {
+                                GameState.scene.remove(targetBaby);
+                                GameState.enemies.splice(idx, 1);
+                                if (idx < i) i--;
+                            }
+                        }
+                    }
+                } else if (distance < CONFIG.ENEMY_DETECTION_RANGE) {
+                    // No baby geese nearby, chase player
+                    direction = new THREE.Vector3()
+                        .subVectors(GameState.peccary.position, enemy.position)
+                        .normalize();
+
+                    speed = enemy.userData.speed;
+                    if (distance < 15) speed *= 1.3;
+
+                    enemy.userData.isChasing = true;
+                } else {
+                    // Wander randomly
+                    enemy.userData.isChasing = false;
+                    enemy.userData.wanderTime += delta;
+
+                    if (enemy.userData.wanderTime > 2 + Math.random() * 2) {
+                        const angle = Math.random() * Math.PI * 2;
+                        enemy.userData.wanderDir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+                        enemy.userData.wanderTime = 0;
+                    }
+
+                    direction = enemy.userData.wanderDir;
+                }
             } else {
-                // Wander randomly
+                // Wander randomly (shouldn't reach here for hostile enemies)
                 enemy.userData.isChasing = false;
                 enemy.userData.wanderTime += delta;
 

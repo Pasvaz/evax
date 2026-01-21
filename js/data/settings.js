@@ -49,14 +49,14 @@ window.SETTINGS = {
     // Default: 4000 (one enemy every 4 seconds)
     // Easy: 10000 (every 10 seconds)
     // Hard: 1000 (every 1 seconds!)
-    ENEMY_SPAWN_RATE: 4000,
+    ENEMY_SPAWN_RATE: 1000,
 
     // Maximum number of enemies at once
     // More enemies = HARDER
     // Default: 50
     // Easy: 10
     // Hard: 250
-    MAX_ENEMIES: 10,
+    MAX_ENEMIES: 40,
 
     // How close before enemies notice you and start chasing?
     // Bigger number = enemies see you from farther away = HARDER
