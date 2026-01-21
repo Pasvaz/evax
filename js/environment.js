@@ -34,11 +34,68 @@ window.Environment = (function() {
      * Create the ground plane with height variation and grass.
      */
     function createGround() {
+        // Initialize river path first so we can flatten terrain there
+        initRiverPath();
+
         const groundGeo = new THREE.PlaneGeometry(CONFIG.WORLD_SIZE * 2, CONFIG.WORLD_SIZE * 2, 50, 50);
 
         const vertices = groundGeo.attributes.position.array;
+        const gridSize = 51; // 50 segments = 51 vertices per side
+        const worldSize = CONFIG.WORLD_SIZE * 2;
+
         for (let i = 0; i < vertices.length; i += 3) {
-            vertices[i + 2] += Math.random() * 0.5;
+            // PlaneGeometry vertices already span from -WORLD_SIZE to +WORLD_SIZE
+            const x = vertices[i];
+            const z = vertices[i + 1];
+
+            // Check if this vertex is in or near the river
+            const inRiver = isInRiver(x, z);
+            const nearRiver = !inRiver && RIVER_POINTS.length > 0 && (() => {
+                let minDist = Infinity;
+                for (let j = 0; j < RIVER_POINTS.length - 1; j++) {
+                    const p1 = RIVER_POINTS[j];
+                    const p2 = RIVER_POINTS[j + 1];
+                    const dx = p2.x - p1.x;
+                    const dz = p2.z - p1.z;
+                    const len = Math.sqrt(dx * dx + dz * dz);
+                    const t = Math.max(0, Math.min(1,
+                        ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+                    ));
+                    const closestX = p1.x + t * dx;
+                    const closestZ = p1.z + t * dz;
+                    const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+                    minDist = Math.min(minDist, dist);
+                }
+                return minDist < RIVER_WIDTH / 2 + 8;
+            })();
+
+            // Create a depression for the river
+            if (inRiver) {
+                vertices[i + 2] = -0.5; // River bed significantly below ground
+            } else if (nearRiver) {
+                // Calculate distance for slope
+                let minDist = Infinity;
+                for (let j = 0; j < RIVER_POINTS.length - 1; j++) {
+                    const p1 = RIVER_POINTS[j];
+                    const p2 = RIVER_POINTS[j + 1];
+                    const dx = p2.x - p1.x;
+                    const dz = p2.z - p1.z;
+                    const len = Math.sqrt(dx * dx + dz * dz);
+                    const t = Math.max(0, Math.min(1,
+                        ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+                    ));
+                    const closestX = p1.x + t * dx;
+                    const closestZ = p1.z + t * dz;
+                    const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+                    minDist = Math.min(minDist, dist);
+                }
+                // Smooth slope from river edge to normal terrain
+                const edgeDist = minDist - RIVER_WIDTH / 2;
+                const slopeFactor = edgeDist / 8; // 8 units of slope
+                vertices[i + 2] = -0.5 + slopeFactor * 0.5 + Math.random() * 0.1;
+            } else {
+                vertices[i + 2] += Math.random() * 0.5; // Normal terrain variation
+            }
         }
         groundGeo.computeVertexNormals();
 
@@ -129,6 +186,288 @@ window.Environment = (function() {
         return Math.sqrt(dx * dx + dz * dz) < CONFIG.VILLAGE_RADIUS + 10;
     }
 
+    // ========================================================================
+    // RIVER SYSTEM
+    // ========================================================================
+    // River runs from bottom-left corner to middle-top of the map
+
+    const RIVER_WIDTH = 15;
+    const RIVER_POINTS = [];
+
+    /**
+     * Initialize river path points.
+     * River flows from bottom-left (-x, +z) to middle-top (0, -z)
+     */
+    function initRiverPath() {
+        // Clear any existing points
+        RIVER_POINTS.length = 0;
+
+        const worldSize = CONFIG.WORLD_SIZE;
+        // Start at bottom-left corner
+        const startX = -worldSize * 0.5;
+        const startZ = worldSize * 0.5;
+        // End at middle-top
+        const endX = 0;
+        const endZ = -worldSize * 0.5;
+
+        // Create river path with some curves
+        const numPoints = 20;
+        for (let i = 0; i <= numPoints; i++) {
+            const t = i / numPoints;
+            // Interpolate with some sine wave for natural curves
+            const x = startX + (endX - startX) * t + Math.sin(t * Math.PI * 2) * 30;
+            const z = startZ + (endZ - startZ) * t + Math.cos(t * Math.PI * 1.5) * 20;
+            RIVER_POINTS.push({ x, z });
+        }
+
+        console.log('River initialized with', RIVER_POINTS.length, 'points');
+        console.log('First point:', RIVER_POINTS[0]);
+        console.log('Last point:', RIVER_POINTS[RIVER_POINTS.length - 1]);
+    }
+
+    /**
+     * Check if a position is in the river.
+     * @param {number} x - X coordinate
+     * @param {number} z - Z coordinate
+     * @returns {boolean} - True if position is in river
+     */
+    function isInRiver(x, z) {
+        if (RIVER_POINTS.length === 0) return false;
+
+        // Find closest point on river path
+        let minDist = Infinity;
+        for (let i = 0; i < RIVER_POINTS.length - 1; i++) {
+            const p1 = RIVER_POINTS[i];
+            const p2 = RIVER_POINTS[i + 1];
+
+            // Project point onto line segment
+            const dx = p2.x - p1.x;
+            const dz = p2.z - p1.z;
+            const len = Math.sqrt(dx * dx + dz * dz);
+            const t = Math.max(0, Math.min(1,
+                ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+            ));
+
+            const closestX = p1.x + t * dx;
+            const closestZ = p1.z + t * dz;
+            const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+            minDist = Math.min(minDist, dist);
+        }
+
+        return minDist < RIVER_WIDTH / 2;
+    }
+
+    /**
+     * Check if a position is on the riverbank (near river but not in it).
+     * @param {number} x - X coordinate
+     * @param {number} z - Z coordinate
+     * @returns {boolean} - True if position is on riverbank
+     */
+    function isOnRiverbank(x, z) {
+        if (RIVER_POINTS.length === 0) return false;
+
+        let minDist = Infinity;
+        for (let i = 0; i < RIVER_POINTS.length - 1; i++) {
+            const p1 = RIVER_POINTS[i];
+            const p2 = RIVER_POINTS[i + 1];
+
+            const dx = p2.x - p1.x;
+            const dz = p2.z - p1.z;
+            const len = Math.sqrt(dx * dx + dz * dz);
+            const t = Math.max(0, Math.min(1,
+                ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+            ));
+
+            const closestX = p1.x + t * dx;
+            const closestZ = p1.z + t * dz;
+            const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+            minDist = Math.min(minDist, dist);
+        }
+
+        // Riverbank is within 10 units of river edge but not in river
+        return minDist >= RIVER_WIDTH / 2 && minDist < RIVER_WIDTH / 2 + 10;
+    }
+
+    /**
+     * Create the river mesh and decorations.
+     */
+    function createRiver() {
+        // River path already initialized in createGround()
+
+        // Create river bed (slightly below ground)
+        const riverBedMat = new THREE.MeshStandardMaterial({
+            color: 0x2a4a3a,
+            roughness: 0.9
+        });
+
+        // Create water surface
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x4a9fd8,
+            transparent: true,
+            opacity: 0.9,
+            roughness: 0.2,
+            metalness: 0.3,
+            emissive: 0x1a4a6a,
+            emissiveIntensity: 0.3,
+            side: THREE.DoubleSide
+        });
+
+        // Create a continuous river mesh using extruded shape along path
+        // We'll create a ribbon that follows the river points
+        const riverWidth = RIVER_WIDTH;
+        const bedWidth = RIVER_WIDTH + 6;
+
+        // Generate vertices for river bed (wider ribbon)
+        const bedVertices = [];
+        const bedIndices = [];
+
+        for (let i = 0; i < RIVER_POINTS.length; i++) {
+            const point = RIVER_POINTS[i];
+
+            // Calculate perpendicular direction for width
+            let perpX, perpZ;
+            if (i < RIVER_POINTS.length - 1) {
+                const next = RIVER_POINTS[i + 1];
+                const dx = next.x - point.x;
+                const dz = next.z - point.z;
+                const len = Math.sqrt(dx * dx + dz * dz);
+                perpX = -dz / len;
+                perpZ = dx / len;
+            } else {
+                const prev = RIVER_POINTS[i - 1];
+                const dx = point.x - prev.x;
+                const dz = point.z - prev.z;
+                const len = Math.sqrt(dx * dx + dz * dz);
+                perpX = -dz / len;
+                perpZ = dx / len;
+            }
+
+            // Add left and right vertices
+            bedVertices.push(
+                point.x - perpX * bedWidth / 2, -0.2, point.z - perpZ * bedWidth / 2,  // left
+                point.x + perpX * bedWidth / 2, -0.2, point.z + perpZ * bedWidth / 2   // right
+            );
+
+            // Create triangles between segments
+            if (i > 0) {
+                const base = (i - 1) * 2;
+                bedIndices.push(
+                    base, base + 1, base + 2,
+                    base + 1, base + 3, base + 2
+                );
+            }
+        }
+
+        const bedGeo = new THREE.BufferGeometry();
+        bedGeo.setAttribute('position', new THREE.Float32BufferAttribute(bedVertices, 3));
+        bedGeo.setIndex(bedIndices);
+        bedGeo.computeVertexNormals();
+
+        const riverBed = new THREE.Mesh(bedGeo, riverBedMat);
+        riverBed.receiveShadow = true;
+        GameState.scene.add(riverBed);
+
+        // Generate vertices for water surface (narrower ribbon)
+        const waterVertices = [];
+        const waterIndices = [];
+
+        for (let i = 0; i < RIVER_POINTS.length; i++) {
+            const point = RIVER_POINTS[i];
+
+            let perpX, perpZ;
+            if (i < RIVER_POINTS.length - 1) {
+                const next = RIVER_POINTS[i + 1];
+                const dx = next.x - point.x;
+                const dz = next.z - point.z;
+                const len = Math.sqrt(dx * dx + dz * dz);
+                perpX = -dz / len;
+                perpZ = dx / len;
+            } else {
+                const prev = RIVER_POINTS[i - 1];
+                const dx = point.x - prev.x;
+                const dz = point.z - prev.z;
+                const len = Math.sqrt(dx * dx + dz * dz);
+                perpX = -dz / len;
+                perpZ = dx / len;
+            }
+
+            waterVertices.push(
+                point.x - perpX * riverWidth / 2, 0.5, point.z - perpZ * riverWidth / 2,  // left - make very visible
+                point.x + perpX * riverWidth / 2, 0.5, point.z + perpZ * riverWidth / 2   // right
+            );
+
+            if (i > 0) {
+                const base = (i - 1) * 2;
+                waterIndices.push(
+                    base, base + 1, base + 2,
+                    base + 1, base + 3, base + 2
+                );
+            }
+        }
+
+        const waterGeo = new THREE.BufferGeometry();
+        waterGeo.setAttribute('position', new THREE.Float32BufferAttribute(waterVertices, 3));
+        waterGeo.setIndex(waterIndices);
+        waterGeo.computeVertexNormals();
+
+        const riverWater = new THREE.Mesh(waterGeo, waterMat);
+        GameState.scene.add(riverWater);
+
+        console.log('River created - bed vertices:', bedVertices.length / 3, 'water vertices:', waterVertices.length / 3);
+
+
+        // Add river rocks
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.9 });
+        for (let i = 0; i < 60; i++) {
+            const pointIdx = Math.floor(Math.random() * (RIVER_POINTS.length - 1));
+            const t = Math.random();
+            const p1 = RIVER_POINTS[pointIdx];
+            const p2 = RIVER_POINTS[pointIdx + 1] || p1;
+
+            const x = p1.x + (p2.x - p1.x) * t + (Math.random() - 0.5) * RIVER_WIDTH * 0.8;
+            const z = p1.z + (p2.z - p1.z) * t + (Math.random() - 0.5) * RIVER_WIDTH * 0.8;
+
+            const rockGeo = new THREE.DodecahedronGeometry(0.3 + Math.random() * 0.5, 0);
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(x, 0.1, z);
+            rock.scale.y = 0.5;
+            rock.rotation.y = Math.random() * Math.PI * 2;
+            GameState.scene.add(rock);
+        }
+
+        // Add riverbank decorations (reeds/cattails)
+        const reedMat = new THREE.MeshStandardMaterial({ color: 0x4a6741 });
+        for (let i = 0; i < 100; i++) {
+            const pointIdx = Math.floor(Math.random() * (RIVER_POINTS.length - 1));
+            const t = Math.random();
+            const p1 = RIVER_POINTS[pointIdx];
+            const p2 = RIVER_POINTS[pointIdx + 1] || p1;
+
+            // Position on riverbank
+            const centerX = p1.x + (p2.x - p1.x) * t;
+            const centerZ = p1.z + (p2.z - p1.z) * t;
+            const offsetAngle = Math.random() * Math.PI * 2;
+            const offsetDist = RIVER_WIDTH / 2 + Math.random() * 5;
+            const x = centerX + Math.cos(offsetAngle) * offsetDist;
+            const z = centerZ + Math.sin(offsetAngle) * offsetDist;
+
+            // Don't place in village
+            if (isInVillage(x, z)) continue;
+
+            // Create reed/cattail
+            const reed = new THREE.Group();
+            for (let j = 0; j < 3; j++) {
+                const stalkGeo = new THREE.CylinderGeometry(0.02, 0.03, 1 + Math.random() * 0.5, 4);
+                const stalk = new THREE.Mesh(stalkGeo, reedMat);
+                stalk.position.set((Math.random() - 0.5) * 0.2, 0.5, (Math.random() - 0.5) * 0.2);
+                stalk.rotation.x = (Math.random() - 0.5) * 0.2;
+                reed.add(stalk);
+            }
+            reed.position.set(x, 0, z);
+            GameState.scene.add(reed);
+        }
+    }
+
     /**
      * Create a rock decoration.
      */
@@ -163,12 +502,15 @@ window.Environment = (function() {
      * Create the forest with trees, rocks, and logs.
      */
     function createForest() {
+        // Create river first so we can avoid placing trees in it
+        createRiver();
+
         for (let i = 0; i < 400; i++) {
             let x, z;
             do {
                 x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
                 z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
-            } while (Math.sqrt(x * x + z * z) < 15 || isInVillage(x, z));
+            } while (Math.sqrt(x * x + z * z) < 15 || isInVillage(x, z) || isInRiver(x, z));
 
             const tree = createTree(x, z);
             GameState.trees.push(tree);
@@ -180,7 +522,7 @@ window.Environment = (function() {
             do {
                 x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
                 z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
-            } while (isInVillage(x, z));
+            } while (isInVillage(x, z) || isInRiver(x, z));
 
             const rock = createRock();
             rock.position.set(x, 0, z);
@@ -192,7 +534,7 @@ window.Environment = (function() {
             do {
                 x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
                 z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
-            } while (isInVillage(x, z));
+            } while (isInVillage(x, z) || isInRiver(x, z));
 
             const log = createLog();
             log.position.set(x, 0.3, z);
@@ -468,6 +810,10 @@ window.Environment = (function() {
         setupLighting: setupLighting,
         createGround: createGround,
         createForest: createForest,
-        isInVillage: isInVillage
+        isInVillage: isInVillage,
+        isInRiver: isInRiver,
+        isOnRiverbank: isOnRiverbank,
+        getRiverPoints: () => RIVER_POINTS,
+        getRiverWidth: () => RIVER_WIDTH
     };
 })();

@@ -34,6 +34,27 @@ window.UI = (function() {
         ctx.arc(vx, vy, CONFIG.VILLAGE_RADIUS * scale * 0.8, 0, Math.PI * 2);
         ctx.fill();
 
+        // Draw river
+        const riverPoints = Environment.getRiverPoints();
+        const riverWidth = Environment.getRiverWidth();
+        if (riverPoints && riverPoints.length > 0) {
+            ctx.strokeStyle = '#4a90e2';
+            ctx.lineWidth = riverWidth * scale;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            riverPoints.forEach((point, i) => {
+                const rx = (point.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+                const ry = (point.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+                if (i === 0) {
+                    ctx.moveTo(rx, ry);
+                } else {
+                    ctx.lineTo(rx, ry);
+                }
+            });
+            ctx.stroke();
+        }
+
         ctx.fillStyle = '#0a2a0a';
         GameState.trees.forEach(tree => {
             const tx = (tree.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
@@ -49,6 +70,8 @@ window.UI = (function() {
                 case 'berry': color = '#4169e1'; break;
                 case 'nut': color = '#8b4513'; break;
                 case 'mushroom': color = '#ff6347'; break;
+                case 'seaweed': color = '#2e8b57'; break;
+                case 'egg': color = '#f5f5dc'; break;
             }
             ctx.fillStyle = color;
             const rx = (res.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
@@ -57,6 +80,19 @@ window.UI = (function() {
             ctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
             ctx.fill();
         });
+
+        // Draw nests on minimap
+        if (GameState.nests) {
+            GameState.nests.forEach(nest => {
+                const nestColor = nest.egg && nest.egg.exists ? '#ffeb3b' : '#8b7355';
+                ctx.fillStyle = nestColor;
+                const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+                const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+                ctx.beginPath();
+                ctx.arc(nx, ny, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
 
         GameState.enemies.forEach(enemy => {
             // Use minimap color from enemy data (set by ANIMAL_TYPES in enemies.js)
@@ -95,12 +131,22 @@ window.UI = (function() {
         document.getElementById('berries-count').textContent = GameState.resourceCounts.berries;
         document.getElementById('nuts-count').textContent = GameState.resourceCounts.nuts;
         document.getElementById('mushrooms-count').textContent = GameState.resourceCounts.mushrooms;
+        document.getElementById('seaweed-count').textContent = GameState.resourceCounts.seaweed;
+        document.getElementById('eggs-count').textContent = GameState.resourceCounts.eggs;
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
 
         const minutes = Math.floor(GameState.timeElapsed / 60);
         const seconds = Math.floor(GameState.timeElapsed % 60);
         document.getElementById('time-display').textContent =
             minutes + ':' + seconds.toString().padStart(2, '0');
+
+        // Toggle chase warning
+        const chaseWarning = document.getElementById('goose-chase-warning');
+        if (GameState.chasingGeese && GameState.chasingGeese.length > 0) {
+            chaseWarning.style.display = 'block';
+        } else {
+            chaseWarning.style.display = 'none';
+        }
     }
 
     /**
@@ -245,7 +291,9 @@ window.UI = (function() {
         const resourceInfo = {
             berries: { name: 'Berries', icon: '🫐' },
             nuts: { name: 'Nuts', icon: '🥜' },
-            mushrooms: { name: 'Mushrooms', icon: '🍄' }
+            mushrooms: { name: 'Mushrooms', icon: '🍄' },
+            seaweed: { name: 'Seaweed', icon: '🌿' },
+            eggs: { name: 'Eggs', icon: '🥚' }
         };
 
         Object.keys(CONFIG.RESOURCE_PRICES).forEach(resourceType => {

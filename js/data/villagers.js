@@ -142,6 +142,7 @@ window.VILLAGERS = [
                     choices: [
                         { text: "Tell me about the village.", nextNode: 'village_history' },
                         { text: "What dangers are out there?", nextNode: 'dangers' },
+                        { text: "Trade eggs.", nextNode: 'egg_trade_offer' },
                         { text: "Goodbye.", nextNode: null }  // null = end conversation
                     ]
                 },
@@ -172,7 +173,7 @@ window.VILLAGERS = [
                 },
 
                 'dangers': {
-                    text: "Badgers and weasels lurk in the shadows. They're aggressive predators! and other predators of uncomprehendable horror stalk the wilds. My father died by the hands of one.",
+                    text: "Badgers and weasels lurk in the shadows. They're aggressive predators! and other predators of uncomprehendable horror stalk the wilds. My father died by the hands of one.geese arent generally dangerous,but they kill all who attempt to steal their eggs,but,to be completely honest they have the right to do so as the eggs make a tasty omelet",
                     choices: [
                         { text: "How do I defend myself?", nextNode: 'defense' },
                         { text: "I'll be careful.", nextNode: 'farewell' }
@@ -190,6 +191,34 @@ window.VILLAGERS = [
                     text: "Visit us anytime. You are always welcome here, young one.",
                     choices: [
                         { text: "Goodbye.", nextNode: null }
+                    ]
+                },
+
+                'egg_trade_offer': {
+                    text: "Ah, you've brought me a goose egg! These are rare delicacies. I'll give you 60 pig coins for each one.",
+                    choices: [
+                        {
+                            text: "Trade 1 egg for 60 pig coins.",
+                            nextNode: 'egg_trade_success',
+                            effect: { type: 'trade', cost: { eggs: 1 }, reward: { coins: 60 } },
+                            failNode: 'no_eggs'
+                        },
+                        { text: "Not now.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'egg_trade_success': {
+                    text: "Excellent! Here are your coins. These eggs make the finest omelets!",
+                    choices: [
+                        { text: "Trade another egg.", nextNode: 'egg_trade_offer' },
+                        { text: "Thanks! Goodbye.", nextNode: null }
+                    ]
+                },
+
+                'no_eggs': {
+                    text: "You don't have any eggs to trade. Come back when you've collected some from the riverbank geese!",
+                    choices: [
+                        { text: "I'll be back.", nextNode: 'greeting' }
                     ]
                 }
             }

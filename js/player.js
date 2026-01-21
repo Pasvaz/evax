@@ -117,13 +117,18 @@ window.Player = (function() {
         model.rotation.y = Math.PI;
         GameState.peccary.add(model);
 
-        GameState.peccary.position.set(0, 0, 0);
+        // Spawn player in the village (safe zone)
+        GameState.peccary.position.set(
+            CONFIG.VILLAGE_CENTER.x,
+            0,
+            CONFIG.VILLAGE_CENTER.z
+        );
         GameState.peccary.userData.radius = 1;
         GameState.scene.add(GameState.peccary);
     }
 
     /**
-     * Check for resource use key presses (1, 2, 3).
+     * Check for resource use key presses (1, 2, 3, 4, 5).
      */
     function checkResourceUseKeys() {
         if (GameState.keys['1'] && !GameState.resourceKeyStates['1']) {
@@ -135,10 +140,18 @@ window.Player = (function() {
         if (GameState.keys['3'] && !GameState.resourceKeyStates['3']) {
             Items.useStoredResource('mushroom');
         }
+        if (GameState.keys['4'] && !GameState.resourceKeyStates['4']) {
+            Items.useStoredResource('seaweed');
+        }
+        if (GameState.keys['5'] && !GameState.resourceKeyStates['5']) {
+            Items.useStoredResource('egg');
+        }
 
         GameState.resourceKeyStates['1'] = GameState.keys['1'] || false;
         GameState.resourceKeyStates['2'] = GameState.keys['2'] || false;
         GameState.resourceKeyStates['3'] = GameState.keys['3'] || false;
+        GameState.resourceKeyStates['4'] = GameState.keys['4'] || false;
+        GameState.resourceKeyStates['5'] = GameState.keys['5'] || false;
     }
 
     /**
@@ -148,8 +161,20 @@ window.Player = (function() {
     function updatePlayer(delta) {
         checkResourceUseKeys();
 
+        // Check if player is in water
+        const inWater = Environment.isInRiver(
+            GameState.peccary.position.x,
+            GameState.peccary.position.z
+        );
+        GameState.playerInWater = inWater;
+
         const isSprinting = GameState.keys['shift'];
-        const moveSpeed = isSprinting ? 12 : 6;
+        let moveSpeed = isSprinting ? 120 : 6;
+
+        // Slow down in water (50% speed)
+        if (inWater) {
+            moveSpeed *= 0.5;
+        }
 
         const direction = new THREE.Vector3();
 
@@ -175,12 +200,21 @@ window.Player = (function() {
             GameState.peccary.rotation.y = currentRotation + diff * 0.15;
 
             if (!GameState.isJumping) {
-                GameState.peccary.position.y = Math.abs(Math.sin(GameState.clock.elapsedTime * 10)) * 0.1;
+                if (inWater) {
+                    // Swimming animation - bob up and down more slowly, lower body
+                    GameState.peccary.position.y = -0.3 + Math.sin(GameState.clock.elapsedTime * 4) * 0.15;
+                } else {
+                    // Normal walking bob
+                    GameState.peccary.position.y = Math.abs(Math.sin(GameState.clock.elapsedTime * 10)) * 0.1;
+                }
             }
 
             if (isSprinting && !GameState.wasSprinting && Math.random() < 0.7) {
                 Game.playSound('peccary');
             }
+        } else if (inWater && !GameState.isJumping) {
+            // Idle swimming animation
+            GameState.peccary.position.y = -0.3 + Math.sin(GameState.clock.elapsedTime * 2) * 0.1;
         }
 
         GameState.wasSprinting = isSprinting;

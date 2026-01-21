@@ -179,6 +179,9 @@ window.Effects = (function() {
             if (effect.cost.mushrooms) {
                 GameState.resourceCounts.mushrooms -= effect.cost.mushrooms;
             }
+            if (effect.cost.eggs) {
+                GameState.resourceCounts.eggs -= effect.cost.eggs;
+            }
         }
 
         // Give the rewards
@@ -255,6 +258,9 @@ window.Effects = (function() {
             return false;
         }
         if (cost.mushrooms && GameState.resourceCounts.mushrooms < cost.mushrooms) {
+            return false;
+        }
+        if (cost.eggs && GameState.resourceCounts.eggs < cost.eggs) {
             return false;
         }
 

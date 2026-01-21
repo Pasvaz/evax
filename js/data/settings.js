@@ -22,7 +22,7 @@ window.SETTINGS = {
     // Default: 500 (a nice medium-sized world)
     // Try: 200 for tiny, 1000 for huge
 
-    WORLD_SIZE: 500,
+    WORLD_SIZE: 900,
 
     // ========================================================================
     // VILLAGE LOCATION
@@ -36,7 +36,7 @@ window.SETTINGS = {
 
     // How big is the safe village area?
     // Default: 60 (big enough to feel safe)
-    VILLAGE_RADIUS: 60,
+    VILLAGE_RADIUS: 100,
 
     // ========================================================================
     // ENEMY SETTINGS
@@ -48,15 +48,15 @@ window.SETTINGS = {
     // 1000 = 1 second, so 4000 = 4 seconds between spawns
     // Default: 4000 (one enemy every 4 seconds)
     // Easy: 10000 (every 10 seconds)
-    // Hard: 2000 (every 2 seconds!)
-    ENEMY_SPAWN_RATE: 1000,
+    // Hard: 1000 (every 1 seconds!)
+    ENEMY_SPAWN_RATE: 4000,
 
     // Maximum number of enemies at once
     // More enemies = HARDER
     // Default: 50
     // Easy: 10
     // Hard: 250
-    MAX_ENEMIES: 50,
+    MAX_ENEMIES: 10,
 
     // How close before enemies notice you and start chasing?
     // Bigger number = enemies see you from farther away = HARDER
@@ -89,21 +89,27 @@ window.SETTINGS = {
     RESOURCE_PRICES: {
         berries: 2,      // Berries are common, worth 2 coins
         nuts: 5,         // Nuts are medium, worth 5 coins
-        mushrooms: 10    // Mushrooms are rare, worth 10 coins
+        mushrooms: 10,   // Mushrooms are rare, worth 10 coins
+        seaweed: 15,     // Seaweed grows on riverbanks, worth 15 coins
+        eggs: 50         // Eggs are rare and valuable, worth 50 coins
     },
 
-    // How much health each food restores when eaten (press 1, 2, or 3)
+    // How much health each food restores when eaten (press 1, 2, 3, 4, or 5)
     FOOD_HEALING: {
         berries: 5,      // Berries heal 5 health
         nuts: 8,         // Nuts heal 8 health
-        mushrooms: 12    // Mushrooms heal 12 health
+        mushrooms: 12,   // Mushrooms heal 12 health
+        seaweed: 20,     // Seaweed heals 20 health
+        eggs: 40         // Eggs heal 40 health
     },
 
     // Score points for collecting each resource
     RESOURCE_SCORES: {
         berries: 10,     // 10 points per berry
         nuts: 15,        // 15 points per nut
-        mushrooms: 20    // 20 points per mushroom
+        mushrooms: 20,   // 20 points per mushroom
+        seaweed: 25,     // 25 points per seaweed
+        eggs: 60         // 60 points per egg
     },
 
     // ========================================================================
@@ -121,7 +127,9 @@ window.SETTINGS = {
     STARTING_RESOURCES: {
         berries: 0,
         nuts: 0,
-        mushrooms: 0
+        mushrooms: 0,
+        seaweed: 0,
+        eggs: 0
     },
 
     // Movement speed (higher = faster)

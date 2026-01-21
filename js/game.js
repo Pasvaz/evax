@@ -17,12 +17,14 @@ window.GameState = {
     resources: [],
     trees: [],
     villagers: [],
+    nests: [],           // Array of nest objects
+    chasingGeese: [],    // Geese currently chasing player
 
     // Game status
     gameRunning: false,
     health: 100,
     score: 0,
-    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0 },
+    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0 },
     pigCoins: 0,
     timeElapsed: 0,
 
@@ -62,7 +64,7 @@ window.GameState = {
     soundCooldowns: { peccary: 0, badger: 0, weasel: 0 },
 
     // Resource key states
-    resourceKeyStates: { '1': false, '2': false, '3': false }
+    resourceKeyStates: { '1': false, '2': false, '3': false, '4': false, '5': false }
 };
 
 window.Game = (function() {
@@ -234,6 +236,9 @@ window.Game = (function() {
             Items.spawnResource();
         }
 
+        // Spawn geese on riverbank (friendly guardians)
+        Enemies.spawnGeese(5);
+
         GameState.spawnIntervals.push(setInterval(() => {
             if (GameState.gameRunning) Enemies.spawnEnemy();
         }, CONFIG.ENEMY_SPAWN_RATE));
@@ -256,7 +261,7 @@ window.Game = (function() {
     function restartGame() {
         GameState.health = 100;
         GameState.score = 0;
-        GameState.resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
+        GameState.resourceCounts = { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0 };
         GameState.pigCoins = 50;
         GameState.timeElapsed = 0;
 
@@ -271,10 +276,21 @@ window.Game = (function() {
 
         GameState.enemies.forEach(e => GameState.scene.remove(e));
         GameState.resources.forEach(r => GameState.scene.remove(r));
+        GameState.nests.forEach(n => {
+            GameState.scene.remove(n.mesh);
+            if (n.egg && n.egg.mesh) GameState.scene.remove(n.egg.mesh);
+        });
         GameState.enemies = [];
         GameState.resources = [];
+        GameState.nests = [];
+        GameState.chasingGeese = [];
 
-        GameState.peccary.position.set(0, 0, 0);
+        // Respawn player in the village (safe zone)
+        GameState.peccary.position.set(
+            CONFIG.VILLAGE_CENTER.x,
+            0,
+            CONFIG.VILLAGE_CENTER.z
+        );
         GameState.peccary.rotation.y = 0;
 
         document.getElementById('game-over-screen').classList.add('hidden');
@@ -288,6 +304,9 @@ window.Game = (function() {
         for (let i = 0; i < 10; i++) {
             Items.spawnResource();
         }
+
+        // Spawn geese on riverbank (friendly guardians)
+        Enemies.spawnGeese(5);
 
         GameState.spawnIntervals.push(setInterval(() => {
             if (GameState.gameRunning) Enemies.spawnEnemy();
@@ -317,6 +336,7 @@ window.Game = (function() {
             GameState.timeElapsed += delta;
             Player.updatePlayer(delta);
             Enemies.updateEnemies(delta);
+            Enemies.updateNests(delta);
             Items.updateResources(delta);
             Dialogs.updateVillagers(delta);
             updateCamera();
@@ -346,14 +366,14 @@ window.Game = (function() {
             // Scene setup
             GameState.scene = new THREE.Scene();
             GameState.scene.background = new THREE.Color(0x87ceeb);
-            GameState.scene.fog = new THREE.Fog(0x87ceeb, 80, 300);
+            GameState.scene.fog = new THREE.Fog(0x87ceeb, 200, 1200);
 
             // Camera setup
             GameState.camera = new THREE.PerspectiveCamera(
                 75,
                 window.innerWidth / window.innerHeight,
                 0.1,
-                1000
+                2000
             );
             GameState.camera.position.set(0, 10, 15);
 

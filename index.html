@@ -582,6 +582,8 @@
                     <div class="resource-icon"><span>🫐</span><span id="berries-count">0</span></div>
                     <div class="resource-icon"><span>🥜</span><span id="nuts-count">0</span></div>
                     <div class="resource-icon"><span>🍄</span><span id="mushrooms-count">0</span></div>
+                    <div class="resource-icon"><span>🌿</span><span id="seaweed-count">0</span></div>
+                    <div class="resource-icon"><span>🥚</span><span id="eggs-count">0</span></div>
                 </div>
             </div>
             <div class="stat-box">
@@ -600,7 +602,7 @@
         <p>WASD / Arrow Keys - Move</p>
         <p>SHIFT - Sprint</p>
         <p>SPACE - Jump</p>
-        <p>1/2/3 - Use Berry/Nut/Mushroom</p>
+        <p>1/2/3/4/5 - Use Berry/Nut/Mushroom/Seaweed/Egg</p>
         <p>E - Talk to villagers</p>
         <p>TAB - Open Craft Menu</p>
     </div>
@@ -610,6 +612,11 @@
     </div>
 
     <div id="warning-text">DANGER!</div>
+
+    <!-- Goose chase warning -->
+    <div id="goose-chase-warning" style="display: none; position: fixed; top: 20%; left: 50%; transform: translateX(-50%); font-size: 24px; color: #ffaa00; text-shadow: 2px 2px 4px #000; font-weight: bold; z-index: 1000; pointer-events: none;">
+        ANGRY GOOSE CHASING YOU! GET TO THE VILLAGE!
+    </div>
 
     <!-- Interaction prompt -->
     <div id="interact-prompt" class="hidden">Press E to talk</div>

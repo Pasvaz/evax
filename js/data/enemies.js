@@ -80,7 +80,7 @@ window.ENEMIES = [
         damage: 15,                    // High damage per second!
         radius: 0.8,                   // Chunky hitbox
         size: 1,                       // Normal size
-        health: 1,                     // Dies in one hit
+        health: 17,                     // Dies in one hit
         spawnWeight: 1,                // Normal spawn rate
         minimapColor: '#ff4444',       // Red dot on minimap
 
@@ -106,7 +106,7 @@ window.ENEMIES = [
         damage: 10,                    // Less damage than badger
         radius: 0.6,                   // Slim hitbox
         size: 1,                       // Normal size
-        health: 1,                     // Dies in one hit
+        health: 10,                     // Dies in one hit
         spawnWeight: 1,                // Normal spawn rate
         minimapColor: '#ff8800',       // Orange dot on minimap
 
@@ -119,6 +119,37 @@ window.ENEMIES = [
             eyeGlow: 0x333300,         // Yellow eye glow
             ears: 0x8b4513,            // Brown ears (same as body)
             legs: 0x6b3310             // Darker brown legs
+        }
+    },
+
+    // ========================================================================
+    // GOOSE - Friendly river guardian
+    // ========================================================================
+    {
+        id: 'goose',
+        type: 'goose',                 // Uses goose 3D model
+        speed: 3,                      // Moderate speed
+        speedVariation: 1,             // Final speed: 3-4
+        damage: 8,                     // Attacks enemies, not player
+        radius: 0.6,                   // Medium hitbox
+        size: 1,                       // Normal size
+        health: 25,                     // Takes 2 hits
+        spawnWeight: 0,                // Does NOT spawn randomly! Spawned on riverbank
+        minimapColor: '#ffffaa',       // Light yellow dot (friendly)
+
+        // Special behavior flags
+        friendly: true,                // Does NOT attack the player
+        attacksEnemies: true,          // Attacks badgers and weasels
+        attackRange: 20,               // How close enemies need to be
+        immuneToWater: true,           // Not slowed by water
+
+        // Beige/cream goose colors
+        colors: {
+            body: 0xf5deb3,            // Wheat/beige body
+            beak: 0xff8c00,            // Dark orange beak
+            eyes: 0x1a1a1a,            // Black eyes
+            legs: 0xff8c00,            // Orange legs
+            wings: 0xfaebd7            // Antique white wings
         }
     }
 

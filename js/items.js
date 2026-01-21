@@ -41,6 +41,20 @@ window.Items = (function() {
                     healAmount = foodHealing.mushrooms;
                 }
                 break;
+            case 'seaweed':
+                if (GameState.resourceCounts.seaweed > 0) {
+                    GameState.resourceCounts.seaweed--;
+                    hasResource = true;
+                    healAmount = foodHealing.seaweed;
+                }
+                break;
+            case 'egg':
+                if (GameState.resourceCounts.eggs > 0) {
+                    GameState.resourceCounts.eggs--;
+                    hasResource = true;
+                    healAmount = foodHealing.eggs;
+                }
+                break;
         }
 
         if (hasResource) {
@@ -141,6 +155,79 @@ window.Items = (function() {
                     resource.add(spot);
                 }
                 break;
+
+            case 'seaweed':
+                // Green seaweed that grows on riverbanks
+                color = 0x2e8b57; // Sea green
+                healAmount = 20;
+                value = 25;
+                const seaweedMat = new THREE.MeshStandardMaterial({
+                    color: color,
+                    side: THREE.DoubleSide
+                });
+                // Create wavy seaweed strands
+                for (let i = 0; i < 4; i++) {
+                    const strandGeo = new THREE.PlaneGeometry(0.15, 0.6 + Math.random() * 0.3);
+                    const strand = new THREE.Mesh(strandGeo, seaweedMat);
+                    strand.position.set(
+                        (Math.random() - 0.5) * 0.3,
+                        0.3,
+                        (Math.random() - 0.5) * 0.3
+                    );
+                    strand.rotation.y = Math.random() * Math.PI;
+                    strand.rotation.x = (Math.random() - 0.5) * 0.3;
+                    resource.add(strand);
+                }
+                // Add some bubbles for effect
+                const bubbleMat = new THREE.MeshStandardMaterial({
+                    color: 0xaaffff,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                for (let i = 0; i < 3; i++) {
+                    const bubble = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.05, 8, 8),
+                        bubbleMat
+                    );
+                    bubble.position.set(
+                        (Math.random() - 0.5) * 0.3,
+                        0.4 + Math.random() * 0.3,
+                        (Math.random() - 0.5) * 0.3
+                    );
+                    resource.add(bubble);
+                }
+                break;
+
+            case 'egg':
+                // Beige goose egg with brown speckles
+                color = 0xf5f5dc; // Beige
+                healAmount = 40;
+                value = 60;
+                // Create egg body (oval sphere)
+                const eggBody = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.25, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: color })
+                );
+                eggBody.scale.set(1, 1.3, 1);
+                eggBody.position.y = 0.3;
+                resource.add(eggBody);
+                // Add brown speckles around the egg
+                const speckleMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+                for (let i = 0; i < 8; i++) {
+                    const speckle = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.03, 8, 8),
+                        speckleMat
+                    );
+                    const angle = (i / 8) * Math.PI * 2;
+                    const height = (Math.random() - 0.5) * 0.4;
+                    speckle.position.set(
+                        Math.cos(angle) * 0.22,
+                        0.3 + height,
+                        Math.sin(angle) * 0.22
+                    );
+                    resource.add(speckle);
+                }
+                break;
         }
 
         resource.userData = {
@@ -152,14 +239,35 @@ window.Items = (function() {
         };
 
         let rx, rz;
-        do {
-            rx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
-            rz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
-        } while (Math.sqrt(rx * rx + rz * rz) < 10);
+        if (type === 'seaweed') {
+            // Seaweed spawns on riverbanks - position is set by spawnResource
+            rx = 0;
+            rz = 0;
+        } else {
+            do {
+                rx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
+                rz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
+            } while (Math.sqrt(rx * rx + rz * rz) < 10);
+        }
 
         resource.position.set(rx, 0, rz);
 
         return resource;
+    }
+
+    /**
+     * Find a random position on the riverbank.
+     */
+    function findRiverbankPosition() {
+        // Try to find a valid riverbank position
+        for (let attempts = 0; attempts < 50; attempts++) {
+            const rx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
+            const rz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
+            if (Environment.isOnRiverbank(rx, rz) && !Environment.isInVillage(rx, rz)) {
+                return { x: rx, z: rz };
+            }
+        }
+        return null;
     }
 
     /**
@@ -168,6 +276,19 @@ window.Items = (function() {
     function spawnResource() {
         if (GameState.resources.length >= CONFIG.MAX_RESOURCES) return;
 
+        // 20% chance to spawn seaweed on riverbank
+        if (Math.random() < 0.2) {
+            const pos = findRiverbankPosition();
+            if (pos) {
+                const resource = createResource('seaweed');
+                resource.position.set(pos.x, 0, pos.z);
+                GameState.resources.push(resource);
+                GameState.scene.add(resource);
+                return;
+            }
+        }
+
+        // Otherwise spawn regular resources
         const types = ['berry', 'nut', 'mushroom'];
         const type = types[Math.floor(Math.random() * types.length)];
         const resource = createResource(type);
@@ -212,6 +333,31 @@ window.Items = (function() {
         } else if (type === 'mushroom') {
             GameState.resourceCounts.mushrooms++;
             GameState.pigCoins += CONFIG.RESOURCE_PRICES.mushrooms;
+        } else if (type === 'seaweed') {
+            GameState.resourceCounts.seaweed++;
+            GameState.pigCoins += CONFIG.RESOURCE_PRICES.seaweed;
+        } else if (type === 'egg') {
+            GameState.resourceCounts.eggs++;
+            GameState.pigCoins += CONFIG.RESOURCE_PRICES.eggs;
+
+            // Check if this egg came from a nest and trigger parent goose defense
+            if (resource.userData.nestId && GameState.nests) {
+                const nest = GameState.nests.find(n => n.id === resource.userData.nestId);
+                if (nest && nest.ownerId) {
+                    // Find the parent goose
+                    const parentGoose = GameState.enemies.find(e => e.userData.entityId === nest.ownerId);
+                    if (parentGoose && parentGoose.userData.id === 'goose') {
+                        // Make goose hostile and chase player
+                        parentGoose.userData.lifecycleState = 'defending';
+                        parentGoose.userData.chasingPlayer = true;
+                        parentGoose.userData.friendly = false;
+                        if (!GameState.chasingGeese) GameState.chasingGeese = [];
+                        if (!GameState.chasingGeese.includes(parentGoose)) {
+                            GameState.chasingGeese.push(parentGoose);
+                        }
+                    }
+                }
+            }
         }
 
         GameState.score += value;
