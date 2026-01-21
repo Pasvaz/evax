@@ -344,8 +344,8 @@ window.Environment = (function() {
 
             // Add left and right vertices
             bedVertices.push(
-                point.x - perpX * bedWidth / 2, -0.2, point.z - perpZ * bedWidth / 2,  // left
-                point.x + perpX * bedWidth / 2, -0.2, point.z + perpZ * bedWidth / 2   // right
+                point.x - perpX * bedWidth / 2, 0.4, point.z - perpZ * bedWidth / 2,  // left
+                point.x + perpX * bedWidth / 2, 0.4, point.z + perpZ * bedWidth / 2   // right
             );
 
             // Create triangles between segments
@@ -392,7 +392,7 @@ window.Environment = (function() {
             }
 
             waterVertices.push(
-                point.x - perpX * riverWidth / 2, 0.5, point.z - perpZ * riverWidth / 2,  // left - make very visible
+                point.x - perpX * riverWidth / 2, 0.5, point.z - perpZ * riverWidth / 2,  // left
                 point.x + perpX * riverWidth / 2, 0.5, point.z + perpZ * riverWidth / 2   // right
             );
 

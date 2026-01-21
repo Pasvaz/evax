@@ -135,6 +135,7 @@ window.SETTINGS = {
     // Movement speed (higher = faster)
     PLAYER_WALK_SPEED: 6,
     PLAYER_SPRINT_SPEED: 12,
+    PLAYER_SWIM_SPEED: 0.5,
 
     // Jump power (higher = jump higher)
     PLAYER_JUMP_POWER: 8,

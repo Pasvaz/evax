@@ -169,11 +169,11 @@ window.Player = (function() {
         GameState.playerInWater = inWater;
 
         const isSprinting = GameState.keys['shift'];
-        let moveSpeed = isSprinting ? 120 : 6;
+        let moveSpeed = isSprinting ? window.CONFIG.PLAYER_SPRINT_SPEED : window.CONFIG.PLAYER_WALK_SPEED;
 
         // Slow down in water (50% speed)
         if (inWater) {
-            moveSpeed *= 0.5;
+            moveSpeed *= window.CONFIG.PLAYER_SWIM_SPEED;
         }
 
         const direction = new THREE.Vector3();
@@ -221,13 +221,13 @@ window.Player = (function() {
 
         // Jumping
         if ((GameState.keys[' '] || GameState.keys['space']) && !GameState.isJumping) {
-            GameState.velocity.y = 8;
+            GameState.velocity.y = window.CONFIG.PLAYER_JUMP_POWER;
             GameState.isJumping = true;
             Game.playSound('jump');
         }
 
         if (GameState.isJumping) {
-            GameState.velocity.y -= 20 * delta;
+            GameState.velocity.y -= window.CONFIG.GRAVITY * delta;
             GameState.peccary.position.y += GameState.velocity.y * delta;
 
             if (GameState.peccary.position.y <= GameState.groundLevel) {
