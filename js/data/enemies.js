@@ -151,7 +151,110 @@ window.ENEMIES = [
             legs: 0xff8c00,            // Orange legs
             wings: 0xfaebd7            // Antique white wings
         }
+    },
+
+    // ========================================================================
+    // FOX - Cunning egg thief
+    // ========================================================================
+    {
+        id: 'fox',
+        type: 'fox',                   // Uses fox 3D model
+        speed: 4.5,                    // Same as weasel
+        speedVariation: 1.5,           // Final speed: 4.5-6
+        damage: 15,                    // Same as badger
+        radius: 0.7,                   // Medium hitbox
+        size: 1,                       // Normal size
+        health: 20,                    // Tougher than weasel
+        spawnWeight: 1,              // Less common than badger/weasel
+        minimapColor: '#ff6600',       // Orange-red dot on minimap
+
+        // Special behavior flags
+        dodgeChance: 0.15,             // 15% chance to dodge attacks
+        canStealEggs: true,            // Can steal eggs from nests
+        fightsBack: true,              // Will fight geese when attacked
+
+        // Fox colors (orange-red with white chest)
+        colors: {
+            body: 0xd35400,            // Dark orange body
+            chest: 0xffffff,           // White chest/belly
+            snout: 0xffffff,           // White snout
+            nose: 0x1a1a1a,            // Black nose
+            eyes: 0xffaa00,            // Amber eyes
+            eyeGlow: 0x331100,         // Amber eye glow
+            ears: 0xd35400,            // Orange ears
+            earInner: 0x1a1a1a,        // Black inner ears
+            legs: 0x1a1a1a,            // Black legs/paws
+            tail: 0xd35400,            // Orange tail
+            tailTip: 0xffffff          // White tail tip
+        }
     }
+
+    // ========================================================================
+    // LEOPARD TOAD (MALE) - Yellow with brown spots, savannah biome
+    // ========================================================================
+    ,{
+        id: 'leopard_toad_male',
+        type: 'leopard_toad',          // Uses leopard toad 3D model
+        speed: 4,                      // Normal hopping speed
+        speedVariation: 0.5,           // Final speed: 4-4.5
+        fleeSpeed: 15,                 // FAST! Faster than player sprint (12)
+        damage: 3,                     // Light damage when defending
+        radius: 0.4,                   // Small hitbox
+        size: 1,                       // Normal size (still small toad)
+        health: 15,                    // Moderate health
+        spawnWeight: 0,                // Does NOT spawn randomly! Spawned at watering hole
+        minimapColor: '#ffd700',       // Gold dot (male color)
+
+        // Special behavior flags
+        friendly: true,                // Does NOT attack the player normally
+        attacksEnemies: false,         // Toads don't attack enemies
+        immuneToWater: true,           // Lives in/near water
+        biome: 'savannah',             // Only spawns in savannah biome
+
+        // Male leopard toad colors - yellow with brown spots
+        colors: {
+            body: 0xFFD700,            // Golden yellow body
+            spots: 0x4A3728,           // Dark brown spots (10 random spots)
+            belly: 0xFFF8DC,           // Cream/cornsilk belly
+            eyes: 0x2F2F2F,            // Dark eyes
+            eyeBulge: 0xFFE55C,        // Lighter yellow eye bulge
+            legs: 0xE6BE00             // Slightly darker yellow legs
+        }
+    },
+
+    // ========================================================================
+    // LEOPARD TOAD (FEMALE) - Black, slightly smaller
+    // ========================================================================
+    {
+        id: 'leopard_toad_female',
+        type: 'leopard_toad',          // Uses same leopard toad 3D model
+        speed: 4,                      // Same hopping speed
+        speedVariation: 0.5,           // Final speed: 4-4.5
+        fleeSpeed: 15,                 // Same flee speed
+        damage: 5,                     // Stronger when defending eggs!
+        radius: 0.35,                  // Slightly smaller hitbox
+        size: 0.85,                    // 85% size of male
+        health: 12,                    // Slightly less health
+        spawnWeight: 0,                // Does NOT spawn randomly!
+        minimapColor: '#1a1a1a',       // Black dot (female color)
+
+        // Special behavior flags
+        friendly: true,                // Does NOT attack the player normally
+        attacksEnemies: false,         // Toads don't attack enemies
+        immuneToWater: true,           // Lives in/near water
+        biome: 'savannah',             // Only spawns in savannah biome
+        canLayEggs: true,              // Females lay eggs
+
+        // Female leopard toad colors - black
+        colors: {
+            body: 0x1A1A1A,            // Black body
+            spots: 0x0A0A0A,           // Very dark spots (barely visible)
+            belly: 0x2A2A2A,           // Dark gray belly
+            eyes: 0x3F3F3F,            // Dark eyes
+            eyeBulge: 0x2A2A2A,        // Dark gray eye bulge
+            legs: 0x151515             // Very dark legs
+        }
+    },
 
     // ========================================================================
     // ADD MORE ENEMIES HERE!

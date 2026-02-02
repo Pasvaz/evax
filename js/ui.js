@@ -24,17 +24,24 @@ window.UI = (function() {
         const size = 150;
         const scale = size / (CONFIG.WORLD_SIZE * 1.4);
 
-        ctx.fillStyle = '#1a3d1a';
+        // Get current biome data for colors
+        const biomeData = getBiomeData(GameState.currentBiome);
+
+        // Background color based on biome
+        ctx.fillStyle = biomeData.minimapBackground || '#1a3d1a';
         ctx.fillRect(0, 0, size, size);
 
-        const vx = (CONFIG.VILLAGE_CENTER.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-        const vy = (CONFIG.VILLAGE_CENTER.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-        ctx.fillStyle = '#8b7355';
-        ctx.beginPath();
-        ctx.arc(vx, vy, CONFIG.VILLAGE_RADIUS * scale * 0.8, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw village if biome has one
+        if (biomeData.hasVillage) {
+            const vx = (CONFIG.VILLAGE_CENTER.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+            const vy = (CONFIG.VILLAGE_CENTER.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+            ctx.fillStyle = '#8b7355';
+            ctx.beginPath();
+            ctx.arc(vx, vy, CONFIG.VILLAGE_RADIUS * scale * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // Draw river
+        // Draw river (for arboreal biome)
         const riverPoints = Environment.getRiverPoints();
         const riverWidth = Environment.getRiverWidth();
         if (riverPoints && riverPoints.length > 0) {
@@ -53,6 +60,18 @@ window.UI = (function() {
                 }
             });
             ctx.stroke();
+        }
+
+        // Draw watering hole (for savannah biome)
+        if (biomeData.waterFeature === 'wateringHole') {
+            const holePos = biomeData.wateringHolePosition;
+            const holeRadius = biomeData.wateringHoleRadius;
+            const hx = (holePos.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+            const hy = (holePos.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+            ctx.fillStyle = '#4a90e2';
+            ctx.beginPath();
+            ctx.arc(hx, hy, holeRadius * scale, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         ctx.fillStyle = '#0a2a0a';
@@ -81,10 +100,24 @@ window.UI = (function() {
             ctx.fill();
         });
 
-        // Draw nests on minimap
+        // Draw goose nests on minimap (arboreal biome)
         if (GameState.nests) {
             GameState.nests.forEach(nest => {
                 const nestColor = nest.egg && nest.egg.exists ? '#ffeb3b' : '#8b7355';
+                ctx.fillStyle = nestColor;
+                const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+                const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+                ctx.beginPath();
+                ctx.arc(nx, ny, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Draw toad nests on minimap (savannah biome)
+        if (GameState.toadNests) {
+            GameState.toadNests.forEach(nest => {
+                const eggsRemaining = nest.eggs.filter(e => e.exists).length;
+                const nestColor = eggsRemaining > 0 ? '#d2b48c' : '#8b4513'; // Tan with eggs, brown without
                 ctx.fillStyle = nestColor;
                 const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
                 const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;

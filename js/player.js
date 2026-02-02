@@ -237,8 +237,9 @@ window.Player = (function() {
             }
         }
 
-        // World bounds
-        const bound = CONFIG.WORLD_SIZE * 0.7;
+        // World bounds - allow going slightly past 0.7 to trigger biome transitions
+        // The transition border is at 0.7, so we allow up to 0.75 for the actual edge
+        const bound = CONFIG.WORLD_SIZE * 0.75;
         GameState.peccary.position.x = Math.max(-bound, Math.min(bound, GameState.peccary.position.x));
         GameState.peccary.position.z = Math.max(-bound, Math.min(bound, GameState.peccary.position.z));
 

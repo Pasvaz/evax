@@ -109,6 +109,7 @@ window.Environment = (function() {
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         GameState.scene.add(ground);
+        trackObject(ground);
 
         for (let i = 0; i < 500; i++) {
             const grass = createGrassPatch();
@@ -118,6 +119,7 @@ window.Environment = (function() {
                 (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5
             );
             GameState.scene.add(grass);
+            trackObject(grass);
         }
     }
 
@@ -366,6 +368,7 @@ window.Environment = (function() {
         const riverBed = new THREE.Mesh(bedGeo, riverBedMat);
         riverBed.receiveShadow = true;
         GameState.scene.add(riverBed);
+        trackObject(riverBed);
 
         // Generate vertices for water surface (narrower ribbon)
         const waterVertices = [];
@@ -412,6 +415,7 @@ window.Environment = (function() {
 
         const riverWater = new THREE.Mesh(waterGeo, waterMat);
         GameState.scene.add(riverWater);
+        trackObject(riverWater);
 
         console.log('River created - bed vertices:', bedVertices.length / 3, 'water vertices:', waterVertices.length / 3);
 
@@ -433,6 +437,7 @@ window.Environment = (function() {
             rock.scale.y = 0.5;
             rock.rotation.y = Math.random() * Math.PI * 2;
             GameState.scene.add(rock);
+            trackObject(rock);
         }
 
         // Add riverbank decorations (reeds/cattails)
@@ -465,6 +470,7 @@ window.Environment = (function() {
             }
             reed.position.set(x, 0, z);
             GameState.scene.add(reed);
+            trackObject(reed);
         }
     }
 
@@ -515,6 +521,7 @@ window.Environment = (function() {
             const tree = createTree(x, z);
             GameState.trees.push(tree);
             GameState.scene.add(tree);
+            trackObject(tree);
         }
 
         for (let i = 0; i < 120; i++) {
@@ -527,6 +534,7 @@ window.Environment = (function() {
             const rock = createRock();
             rock.position.set(x, 0, z);
             GameState.scene.add(rock);
+            trackObject(rock);
         }
 
         for (let i = 0; i < 50; i++) {
@@ -540,6 +548,7 @@ window.Environment = (function() {
             log.position.set(x, 0.3, z);
             log.rotation.y = Math.random() * Math.PI;
             GameState.scene.add(log);
+            trackObject(log);
         }
 
         createVillage();
@@ -706,29 +715,47 @@ window.Environment = (function() {
 
         const mainHut = createHut(vx, vz, 1.2, 0);
         GameState.scene.add(mainHut);
+        trackObject(mainHut);
 
         const hut2 = createHut(vx + 20, vz + 15, 0.9, Math.PI / 6);
         GameState.scene.add(hut2);
+        trackObject(hut2);
 
         const hut3 = createHut(vx - 18, vz + 20, 1.0, -Math.PI / 4);
         GameState.scene.add(hut3);
+        trackObject(hut3);
 
         const hut4 = createHut(vx + 25, vz - 12, 0.85, Math.PI / 3);
         GameState.scene.add(hut4);
+        trackObject(hut4);
 
         const hut5 = createHut(vx - 22, vz - 18, 0.95, Math.PI);
         GameState.scene.add(hut5);
+        trackObject(hut5);
 
         const well = createWell(vx + 5, vz + 8);
         GameState.scene.add(well);
+        trackObject(well);
 
-        GameState.scene.add(createFence(vx + 35, vz, 12, 0));
-        GameState.scene.add(createFence(vx + 35, vz + 15, 12, 0));
-        GameState.scene.add(createFence(vx + 41, vz + 7.5, 15, Math.PI / 2));
+        const fence1 = createFence(vx + 35, vz, 12, 0);
+        GameState.scene.add(fence1);
+        trackObject(fence1);
+        const fence2 = createFence(vx + 35, vz + 15, 12, 0);
+        GameState.scene.add(fence2);
+        trackObject(fence2);
+        const fence3 = createFence(vx + 41, vz + 7.5, 15, Math.PI / 2);
+        GameState.scene.add(fence3);
+        trackObject(fence3);
 
-        GameState.scene.add(createFence(vx - 35, vz, 12, 0));
-        GameState.scene.add(createFence(vx - 35, vz - 15, 12, 0));
-        GameState.scene.add(createFence(vx - 41, vz - 7.5, 15, Math.PI / 2));
+        const fence4 = createFence(vx - 35, vz, 12, 0);
+        GameState.scene.add(fence4);
+        trackObject(fence4);
+        const fence5 = createFence(vx - 35, vz - 15, 12, 0);
+        GameState.scene.add(fence5);
+        trackObject(fence5);
+        const fence6 = createFence(vx - 41, vz - 7.5, 15, Math.PI / 2);
+        GameState.scene.add(fence6);
+        trackObject(fence6);
 
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
         const villageGround = new THREE.Mesh(
@@ -739,6 +766,7 @@ window.Environment = (function() {
         villageGround.position.set(vx, 0.05, vz);
         villageGround.receiveShadow = true;
         GameState.scene.add(villageGround);
+        trackObject(villageGround);
 
         const pathMat = new THREE.MeshStandardMaterial({ color: 0x9b8b75 });
         const pathLength = CONFIG.WORLD_SIZE * 0.4;
@@ -749,6 +777,7 @@ window.Environment = (function() {
         path.position.set(vx + pathLength * 0.35, 0.06, vz + pathLength * 0.35);
         path.receiveShadow = true;
         GameState.scene.add(path);
+        trackObject(path);
 
         const hayMat = new THREE.MeshStandardMaterial({ color: 0xdaa520 });
         for (let i = 0; i < 5; i++) {
@@ -762,6 +791,7 @@ window.Environment = (function() {
             );
             hay.castShadow = true;
             GameState.scene.add(hay);
+            trackObject(hay);
         }
 
         const barrelMat = new THREE.MeshStandardMaterial({ color: 0x654321 });
@@ -775,6 +805,7 @@ window.Environment = (function() {
             );
             barrel.castShadow = true;
             GameState.scene.add(barrel);
+            trackObject(barrel);
         }
 
         const poleMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
@@ -790,6 +821,7 @@ window.Environment = (function() {
             pole.position.set(tx, 1.5, tz);
             pole.castShadow = true;
             GameState.scene.add(pole);
+            trackObject(pole);
 
             const lanternMat = new THREE.MeshStandardMaterial({
                 color: 0xffaa00,
@@ -800,9 +832,391 @@ window.Environment = (function() {
             const lantern = new THREE.Mesh(lanternGeo, lanternMat);
             lantern.position.set(tx, 3.2, tz);
             GameState.scene.add(lantern);
+            trackObject(lantern);
         });
 
         Dialogs.createVillagers();
+    }
+
+    // ========================================================================
+    // BIOME SYSTEM
+    // ========================================================================
+
+    // Track environment objects for cleanup
+    let environmentObjects = [];
+    let currentBiomeId = 'arboreal';
+
+    /**
+     * Store an object for later cleanup when changing biomes.
+     */
+    function trackObject(obj) {
+        environmentObjects.push(obj);
+    }
+
+    /**
+     * Clear all tracked environment objects.
+     */
+    function clearEnvironment() {
+        environmentObjects.forEach(obj => {
+            GameState.scene.remove(obj);
+        });
+        environmentObjects = [];
+        GameState.trees = [];
+        RIVER_POINTS.length = 0;
+    }
+
+    /**
+     * Rebuild the environment for a specific biome.
+     * @param {string} biomeId - The biome to build
+     */
+    function rebuildForBiome(biomeId) {
+        clearEnvironment();
+        currentBiomeId = biomeId;
+
+        const biomeData = getBiomeData(biomeId);
+
+        // Create ground with biome-specific color
+        createGroundForBiome(biomeData);
+
+        // Create biome-specific features
+        if (biomeData.waterFeature === 'river') {
+            initRiverPath();
+            createRiver();
+        } else if (biomeData.waterFeature === 'wateringHole') {
+            createWateringHole(biomeData);
+        }
+
+        // Create forest if biome has it
+        if (biomeData.hasForest) {
+            createForestElements();
+        } else {
+            // Savannah has scattered trees and rocks
+            createSavannahElements(biomeData);
+        }
+
+        // Create village if biome has it
+        if (biomeData.hasVillage) {
+            createVillage();
+        }
+    }
+
+    /**
+     * Create ground for a specific biome.
+     * @param {Object} biomeData - The biome configuration
+     */
+    function createGroundForBiome(biomeData) {
+        // Initialize river path first if this biome has a river
+        if (biomeData.waterFeature === 'river') {
+            initRiverPath();
+        }
+
+        const groundGeo = new THREE.PlaneGeometry(CONFIG.WORLD_SIZE * 2, CONFIG.WORLD_SIZE * 2, 50, 50);
+        const vertices = groundGeo.attributes.position.array;
+
+        for (let i = 0; i < vertices.length; i += 3) {
+            const x = vertices[i];
+            const z = vertices[i + 1];
+
+            // Check if in river (only for arboreal biome)
+            if (biomeData.waterFeature === 'river') {
+                const inRiver = isInRiver(x, z);
+                const nearRiver = !inRiver && RIVER_POINTS.length > 0 && (() => {
+                    let minDist = Infinity;
+                    for (let j = 0; j < RIVER_POINTS.length - 1; j++) {
+                        const p1 = RIVER_POINTS[j];
+                        const p2 = RIVER_POINTS[j + 1];
+                        const dx = p2.x - p1.x;
+                        const dz = p2.z - p1.z;
+                        const len = Math.sqrt(dx * dx + dz * dz);
+                        const t = Math.max(0, Math.min(1,
+                            ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+                        ));
+                        const closestX = p1.x + t * dx;
+                        const closestZ = p1.z + t * dz;
+                        const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+                        minDist = Math.min(minDist, dist);
+                    }
+                    return minDist < RIVER_WIDTH / 2 + 8;
+                })();
+
+                if (inRiver) {
+                    vertices[i + 2] = -0.5;
+                } else if (nearRiver) {
+                    let minDist = Infinity;
+                    for (let j = 0; j < RIVER_POINTS.length - 1; j++) {
+                        const p1 = RIVER_POINTS[j];
+                        const p2 = RIVER_POINTS[j + 1];
+                        const dx = p2.x - p1.x;
+                        const dz = p2.z - p1.z;
+                        const len = Math.sqrt(dx * dx + dz * dz);
+                        const t = Math.max(0, Math.min(1,
+                            ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+                        ));
+                        const closestX = p1.x + t * dx;
+                        const closestZ = p1.z + t * dz;
+                        const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+                        minDist = Math.min(minDist, dist);
+                    }
+                    const edgeDist = minDist - RIVER_WIDTH / 2;
+                    const slopeFactor = edgeDist / 8;
+                    vertices[i + 2] = -0.5 + slopeFactor * 0.5 + Math.random() * 0.1;
+                } else {
+                    vertices[i + 2] += Math.random() * 0.5;
+                }
+            }
+            // Check if near watering hole (for savannah)
+            else if (biomeData.waterFeature === 'wateringHole') {
+                const holePos = biomeData.wateringHolePosition;
+                const holeRadius = biomeData.wateringHoleRadius;
+                const dist = Math.sqrt((x - holePos.x) ** 2 + (z - holePos.z) ** 2);
+
+                if (dist < holeRadius) {
+                    // Inside watering hole - depression
+                    vertices[i + 2] = -0.3;
+                } else if (dist < holeRadius + 5) {
+                    // Slope around watering hole
+                    const slopeFactor = (dist - holeRadius) / 5;
+                    vertices[i + 2] = -0.3 + slopeFactor * 0.3 + Math.random() * 0.1;
+                } else {
+                    vertices[i + 2] += Math.random() * 0.3; // Flatter terrain for savannah
+                }
+            } else {
+                vertices[i + 2] += Math.random() * 0.5;
+            }
+        }
+        groundGeo.computeVertexNormals();
+
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: biomeData.groundColor,
+            roughness: 1,
+            metalness: 0
+        });
+
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        GameState.scene.add(ground);
+        trackObject(ground);
+
+        // Create grass patches with biome-specific color
+        const grassMat = new THREE.MeshStandardMaterial({
+            color: biomeData.grassColor,
+            side: THREE.DoubleSide
+        });
+
+        for (let i = 0; i < 500; i++) {
+            const grass = createGrassPatchWithMaterial(grassMat);
+            grass.position.set(
+                (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5,
+                0.1,
+                (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5
+            );
+            GameState.scene.add(grass);
+            trackObject(grass);
+        }
+    }
+
+    /**
+     * Create a grass patch with a specific material.
+     */
+    function createGrassPatchWithMaterial(grassMat) {
+        const group = new THREE.Group();
+
+        for (let i = 0; i < 5; i++) {
+            const blade = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.1, 0.5 + Math.random() * 0.5),
+                grassMat
+            );
+            blade.position.set(
+                (Math.random() - 0.5) * 0.5,
+                0.25,
+                (Math.random() - 0.5) * 0.5
+            );
+            blade.rotation.y = Math.random() * Math.PI;
+            group.add(blade);
+        }
+        return group;
+    }
+
+    /**
+     * Create a watering hole for the savannah biome.
+     * @param {Object} biomeData - The biome configuration
+     */
+    function createWateringHole(biomeData) {
+        const holePos = biomeData.wateringHolePosition;
+        const radius = biomeData.wateringHoleRadius;
+
+        // Create water bed (darker ground underneath)
+        const bedMat = new THREE.MeshStandardMaterial({
+            color: 0x2a4a3a,
+            roughness: 0.9
+        });
+        const bedGeo = new THREE.CircleGeometry(radius + 2, 32);
+        const bed = new THREE.Mesh(bedGeo, bedMat);
+        bed.rotation.x = -Math.PI / 2;
+        bed.position.set(holePos.x, 0.01, holePos.z);
+        GameState.scene.add(bed);
+        trackObject(bed);
+
+        // Create water surface
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x4a9fd8,
+            transparent: true,
+            opacity: 0.85,
+            roughness: 0.2,
+            metalness: 0.3,
+            emissive: 0x1a4a6a,
+            emissiveIntensity: 0.3
+        });
+        const waterGeo = new THREE.CircleGeometry(radius, 32);
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.rotation.x = -Math.PI / 2;
+        water.position.set(holePos.x, 0.2, holePos.z);
+        GameState.scene.add(water);
+        trackObject(water);
+
+        // Add some rocks around the watering hole
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9 });
+        for (let i = 0; i < 15; i++) {
+            const angle = (i / 15) * Math.PI * 2 + Math.random() * 0.3;
+            const dist = radius + 1 + Math.random() * 3;
+            const x = holePos.x + Math.cos(angle) * dist;
+            const z = holePos.z + Math.sin(angle) * dist;
+
+            const rockGeo = new THREE.DodecahedronGeometry(0.3 + Math.random() * 0.5, 0);
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(x, 0.15, z);
+            rock.scale.y = 0.5;
+            rock.rotation.y = Math.random() * Math.PI * 2;
+            GameState.scene.add(rock);
+            trackObject(rock);
+        }
+    }
+
+    /**
+     * Check if a position is in the watering hole.
+     * @param {number} x - X coordinate
+     * @param {number} z - Z coordinate
+     * @returns {boolean}
+     */
+    function isInWateringHole(x, z) {
+        if (currentBiomeId !== 'savannah') return false;
+        const biomeData = getBiomeData('savannah');
+        if (biomeData.waterFeature !== 'wateringHole') return false;
+
+        const holePos = biomeData.wateringHolePosition;
+        const radius = biomeData.wateringHoleRadius;
+        const dist = Math.sqrt((x - holePos.x) ** 2 + (z - holePos.z) ** 2);
+        return dist < radius;
+    }
+
+    /**
+     * Create forest elements (trees, rocks, logs) - used by arboreal biome.
+     */
+    function createForestElements() {
+        for (let i = 0; i < 400; i++) {
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+            } while (Math.sqrt(x * x + z * z) < 15 || isInVillage(x, z) || isInRiver(x, z));
+
+            const tree = createTree(x, z);
+            GameState.trees.push(tree);
+            GameState.scene.add(tree);
+            trackObject(tree);
+        }
+
+        for (let i = 0; i < 120; i++) {
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+            } while (isInVillage(x, z) || isInRiver(x, z));
+
+            const rock = createRock();
+            rock.position.set(x, 0, z);
+            GameState.scene.add(rock);
+            trackObject(rock);
+        }
+
+        for (let i = 0; i < 50; i++) {
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
+            } while (isInVillage(x, z) || isInRiver(x, z));
+
+            const log = createLog();
+            log.position.set(x, 0.3, z);
+            log.rotation.y = Math.random() * Math.PI;
+            GameState.scene.add(log);
+            trackObject(log);
+        }
+    }
+
+    /**
+     * Create savannah elements (sparse trees, rocks, dry grass).
+     * @param {Object} biomeData - The biome configuration
+     */
+    function createSavannahElements(biomeData) {
+        const holePos = biomeData.wateringHolePosition || { x: 0, z: 0 };
+        const holeRadius = biomeData.wateringHoleRadius || 7.5;
+
+        // Sparse acacia-like trees
+        for (let i = 0; i < 50; i++) {
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+            } while (Math.sqrt(x * x + z * z) < 15 || isInWateringHole(x, z));
+
+            const tree = createSavannahTree(x, z);
+            GameState.trees.push(tree);
+            GameState.scene.add(tree);
+            trackObject(tree);
+        }
+
+        // Scattered rocks
+        for (let i = 0; i < 60; i++) {
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+            } while (isInWateringHole(x, z));
+
+            const rock = createRock();
+            rock.position.set(x, 0, z);
+            GameState.scene.add(rock);
+            trackObject(rock);
+        }
+    }
+
+    /**
+     * Create a savannah-style tree (acacia-like with flat top).
+     */
+    function createSavannahTree(x, z) {
+        const tree = new THREE.Group();
+
+        // Trunk - taller and thinner
+        const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 10 + Math.random() * 3, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 5;
+        trunk.castShadow = true;
+        tree.add(trunk);
+
+        // Flat, wide canopy (acacia style)
+        const foliageMat = new THREE.MeshStandardMaterial({ color: 0x4a6b3a });
+        const canopyGeo = new THREE.CylinderGeometry(5, 6, 2, 12);
+        const canopy = new THREE.Mesh(canopyGeo, foliageMat);
+        canopy.position.y = 11;
+        canopy.castShadow = true;
+        tree.add(canopy);
+
+        tree.position.set(x, 0, z);
+        tree.userData.radius = 1.5;
+        return tree;
     }
 
     // Public API
@@ -813,7 +1227,10 @@ window.Environment = (function() {
         isInVillage: isInVillage,
         isInRiver: isInRiver,
         isOnRiverbank: isOnRiverbank,
+        isInWateringHole: isInWateringHole,
         getRiverPoints: () => RIVER_POINTS,
-        getRiverWidth: () => RIVER_WIDTH
+        getRiverWidth: () => RIVER_WIDTH,
+        rebuildForBiome: rebuildForBiome,
+        getCurrentBiome: () => currentBiomeId
     };
 })();

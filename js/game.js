@@ -17,8 +17,13 @@ window.GameState = {
     resources: [],
     trees: [],
     villagers: [],
-    nests: [],           // Array of nest objects
+    nests: [],           // Array of nest objects (for geese)
     chasingGeese: [],    // Geese currently chasing player
+
+    // Toad system (savannah biome - separate from goose system)
+    toadNests: [],       // Array of toad nest objects
+    toadMatingTimer: 0,  // Timer for mating season (every 3 minutes)
+    chasingToads: [],    // Toads chasing player (after egg theft)
 
     // Game status
     gameRunning: false,
@@ -64,7 +69,18 @@ window.GameState = {
     soundCooldowns: { peccary: 0, badger: 0, weasel: 0 },
 
     // Resource key states
-    resourceKeyStates: { '1': false, '2': false, '3': false, '4': false, '5': false }
+    resourceKeyStates: { '1': false, '2': false, '3': false, '4': false, '5': false },
+
+    // Biome system
+    currentBiome: 'arboreal',
+    isTransitioning: false,
+    transitionTimer: 0,
+
+    // Border transition tracking
+    borderTransitionTimer: 0,
+    borderTransitionRequired: 2,  // Seconds of standing still required
+    lastPlayerPosition: { x: 0, z: 0 },
+    onBorder: null  // Which border: 'north', 'south', or null
 };
 
 window.Game = (function() {
@@ -265,6 +281,13 @@ window.Game = (function() {
         GameState.pigCoins = 50;
         GameState.timeElapsed = 0;
 
+        // Reset biome to arboreal if in a different biome
+        if (GameState.currentBiome !== 'arboreal') {
+            GameState.currentBiome = 'arboreal';
+            Environment.rebuildForBiome('arboreal');
+            document.getElementById('biome-label').textContent = 'Arboreal Biome';
+        }
+
         if (GameState.isCraftMenuOpen) {
             GameState.isCraftMenuOpen = false;
             document.getElementById('craft-menu').classList.add('hidden');
@@ -325,6 +348,223 @@ window.Game = (function() {
     }
 
     /**
+     * Check if player is crossing a biome border.
+     * Player must stand still on the border for 2 seconds to transition.
+     * Called from the game loop.
+     */
+    function checkBiomeTransition(delta) {
+        if (GameState.isTransitioning) return;
+
+        // Don't check for transitions in the first 2 seconds of gameplay
+        if (GameState.timeElapsed < 2) return;
+
+        // Don't transition if player is in the village safe zone
+        if (Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z)) {
+            // Reset any border timer if we're in the village
+            if (GameState.onBorder !== null) {
+                GameState.borderTransitionTimer = 0;
+                GameState.onBorder = null;
+            }
+            return;
+        }
+
+        const biomeData = getBiomeData(GameState.currentBiome);
+        const worldBorder = CONFIG.WORLD_SIZE * 0.7; // Border at 70% of world size (actual edge)
+        const playerX = GameState.peccary.position.x;
+        const playerZ = GameState.peccary.position.z;
+
+        // Check if player has moved since last frame
+        const moveThreshold = 0.1; // Small threshold to account for tiny movements
+        const hasMoved = Math.abs(playerX - GameState.lastPlayerPosition.x) > moveThreshold ||
+                         Math.abs(playerZ - GameState.lastPlayerPosition.z) > moveThreshold;
+
+        // Update last position
+        GameState.lastPlayerPosition.x = playerX;
+        GameState.lastPlayerPosition.z = playerZ;
+
+        // Determine which border player is on (if any)
+        let currentBorder = null;
+        let targetBiome = null;
+
+        // Check north border (negative Z in Three.js)
+        if (playerZ < -worldBorder && biomeData.transitions.north) {
+            currentBorder = 'north';
+            targetBiome = biomeData.transitions.north;
+        }
+        // Check south border (positive Z in Three.js)
+        else if (playerZ > worldBorder && biomeData.transitions.south) {
+            currentBorder = 'south';
+            targetBiome = biomeData.transitions.south;
+        }
+
+        // Handle border state changes
+        if (currentBorder === null) {
+            // Not on any border, reset timer
+            if (GameState.onBorder !== null) {
+                GameState.borderTransitionTimer = 0;
+                GameState.onBorder = null;
+            }
+            return;
+        }
+
+        // Player moved while on border - reset timer
+        if (hasMoved) {
+            GameState.borderTransitionTimer = 0;
+            GameState.onBorder = currentBorder;
+            return;
+        }
+
+        // Player is standing still on a border
+        if (GameState.onBorder === currentBorder) {
+            // Continue counting
+            GameState.borderTransitionTimer += delta;
+
+            // Check if enough time has passed
+            if (GameState.borderTransitionTimer >= GameState.borderTransitionRequired) {
+                GameState.borderTransitionTimer = 0;
+                GameState.onBorder = null;
+                transitionToBiome(targetBiome, currentBorder);
+            }
+        } else {
+            // Just arrived at this border
+            GameState.onBorder = currentBorder;
+            GameState.borderTransitionTimer = 0;
+        }
+    }
+
+    /**
+     * Transition to a new biome.
+     * @param {string} targetBiome - The biome ID to transition to
+     * @param {string} direction - The direction of travel ('north' or 'south')
+     */
+    function transitionToBiome(targetBiome, direction) {
+        if (GameState.isTransitioning) return;
+
+        GameState.isTransitioning = true;
+        const targetData = getBiomeData(targetBiome);
+
+        // Show transition message
+        const transitionEl = document.getElementById('biome-transition');
+        const transitionText = document.getElementById('biome-transition-text');
+        transitionText.textContent = 'Entering ' + targetData.displayName;
+        transitionEl.style.display = 'block';
+
+        // Clear current biome content
+        clearBiomeContent();
+
+        // After 3 seconds, complete the transition
+        setTimeout(() => {
+            // Update current biome
+            GameState.currentBiome = targetBiome;
+
+            // Position player at the opposite border (at the very edge)
+            const worldSize = CONFIG.WORLD_SIZE;
+            if (direction === 'north') {
+                // Came from south, spawn at the very south border of new biome
+                GameState.peccary.position.z = worldSize * 0.69;
+            } else {
+                // Came from north, spawn at the very north border of new biome
+                GameState.peccary.position.z = -worldSize * 0.69;
+            }
+            GameState.peccary.position.x = 0;
+
+            // Reset border tracking to prevent immediate re-transition
+            GameState.lastPlayerPosition.x = GameState.peccary.position.x;
+            GameState.lastPlayerPosition.z = GameState.peccary.position.z;
+            GameState.borderTransitionTimer = 0;
+            GameState.onBorder = null;
+
+            // Rebuild environment for new biome
+            Environment.rebuildForBiome(targetBiome);
+
+            // Update biome label
+            document.getElementById('biome-label').textContent = targetData.displayName;
+
+            // Spawn biome-specific content
+            if (targetData.spawnGeese && targetData.geese > 0) {
+                Enemies.spawnGeese(targetData.geese);
+            }
+
+            // Spawn leopard toads in savannah biome
+            if (targetData.spawnToads && targetData.toads > 0) {
+                Enemies.spawnToads(targetData.toads);
+                // Reset toad mating timer for the new biome
+                GameState.toadMatingTimer = 0;
+            }
+
+            // Spawn initial resources
+            for (let i = 0; i < 10; i++) {
+                Items.spawnResource();
+            }
+
+            // Restart spawn intervals only for biomes that have enemies
+            // For now, only arboreal biome has enemies
+            if (targetBiome === 'arboreal') {
+                GameState.spawnIntervals.push(setInterval(() => {
+                    if (GameState.gameRunning) Enemies.spawnEnemy();
+                }, CONFIG.ENEMY_SPAWN_RATE));
+            }
+
+            // Always restart resource spawning
+            GameState.spawnIntervals.push(setInterval(() => {
+                if (GameState.gameRunning) Items.spawnResource();
+            }, CONFIG.RESOURCE_SPAWN_RATE));
+
+            // Hide transition message
+            transitionEl.style.display = 'none';
+            GameState.isTransitioning = false;
+
+        }, 3000);
+    }
+
+    /**
+     * Clear all biome-specific content (enemies, nests, resources).
+     * Player keeps their inventory.
+     */
+    function clearBiomeContent() {
+        // Stop spawn intervals
+        GameState.spawnIntervals.forEach(id => clearInterval(id));
+        GameState.spawnIntervals = [];
+
+        // Stop any chasing geese
+        GameState.chasingGeese = [];
+
+        // Stop any chasing toads
+        GameState.chasingToads = [];
+
+        // Remove all enemies
+        GameState.enemies.forEach(e => GameState.scene.remove(e));
+        GameState.enemies = [];
+
+        // Remove all resources from scene
+        GameState.resources.forEach(r => GameState.scene.remove(r));
+        GameState.resources = [];
+
+        // Remove all goose nests
+        GameState.nests.forEach(n => {
+            GameState.scene.remove(n.mesh);
+            if (n.egg && n.egg.mesh) GameState.scene.remove(n.egg.mesh);
+        });
+        GameState.nests = [];
+
+        // Remove all toad nests
+        GameState.toadNests.forEach(n => {
+            GameState.scene.remove(n.mesh);
+            if (n.eggs) {
+                n.eggs.forEach(egg => {
+                    if (egg.mesh) GameState.scene.remove(egg.mesh);
+                });
+            }
+        });
+        GameState.toadNests = [];
+        GameState.toadMatingTimer = 0;
+
+        // Remove villagers
+        GameState.villagers.forEach(v => GameState.scene.remove(v));
+        GameState.villagers = [];
+    }
+
+    /**
      * Main game loop.
      */
     function animate() {
@@ -339,9 +579,23 @@ window.Game = (function() {
             Enemies.updateNests(delta);
             Items.updateResources(delta);
             Dialogs.updateVillagers(delta);
+            checkBiomeTransition(delta);
             updateCamera();
             UI.updateMinimap();
             UI.updateUI();
+
+            // Toad mating season timer (savannah biome only)
+            if (GameState.currentBiome === 'savannah') {
+                // Update toad nests (egg collection, hatching)
+                Enemies.updateToadNests(delta);
+
+                GameState.toadMatingTimer += delta;
+                // Every 3 minutes (180 seconds), trigger mating season
+                if (GameState.toadMatingTimer >= 180) {
+                    GameState.toadMatingTimer = 0;
+                    Enemies.triggerToadMating();
+                }
+            }
         }
 
         GameState.renderer.render(GameState.scene, GameState.camera);
@@ -455,6 +709,8 @@ window.Game = (function() {
         takeDamage: takeDamage,
         startGame: startGame,
         restartGame: restartGame,
-        gameOver: gameOver
+        gameOver: gameOver,
+        transitionToBiome: transitionToBiome,
+        clearBiomeContent: clearBiomeContent
     };
 })();
