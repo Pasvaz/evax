@@ -80,7 +80,28 @@ window.BIOMES = {
 
         // Leopard toads live near the watering hole
         spawnToads: true,
-        toads: 4  // 2 male, 2 female
+        toads: 4,  // 2 male, 2 female
+
+        // Grass viper weasels - predators that hunt toads
+        spawnGrassVipers: true,
+        grassVipers: 2,  // 1 male, 1 female
+
+        // New World Rhubarb Antelope - herd animals at east border
+        spawnAntelope: true,
+        antelope: 6,  // 3 male, 3 female (one male becomes leader)
+
+        // New World Hunter's Wild Dogs - pack predators at west border
+        spawnWildDogs: true,
+        wildDogs: 6,  // 3 male, 3 female (first female becomes alpha)
+
+        // Saltas Gazella - fastest animal, rideable
+        spawnSaltasGazella: true,
+        saltasGazella: 8,  // 4 male, 4 female
+
+        // Dronglous Cat - tree-dwelling predator discovered by Professor Snoutworth
+        // Lives in acacia trees, hunts baby gazella, baby antelope, toads, pups, vipers
+        spawnDronglousCats: true,
+        dronglousCats: 4  // 2 male, 2 female (each gets their own tree)
     }
 };
 

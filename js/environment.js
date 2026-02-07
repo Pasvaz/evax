@@ -1190,6 +1190,102 @@ window.Environment = (function() {
             GameState.scene.add(rock);
             trackObject(rock);
         }
+
+        // Create Ningle's Research Hut in the southeast corner
+        createResearchHut(35, 35);
+    }
+
+    /**
+     * Create Ningle's Research Hut - an adobe hut housing scientists.
+     * Press E near the entrance to go inside.
+     * @param {number} x - X position
+     * @param {number} z - Z position
+     */
+    function createResearchHut(x, z) {
+        const hut = new THREE.Group();
+
+        // Adobe/mud brick colors
+        const adobeColor = 0xc4a882;
+        const darkAdobe = 0x8b7355;
+        const roofColor = 0x6b5344;
+
+        // Main cylindrical hut body
+        const bodyGeo = new THREE.CylinderGeometry(4, 4.5, 5, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: adobeColor });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 2.5;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        hut.add(body);
+
+        // Conical thatched roof
+        const roofGeo = new THREE.ConeGeometry(5.5, 3, 16);
+        const roofMat = new THREE.MeshStandardMaterial({ color: roofColor });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = 6.5;
+        roof.castShadow = true;
+        hut.add(roof);
+
+        // Door frame (dark rectangular opening)
+        const doorGeo = new THREE.BoxGeometry(1.5, 3, 0.5);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, 1.5, 4.3);
+        hut.add(door);
+
+        // Door frame outline
+        const frameGeo = new THREE.BoxGeometry(1.8, 3.3, 0.3);
+        const frameMat = new THREE.MeshStandardMaterial({ color: darkAdobe });
+        const frame = new THREE.Mesh(frameGeo, frameMat);
+        frame.position.set(0, 1.55, 4.4);
+        hut.add(frame);
+
+        // Small windows (two on sides)
+        const windowGeo = new THREE.CircleGeometry(0.4, 8);
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, emissive: 0x447799, emissiveIntensity: 0.3 });
+
+        const window1 = new THREE.Mesh(windowGeo, windowMat);
+        window1.position.set(4, 3, 0);
+        window1.rotation.y = Math.PI / 2;
+        hut.add(window1);
+
+        const window2 = new THREE.Mesh(windowGeo, windowMat);
+        window2.position.set(-4, 3, 0);
+        window2.rotation.y = -Math.PI / 2;
+        hut.add(window2);
+
+        // Small sign outside
+        const signPostGeo = new THREE.CylinderGeometry(0.1, 0.1, 2, 6);
+        const signPostMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        const signPost = new THREE.Mesh(signPostGeo, signPostMat);
+        signPost.position.set(3, 1, 5);
+        hut.add(signPost);
+
+        const signGeo = new THREE.BoxGeometry(2.5, 0.8, 0.1);
+        const signMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+        const sign = new THREE.Mesh(signGeo, signMat);
+        sign.position.set(3, 2.2, 5);
+        hut.add(sign);
+
+        // Position the hut
+        hut.position.set(x, 0, z);
+
+        // Rotate so door faces toward center of map
+        hut.rotation.y = Math.atan2(-x, -z);
+
+        hut.userData = {
+            type: 'research_hut',
+            radius: 5,
+            interactRadius: 6,  // Distance at which E prompt appears
+            doorPosition: new THREE.Vector3(x, 0, z + 4.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), hut.rotation.y)
+        };
+
+        // Store reference for interaction
+        GameState.researchHut = hut;
+        GameState.scene.add(hut);
+        trackObject(hut);
+
+        return hut;
     }
 
     /**
@@ -1216,7 +1312,24 @@ window.Environment = (function() {
 
         tree.position.set(x, 0, z);
         tree.userData.radius = 1.5;
+        tree.userData.treeType = 'acacia';  // Mark as acacia for Dronglous Cats
         return tree;
+    }
+
+    /**
+     * Check if player is near the research hut entrance.
+     * @param {number} x - X position
+     * @param {number} z - Z position
+     * @returns {boolean}
+     */
+    function isNearResearchHut(x, z) {
+        if (!GameState.researchHut) return false;
+        const hut = GameState.researchHut;
+        const dist = Math.sqrt(
+            Math.pow(x - hut.position.x, 2) +
+            Math.pow(z - hut.position.z, 2)
+        );
+        return dist < (hut.userData.interactRadius || 6);
     }
 
     // Public API
@@ -1228,6 +1341,7 @@ window.Environment = (function() {
         isInRiver: isInRiver,
         isOnRiverbank: isOnRiverbank,
         isInWateringHole: isInWateringHole,
+        isNearResearchHut: isNearResearchHut,
         getRiverPoints: () => RIVER_POINTS,
         getRiverWidth: () => RIVER_WIDTH,
         rebuildForBiome: rebuildForBiome,

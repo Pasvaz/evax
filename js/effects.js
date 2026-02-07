@@ -140,6 +140,12 @@ window.Effects = (function() {
                 return executeCombo(effect);
 
             // ----------------------------------------------------------------
+            // ITEM - Give the player an item
+            // ----------------------------------------------------------------
+            case 'item':
+                return executeItem(effect);
+
+            // ----------------------------------------------------------------
             // UNKNOWN - Log warning but don't break
             // ----------------------------------------------------------------
             default:
@@ -236,12 +242,49 @@ window.Effects = (function() {
     }
 
     // ========================================================================
+    // ITEM EFFECT HANDLER
+    // ========================================================================
+    /**
+     * Handle item effects - give the player an item.
+     *
+     * Item effect structure:
+     * {
+     *     type: 'item',
+     *     item: 'saddle'
+     * }
+     */
+    function executeItem(effect) {
+        if (!effect.item) {
+            console.warn('Effects.executeItem: No item specified');
+            return false;
+        }
+
+        switch (effect.item) {
+            case 'saddle':
+                // Check if player already has saddle
+                if (GameState.hasSaddle) {
+                    console.log('Player already has a saddle!');
+                    return false;
+                }
+                GameState.hasSaddle = true;
+                Game.playSound('collect');
+                console.log('Player crafted a saddle! Press E near a Saltas Gazella to ride.');
+                UI.updateUI();
+                return true;
+
+            default:
+                console.warn('Effects.executeItem: Unknown item:', effect.item);
+                return false;
+        }
+    }
+
+    // ========================================================================
     // CAN AFFORD CHECK
     // ========================================================================
     /**
      * Check if player has enough resources for a cost.
      *
-     * @param {Object} cost - Resource costs { berries: 5, nuts: 3, mushrooms: 2 }
+     * @param {Object} cost - Resource costs { berries: 5, nuts: 3, mushrooms: 2, seaweed: 10 }
      * @returns {boolean} - true if player can afford it
      *
      * Example:
@@ -261,6 +304,9 @@ window.Effects = (function() {
             return false;
         }
         if (cost.eggs && GameState.resourceCounts.eggs < cost.eggs) {
+            return false;
+        }
+        if (cost.seaweed && GameState.resourceCounts.seaweed < cost.seaweed) {
             return false;
         }
 

@@ -127,10 +127,29 @@ window.CONFIG = {
             name: recipe.name,
             description: recipe.description,
             cost: recipe.cost,
-            // Convert data effect to executable function
-            effect: function() {
-                Effects.execute(recipe.effect);
+            effect: recipe.effect,  // Keep the effect data for use in inventory
+            // Function to add item to inventory (not use immediately)
+            craft: function() {
+                // Add to inventory instead of using immediately
+                var existing = GameState.inventoryItems.find(function(item) {
+                    return item.id === recipe.id;
+                });
+                if (existing) {
+                    existing.count++;
+                } else {
+                    GameState.inventoryItems.push({
+                        id: recipe.id,
+                        name: recipe.name,
+                        description: recipe.description,
+                        effect: recipe.effect,
+                        count: 1
+                    });
+                }
                 Game.playSound('collect');
+                // Refresh inventory if open
+                if (GameState.isInventoryOpen) {
+                    Inventory.refreshInventory();
+                }
             }
         };
     }),

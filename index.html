@@ -65,6 +65,80 @@
             background: linear-gradient(to right, #44ff44, #88ff88);
             transition: width 0.3s;
         }
+        #thirst-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 365px;  /* Left of hunger bar */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #thirst-panel .stat-label {
+            margin-bottom: 5px;
+            color: #4a9eff;
+        }
+        #thirst-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2a5a9e;
+        }
+        #thirst-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #4a9eff, #80c0ff);
+            transition: width 0.3s;
+        }
+        #thirst-bar.dehydrated {
+            background: linear-gradient(to right, #cc4444, #ff6666);
+            animation: pulse-thirst 1s infinite;
+        }
+        @keyframes pulse-thirst {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        #hunger-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 185px;  /* Next to minimap (150px + 20px gap + 15px) */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #hunger-panel .stat-label {
+            margin-bottom: 5px;
+            color: #e8a850;
+        }
+        #hunger-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #a86e32;
+        }
+        #hunger-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #e8a850, #ffd080);
+            transition: width 0.3s;
+        }
+        #hunger-bar.starving {
+            background: linear-gradient(to right, #cc4444, #ff6666);
+            animation: pulse-hunger 1s infinite;
+        }
+        @keyframes pulse-hunger {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
         #controls-info {
             position: fixed;
             bottom: 20px;
@@ -532,6 +606,406 @@
             font-size: 14px;
             color: #888;
         }
+        /* ========================================= */
+        /* INVENTORY & BESTIARY STYLES              */
+        /* ========================================= */
+        #inventory-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 900px;
+            height: 80%;
+            max-height: 700px;
+            background: linear-gradient(to bottom, rgba(30, 25, 20, 0.98), rgba(20, 15, 10, 0.98));
+            border: 4px solid #8b7355;
+            border-radius: 20px;
+            padding: 0;
+            color: #f5deb3;
+            z-index: 180;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #inventory-tabs {
+            display: flex;
+            background: rgba(50, 40, 30, 0.9);
+            border-bottom: 3px solid #8b7355;
+        }
+        .inventory-tab {
+            flex: 1;
+            padding: 18px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(60, 50, 40, 0.6);
+            color: #888;
+            border: none;
+            transition: all 0.2s;
+            border-right: 2px solid #8b7355;
+        }
+        .inventory-tab:last-child {
+            border-right: none;
+        }
+        .inventory-tab:hover {
+            background: rgba(80, 65, 50, 0.8);
+            color: #ccc;
+        }
+        .inventory-tab.active {
+            background: rgba(100, 80, 50, 0.9);
+            color: #ffcc00;
+            box-shadow: inset 0 -3px 0 #ffcc00;
+        }
+        #inventory-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .inventory-panel {
+            display: none;
+            height: 100%;
+        }
+        .inventory-panel.active {
+            display: block;
+        }
+        /* Inventory Grid */
+        #inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        .inventory-slot {
+            aspect-ratio: 1;
+            background: rgba(40, 35, 30, 0.8);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 70px;
+        }
+        .inventory-slot:hover {
+            background: rgba(60, 50, 40, 0.9);
+            border-color: #8b7355;
+            transform: scale(1.05);
+        }
+        .inventory-slot.has-item {
+            border-color: #a08060;
+            background: rgba(50, 45, 35, 0.9);
+        }
+        .inventory-slot.has-item:hover {
+            border-color: #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 200, 0, 0.3);
+        }
+        .inventory-slot-icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+        .inventory-slot-name {
+            font-size: 10px;
+            text-align: center;
+            color: #ccc;
+        }
+        .inventory-slot-count {
+            position: absolute;
+            bottom: 3px;
+            right: 5px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .inventory-empty-msg {
+            text-align: center;
+            color: #666;
+            font-size: 18px;
+            margin-top: 50px;
+        }
+        /* Artifacts Panel */
+        .artifacts-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #5a4a3a;
+        }
+        .artifacts-subtitle {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .artifacts-count {
+            color: #e8a850;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        #artifacts-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 10px;
+        }
+        .artifact-slot {
+            aspect-ratio: 1;
+            background: rgba(40, 35, 50, 0.8);
+            border: 3px solid #6a5a7a;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 100px;
+        }
+        .artifact-slot:hover {
+            background: rgba(60, 50, 70, 0.9);
+            border-color: #8a7a9a;
+            transform: scale(1.03);
+        }
+        .artifact-slot.has-artifact {
+            border-color: #9a8aaa;
+            background: linear-gradient(135deg, rgba(60, 50, 80, 0.9), rgba(40, 35, 60, 0.9));
+            box-shadow: 0 0 15px rgba(150, 100, 200, 0.2);
+        }
+        .artifact-slot.has-artifact:hover {
+            border-color: #cc99ff;
+            box-shadow: 0 0 25px rgba(200, 150, 255, 0.4);
+        }
+        .artifact-slot.rarity-common { border-color: #888; }
+        .artifact-slot.rarity-uncommon { border-color: #4a9; }
+        .artifact-slot.rarity-rare { border-color: #77f; }
+        .artifact-slot.rarity-legendary { border-color: #fa0; box-shadow: 0 0 20px rgba(255, 170, 0, 0.3); }
+        .artifact-slot-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        .artifact-slot-name {
+            font-size: 12px;
+            text-align: center;
+            color: #ddd;
+            font-weight: bold;
+        }
+        .artifact-slot-rarity {
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .artifact-slot-rarity.common { color: #888; }
+        .artifact-slot-rarity.uncommon { color: #4a9; }
+        .artifact-slot-rarity.rare { color: #77f; }
+        .artifact-slot-rarity.legendary { color: #fa0; }
+        .artifact-slot-empty {
+            color: #555;
+            font-size: 14px;
+        }
+        /* Bestiary Grid */
+        #bestiary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 10px;
+        }
+        .bestiary-card {
+            background: rgba(50, 45, 35, 0.9);
+            border: 3px solid #5a4a3a;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .bestiary-card:hover {
+            border-color: #ffcc00;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .bestiary-card-preview {
+            width: 100%;
+            height: 100px;
+            background: rgba(30, 25, 20, 0.8);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .bestiary-card-preview canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .bestiary-card-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 5px;
+        }
+        .bestiary-card-type {
+            font-size: 12px;
+            color: #888;
+        }
+        /* Bestiary Detail View */
+        #bestiary-detail {
+            display: none;
+            height: 100%;
+        }
+        #bestiary-detail.active {
+            display: flex;
+            gap: 20px;
+        }
+        #bestiary-detail-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #bestiary-model-viewer {
+            flex: 1;
+            background: rgba(30, 25, 20, 0.9);
+            border: 3px solid #5a4a3a;
+            border-radius: 12px;
+            min-height: 250px;
+            position: relative;
+            overflow: hidden;
+        }
+        #bestiary-model-viewer canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #bestiary-variant-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .variant-btn {
+            background: rgba(60, 50, 40, 0.8);
+            color: #ccc;
+            border: 2px solid #5a4a3a;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .variant-btn:hover {
+            background: rgba(80, 65, 50, 0.9);
+            border-color: #8b7355;
+        }
+        .variant-btn.active {
+            background: rgba(100, 80, 50, 0.9);
+            border-color: #ffcc00;
+            color: #ffcc00;
+        }
+        #bestiary-anim-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .anim-btn {
+            background: rgba(50, 70, 50, 0.8);
+            color: #aaffaa;
+            border: 2px solid #4a6a4a;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .anim-btn:hover {
+            background: rgba(60, 90, 60, 0.9);
+            border-color: #6a9a6a;
+        }
+        .anim-btn.active {
+            background: rgba(70, 110, 70, 0.9);
+            border-color: #88ff88;
+        }
+        #bestiary-detail-right {
+            flex: 1;
+            overflow-y: auto;
+        }
+        #bestiary-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #bestiary-detail-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        #bestiary-back-btn {
+            background: rgba(80, 60, 40, 0.8);
+            color: #ccc;
+            border: 2px solid #8b7355;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        #bestiary-back-btn:hover {
+            background: rgba(100, 80, 50, 0.9);
+            color: #fff;
+        }
+        .bestiary-section {
+            background: rgba(40, 35, 30, 0.8);
+            border: 2px solid #5a4a3a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .bestiary-section h3 {
+            color: #e8a850;
+            font-size: 16px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #5a4a3a;
+        }
+        .bestiary-section p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        .bestiary-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .bestiary-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(90, 74, 58, 0.5);
+        }
+        .bestiary-stat-label {
+            color: #888;
+        }
+        .bestiary-stat-value {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        #inventory-footer {
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 2px solid #5a4a3a;
+            background: rgba(40, 35, 30, 0.9);
+        }
         @media (max-width: 768px) {
             #stats-panel {
                 flex-wrap: wrap;
@@ -540,6 +1014,274 @@
             .stat-box {
                 padding: 8px 12px;
             }
+        }
+        /* ========================================= */
+        /* TESTING MODE STYLES                      */
+        /* ========================================= */
+        #start-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .game-btn.secondary {
+            background: linear-gradient(to bottom, #7a5c3a, #4d3a2d);
+        }
+        .game-btn.secondary:hover {
+            box-shadow: 0 0 20px rgba(200, 150, 100, 0.5);
+        }
+        #password-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 250;
+        }
+        .password-box {
+            background: linear-gradient(to bottom, rgba(60, 40, 20, 0.95), rgba(40, 25, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 30px 40px;
+            text-align: center;
+            color: #f5deb3;
+        }
+        .password-box h2 {
+            color: #ffcc00;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        .password-box p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        #password-input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 18px;
+            border: 2px solid #8b7355;
+            border-radius: 8px;
+            background: rgba(30, 20, 10, 0.8);
+            color: #f5deb3;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        #password-input:focus {
+            outline: none;
+            border-color: #ffcc00;
+        }
+        .password-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        #password-error {
+            color: #ff6666;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #testing-indicator {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 100, 100, 0.85);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 100;
+            border: 2px solid #ff6666;
+            text-shadow: 1px 1px 2px black;
+        }
+        #testing-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            max-width: 90%;
+            background: linear-gradient(to bottom, rgba(60, 40, 20, 0.95), rgba(40, 25, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 25px;
+            color: #f5deb3;
+            z-index: 180;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #testing-menu h2 {
+            color: #ffcc00;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .testing-section {
+            margin-bottom: 20px;
+        }
+        .testing-section h3 {
+            color: #e8a850;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #5a4a3a;
+        }
+        .testing-biome-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: 2px solid #6a9a6a;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .testing-biome-btn:hover {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            border-color: #88cc88;
+            transform: translateY(-2px);
+        }
+        .testing-footer {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #5a4a3a;
+        }
+        #testing-menu-content {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .testing-section-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .testing-section-header:hover {
+            color: #ffcc00;
+        }
+        .testing-section-header::before {
+            content: '▶ ';
+            font-size: 12px;
+        }
+        .testing-section-header.expanded::before {
+            content: '▼ ';
+        }
+        .testing-section-content {
+            display: none;
+            padding: 10px 0;
+        }
+        .testing-section-content.expanded {
+            display: block;
+        }
+        .testing-hint {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        .testing-status {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        .testing-btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .testing-action-btn {
+            flex: 1;
+            min-width: 80px;
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: 2px solid #6a9a6a;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .testing-action-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            border-color: #88cc88;
+        }
+        .testing-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .testing-action-btn.secondary {
+            background: linear-gradient(to bottom, #7a5c3a, #4d3a2d);
+            border-color: #9a7a5a;
+        }
+        .testing-action-btn.secondary:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #9a7c5a, #6d5a4d);
+        }
+        .spawn-category {
+            margin-bottom: 10px;
+        }
+        .spawn-category-header {
+            font-size: 14px;
+            color: #ccc;
+            cursor: pointer;
+            padding: 5px 0;
+            margin: 0;
+        }
+        .spawn-category-header:hover {
+            color: #ffcc00;
+        }
+        .spawn-category-header::before {
+            content: '+ ';
+            color: #88cc88;
+        }
+        .spawn-category-header.expanded::before {
+            content: '- ';
+        }
+        .spawn-category-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 0 8px 15px;
+        }
+        .spawn-category-content.hidden {
+            display: none;
+        }
+        .spawn-btn {
+            background: rgba(60, 50, 40, 0.8);
+            color: #ddd;
+            border: 1px solid #6a5a4a;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .spawn-btn:hover {
+            background: rgba(80, 70, 60, 0.9);
+            border-color: #8a7a6a;
+            color: #fff;
+        }
+        #become-indicator {
+            position: fixed;
+            top: 40px;
+            left: 10px;
+            background: rgba(100, 100, 255, 0.85);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            z-index: 100;
+            border: 2px solid #8888ff;
+            text-shadow: 1px 1px 2px black;
         }
     </style>
 </head>
@@ -554,7 +1296,125 @@
             Collect berries, nuts, and mushrooms to increase your score while avoiding
             dangerous badgers and weasels! Gather food to restore health and survive as long as possible.
         </p>
-        <button class="game-btn" id="start-btn">Start Game</button>
+        <div id="start-buttons">
+            <button class="game-btn" id="explore-btn">Start Exploring</button>
+            <button class="game-btn secondary" id="testing-btn">Start Testing</button>
+        </div>
+    </div>
+
+    <!-- Password popup for testing mode -->
+    <div id="password-popup" class="hidden">
+        <div class="password-box">
+            <h2>Testing Mode</h2>
+            <p>Enter password to access testing mode:</p>
+            <input type="password" id="password-input" placeholder="Password...">
+            <div class="password-buttons">
+                <button class="game-btn" id="password-submit">Enter</button>
+                <button class="game-btn secondary" id="password-cancel">Cancel</button>
+            </div>
+            <p id="password-error" class="hidden">Incorrect password!</p>
+        </div>
+    </div>
+
+    <!-- Testing mode indicator -->
+    <div id="testing-indicator" class="hidden">TESTING MODE</div>
+
+    <!-- Become animal indicator -->
+    <div id="become-indicator" class="hidden">CONTROLLING: <span id="become-animal-name">-</span></div>
+
+    <!-- Testing menu (T key) -->
+    <div id="testing-menu" class="hidden">
+        <h2>Testing Menu</h2>
+        <div id="testing-menu-content">
+            <!-- Teleport Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="teleport">Teleport to Biome</h3>
+                <div class="testing-section-content" id="section-teleport">
+                    <button class="testing-biome-btn" data-biome="arboreal">Arboreal Forest</button>
+                    <button class="testing-biome-btn" data-biome="savannah">New World Savannah</button>
+                </div>
+            </div>
+
+            <!-- Become Animal Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="become">Become Animal</h3>
+                <div class="testing-section-content" id="section-become">
+                    <p class="testing-hint">Click an animal in the world, then choose a mode:</p>
+                    <div class="testing-btn-row">
+                        <button class="testing-action-btn" id="become-control-btn" disabled>Control</button>
+                        <button class="testing-action-btn" id="become-spectate-btn" disabled>Spectate</button>
+                        <button class="testing-action-btn secondary" id="become-stop-btn" disabled>Stop</button>
+                    </div>
+                    <p id="become-status" class="testing-status">No animal selected</p>
+                </div>
+            </div>
+
+            <!-- Trigger Events Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="events">Trigger Events</h3>
+                <div class="testing-section-content" id="section-events">
+                    <button class="testing-action-btn" id="trigger-hunt-btn">Wild Dog Hunt</button>
+                    <button class="testing-action-btn" id="trigger-toad-mating-btn">Toad Mating</button>
+                    <button class="testing-action-btn" id="trigger-viper-mating-btn">Viper Mating</button>
+                    <button class="testing-action-btn" id="trigger-antelope-mating-btn">Antelope Mating</button>
+                    <button class="testing-action-btn" id="trigger-dog-mating-btn">Wild Dog Mating</button>
+                    <button class="testing-action-btn" id="trigger-gazella-mating-btn">Gazella Mating</button>
+                    <button class="testing-action-btn" id="trigger-cat-mating-btn">Dronglous Cat Mating</button>
+                    <button class="testing-action-btn" id="trigger-cat-hunt-btn">Dronglous Cat Hunt</button>
+                    <button class="testing-action-btn" id="spawn-test-cat-btn">Spawn Test Cat Nearby</button>
+                    <button class="testing-action-btn" id="spawn-test-prey-btn">Spawn Prey for Cat</button>
+                    <button class="testing-action-btn" id="trigger-pregnancy-btn" disabled>Make Pregnant</button>
+                    <p id="pregnancy-status" class="testing-status">Select a female animal first</p>
+                </div>
+            </div>
+
+            <!-- Spawn Animals Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="spawn">Spawn Animals</h3>
+                <div class="testing-section-content" id="section-spawn">
+                    <!-- Arboreal Animals -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="arboreal-animals">Arboreal Forest</h4>
+                        <div class="spawn-category-content hidden" id="spawn-arboreal-animals">
+                            <button class="spawn-btn" data-spawn="badger">Badger</button>
+                            <button class="spawn-btn" data-spawn="weasel">Weasel</button>
+                            <button class="spawn-btn" data-spawn="fox">Fox</button>
+                            <button class="spawn-btn" data-spawn="goose_male">Goose (Male)</button>
+                            <button class="spawn-btn" data-spawn="goose_female">Goose (Female)</button>
+                            <button class="spawn-btn" data-spawn="goose_baby">Goose (Baby)</button>
+                        </div>
+                    </div>
+                    <!-- Savannah Animals -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="savannah-animals">New World Savannah</h4>
+                        <div class="spawn-category-content hidden" id="spawn-savannah-animals">
+                            <button class="spawn-btn" data-spawn="leopard_toad_male">Toad (Male)</button>
+                            <button class="spawn-btn" data-spawn="leopard_toad_female">Toad (Female)</button>
+                            <button class="spawn-btn" data-spawn="leopard_toad_baby">Toad (Baby)</button>
+                            <button class="spawn-btn" data-spawn="grass_viper_male">Viper (Male)</button>
+                            <button class="spawn-btn" data-spawn="grass_viper_female">Viper (Female)</button>
+                            <button class="spawn-btn" data-spawn="grass_viper_baby">Viper (Baby)</button>
+                            <button class="spawn-btn" data-spawn="antelope_male">Antelope (Male)</button>
+                            <button class="spawn-btn" data-spawn="antelope_female">Antelope (Female)</button>
+                            <button class="spawn-btn" data-spawn="antelope_leader">Antelope (Leader)</button>
+                            <button class="spawn-btn" data-spawn="antelope_baby">Antelope (Baby)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_male">Wild Dog (Male)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_female">Wild Dog (Female)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_alpha">Wild Dog (Alpha)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_pup">Wild Dog (Pup)</button>
+                            <button class="spawn-btn" data-spawn="saltas_gazella_male">Gazella (Male)</button>
+                            <button class="spawn-btn" data-spawn="saltas_gazella_female">Gazella (Female)</button>
+                            <button class="spawn-btn" data-spawn="saltas_gazella_baby">Gazella (Baby)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_male">Dronglous Cat (Male)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_female">Dronglous Cat (Female)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_baby_male">Dronglous Cat Baby (M)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_baby_female">Dronglous Cat Baby (F)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="testing-footer">Press T to close</div>
     </div>
 
     <div id="game-over-screen" class="hidden">
@@ -562,6 +1422,20 @@
         <div id="final-score">Score: 0</div>
         <p class="subtitle">The predators caught you!</p>
         <button class="game-btn" id="restart-btn">Play Again</button>
+    </div>
+
+    <div id="thirst-panel" class="hidden">
+        <div class="stat-label">💧 Thirst</div>
+        <div id="thirst-bar-container">
+            <div id="thirst-bar"></div>
+        </div>
+    </div>
+
+    <div id="hunger-panel" class="hidden">
+        <div class="stat-label">🍖 Hunger</div>
+        <div id="hunger-bar-container">
+            <div id="hunger-bar"></div>
+        </div>
     </div>
 
     <div id="ui-overlay" class="hidden">
@@ -605,6 +1479,7 @@
         <p>1/2/3/4/5 - Use Berry/Nut/Mushroom/Seaweed/Egg</p>
         <p>E - Talk to villagers</p>
         <p>TAB - Open Craft Menu</p>
+        <p>I - Inventory & Bestiary</p>
     </div>
 
     <div id="minimap" class="hidden">
@@ -645,6 +1520,51 @@
         <div id="craft-footer">Press TAB to close</div>
     </div>
 
+    <!-- Inventory & Bestiary Screen -->
+    <div id="inventory-screen" class="hidden">
+        <div id="inventory-tabs">
+            <button class="inventory-tab active" data-tab="inventory">Inventory</button>
+            <button class="inventory-tab" data-tab="artifacts">Artifacts</button>
+            <button class="inventory-tab" data-tab="bestiary">Bestiary</button>
+        </div>
+        <div id="inventory-content">
+            <!-- Inventory Panel -->
+            <div id="inventory-panel" class="inventory-panel active">
+                <div id="inventory-grid"></div>
+                <p id="inventory-empty" class="inventory-empty-msg">Your inventory is empty. Press TAB to craft items!</p>
+            </div>
+            <!-- Artifacts Panel -->
+            <div id="artifacts-panel" class="inventory-panel">
+                <div class="artifacts-header">
+                    <p class="artifacts-subtitle">Mysterious items found throughout the world. Give them to Ningle at the Research Hut!</p>
+                    <p class="artifacts-count">Slots: <span id="artifact-slot-count">0</span> / 8</p>
+                </div>
+                <div id="artifacts-grid"></div>
+                <p id="artifacts-empty" class="inventory-empty-msg">No artifacts found yet. Explore the world to discover mysterious items!</p>
+            </div>
+            <!-- Bestiary Panel -->
+            <div id="bestiary-panel" class="inventory-panel">
+                <div id="bestiary-grid"></div>
+            </div>
+            <!-- Bestiary Detail View -->
+            <div id="bestiary-detail">
+                <div id="bestiary-detail-left">
+                    <div id="bestiary-model-viewer"></div>
+                    <div id="bestiary-variant-btns"></div>
+                    <div id="bestiary-anim-btns"></div>
+                </div>
+                <div id="bestiary-detail-right">
+                    <div id="bestiary-detail-header">
+                        <span id="bestiary-detail-name">Animal Name</span>
+                        <button id="bestiary-back-btn">Back</button>
+                    </div>
+                    <div id="bestiary-detail-info"></div>
+                </div>
+            </div>
+        </div>
+        <div id="inventory-footer">Press I to close</div>
+    </div>
+
     <!-- Shop menu -->
     <div id="shop-menu" class="hidden">
         <div id="shop-header">
@@ -677,6 +1597,8 @@
     <script src="js/data/recipes.js"></script>
     <script src="js/data/shop-items.js"></script>
     <script src="js/data/biomes.js"></script>
+    <script src="js/data/bestiary.js"></script>
+    <script src="js/data/artifacts.js"></script>
 
     <!-- ================================================================== -->
     <!-- LOGIC FILES - Game behavior (load after data!) -->
@@ -691,6 +1613,8 @@
     <script src="js/items.js"></script>
     <script src="js/dialogs.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/research-hut.js"></script>
 
     <!-- Initialize Game -->
     <script>

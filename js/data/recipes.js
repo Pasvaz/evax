@@ -166,6 +166,26 @@ window.RECIPES = [
                 { type: 'give_score', amount: 50 }
             ]
         }
+    },
+
+    // ========================================================================
+    // RECIPE 6: Gazella Saddle
+    // ========================================================================
+    // Craft this to ride the fast Saltas Gazella!
+    {
+        id: 'gazella_saddle',
+        name: 'Gazella Saddle',
+        description: 'Craft a saddle to ride the swift Saltas Gazella! (Press E near one)',
+
+        cost: {
+            seaweed: 10           // Need 10 seaweed
+        },
+
+        // Special 'item' effect - gives the player an item
+        effect: {
+            type: 'item',
+            item: 'saddle'
+        }
     }
 
     // ========================================================================

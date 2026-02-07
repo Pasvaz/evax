@@ -15,9 +15,12 @@ window.Items = (function() {
     function useStoredResource(type) {
         let hasResource = false;
         let healAmount = 0;
+        let hungerAmount = 0;
 
         // Get healing amounts from config (or use defaults if not set)
         const foodHealing = CONFIG.FOOD_HEALING || { berries: 5, nuts: 8, mushrooms: 12 };
+        // Hunger restoration amounts (food fills your belly!)
+        const foodHunger = CONFIG.FOOD_HUNGER || { berries: 10, nuts: 15, mushrooms: 20, seaweed: 12, eggs: 25 };
 
         switch(type) {
             case 'berry':
@@ -25,6 +28,7 @@ window.Items = (function() {
                     GameState.resourceCounts.berries--;
                     hasResource = true;
                     healAmount = foodHealing.berries;
+                    hungerAmount = foodHunger.berries;
                 }
                 break;
             case 'nut':
@@ -32,6 +36,7 @@ window.Items = (function() {
                     GameState.resourceCounts.nuts--;
                     hasResource = true;
                     healAmount = foodHealing.nuts;
+                    hungerAmount = foodHunger.nuts;
                 }
                 break;
             case 'mushroom':
@@ -39,6 +44,7 @@ window.Items = (function() {
                     GameState.resourceCounts.mushrooms--;
                     hasResource = true;
                     healAmount = foodHealing.mushrooms;
+                    hungerAmount = foodHunger.mushrooms;
                 }
                 break;
             case 'seaweed':
@@ -46,6 +52,7 @@ window.Items = (function() {
                     GameState.resourceCounts.seaweed--;
                     hasResource = true;
                     healAmount = foodHealing.seaweed;
+                    hungerAmount = foodHunger.seaweed;
                 }
                 break;
             case 'egg':
@@ -53,15 +60,25 @@ window.Items = (function() {
                     GameState.resourceCounts.eggs--;
                     hasResource = true;
                     healAmount = foodHealing.eggs;
+                    hungerAmount = foodHunger.eggs;
                 }
                 break;
         }
 
         if (hasResource) {
+            // Restore health if not full
             if (GameState.health < 100) {
                 GameState.health = Math.min(100, GameState.health + healAmount);
-                Game.playSound('collect');
             }
+            // Always restore hunger when eating
+            GameState.hunger = Math.min(100, GameState.hunger + hungerAmount);
+
+            // Schedule a poop in 2 minutes!
+            GameState.poopQueue.push({
+                time: GameState.timeElapsed + 120  // 2 minutes from now
+            });
+
+            Game.playSound('collect');
             UI.updateUI();
             return true;
         }
@@ -392,9 +409,10 @@ window.Items = (function() {
             recipeDiv.className = 'craft-recipe';
 
             const canCraft =
-                GameState.resourceCounts.berries >= recipe.cost.berries &&
-                GameState.resourceCounts.nuts >= recipe.cost.nuts &&
-                GameState.resourceCounts.mushrooms >= recipe.cost.mushrooms;
+                GameState.resourceCounts.berries >= (recipe.cost.berries || 0) &&
+                GameState.resourceCounts.nuts >= (recipe.cost.nuts || 0) &&
+                GameState.resourceCounts.mushrooms >= (recipe.cost.mushrooms || 0) &&
+                GameState.resourceCounts.seaweed >= (recipe.cost.seaweed || 0);
 
             if (!canCraft) {
                 recipeDiv.classList.add('disabled');
@@ -443,11 +461,21 @@ window.Items = (function() {
                 costDiv.appendChild(mushroomCost);
             }
 
+            if (recipe.cost.seaweed > 0) {
+                const seaweedCost = document.createElement('div');
+                seaweedCost.className = 'craft-cost-item';
+                if (GameState.resourceCounts.seaweed < recipe.cost.seaweed) {
+                    seaweedCost.classList.add('insufficient');
+                }
+                seaweedCost.innerHTML = `<span>🌿</span><span>${recipe.cost.seaweed}</span>`;
+                costDiv.appendChild(seaweedCost);
+            }
+
             recipeDiv.appendChild(costDiv);
 
             const craftBtn = document.createElement('button');
             craftBtn.className = 'craft-btn';
-            craftBtn.textContent = 'Craft';
+            craftBtn.textContent = 'Craft (to Inventory)';
             craftBtn.disabled = !canCraft;
             craftBtn.onclick = () => craftItem(recipe);
             recipeDiv.appendChild(craftBtn);
@@ -458,22 +486,202 @@ window.Items = (function() {
 
     /**
      * Craft an item from a recipe.
+     * Items go into inventory - use them from there!
      */
     function craftItem(recipe) {
-        if (GameState.resourceCounts.berries < recipe.cost.berries ||
-            GameState.resourceCounts.nuts < recipe.cost.nuts ||
-            GameState.resourceCounts.mushrooms < recipe.cost.mushrooms) {
+        if (GameState.resourceCounts.berries < (recipe.cost.berries || 0) ||
+            GameState.resourceCounts.nuts < (recipe.cost.nuts || 0) ||
+            GameState.resourceCounts.mushrooms < (recipe.cost.mushrooms || 0) ||
+            GameState.resourceCounts.seaweed < (recipe.cost.seaweed || 0)) {
             return;
         }
 
-        GameState.resourceCounts.berries -= recipe.cost.berries;
-        GameState.resourceCounts.nuts -= recipe.cost.nuts;
-        GameState.resourceCounts.mushrooms -= recipe.cost.mushrooms;
+        GameState.resourceCounts.berries -= (recipe.cost.berries || 0);
+        GameState.resourceCounts.nuts -= (recipe.cost.nuts || 0);
+        GameState.resourceCounts.mushrooms -= (recipe.cost.mushrooms || 0);
+        GameState.resourceCounts.seaweed -= (recipe.cost.seaweed || 0);
 
-        recipe.effect();
+        // Add to inventory instead of using immediately
+        recipe.craft();
 
         UI.updateUI();
         renderCraftMenu();
+    }
+
+    // ========================================================================
+    // ARTIFACT SPAWNING SYSTEM
+    // ========================================================================
+
+    // Track spawned artifacts in the world
+    let artifactsInWorld = [];
+
+    /**
+     * Create an artifact pickup object.
+     * @param {string} artifactId - The artifact ID
+     * @returns {THREE.Group} - The artifact mesh
+     */
+    function createArtifact(artifactId) {
+        const artifactData = getArtifactData(artifactId);
+        if (!artifactData) return null;
+
+        const group = new THREE.Group();
+
+        // Create a glowing orb to hold the artifact
+        const orbGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+
+        // Color based on rarity
+        const rarityColors = {
+            common: 0x888888,
+            uncommon: 0x44aa99,
+            rare: 0x7777ff,
+            legendary: 0xffaa00
+        };
+        const color = rarityColors[artifactData.rarity] || 0x888888;
+
+        const orbMaterial = new THREE.MeshStandardMaterial({
+            color: color,
+            emissive: color,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.6
+        });
+        const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+        group.add(orb);
+
+        // Inner glow
+        const innerGeometry = new THREE.SphereGeometry(0.25, 12, 12);
+        const innerMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8
+        });
+        const inner = new THREE.Mesh(innerGeometry, innerMaterial);
+        group.add(inner);
+
+        // Point light for glow effect
+        const light = new THREE.PointLight(color, 1, 5);
+        light.position.set(0, 0, 0);
+        group.add(light);
+
+        group.userData = {
+            type: 'artifact',
+            artifactId: artifactId,
+            radius: 1.0,
+            bobOffset: Math.random() * Math.PI * 2,
+            pulseOffset: Math.random() * Math.PI * 2
+        };
+
+        return group;
+    }
+
+    /**
+     * Spawn a random artifact in the world.
+     * Only spawns artifacts the player hasn't already collected or given away.
+     * @param {string} spawnType - 'random', 'hidden', or 'event'
+     */
+    function spawnArtifact(spawnType) {
+        spawnType = spawnType || 'random';
+
+        // Get artifacts that can spawn
+        const available = getArtifactsForBiome(GameState.currentBiome, spawnType).filter(a => {
+            // Don't spawn if player already has it
+            if (GameState.artifacts && GameState.artifacts.includes(a.id)) return false;
+            // Don't spawn if already given away
+            if (GameState.artifactsGiven && GameState.artifactsGiven.includes(a.id)) return false;
+            // Don't spawn if already in world
+            if (artifactsInWorld.find(aw => aw.userData.artifactId === a.id)) return false;
+            return true;
+        });
+
+        if (available.length === 0) return null;
+
+        // Weight by rarity (common more likely than rare)
+        const weights = { common: 50, uncommon: 30, rare: 15, legendary: 5 };
+        let totalWeight = 0;
+        const weighted = available.map(a => {
+            const w = weights[a.rarity] || 10;
+            totalWeight += w;
+            return { artifact: a, weight: totalWeight };
+        });
+
+        const roll = Math.random() * totalWeight;
+        const selected = weighted.find(w => roll <= w.weight);
+        if (!selected) return null;
+
+        const artifact = createArtifact(selected.artifact.id);
+        if (!artifact) return null;
+
+        // Position based on spawn type
+        if (spawnType === 'hidden') {
+            // Hidden artifacts spawn in corners or edges of the map
+            const edge = Math.random() < 0.5 ? -1 : 1;
+            const x = (Math.random() * 20 + 30) * edge;
+            const z = (Math.random() * 20 + 30) * (Math.random() < 0.5 ? -1 : 1);
+            artifact.position.set(x, 0.5, z);
+        } else {
+            // Random spawn anywhere
+            const range = CONFIG.WORLD_SIZE * 0.6;
+            const x = (Math.random() - 0.5) * 2 * range;
+            const z = (Math.random() - 0.5) * 2 * range;
+            artifact.position.set(x, 0.5, z);
+        }
+
+        artifactsInWorld.push(artifact);
+        GameState.scene.add(artifact);
+
+        console.log('An artifact appeared: ' + selected.artifact.name);
+        return artifact;
+    }
+
+    /**
+     * Update artifacts - animations and collection.
+     */
+    function updateArtifacts(delta) {
+        const time = GameState.clock ? GameState.clock.elapsedTime : 0;
+
+        for (let i = artifactsInWorld.length - 1; i >= 0; i--) {
+            const artifact = artifactsInWorld[i];
+
+            // Floating bob animation
+            artifact.position.y = 0.5 + Math.sin(time * 2 + artifact.userData.bobOffset) * 0.15;
+
+            // Rotation
+            artifact.rotation.y += delta * 0.8;
+
+            // Pulsing glow
+            const pulse = 0.4 + Math.sin(time * 3 + artifact.userData.pulseOffset) * 0.2;
+            if (artifact.children[0] && artifact.children[0].material) {
+                artifact.children[0].material.emissiveIntensity = pulse;
+            }
+            if (artifact.children[2] && artifact.children[2].intensity !== undefined) {
+                artifact.children[2].intensity = pulse * 2;
+            }
+
+            // Collection check
+            const distance = GameState.peccary.position.distanceTo(artifact.position);
+            if (distance < artifact.userData.radius + GameState.peccary.userData.radius) {
+                // Try to add to inventory
+                if (Inventory.addArtifact(artifact.userData.artifactId)) {
+                    GameState.scene.remove(artifact);
+                    artifactsInWorld.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    /**
+     * Clear all artifacts from the world (used on biome transition).
+     */
+    function clearArtifacts() {
+        artifactsInWorld.forEach(a => GameState.scene.remove(a));
+        artifactsInWorld = [];
+    }
+
+    /**
+     * Get artifacts currently in the world.
+     */
+    function getArtifactsInWorld() {
+        return artifactsInWorld;
     }
 
     // Public API
@@ -485,6 +693,12 @@ window.Items = (function() {
         toggleCraftMenu: toggleCraftMenu,
         renderCraftMenu: renderCraftMenu,
         craftItem: craftItem,
-        useStoredResource: useStoredResource
+        useStoredResource: useStoredResource,
+        // Artifact system
+        createArtifact: createArtifact,
+        spawnArtifact: spawnArtifact,
+        updateArtifacts: updateArtifacts,
+        clearArtifacts: clearArtifacts,
+        getArtifactsInWorld: getArtifactsInWorld
     };
 })();

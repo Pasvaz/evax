@@ -168,6 +168,26 @@ window.UI = (function() {
         document.getElementById('eggs-count').textContent = GameState.resourceCounts.eggs;
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
 
+        // Update hunger bar
+        const hungerBar = document.getElementById('hunger-bar');
+        hungerBar.style.width = Math.max(0, GameState.hunger) + '%';
+        // Add/remove starving class for visual warning
+        if (GameState.hunger <= 20) {
+            hungerBar.classList.add('starving');
+        } else {
+            hungerBar.classList.remove('starving');
+        }
+
+        // Update thirst bar
+        const thirstBar = document.getElementById('thirst-bar');
+        thirstBar.style.width = Math.max(0, GameState.thirst) + '%';
+        // Add/remove dehydrated class for visual warning
+        if (GameState.thirst <= 20) {
+            thirstBar.classList.add('dehydrated');
+        } else {
+            thirstBar.classList.remove('dehydrated');
+        }
+
         const minutes = Math.floor(GameState.timeElapsed / 60);
         const seconds = Math.floor(GameState.timeElapsed % 60);
         document.getElementById('time-display').textContent =

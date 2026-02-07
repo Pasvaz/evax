@@ -257,6 +257,489 @@ window.ENEMIES = [
     },
 
     // ========================================================================
+    // GRASS VIPER WEASEL (MALE) - Black, savannah predator
+    // ========================================================================
+    {
+        id: 'grass_viper_male',
+        type: 'grass_viper',           // Uses grass viper weasel 3D model
+        speed: 5,                      // Faster than regular weasel
+        speedVariation: 1,             // Final speed: 5-6
+        creepSpeed: 2,                 // Speed when stalking toads
+        damage: 12,                    // High damage - can one-shot female toads
+        radius: 0.5,                   // Slim hitbox
+        size: 0.85,                    // Smaller than regular weasel
+        health: 17,                     // Less health than regular weasel (10)
+        spawnWeight: 0,                // Does NOT spawn randomly! Spawned in savannah
+        minimapColor: '#1a1a1a',       // Black dot (male color)
+
+        // Special behavior flags
+        friendly: false,               // Hostile to toads (not player directly)
+        biome: 'savannah',             // Only in savannah
+        huntRange: 17,                 // Can spot toads from 17 units away
+        huntsToads: true,              // Hunts leopard toads
+        prefersYoung: true,            // Targets baby toads first
+
+        // Black grass viper colors
+        colors: {
+            body: 0x0a0a0a,            // Very dark black body
+            snout: 0x1a1a1a,           // Slightly lighter snout
+            nose: 0x000000,            // Pure black nose
+            eyes: 0x33ff33,            // Green predator eyes
+            eyeGlow: 0x003300,         // Green eye glow
+            ears: 0x0a0a0a,            // Black ears
+            legs: 0x050505             // Almost black legs
+        }
+    },
+
+    // ========================================================================
+    // GRASS VIPER WEASEL (FEMALE) - Grey, slightly smaller
+    // ========================================================================
+    {
+        id: 'grass_viper_female',
+        type: 'grass_viper',           // Uses same grass viper model
+        speed: 5,                      // Same speed
+        speedVariation: 1,             // Final speed: 5-6
+        creepSpeed: 2,                 // Speed when stalking
+        damage: 12,                    // Same damage
+        radius: 0.45,                  // Slightly smaller hitbox
+        size: 0.75,                    // Smaller than male (75% vs 85%)
+        health: 15,                     // Slightly less health
+        spawnWeight: 0,                // Does NOT spawn randomly!
+        minimapColor: '#555555',       // Grey dot (female color)
+
+        // Special behavior flags
+        friendly: false,               // Hostile to toads
+        biome: 'savannah',             // Only in savannah
+        huntRange: 17,                 // Same hunt range
+        huntsToads: true,              // Hunts leopard toads
+        prefersYoung: true,            // Targets baby toads first
+        canGiveBirth: true,            // Can get pregnant and give birth
+
+        // Grey grass viper colors
+        colors: {
+            body: 0x444444,            // Medium grey body
+            snout: 0x555555,           // Slightly lighter snout
+            nose: 0x222222,            // Dark grey nose
+            eyes: 0x33ff33,            // Same green eyes
+            eyeGlow: 0x003300,         // Green eye glow
+            ears: 0x444444,            // Grey ears
+            legs: 0x333333             // Darker grey legs
+        }
+    },
+
+    // ========================================================================
+    // NEW WORLD RHUBARB ANTELOPE (MALE) - Rhubarb red, has horns
+    // ========================================================================
+    {
+        id: 'antelope_male',
+        type: 'antelope',              // Uses hartebeest-style antelope model
+        speed: 6,                      // Fast runners
+        speedVariation: 1,             // Final speed: 6-7
+        damage: 15,                    // Strong kick when defensive
+        radius: 1.0,                   // Large hitbox
+        size: 1,                       // Normal size
+        health: 40,                    // Tough animals
+        spawnWeight: 0,                // Does NOT spawn randomly
+        minimapColor: '#8B0000',       // Dark red dot
+
+        // Behavior flags
+        friendly: true,                // Friendly until provoked
+        defensive: true,               // Will fight back if attacked
+        biome: 'savannah',
+        isHerdAnimal: true,
+        hasHorns: true,                // Males have horns
+        hornSize: 1,                   // Normal horn size (leader has 1.5)
+
+        // Rhubarb red male colors
+        colors: {
+            body: 0x8B2252,            // Rhubarb red (dark pinkish-red)
+            belly: 0xA85670,           // Lighter rhubarb underneath
+            legs: 0x5C1530,            // Darker red-brown legs
+            face: 0x9B3060,            // Face slightly different shade
+            muzzle: 0x2A1520,          // Dark muzzle
+            horns: 0x3D2817,           // Dark brown horns
+            hooves: 0x1A1A1A,          // Black hooves
+            eyes: 0x1A1A1A,            // Dark eyes
+            ears: 0x8B2252,            // Same as body
+            tail: 0x5C1530             // Dark tail tuft
+        }
+    },
+
+    // ========================================================================
+    // NEW WORLD RHUBARB ANTELOPE (FEMALE) - Blue-grey, no horns
+    // ========================================================================
+    {
+        id: 'antelope_female',
+        type: 'antelope',              // Same model but no horns
+        speed: 6,                      // Same speed
+        speedVariation: 1,
+        damage: 12,                    // Slightly less damage
+        radius: 0.9,                   // Slightly smaller
+        size: 0.9,                     // 90% size of male
+        health: 35,                    // Slightly less health
+        spawnWeight: 0,                // Does NOT spawn randomly
+        minimapColor: '#4A5568',       // Blue-grey dot
+
+        // Behavior flags
+        friendly: true,
+        defensive: true,
+        biome: 'savannah',
+        isHerdAnimal: true,
+        hasHorns: false,               // Females don't have horns
+        canGetPregnant: true,
+
+        // Blue-grey female colors
+        colors: {
+            body: 0x4A5568,            // Blue-grey body
+            belly: 0x718096,           // Lighter grey underneath
+            legs: 0x2D3748,            // Darker grey legs
+            face: 0x5A6578,            // Face slightly different shade
+            muzzle: 0x1A202C,          // Dark muzzle
+            horns: 0x3D2817,           // (not used but included for consistency)
+            hooves: 0x1A1A1A,          // Black hooves
+            eyes: 0x1A1A1A,            // Dark eyes
+            ears: 0x4A5568,            // Same as body
+            tail: 0x2D3748             // Dark tail tuft
+        }
+    },
+
+    // ========================================================================
+    // NEW WORLD HUNTER'S WILD DOG - Pack hunting canine with alpha female
+    // ========================================================================
+    // African wild dog inspired body. Female-led pack structure.
+    // Alpha female is golden yellow, leads the pack.
+    // Pack hunts antelope together every 8-10 minutes.
+
+    // Male Wild Dog - Brown, larger
+    {
+        id: 'wild_dog_male',
+        type: 'wild_dog',
+        speed: 8,                      // Fast runners
+        speedVariation: 1,
+        damage: 18,
+        radius: 0.7,
+        size: 1,
+        health: 30,
+        spawnWeight: 0,                // Pack-spawned only
+        minimapColor: '#8B4513',       // Brown
+
+        friendly: true,                // Friendly unless hunting
+        defensive: false,
+        biome: 'savannah',
+        isPackAnimal: true,
+
+        // Brown male colors with African wild dog patches
+        colors: {
+            body: 0x8B4513,            // Saddle brown
+            belly: 0xD2B48C,           // Tan underbelly
+            chest: 0xA0522D,           // Sienna chest
+            patches: 0x2F2F2F,         // Dark patches
+            patchesLight: 0xFAF0E6,    // Light cream patches
+            muzzle: 0x1A1A1A,          // Black muzzle
+            nose: 0x000000,
+            eyes: 0x4A3728,            // Dark brown eyes
+            eyeGlow: 0x1A0A00,
+            ears: 0x2A2A2A,            // Dark rounded ears
+            earInner: 0xDEB887,        // Lighter inner ear
+            legs: 0x1A1A1A,            // Black legs
+            paws: 0x2F2F2F,
+            tail: 0x8B4513,            // Brown base
+            tailTip: 0xFFFFFF          // White tail tip
+        }
+    },
+
+    // Female Wild Dog - Potato brown, slightly smaller
+    {
+        id: 'wild_dog_female',
+        type: 'wild_dog',
+        speed: 8,
+        speedVariation: 1,
+        damage: 16,
+        radius: 0.65,                  // Slightly smaller
+        size: 0.95,                    // 95% male size
+        health: 29,                    // Only 1 less health than male
+        spawnWeight: 0,
+        minimapColor: '#A0522D',       // Sienna (potato brown)
+
+        friendly: true,
+        defensive: false,
+        biome: 'savannah',
+        isPackAnimal: true,
+        canGetPregnant: true,
+
+        // Potato brown female colors
+        colors: {
+            body: 0xA0522D,            // Sienna (potato brown)
+            belly: 0xDEB887,           // Burlywood
+            chest: 0xB8860B,           // Dark goldenrod chest
+            patches: 0x4A3728,         // Dark brown patches
+            patchesLight: 0xF5DEB3,    // Wheat color patches
+            muzzle: 0x1A1A1A,
+            nose: 0x000000,
+            eyes: 0x4A3728,
+            eyeGlow: 0x1A0A00,
+            ears: 0x2A2A2A,
+            earInner: 0xCD853F,
+            legs: 0x1A1A1A,
+            paws: 0x2F2F2F,
+            tail: 0xA0522D,
+            tailTip: 0xFFFFFF
+        }
+    },
+
+    // Alpha Female Wild Dog - Golden yellow, pack leader
+    {
+        id: 'wild_dog_alpha',
+        type: 'wild_dog',
+        speed: 8,
+        speedVariation: 1,
+        damage: 20,                    // Alpha is stronger
+        radius: 0.68,
+        size: 0.97,
+        health: 35,
+        spawnWeight: 0,
+        minimapColor: '#FFD700',       // Gold
+
+        friendly: true,
+        defensive: false,
+        biome: 'savannah',
+        isPackAnimal: true,
+        isAlpha: true,
+
+        // Golden yellow alpha female colors
+        colors: {
+            body: 0xDAA520,            // Goldenrod
+            belly: 0xFFE4B5,           // Moccasin
+            chest: 0xFFD700,           // Gold chest
+            patches: 0x8B6914,         // Dark goldenrod patches
+            patchesLight: 0xFFF8DC,    // Cornsilk patches
+            muzzle: 0x1A1A1A,
+            nose: 0x000000,
+            eyes: 0xB8860B,            // Dark goldenrod eyes
+            eyeGlow: 0x332200,
+            ears: 0x2A2A2A,
+            earInner: 0xF0E68C,        // Khaki
+            legs: 0x1A1A1A,
+            paws: 0x2F2F2F,
+            tail: 0xDAA520,
+            tailTip: 0xFFFFFF
+        }
+    },
+
+    // ========================================================================
+    // SALTAS GAZELLA - Fastest animal in the game, rideable
+    // ========================================================================
+    // Springbok-like body build, extremely fast when fleeing.
+    // Both sexes have horns. Can be ridden with a saddle.
+    // Males: black with white underbelly
+    // Females: creamy yellow with white underbelly
+    // Baby males: fully grey
+    // Baby females: fully sunflower orange
+
+    // Male Saltas Gazella - Black with white underbelly
+    {
+        id: 'saltas_gazella_male',
+        type: 'saltas_gazella',
+        speed: 10,                     // Fast base speed
+        fleeSpeed: 25,                 // EXTREMELY fast when hunted!
+        speedVariation: 1,
+        damage: 12,
+        radius: 0.8,
+        size: 0.85,
+        health: 30,
+        spawnWeight: 0,                // Herd-spawned only
+        minimapColor: '#1a1a1a',       // Black
+
+        friendly: true,
+        defensive: true,               // Will fight back if cornered
+        biome: 'savannah',
+        isHerdAnimal: true,
+        gender: 'male',
+        hasHorns: true,
+
+        // Black male with white underbelly
+        colors: {
+            body: 0x1a1a1a,            // Black
+            belly: 0xffffff,           // White underbelly
+            legs: 0x0d0d0d,            // Darker black legs
+            face: 0x1a1a1a,            // Black face
+            muzzle: 0x333333,          // Dark grey muzzle
+            horns: 0x2a2a2a,           // Dark grey horns
+            hooves: 0x1a1a1a,          // Black hooves
+            eyes: 0x1a1a1a,            // Dark eyes
+            ears: 0x1a1a1a,            // Black ears
+            tail: 0x1a1a1a             // Black tail
+        }
+    },
+
+    // Female Saltas Gazella - Creamy yellow with white underbelly
+    {
+        id: 'saltas_gazella_female',
+        type: 'saltas_gazella',
+        speed: 10,
+        fleeSpeed: 25,
+        speedVariation: 1,
+        damage: 10,
+        radius: 0.75,
+        size: 0.8,
+        health: 28,
+        spawnWeight: 0,
+        minimapColor: '#f5deb3',       // Wheat
+
+        friendly: true,
+        defensive: true,
+        biome: 'savannah',
+        isHerdAnimal: true,
+        gender: 'female',
+        hasHorns: true,                // Both sexes have horns
+        canGetPregnant: true,
+
+        // Creamy yellow female with white underbelly
+        colors: {
+            body: 0xf5deb3,            // Creamy yellow (wheat)
+            belly: 0xffffff,           // White underbelly
+            legs: 0xd4c4a8,            // Slightly darker cream legs
+            face: 0xf5deb3,            // Cream face
+            muzzle: 0xc4a882,          // Tan muzzle
+            horns: 0x8b7355,           // Brown horns
+            hooves: 0x1a1a1a,          // Black hooves
+            eyes: 0x1a1a1a,            // Dark eyes
+            ears: 0xf5deb3,            // Cream ears
+            tail: 0xd4c4a8             // Tan tail
+        }
+    },
+
+    // ========================================================================
+    // DRONGLOUS CAT - Tree-dwelling predator (Savannah)
+    // ========================================================================
+    // Discovered by Professor Snoutworth! Lives in acacia trees.
+    // Males: Black, Females: Dull grey (smaller), Baby males: Dark grey, Baby females: White
+    // Hunts baby gazella, baby antelope, toads, wild dog pups, and vipers.
+    // Only dangerous to peccary if you get too close to babies.
+
+    // Male Dronglous Cat - Black coat
+    {
+        id: 'dronglous_cat_male',
+        type: 'dronglous_cat',
+        speed: 8,                      // Fast hunter
+        speedVariation: 1,
+        damage: 12,                    // Moderate damage
+        radius: 0.6,                   // Small lynx size
+        size: 0.9,                     // Slightly smaller than lynx
+        health: 20,
+        spawnWeight: 0,                // Spawned via special system, not random
+        minimapColor: '#222222',       // Dark dot
+        friendly: false,               // Neutral unless provoked
+        gender: 'male',
+
+        colors: {
+            body: 0x1a1a1a,            // Black
+            belly: 0x2a2a2a,           // Slightly lighter black belly
+            face: 0x1a1a1a,            // Black face
+            ears: 0x0a0a0a,            // Darker black ears
+            earInner: 0x3a2020,        // Dark reddish inner ear
+            nose: 0x2a1a1a,            // Dark nose
+            eyes: 0xccaa00,            // Golden yellow eyes (cat eyes!)
+            eyePupil: 0x111111,        // Dark pupils
+            whiskers: 0x444444,        // Grey whiskers
+            pawPads: 0x2a1a1a,         // Dark paw pads
+            tail: 0x1a1a1a             // Black tail
+        }
+    },
+
+    // Female Dronglous Cat - Dull grey coat (smaller)
+    {
+        id: 'dronglous_cat_female',
+        type: 'dronglous_cat',
+        speed: 7,                      // Slightly slower than male
+        speedVariation: 1,
+        damage: 10,
+        radius: 0.5,                   // Smaller than male
+        size: 0.75,                    // Noticeably smaller
+        health: 15,
+        spawnWeight: 0,
+        minimapColor: '#666666',       // Grey dot
+        friendly: false,
+        gender: 'female',
+
+        colors: {
+            body: 0x5a5a5a,            // Dull grey
+            belly: 0x6a6a6a,           // Lighter grey belly
+            face: 0x5a5a5a,            // Grey face
+            ears: 0x4a4a4a,            // Darker grey ears
+            earInner: 0x6a4a4a,        // Pinkish inner ear
+            nose: 0x4a3a3a,            // Greyish-pink nose
+            eyes: 0xccaa00,            // Golden yellow eyes
+            eyePupil: 0x111111,
+            whiskers: 0x7a7a7a,        // Light grey whiskers
+            pawPads: 0x4a3a3a,
+            tail: 0x5a5a5a             // Grey tail
+        }
+    },
+
+    // Baby Male Dronglous Cat - Dark grey
+    {
+        id: 'dronglous_cat_baby_male',
+        type: 'dronglous_cat',
+        speed: 5,                      // Slower baby
+        speedVariation: 1,
+        damage: 3,                     // Weak
+        radius: 0.3,                   // Tiny
+        size: 0.4,                     // Small baby
+        health: 8,
+        spawnWeight: 0,
+        minimapColor: '#444444',
+        friendly: true,                // Babies don't attack
+        gender: 'male',
+        isBaby: true,
+
+        colors: {
+            body: 0x3a3a3a,            // Dark grey
+            belly: 0x4a4a4a,           // Lighter grey belly
+            face: 0x3a3a3a,
+            ears: 0x2a2a2a,
+            earInner: 0x5a3a3a,
+            nose: 0x3a2a2a,
+            eyes: 0x88cc88,            // Baby green-yellow eyes
+            eyePupil: 0x111111,
+            whiskers: 0x5a5a5a,
+            pawPads: 0x3a2a2a,
+            tail: 0x3a3a3a
+        }
+    },
+
+    // Baby Female Dronglous Cat - White
+    {
+        id: 'dronglous_cat_baby_female',
+        type: 'dronglous_cat',
+        speed: 5,
+        speedVariation: 1,
+        damage: 3,
+        radius: 0.3,
+        size: 0.35,                    // Even smaller than baby male
+        health: 6,
+        spawnWeight: 0,
+        minimapColor: '#cccccc',       // Light dot
+        friendly: true,
+        gender: 'female',
+        isBaby: true,
+
+        colors: {
+            body: 0xe8e8e8,            // White
+            belly: 0xffffff,           // Pure white belly
+            face: 0xe8e8e8,
+            ears: 0xd8d8d8,
+            earInner: 0xffcccc,        // Pink inner ear
+            nose: 0xffaaaa,            // Pink nose
+            eyes: 0x88ccff,            // Baby blue eyes
+            eyePupil: 0x111111,
+            whiskers: 0xcccccc,
+            pawPads: 0xffaaaa,         // Pink paw pads
+            tail: 0xe8e8e8
+        }
+    },
+
+    // ========================================================================
     // ADD MORE ENEMIES HERE!
     // ========================================================================
     //

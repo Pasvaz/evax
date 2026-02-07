@@ -155,25 +155,207 @@ window.Player = (function() {
     }
 
     /**
+     * Find the nearest rideable Saltas Gazella within mount distance.
+     * @returns {THREE.Group|null} The nearest gazella or null
+     */
+    function findNearbyRideableGazella() {
+        if (!GameState.hasSaddle) return null;
+
+        const mountDistance = 2.5;
+        let nearestGazella = null;
+        let nearestDist = mountDistance;
+
+        for (const enemy of GameState.enemies) {
+            if (enemy.userData.type === 'saltas_gazella' &&
+                enemy.userData.isRideable &&
+                !enemy.userData.isBeingRidden &&
+                !enemy.userData.isBaby) {
+
+                const dist = GameState.peccary.position.distanceTo(enemy.position);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearestGazella = enemy;
+                }
+            }
+        }
+
+        return nearestGazella;
+    }
+
+    /**
+     * Mount a Saltas Gazella.
+     * @param {THREE.Group} gazella - The gazella to mount
+     */
+    function mountGazella(gazella) {
+        if (!gazella || GameState.mountedAnimal) return;
+
+        GameState.mountedAnimal = gazella;
+        gazella.userData.isBeingRidden = true;
+
+        // Hide the peccary (it's "on" the gazella now)
+        GameState.peccary.visible = false;
+
+        console.log('Mounted Saltas Gazella! Use WASD to move, E or Space to dismount.');
+    }
+
+    /**
+     * Dismount from current mount.
+     */
+    function dismountGazella() {
+        if (!GameState.mountedAnimal) return;
+
+        const gazella = GameState.mountedAnimal;
+        gazella.userData.isBeingRidden = false;
+
+        // Position peccary next to gazella
+        GameState.peccary.position.copy(gazella.position);
+        GameState.peccary.position.x += 2;  // Offset to the side
+        GameState.peccary.visible = true;
+
+        GameState.mountedAnimal = null;
+
+        console.log('Dismounted from Saltas Gazella.');
+    }
+
+    /**
+     * Update mounted riding controls.
+     * @param {number} delta - Time elapsed since last frame
+     */
+    function updateRiding(delta) {
+        const gazella = GameState.mountedAnimal;
+        if (!gazella) return;
+
+        // Check for dismount (E or Space)
+        if (GameState.keys['e'] && !GameState.lastKeyE) {
+            dismountGazella();
+            GameState.lastKeyE = true;
+            return;
+        }
+        if (GameState.keys[' '] || GameState.keys['space']) {
+            dismountGazella();
+            return;
+        }
+        GameState.lastKeyE = GameState.keys['e'];
+
+        // Movement controls - use gazella's fast speed!
+        const isSprinting = GameState.keys['shift'];
+        let moveSpeed = isSprinting ? gazella.userData.fleeSpeed : gazella.userData.speed;
+
+        const direction = new THREE.Vector3();
+        if (GameState.keys['w'] || GameState.keys['arrowup']) direction.z -= 1;
+        if (GameState.keys['s'] || GameState.keys['arrowdown']) direction.z += 1;
+        if (GameState.keys['a'] || GameState.keys['arrowleft']) direction.x -= 1;
+        if (GameState.keys['d'] || GameState.keys['arrowright']) direction.x += 1;
+
+        if (direction.length() > 0) {
+            direction.normalize();
+
+            // Move the gazella
+            gazella.position.x += direction.x * moveSpeed * delta;
+            gazella.position.z += direction.z * moveSpeed * delta;
+
+            // Rotate to face movement direction
+            // Add Math.PI / 2 offset because the model is built facing +X
+            const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+            let currentRotation = gazella.rotation.y;
+            let diff = targetRotation - currentRotation;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            gazella.rotation.y = currentRotation + diff * 0.15;
+
+            // Running animation
+            const model = gazella.children[0];
+            if (model && model.userData.legs) {
+                const walkSpeed = isSprinting ? 15 : 8;
+                gazella.userData.walkPhase = (gazella.userData.walkPhase || 0) + delta * walkSpeed;
+
+                model.userData.legs.forEach((leg, idx) => {
+                    const isPairA = (idx === 0 || idx === 3);
+                    const phase = isPairA ? gazella.userData.walkPhase : gazella.userData.walkPhase + Math.PI;
+                    const cyclePos = Math.sin(phase);
+
+                    const swingMult = isSprinting ? 1.0 : 0.6;
+                    const kneeMult = isSprinting ? 1.2 : 0.7;
+
+                    leg.group.rotation.z = cyclePos * swingMult;
+                    const kneeBend = cyclePos > 0 ? -cyclePos * kneeMult : cyclePos * 0.2;
+                    leg.lowerLegGroup.rotation.z = kneeBend;
+                });
+
+                // Body bob
+                const bobAmount = isSprinting ? 0.1 : 0.03;
+                gazella.position.y = Math.abs(Math.sin(gazella.userData.walkPhase * 2)) * bobAmount;
+            }
+        } else {
+            gazella.position.y = 0;
+        }
+
+        // Keep within world bounds
+        const bound = CONFIG.WORLD_SIZE * 0.65;
+        gazella.position.x = Math.max(-bound, Math.min(bound, gazella.position.x));
+        gazella.position.z = Math.max(-bound, Math.min(bound, gazella.position.z));
+
+        // Update camera to follow gazella (keep peccary position synced for camera)
+        GameState.peccary.position.copy(gazella.position);
+    }
+
+    /**
      * Update player position, rotation, and physics.
      * @param {number} delta - Time elapsed since last frame
      */
     function updatePlayer(delta) {
+        // If mounted, handle riding instead of normal movement
+        if (GameState.mountedAnimal) {
+            updateRiding(delta);
+            return;
+        }
+
+        // Check for mounting a gazella (E key, not in dialog)
+        if (GameState.keys['e'] && !GameState.lastKeyE && !GameState.isDialogOpen && !GameState.nearbyVillager) {
+            const nearbyGazella = findNearbyRideableGazella();
+            if (nearbyGazella) {
+                mountGazella(nearbyGazella);
+                GameState.lastKeyE = true;
+                return;
+            }
+        }
+        GameState.lastKeyE = GameState.keys['e'];
+
         checkResourceUseKeys();
 
-        // Check if player is in water
-        const inWater = Environment.isInRiver(
+        // Check if player is in water (river OR watering hole)
+        const inRiver = Environment.isInRiver(
             GameState.peccary.position.x,
             GameState.peccary.position.z
         );
+        const inWateringHole = Environment.isInWateringHole(
+            GameState.peccary.position.x,
+            GameState.peccary.position.z
+        );
+        const inWater = inRiver || inWateringHole;
         GameState.playerInWater = inWater;
 
         const isSprinting = GameState.keys['shift'];
         let moveSpeed = isSprinting ? window.CONFIG.PLAYER_SPRINT_SPEED : window.CONFIG.PLAYER_WALK_SPEED;
 
+        // Testing mode - 2x speed boost!
+        if (GameState.isTestingMode) {
+            moveSpeed *= 2;
+        }
+
         // Slow down in water (50% speed)
         if (inWater) {
             moveSpeed *= window.CONFIG.PLAYER_SWIM_SPEED;
+        }
+
+        // Starving! Move much slower when hunger is zero (not in testing mode)
+        if (!GameState.isTestingMode) {
+            if (GameState.hunger <= 0) {
+                moveSpeed *= 0.4;  // 40% speed when starving
+            } else if (GameState.hunger < 20) {
+                // Getting hungry - slightly slower
+                moveSpeed *= 0.7;  // 70% speed when very hungry
+            }
         }
 
         const direction = new THREE.Vector3();
@@ -215,6 +397,21 @@ window.Player = (function() {
         } else if (inWater && !GameState.isJumping) {
             // Idle swimming animation
             GameState.peccary.position.y = -0.3 + Math.sin(GameState.clock.elapsedTime * 2) * 0.1;
+
+            // Restore thirst when standing still in water
+            GameState.thirst = Math.min(100, GameState.thirst + delta * 8);
+
+            // Track drinking time for pee scheduling
+            GameState.drinkingTime = (GameState.drinkingTime || 0) + delta;
+        } else {
+            // Stopped drinking - schedule pee if we drank anything
+            if (GameState.drinkingTime && GameState.drinkingTime > 0.5) {
+                GameState.peeQueue.push({
+                    time: GameState.timeElapsed + 120,  // 2 minutes from now
+                    duration: GameState.drinkingTime    // How long we drank = puddle size
+                });
+            }
+            GameState.drinkingTime = 0;
         }
 
         GameState.wasSprinting = isSprinting;
@@ -253,6 +450,206 @@ window.Player = (function() {
                 GameState.peccary.position.add(pushDir.multiplyScalar(0.1));
             }
         });
+
+        // Update bathroom mechanic
+        updateBathroom(delta);
+    }
+
+    /**
+     * Create a cartoon poo swirl model.
+     */
+    function createPooModel() {
+        const poo = new THREE.Group();
+
+        // Brown color
+        const pooMat = new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.8 });
+
+        // Base - wider bottom
+        const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.25, 0.3, 0.15, 12),
+            pooMat
+        );
+        base.position.y = 0.075;
+        poo.add(base);
+
+        // Middle layer
+        const mid = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.18, 0.25, 0.12, 12),
+            pooMat
+        );
+        mid.position.y = 0.21;
+        poo.add(mid);
+
+        // Top swirl - cone with slight tilt
+        const top = new THREE.Mesh(
+            new THREE.ConeGeometry(0.15, 0.2, 12),
+            pooMat
+        );
+        top.position.y = 0.37;
+        top.rotation.z = 0.2;  // Slight tilt for cartoon effect
+        poo.add(top);
+
+        // Add a small fly buzzing around (optional fun detail)
+        const flyMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const fly = new THREE.Mesh(
+            new THREE.SphereGeometry(0.03, 6, 6),
+            flyMat
+        );
+        fly.position.set(0.3, 0.4, 0);
+        fly.userData.angle = Math.random() * Math.PI * 2;
+        poo.add(fly);
+        poo.userData.fly = fly;
+
+        return poo;
+    }
+
+    /**
+     * Create a cartoon pee puddle model.
+     * @param {number} size - Size based on drinking duration
+     */
+    function createPeeModel(size) {
+        const pee = new THREE.Group();
+
+        // Yellow transparent material
+        const peeMat = new THREE.MeshStandardMaterial({
+            color: 0xffee55,
+            transparent: true,
+            opacity: 0.7,
+            roughness: 0.3
+        });
+
+        // Main puddle - flattened sphere
+        const puddleSize = Math.min(0.3 + size * 0.1, 1.0);  // Scale with drinking time
+        const puddle = new THREE.Mesh(
+            new THREE.SphereGeometry(puddleSize, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+            peeMat
+        );
+        puddle.scale.y = 0.15;  // Flatten it
+        puddle.position.y = 0.02;
+        pee.add(puddle);
+
+        // Add some splash droplets around
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const dist = puddleSize + 0.1 + Math.random() * 0.15;
+            const droplet = new THREE.Mesh(
+                new THREE.SphereGeometry(0.05 + Math.random() * 0.05, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
+                peeMat
+            );
+            droplet.scale.y = 0.2;
+            droplet.position.set(
+                Math.cos(angle) * dist,
+                0.01,
+                Math.sin(angle) * dist
+            );
+            pee.add(droplet);
+        }
+
+        return pee;
+    }
+
+    /**
+     * Update bathroom mechanic - check queues, spawn poo/pee, handle animations.
+     */
+    function updateBathroom(delta) {
+        const currentTime = GameState.timeElapsed;
+
+        // Check if it's time to poop
+        if (!GameState.isSquatting && GameState.poopQueue.length > 0) {
+            const nextPoop = GameState.poopQueue[0];
+            if (currentTime >= nextPoop.time) {
+                // Time to poop! Start squatting
+                GameState.isSquatting = 'poop';
+                GameState.squatTimer = 0;
+                GameState.poopQueue.shift();  // Remove from queue
+            }
+        }
+
+        // Check if it's time to pee
+        if (!GameState.isSquatting && GameState.peeQueue.length > 0) {
+            const nextPee = GameState.peeQueue[0];
+            if (currentTime >= nextPee.time) {
+                // Time to pee! Start squatting
+                GameState.isSquatting = 'pee';
+                GameState.squatTimer = 0;
+                GameState.peeDuration = nextPee.duration;
+                GameState.peeQueue.shift();
+            }
+        }
+
+        // Handle squatting animation
+        if (GameState.isSquatting) {
+            GameState.squatTimer += delta;
+
+            // Squat animation - lower the peccary
+            const squatProgress = Math.min(GameState.squatTimer / 0.5, 1);  // 0.5 sec to squat down
+            if (GameState.squatTimer < 0.5) {
+                // Squatting down
+                GameState.peccary.position.y = -squatProgress * 0.3;
+            } else if (GameState.squatTimer < 1.5) {
+                // Holding squat - do the business
+                GameState.peccary.position.y = -0.3;
+            } else if (GameState.squatTimer < 2.0) {
+                // Standing back up
+                const standProgress = (GameState.squatTimer - 1.5) / 0.5;
+                GameState.peccary.position.y = -0.3 + standProgress * 0.3;
+            } else {
+                // Done! Spawn the result
+                GameState.peccary.position.y = 0;
+
+                const spawnPos = GameState.peccary.position.clone();
+                spawnPos.y = 0;
+
+                if (GameState.isSquatting === 'poop') {
+                    const poo = createPooModel();
+                    poo.position.copy(spawnPos);
+                    GameState.scene.add(poo);
+                    GameState.poopsInWorld.push({
+                        mesh: poo,
+                        removeTime: currentTime + 120  // Remove after 2 minutes
+                    });
+                    console.log('Peccary pooped!');
+                } else if (GameState.isSquatting === 'pee') {
+                    const pee = createPeeModel(GameState.peeDuration || 1);
+                    pee.position.copy(spawnPos);
+                    GameState.scene.add(pee);
+                    GameState.peesInWorld.push({
+                        mesh: pee,
+                        removeTime: currentTime + 120
+                    });
+                    console.log('Peccary peed!');
+                }
+
+                GameState.isSquatting = false;
+            }
+        }
+
+        // Update flies on poop (make them buzz around)
+        GameState.poopsInWorld.forEach(p => {
+            if (p.mesh.userData.fly) {
+                const fly = p.mesh.userData.fly;
+                fly.userData.angle += delta * 5;
+                fly.position.x = Math.cos(fly.userData.angle) * 0.35;
+                fly.position.z = Math.sin(fly.userData.angle) * 0.35;
+                fly.position.y = 0.35 + Math.sin(fly.userData.angle * 2) * 0.1;
+            }
+        });
+
+        // Remove old poop
+        for (let i = GameState.poopsInWorld.length - 1; i >= 0; i--) {
+            if (currentTime >= GameState.poopsInWorld[i].removeTime) {
+                GameState.scene.remove(GameState.poopsInWorld[i].mesh);
+                GameState.poopsInWorld.splice(i, 1);
+            }
+        }
+
+        // Remove old pee
+        for (let i = GameState.peesInWorld.length - 1; i >= 0; i--) {
+            if (currentTime >= GameState.peesInWorld[i].removeTime) {
+                GameState.scene.remove(GameState.peesInWorld[i].mesh);
+                GameState.peesInWorld.splice(i, 1);
+            }
+        }
     }
 
     // Public API
