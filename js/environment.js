@@ -1332,6 +1332,23 @@ window.Environment = (function() {
         return dist < (hut.userData.interactRadius || 6);
     }
 
+    /**
+     * Get terrain height at a given world position.
+     * Returns the Y value of the ground at (x, z).
+     *
+     * TODO: When adding hills/terrain, implement actual height sampling here.
+     * For now, returns 0 (flat world).
+     *
+     * @param {number} x - World X position
+     * @param {number} z - World Z position
+     * @returns {number} Terrain height (Y value)
+     */
+    function getTerrainHeight(x, z) {
+        // Future: sample heightmap or noise function
+        // For now, world is flat at Y=0
+        return 0;
+    }
+
     // Public API
     return {
         setupLighting: setupLighting,
@@ -1342,6 +1359,7 @@ window.Environment = (function() {
         isOnRiverbank: isOnRiverbank,
         isInWateringHole: isInWateringHole,
         isNearResearchHut: isNearResearchHut,
+        getTerrainHeight: getTerrainHeight,
         getRiverPoints: () => RIVER_POINTS,
         getRiverWidth: () => RIVER_WIDTH,
         rebuildForBiome: rebuildForBiome,

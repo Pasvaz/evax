@@ -65,6 +65,7 @@
 //   health: Hits to kill (1 = one hit kill)
 //   spawnWeight: Spawn frequency (1 = normal, 0.1 = rare, 0.01 = very rare)
 //   minimapColor: Color of the dot on the minimap
+//   groundY: Y position when on ground (0.3 = normal, 0.05 = flat like snake, -0.1 = swimming)
 //   colors: (optional) Custom colors to override the default model colors
 
 window.ENEMIES = [
@@ -80,9 +81,10 @@ window.ENEMIES = [
         damage: 15,                    // High damage per second!
         radius: 0.8,                   // Chunky hitbox
         size: 1,                       // Normal size
-        health: 17,                     // Dies in one hit
+        health: 17,                    // Dies in one hit
         spawnWeight: 1,                // Normal spawn rate
         minimapColor: '#ff4444',       // Red dot on minimap
+        groundY: 0.25,                 // Low, sturdy body
 
         // Badger colors (dark gray with white face stripes)
         colors: {
@@ -106,9 +108,10 @@ window.ENEMIES = [
         damage: 10,                    // Less damage than badger
         radius: 0.6,                   // Slim hitbox
         size: 1,                       // Normal size
-        health: 10,                     // Dies in one hit
+        health: 10,                    // Dies in one hit
         spawnWeight: 1,                // Normal spawn rate
         minimapColor: '#ff8800',       // Orange dot on minimap
+        groundY: 0.2,                  // Slim, low to ground
 
         // Weasel colors (brown with yellow eyes)
         colors: {
@@ -133,9 +136,10 @@ window.ENEMIES = [
         damage: 8,                     // Attacks enemies, not player
         radius: 0.6,                   // Medium hitbox
         size: 1,                       // Normal size
-        health: 25,                     // Takes 2 hits
+        health: 25,                    // Takes 2 hits
         spawnWeight: 0,                // Does NOT spawn randomly! Spawned on riverbank
         minimapColor: '#ffffaa',       // Light yellow dot (friendly)
+        groundY: 0.3,                  // Tall bird, higher center
 
         // Special behavior flags
         friendly: true,                // Does NOT attack the player
@@ -165,8 +169,9 @@ window.ENEMIES = [
         radius: 0.7,                   // Medium hitbox
         size: 1,                       // Normal size
         health: 20,                    // Tougher than weasel
-        spawnWeight: 1,              // Less common than badger/weasel
+        spawnWeight: 1,                // Less common than badger/weasel
         minimapColor: '#ff6600',       // Orange-red dot on minimap
+        groundY: 0.3,                  // Medium height, agile
 
         // Special behavior flags
         dodgeChance: 0.15,             // 15% chance to dodge attacks
@@ -204,6 +209,7 @@ window.ENEMIES = [
         health: 15,                    // Moderate health
         spawnWeight: 0,                // Does NOT spawn randomly! Spawned at watering hole
         minimapColor: '#ffd700',       // Gold dot (male color)
+        groundY: 0.1,                  // Very low, flat toad body
 
         // Special behavior flags
         friendly: true,                // Does NOT attack the player normally
@@ -237,6 +243,7 @@ window.ENEMIES = [
         health: 12,                    // Slightly less health
         spawnWeight: 0,                // Does NOT spawn randomly!
         minimapColor: '#1a1a1a',       // Black dot (female color)
+        groundY: 0.08,                 // Smaller toad, even lower
 
         // Special behavior flags
         friendly: true,                // Does NOT attack the player normally
@@ -268,9 +275,10 @@ window.ENEMIES = [
         damage: 12,                    // High damage - can one-shot female toads
         radius: 0.5,                   // Slim hitbox
         size: 0.85,                    // Smaller than regular weasel
-        health: 17,                     // Less health than regular weasel (10)
+        health: 17,                    // Less health than regular weasel (10)
         spawnWeight: 0,                // Does NOT spawn randomly! Spawned in savannah
         minimapColor: '#1a1a1a',       // Black dot (male color)
+        groundY: 0.05,                 // Snake-like, almost flat on ground
 
         // Special behavior flags
         friendly: false,               // Hostile to toads (not player directly)
@@ -303,9 +311,10 @@ window.ENEMIES = [
         damage: 12,                    // Same damage
         radius: 0.45,                  // Slightly smaller hitbox
         size: 0.75,                    // Smaller than male (75% vs 85%)
-        health: 15,                     // Slightly less health
+        health: 15,                    // Slightly less health
         spawnWeight: 0,                // Does NOT spawn randomly!
         minimapColor: '#555555',       // Grey dot (female color)
+        groundY: 0.04,                 // Even smaller snake, very flat
 
         // Special behavior flags
         friendly: false,               // Hostile to toads
@@ -341,6 +350,7 @@ window.ENEMIES = [
         health: 40,                    // Tough animals
         spawnWeight: 0,                // Does NOT spawn randomly
         minimapColor: '#8B0000',       // Dark red dot
+        groundY: 0.5,                  // Tall animal, high center
 
         // Behavior flags
         friendly: true,                // Friendly until provoked
@@ -379,6 +389,7 @@ window.ENEMIES = [
         health: 35,                    // Slightly less health
         spawnWeight: 0,                // Does NOT spawn randomly
         minimapColor: '#4A5568',       // Blue-grey dot
+        groundY: 0.45,                 // Slightly smaller than male
 
         // Behavior flags
         friendly: true,
@@ -422,6 +433,7 @@ window.ENEMIES = [
         health: 30,
         spawnWeight: 0,                // Pack-spawned only
         minimapColor: '#8B4513',       // Brown
+        groundY: 0.35,                 // Medium height dog
 
         friendly: true,                // Friendly unless hunting
         defensive: false,
@@ -460,6 +472,7 @@ window.ENEMIES = [
         health: 29,                    // Only 1 less health than male
         spawnWeight: 0,
         minimapColor: '#A0522D',       // Sienna (potato brown)
+        groundY: 0.33,                 // Slightly smaller than male
 
         friendly: true,
         defensive: false,
@@ -499,6 +512,7 @@ window.ENEMIES = [
         health: 35,
         spawnWeight: 0,
         minimapColor: '#FFD700',       // Gold
+        groundY: 0.34,                 // Between male and female
 
         friendly: true,
         defensive: false,
@@ -549,6 +563,7 @@ window.ENEMIES = [
         health: 30,
         spawnWeight: 0,                // Herd-spawned only
         minimapColor: '#1a1a1a',       // Black
+        groundY: 0.4,                  // Slender gazelle
 
         friendly: true,
         defensive: true,               // Will fight back if cornered
@@ -585,6 +600,7 @@ window.ENEMIES = [
         health: 28,
         spawnWeight: 0,
         minimapColor: '#f5deb3',       // Wheat
+        groundY: 0.38,                 // Slightly smaller than male
 
         friendly: true,
         defensive: true,
@@ -629,6 +645,7 @@ window.ENEMIES = [
         health: 20,
         spawnWeight: 0,                // Spawned via special system, not random
         minimapColor: '#222222',       // Dark dot
+        groundY: 0.3,                  // Cat height when on ground
         friendly: false,               // Neutral unless provoked
         gender: 'male',
 
@@ -659,6 +676,7 @@ window.ENEMIES = [
         health: 15,
         spawnWeight: 0,
         minimapColor: '#666666',       // Grey dot
+        groundY: 0.25,                 // Smaller cat
         friendly: false,
         gender: 'female',
 
@@ -689,6 +707,7 @@ window.ENEMIES = [
         health: 8,
         spawnWeight: 0,
         minimapColor: '#444444',
+        groundY: 0.15,                 // Tiny baby
         friendly: true,                // Babies don't attack
         gender: 'male',
         isBaby: true,
@@ -720,6 +739,7 @@ window.ENEMIES = [
         health: 6,
         spawnWeight: 0,
         minimapColor: '#cccccc',       // Light dot
+        groundY: 0.12,                 // Even tinier baby
         friendly: true,
         gender: 'female',
         isBaby: true,

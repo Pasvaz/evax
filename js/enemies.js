@@ -2419,12 +2419,13 @@ window.Enemies = (function() {
             anim.runCycle += delta * 2;
             const idleCycle = anim.runCycle;
 
-            // Reset spine to neutral
-            parts.frontSpine.rotation.z *= 0.9;
-            parts.frontSpine.position.x *= 0.9;
+            // Reset spine to neutral (use same axes as running animation!)
+            parts.frontSpine.rotation.x *= 0.9;
+            parts.frontSpine.position.y *= 0.9;
+            parts.midSpine.rotation.x *= 0.9;
             parts.midSpine.position.y *= 0.9;
-            parts.rearSpine.rotation.z *= 0.9;
-            parts.rearSpine.position.x *= 0.9;
+            parts.rearSpine.rotation.x *= 0.9;
+            parts.rearSpine.position.y *= 0.9;
 
             // Subtle breathing
             const breathe = Math.sin(idleCycle) * 0.02;
@@ -2519,8 +2520,12 @@ window.Enemies = (function() {
 
         enemy.add(model);
 
-        // Position the enemy
-        enemy.position.set(x, 0, z);
+        // Get groundY from enemy data (default 0.3 for most animals)
+        const groundY = enemyData.groundY !== undefined ? enemyData.groundY : 0.3;
+
+        // Position the enemy using terrain height + groundY offset
+        const terrainY = Environment.getTerrainHeight(x, z);
+        enemy.position.set(x, terrainY + groundY, z);
 
         // Set up userData with stats from enemy data
         enemy.userData = {
@@ -2533,6 +2538,7 @@ window.Enemies = (function() {
             health: enemyData.health || 1,    // Default to 1 if not specified
             maxHealth: enemyData.health || 1, // Track max for health bars later
             minimapColor: enemyData.minimapColor,
+            groundY: groundY,                 // Store for later use in updateEnemies
             // Behavior flags from data
             friendly: enemyData.friendly || false,
             attacksEnemies: enemyData.attacksEnemies || false,
@@ -3618,7 +3624,7 @@ window.Enemies = (function() {
                 enemy.userData.wanderTime = 0;
             }
 
-            let direction;
+            let direction = enemy.userData.wanderDir; // Default to wander direction
             let speed = enemy.userData.speed * 0.5;
 
             // Goose lifecycle state machine
@@ -6520,14 +6526,16 @@ window.Enemies = (function() {
                     const model = enemy.children[0];
                     if (model && model.userData.legs) {
                         model.userData.legs.forEach(leg => {
-                            // Upper leg tilts 45 degrees backward
-                            leg.group.rotation.x = Math.PI / 4;
-                            // Lower leg tilts 45 degrees forward
-                            leg.lowerLegGroup.rotation.x = -Math.PI / 4;
+                            // Model is flipped, use Z axis for front/back rotation
+                            // Upper leg tilts backward
+                            leg.group.rotation.z = Math.PI / 4;
+                            // Lower leg bends forward
+                            leg.lowerLegGroup.rotation.z = -Math.PI / 4;
                         });
                     }
                     // Lower body position when creeping
-                    enemy.position.y = -0.15;
+                    const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = terrainY + (enemy.userData.groundY || 0.3) - 0.15;
                     speed = enemy.userData.speed * 0.4; // Much slower when creeping
                 } else {
                     // Walking animation with diagonal gait
@@ -6543,27 +6551,18 @@ window.Enemies = (function() {
                             const phase = leg.diagonalPair === 'A' ? 0 : Math.PI;
                             const swing = Math.sin(walkCycle + phase) * swingAngle;
 
-                            // Walking: legs swing forward/backward relative to fox's travel direction
-                            // The fox model has rotation.y = PI, then enemy group rotates to face movement
-                            // We need rotation around an axis perpendicular to both:
-                            // - The leg direction (down, -Y in model space)
-                            // - The fox's forward direction
-                            //
-                            // Use the enemy's rotation to determine the correct swing axis
-                            // The swing axis should be perpendicular to the fox's facing direction
-                            // and horizontal (in the XZ plane of the world)
-                            const foxRotation = enemy.rotation.y + Math.PI; // Account for model flip
-                            // Swing axis is perpendicular to fox's forward direction
-                            const swingAxisX = Math.cos(foxRotation);
-                            const swingAxisZ = -Math.sin(foxRotation);
-                            const swingAxis = new THREE.Vector3(swingAxisX, 0, swingAxisZ).normalize();
+                            // Walking: legs swing forward/backward
+                            // Model is flipped (rotation.y = PI), so use rotation.z for front/back swing
+                            leg.group.rotation.z = swing;
 
-                            leg.group.rotation.set(0, 0, 0);
-                            leg.group.rotateOnWorldAxis(swingAxis, swing);
-                            leg.lowerLegGroup.rotation.set(0, 0, 0);
+                            // Lower leg bends slightly when lifting
+                            const kneeBend = Math.max(0, Math.sin(walkCycle + phase + 0.5)) * 0.3;
+                            leg.lowerLegGroup.rotation.z = -kneeBend;
                         });
                     }
-                    enemy.position.y = 0;
+                    // Use groundY for proper positioning
+                    const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = terrainY + (enemy.userData.groundY || 0.3);
                 }
 
                 if (foxState === 'hunting') {
@@ -6836,12 +6835,16 @@ window.Enemies = (function() {
             enemy.rotation.y = currentEnemyRotation + enemyDiff * 0.1;
 
             // Animation - swimming or walking
+            // Use terrain height + groundY for proper positioning
+            const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+            const baseY = terrainY + (enemy.userData.groundY || 0.3);
+
             if (inWater) {
                 // Swimming animation - lower body, slower bob
-                enemy.position.y = -0.2 + Math.sin(GameState.clock.elapsedTime * 4 + i) * 0.1;
+                enemy.position.y = baseY - 0.2 + Math.sin(GameState.clock.elapsedTime * 4 + i) * 0.1;
             } else {
                 // Normal bobbing animation
-                enemy.position.y = Math.abs(Math.sin(GameState.clock.elapsedTime * 12 + i)) * 0.05;
+                enemy.position.y = baseY + Math.abs(Math.sin(GameState.clock.elapsedTime * 12 + i)) * 0.05;
             }
 
             // Collision with player - only for hostile enemies
@@ -8847,10 +8850,13 @@ window.Enemies = (function() {
                 checkMotherDefense(cat);
             }
 
-            // Animate the cat model with cheetah-like running
-            const isMoving = ['hunting', 'defending', 'baby_playing'].includes(state);
-            const speed = cat.userData.speed || 8;
-            animateDronglousCat(cat, delta, isMoving, speed);
+            // Animate the cat model - SKIP animation during hunting/ascending to prevent twitching
+            // TODO: Fix animation to work properly with movement
+            if (state !== 'hunting' && state !== 'ascending' && state !== 'descending') {
+                const isMoving = ['defending', 'baby_playing'].includes(state);
+                const speed = cat.userData.speed || 8;
+                animateDronglousCat(cat, delta, isMoving, speed);
+            }
         });
     }
 
@@ -8966,39 +8972,79 @@ window.Enemies = (function() {
 
     /**
      * Cat descending from tree to hunt.
-     * INSTANT TELEPORT - happens immediately on first call!
+     * Visible jump animation from tree to ground.
      */
     function updateCatDescending(cat, delta) {
         const tree = cat.userData.homeTree;
-        const targetY = 0.3;
+        const groundY = cat.userData.groundY || 0.3;
 
-        // Only run once - check if we already teleported
-        if (cat.userData.hasTeleported) {
-            // Already teleported, just go to hunting
+        // Initialize jump if not started
+        if (!cat.userData.jumpStarted) {
+            cat.userData.jumpStarted = true;
+            cat.userData.jumpTimer = 0;
+            cat.userData.jumpDuration = 0.6; // 0.6 second jump
+
+            // Store start position
+            cat.userData.jumpStartPos = cat.position.clone();
+
+            // Calculate landing spot (toward prey if we have one)
+            let landAngle;
+            if (cat.userData.huntTarget) {
+                const target = cat.userData.huntTarget;
+                landAngle = Math.atan2(
+                    target.position.z - tree.position.z,
+                    target.position.x - tree.position.x
+                );
+            } else {
+                landAngle = Math.random() * Math.PI * 2;
+            }
+
+            const landingDist = 3.0;
+            cat.userData.jumpEndPos = new THREE.Vector3(
+                tree.position.x + Math.cos(landAngle) * landingDist,
+                groundY,
+                tree.position.z + Math.sin(landAngle) * landingDist
+            );
+
+            // Play pounce sound
+            Game.playSound('cat_pounce');
+
+            // Face landing direction
+            const catModel = cat.children[0];
+            if (catModel) {
+                catModel.rotation.y = landAngle;
+            }
+        }
+
+        // Animate the jump
+        cat.userData.jumpTimer += delta;
+        const t = Math.min(cat.userData.jumpTimer / cat.userData.jumpDuration, 1);
+
+        const start = cat.userData.jumpStartPos;
+        const end = cat.userData.jumpEndPos;
+
+        // Interpolate X and Z
+        cat.position.x = start.x + (end.x - start.x) * t;
+        cat.position.z = start.z + (end.z - start.z) * t;
+
+        // Arc for Y (parabola)
+        const arcHeight = 2.0;
+        const baseY = start.y + (end.y - start.y) * t;
+        cat.position.y = baseY + Math.sin(t * Math.PI) * arcHeight;
+
+        // Jump finished?
+        if (t >= 1) {
+            cat.position.y = groundY;
             cat.userData.lifecycleState = 'hunting';
             cat.userData.stateTimer = 0;
             cat.userData.huntPhase = 'approaching';
-            delete cat.userData.hasTeleported;
-            console.log('✅ Cat finished teleport, now hunting!');
-            return;
+
+            // Clean up
+            delete cat.userData.jumpStarted;
+            delete cat.userData.jumpTimer;
+            delete cat.userData.jumpStartPos;
+            delete cat.userData.jumpEndPos;
         }
-
-        console.log('💫 TELEPORTING cat from tree to ground!');
-
-        // Play scary pounce sound!
-        Game.playSound('cat_pounce');
-
-        // Pick a landing spot FAR away from tree to avoid collision
-        const angle = Math.random() * Math.PI * 2;
-        const landingDist = 4.0; // MUCH further from tree
-        cat.position.x = tree.position.x + Math.cos(angle) * landingDist;
-        cat.position.z = tree.position.z + Math.sin(angle) * landingDist;
-        cat.position.y = targetY;
-
-        // Mark that we teleported
-        cat.userData.hasTeleported = true;
-
-        console.log('📍 Cat teleported to:', cat.position.x.toFixed(1), cat.position.y.toFixed(1), cat.position.z.toFixed(1));
     }
 
     /**
@@ -9020,8 +9066,6 @@ window.Enemies = (function() {
             return;
         }
 
-        console.log('🏃 Cat hunting! Phase:', cat.userData.huntPhase, 'Target:', isPlayer ? 'PLAYER' : target.userData?.type);
-
         const dist = cat.position.distanceTo(target.position);
 
         if (cat.userData.huntPhase === 'approaching') {
@@ -9030,15 +9074,20 @@ window.Enemies = (function() {
                 .subVectors(target.position, cat.position)
                 .normalize();
 
-            // Move at hunting speed (this is slower for stalking)
-            const speed = cat.userData.speed * 1.2; // INCREASED - was too slow to trigger animation
+            // Move at hunting speed
+            const speed = cat.userData.speed * 1.2;
             cat.position.x += dir.x * speed * delta;
             cat.position.z += dir.z * speed * delta;
 
-            // Face target - rotate the nested model, not the enemy group
+            // Face movement direction
             const catModel = cat.children[0];
             if (catModel) {
-                catModel.rotation.y = Math.atan2(dir.x, dir.z);
+                catModel.rotation.y = Math.atan2(
+                    -(target.position.z - cat.position.z),
+                    target.position.x - cat.position.x
+                );
+                catModel.rotation.x = 0;
+                catModel.rotation.z = 0;
             }
 
             // Close enough to pounce?
@@ -9179,9 +9228,13 @@ window.Enemies = (function() {
             cat.position.x += dir.x * cat.userData.speed * delta;
             cat.position.z += dir.z * cat.userData.speed * delta;
 
+            // Face direction of movement
             const catModel = cat.children[0];
             if (catModel) {
-                catModel.rotation.y = Math.atan2(dir.x, dir.z);
+                catModel.rotation.y = Math.atan2(
+                    -(tree.position.z - cat.position.z),
+                    tree.position.x - cat.position.x
+                );
                 catModel.rotation.x = 0;
                 catModel.rotation.z = 0;
             }

@@ -1160,53 +1160,14 @@ window.Game = (function() {
                         cat.userData.isMother = false;
                         cat.userData.gender = 'male';
 
-                        // ADD HUGE GLOWING MARKER SO YOU CAN SEE THE CAT
-                        const markerGeo = new THREE.SphereGeometry(0.5, 16, 16);
-                        const markerMat = new THREE.MeshBasicMaterial({
-                            color: 0xff00ff // Bright magenta (Basic material is always bright)
-                        });
-                        const marker = new THREE.Mesh(markerGeo, markerMat);
-                        marker.position.set(0, 1, 0); // Above cat
-                        cat.add(marker);
-
                         testTree.userData.dronglousCat = cat;
 
-                        console.log('✅ Spawned test cat with BRIGHT MARKER at', treeX.toFixed(1), treeZ.toFixed(1));
+                        console.log('✅ Spawned test cat at', treeX.toFixed(1), treeZ.toFixed(1));
                         console.log('🔍 Cat position: X:', cat.position.x.toFixed(1), 'Y:', cat.position.y.toFixed(1), 'Z:', cat.position.z.toFixed(1));
-                        console.log('👀 Look 10 units STRAIGHT AHEAD - you should see a bright green tree with a MAGENTA ball!');
                     }
                 }
             });
             document.getElementById('trigger-pregnancy-btn').addEventListener('click', makeSelectedPregnant);
-
-            // Spawn prey for cat testing
-            document.getElementById('spawn-test-prey-btn').addEventListener('click', () => {
-                // Find the test cat
-                const cats = GameState.enemies.filter(e => e.userData.type === 'dronglous_cat');
-                if (cats.length === 0) {
-                    console.log('❌ No cat found! Spawn a test cat first.');
-                    return;
-                }
-
-                const cat = cats[0];
-                const catPos = cat.userData.homeTree ? cat.userData.homeTree.position : cat.position;
-
-                // Spawn a baby gazella 15 meters from the cat's tree (within hunt range of 30m)
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 15;
-                const preyX = catPos.x + Math.cos(angle) * dist;
-                const preyZ = catPos.z + Math.sin(angle) * dist;
-
-                // Spawn baby gazella (cat's favorite prey!)
-                const prey = Enemies.spawnSpecificEnemy('saltas_gazella', 'baby', preyX, preyZ);
-                if (prey) {
-                    console.log('🦌 Spawned baby gazella at', preyX.toFixed(1), preyZ.toFixed(1));
-                    console.log('📏 Distance from cat tree:', dist.toFixed(1), 'meters (hunt range is 30m)');
-                    console.log('⏱️ Cat should spot it within a few seconds!');
-                } else {
-                    console.log('❌ Failed to spawn prey');
-                }
-            });
 
             // Spawn animal buttons
             document.querySelectorAll('.spawn-btn').forEach(btn => {
