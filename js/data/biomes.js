@@ -64,7 +64,8 @@ window.BIOMES = {
 
         // Transitions
         transitions: {
-            south: 'arboreal'          // Go south to return to arboreal
+            south: 'arboreal',         // Go south to return to arboreal
+            west: 'snowy_mountains'    // Go west to reach snowy mountains (requires skull!)
         },
 
         // Spawn position when entering this biome
@@ -102,6 +103,55 @@ window.BIOMES = {
         // Lives in acacia trees, hunts baby gazella, baby antelope, toads, pups, vipers
         spawnDronglousCats: true,
         dronglousCats: 4  // 2 male, 2 female (each gets their own tree)
+    },
+
+    // The snowy mountains - homeland of the ancient cats
+    snowy_mountains: {
+        id: 'snowy_mountains',
+        name: 'Snowy Mountains',
+        displayName: 'Snowy Mountains',
+
+        // Colors
+        groundColor: 0xf0f0f0,         // White snow
+        grassColor: 0xe8e8e8,          // Light grey snow
+        minimapBackground: '#c0c0c0',  // Light grey
+
+        // Sky
+        skyColor: 0x8899aa,            // Grey cloudy sky
+        fogColor: 0xaabbcc,            // Light grey fog
+        fogDensity: 0.02,              // Thicker fog for snowy atmosphere
+
+        // Water feature
+        waterFeature: 'none',          // No water in the mountains (frozen)
+
+        // Transitions
+        transitions: {
+            east: 'savannah'           // Go east to return to savannah
+        },
+
+        // Spawn position when entering this biome
+        spawnOffset: {
+            fromEast: { x: -10, z: 0 } // 10 units from west border when coming from east
+        },
+
+        // Features
+        hasVillage: false,
+        hasForest: false,
+        spawnGeese: false,
+        geese: 0,
+
+        // Environmental features
+        hasSnow: true,                 // Falling snow particles
+        snowParticles: 200,            // Number of snowflakes
+        spawnRocks: true,              // Snow-covered rock mounds
+        rocks: 15,                     // Number of rocks
+
+        // Deericus Iricus - mountain deer
+        spawnDeer: true,
+        deer: 2,                       // 2 herds
+
+        // Requirements
+        requiresArtifact: 'felis_dronglaticus_skull'  // Need the skull to enter!
     }
 };
 

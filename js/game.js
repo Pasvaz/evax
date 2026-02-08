@@ -45,6 +45,12 @@ window.GameState = {
     // Dronglous Cat system (savannah biome - tree-dwelling predators)
     dronglousCatMatingTimer: 0,  // Timer for mating (every 6 minutes)
 
+    // Deericus Iricus system (snowy mountains biome)
+    deerHerds: [],               // Array of deer herd objects
+    deerBurrows: [],             // Burrow entrances for deer herds
+    grassTufts: [],              // Grass tufts for deer grazing
+    deerMatingTimer: 0,          // Timer for mating (every 6 minutes)
+
     // Riding system
     hasSaddle: false,            // Player has crafted a saddle
     mountedAnimal: null,         // Currently mounted animal reference
@@ -524,6 +530,16 @@ window.Game = (function() {
             currentBorder = 'south';
             targetBiome = biomeData.transitions.south;
         }
+        // Check west border (negative X in Three.js)
+        else if (playerX < -worldBorder && biomeData.transitions.west) {
+            currentBorder = 'west';
+            targetBiome = biomeData.transitions.west;
+        }
+        // Check east border (positive X in Three.js)
+        else if (playerX > worldBorder && biomeData.transitions.east) {
+            currentBorder = 'east';
+            targetBiome = biomeData.transitions.east;
+        }
 
         // Handle border state changes
         if (currentBorder === null) {
@@ -568,8 +584,23 @@ window.Game = (function() {
     function transitionToBiome(targetBiome, direction) {
         if (GameState.isTransitioning) return;
 
-        GameState.isTransitioning = true;
         const targetData = getBiomeData(targetBiome);
+
+        // Check if this biome requires an artifact to enter
+        if (targetData.requiresArtifact) {
+            if (!GameState.artifacts || !GameState.artifacts.includes(targetData.requiresArtifact)) {
+                const artifactData = window.getArtifactData(targetData.requiresArtifact);
+                const artifactName = artifactData ? artifactData.name : 'a special artifact';
+                console.log(`🚫 You need ${artifactName} to enter ${targetData.displayName}!`);
+                console.log('🔍 Explore the savannah to find ancient secrets...');
+                // Reset border so player can try again later
+                GameState.borderTransitionTimer = 0;
+                GameState.onBorder = null;
+                return;
+            }
+        }
+
+        GameState.isTransitioning = true;
 
         // Show transition message
         const transitionEl = document.getElementById('biome-transition');
@@ -590,11 +621,20 @@ window.Game = (function() {
             if (direction === 'north') {
                 // Came from south, spawn at the very south border of new biome
                 GameState.peccary.position.z = worldSize * 0.69;
-            } else {
+                GameState.peccary.position.x = 0;
+            } else if (direction === 'south') {
                 // Came from north, spawn at the very north border of new biome
                 GameState.peccary.position.z = -worldSize * 0.69;
+                GameState.peccary.position.x = 0;
+            } else if (direction === 'west') {
+                // Came from east, spawn at the very east border of new biome
+                GameState.peccary.position.x = worldSize * 0.69;
+                GameState.peccary.position.z = 0;
+            } else if (direction === 'east') {
+                // Came from west, spawn at the very west border of new biome
+                GameState.peccary.position.x = -worldSize * 0.69;
+                GameState.peccary.position.z = 0;
             }
-            GameState.peccary.position.x = 0;
 
             // Reset border tracking to prevent immediate re-transition
             GameState.lastPlayerPosition.x = GameState.peccary.position.x;
@@ -654,6 +694,17 @@ window.Game = (function() {
                 Enemies.spawnDronglousCats(targetData.dronglousCats);
                 // Reset dronglous cat mating timer
                 GameState.dronglousCatMatingTimer = 0;
+            }
+
+            // Spawn Deericus Iricus herds in snowy mountains biome
+            if (targetData.spawnDeer && targetData.deer > 0) {
+                const herdsToSpawn = targetData.deer; // 2 herds
+                for (let i = 0; i < herdsToSpawn; i++) {
+                    const herdSize = 2 + Math.floor(Math.random() * 7); // 2-8 members
+                    Enemies.spawnDeericusIricusHerd(herdSize);
+                }
+                // Reset deer mating timer
+                GameState.deerMatingTimer = 0;
             }
 
             // Spawn initial resources
@@ -742,9 +793,51 @@ window.Game = (function() {
         GameState.saltasGazellaHerds = [];
         GameState.saltasGazellaMatingTimer = 0;
 
+        // Clear deer herds and burrows
+        GameState.deerHerds = [];
+        if (GameState.deerBurrows) {
+            GameState.deerBurrows.forEach(b => GameState.scene.remove(b));
+            GameState.deerBurrows = [];
+        }
+        if (GameState.grassTufts) {
+            GameState.grassTufts.forEach(t => GameState.scene.remove(t));
+            GameState.grassTufts = [];
+        }
+        GameState.deerMatingTimer = 0;
+
         // Remove villagers
         GameState.villagers.forEach(v => GameState.scene.remove(v));
         GameState.villagers = [];
+    }
+
+    /**
+     * Update snow particles (falling snowflakes).
+     * @param {number} delta - Time elapsed since last frame
+     */
+    function updateSnowParticles(delta) {
+        if (!GameState.snowParticles) return;
+
+        const particles = GameState.snowParticles;
+        const positions = particles.geometry.attributes.position.array;
+        const velocities = particles.userData.velocities;
+        const resetHeight = particles.userData.resetHeight;
+
+        for (let i = 0; i < positions.length; i += 3) {
+            // Update position based on velocity
+            positions[i] += velocities[i / 3].x * delta * 10;  // X
+            positions[i + 1] += velocities[i / 3].y * delta * 10;  // Y
+            positions[i + 2] += velocities[i / 3].z * delta * 10;  // Z
+
+            // Reset snowflake if it falls below ground
+            if (positions[i + 1] < 0) {
+                positions[i + 1] = resetHeight;
+                positions[i] = (Math.random() - 0.5) * 150;  // New random X
+                positions[i + 2] = (Math.random() - 0.5) * 150;  // New random Z
+            }
+        }
+
+        // Mark geometry as needing update
+        particles.geometry.attributes.position.needsUpdate = true;
     }
 
     /**
@@ -777,6 +870,8 @@ window.Game = (function() {
             Items.updateResources(delta);
             Items.updateArtifacts(delta);
             Dialogs.updateVillagers(delta);
+            updateSnowParticles(delta);
+            Environment.updateGrassTufts(delta);
             checkBiomeTransition(delta);
             updateCamera();
             UI.updateMinimap();
@@ -866,6 +961,32 @@ window.Game = (function() {
                 if (GameState.dronglousCatMatingTimer >= 360) {
                     GameState.dronglousCatMatingTimer = 0;
                     Enemies.triggerDronglousCatMating();
+                }
+            }
+
+            // Deer lifecycle timers (snowy mountains biome only)
+            if (GameState.currentBiome === 'snowy_mountains') {
+                // Update deer maturation (babies grow up after 3 minutes)
+                Enemies.updateDeerMaturation(delta);
+
+                // Update bachelor herd formation (males leave crowded herds)
+                Enemies.updateBachelorHerdFormation(delta);
+
+                // Update deer mating behaviors (gestation, displays, fighting)
+                Enemies.updateDeerMating(delta);
+
+                // Update deer AI behaviors (grazing, burrows, defense)
+                GameState.enemies.forEach(enemy => {
+                    if (enemy.userData.id && enemy.userData.id.includes('deericus_iricus')) {
+                        Enemies.updateDeerBehavior(enemy, delta);
+                    }
+                });
+
+                // Deer mating timer - every 6 minutes (360 seconds)
+                GameState.deerMatingTimer += delta;
+                if (GameState.deerMatingTimer >= 360) {
+                    GameState.deerMatingTimer = 0;
+                    Enemies.triggerDeerMating();
                 }
             }
         }

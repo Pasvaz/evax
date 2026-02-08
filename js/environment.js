@@ -863,6 +863,16 @@ window.Environment = (function() {
         environmentObjects = [];
         GameState.trees = [];
         RIVER_POINTS.length = 0;
+
+        // Clear snow particles if they exist
+        if (GameState.snowParticles) {
+            GameState.scene.remove(GameState.snowParticles);
+            GameState.snowParticles = null;
+        }
+
+        // Reset scene background and fog to defaults
+        GameState.scene.background = new THREE.Color(0x87ceeb);  // Default sky blue
+        GameState.scene.fog = null;
     }
 
     /**
@@ -889,6 +899,9 @@ window.Environment = (function() {
         // Create forest if biome has it
         if (biomeData.hasForest) {
             createForestElements();
+        } else if (biomeData.id === 'snowy_mountains') {
+            // Snowy mountains - empty for now except rocks
+            createSnowyMountainElements(biomeData);
         } else {
             // Savannah has scattered trees and rocks
             createSavannahElements(biomeData);
@@ -897,6 +910,24 @@ window.Environment = (function() {
         // Create village if biome has it
         if (biomeData.hasVillage) {
             createVillage();
+        }
+
+        // Create grass tufts for deer (snowy mountains only)
+        if (biomeData.id === 'snowy_mountains') {
+            createGrassTufts(30); // 30 grass tufts scattered around
+        }
+
+        // Update sky color if biome specifies it
+        if (biomeData.skyColor !== undefined) {
+            GameState.scene.background = new THREE.Color(biomeData.skyColor);
+        }
+
+        // Update fog if biome specifies it
+        if (biomeData.fogColor !== undefined && biomeData.fogDensity !== undefined) {
+            GameState.scene.fog = new THREE.FogExp2(biomeData.fogColor, biomeData.fogDensity);
+        } else {
+            // Clear fog if not specified
+            GameState.scene.fog = null;
         }
     }
 
@@ -1193,6 +1224,97 @@ window.Environment = (function() {
 
         // Create Ningle's Research Hut in the southeast corner
         createResearchHut(35, 35);
+
+        // Create the ancient skull dig spot (special rock pile)
+        createSkullDigSpot(-40, 20);
+    }
+
+    /**
+     * Create snowy mountain elements (snow-covered rocks).
+     * @param {Object} biomeData - The biome configuration
+     */
+    function createSnowyMountainElements(biomeData) {
+        const numRocks = biomeData.rocks || 15;
+
+        // Create snow-covered rock mounds scattered around
+        for (let i = 0; i < numRocks; i++) {
+            const x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+            const z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+
+            // Create a larger rock mound (bigger than regular rocks)
+            const rockGeo = new THREE.DodecahedronGeometry(2 + Math.random() * 2, 1);
+            const rockMat = new THREE.MeshStandardMaterial({
+                color: 0xe8e8e8,  // Light grey/white (snow-covered)
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(x, 0, z);
+            rock.scale.y = 0.7;  // Flatten slightly
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+
+            GameState.scene.add(rock);
+            trackObject(rock);
+        }
+
+        // Create falling snow particles if biome has snow
+        if (biomeData.hasSnow && biomeData.snowParticles > 0) {
+            createSnowParticles(biomeData.snowParticles);
+        }
+
+        console.log(`🏔️ Created ${numRocks} snow-covered rock mounds`);
+    }
+
+    /**
+     * Create falling snow particle system.
+     * @param {number} count - Number of snowflakes
+     */
+    function createSnowParticles(count) {
+        const particles = [];
+        const particleGeo = new THREE.BufferGeometry();
+        const positions = [];
+        const velocities = [];
+
+        // Create snowflake particles scattered in a large volume
+        for (let i = 0; i < count; i++) {
+            // Random position in a large box
+            positions.push(
+                (Math.random() - 0.5) * 150,  // X spread
+                Math.random() * 30 + 10,       // Y height (10-40)
+                (Math.random() - 0.5) * 150    // Z spread
+            );
+
+            // Random fall speed (slow drift down)
+            velocities.push({
+                x: (Math.random() - 0.5) * 0.1,  // Slight horizontal drift
+                y: -(Math.random() * 0.3 + 0.2),  // Fall down (0.2-0.5 units/sec)
+                z: (Math.random() - 0.5) * 0.1
+            });
+        }
+
+        particleGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+        // Create snowflake material (small white dots)
+        const particleMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.3,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
+        });
+
+        const particleSystem = new THREE.Points(particleGeo, particleMat);
+        particleSystem.userData = {
+            type: 'snow_particles',
+            velocities: velocities,
+            resetHeight: 40  // Reset snowflakes that fall below ground
+        };
+
+        GameState.scene.add(particleSystem);
+        GameState.snowParticles = particleSystem;  // Store reference for updates
+
+        console.log(`❄️ Created ${count} falling snowflakes`);
     }
 
     /**
@@ -1289,6 +1411,240 @@ window.Environment = (function() {
     }
 
     /**
+     * Create the ancient skull dig spot - a special rock pile.
+     * Player can press E to dig up the Felis Dronglaticus skull!
+     * @param {number} x - X position
+     * @param {number} z - Z position
+     */
+    function createSkullDigSpot(x, z) {
+        const digSpot = new THREE.Group();
+
+        // Create a pile of rocks
+        for (let i = 0; i < 8; i++) {
+            const rockGeo = new THREE.DodecahedronGeometry(0.8 + Math.random() * 0.5, 1);
+            const rockMat = new THREE.MeshStandardMaterial({
+                color: 0x8b7355,  // Slightly brown/golden rocks
+                roughness: 0.7,
+                emissive: 0xffd700,  // Golden glow
+                emissiveIntensity: 0.1
+            });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+
+            // Position rocks in a pile
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 1 + Math.random() * 0.5;
+            rock.position.set(
+                Math.cos(angle) * radius,
+                Math.random() * 0.5,
+                Math.sin(angle) * radius
+            );
+            rock.scale.y = 0.6;
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+            digSpot.add(rock);
+        }
+
+        // Add a central glowing light to make it obvious
+        const light = new THREE.PointLight(0xffd700, 0.5, 8);
+        light.position.y = 1;
+        digSpot.add(light);
+
+        digSpot.position.set(x, 0, z);
+        digSpot.userData = {
+            type: 'skull_dig_spot',
+            radius: 3,
+            interactRadius: 4,  // Distance at which E prompt appears
+            hasSkull: true      // Set to false after player digs it up
+        };
+
+        // Store reference for interaction
+        GameState.skullDigSpot = digSpot;
+        GameState.scene.add(digSpot);
+        trackObject(digSpot);
+
+        console.log('🏔️ Ancient dig spot created at', x, z);
+        return digSpot;
+    }
+
+    /**
+     * Create grass tufts for deer grazing in snowy mountains
+     * @param {number} count - Number of grass tufts to spawn
+     */
+    function createGrassTufts(count) {
+        if (!GameState.grassTufts) {
+            GameState.grassTufts = [];
+        }
+
+        for (let i = 0; i < count; i++) {
+            // Random position avoiding center and edges
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 15 + Math.random() * 30; // Between 15-45m from center
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+
+            // Create tuft mesh (small cone of grass)
+            const geometry = new THREE.ConeGeometry(0.3, 0.5, 8);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x90c090, // Pale green grass
+                flatShading: true
+            });
+            const tuft = new THREE.Mesh(geometry, material);
+            tuft.position.set(x, 0.25, z);
+            tuft.rotation.y = Math.random() * Math.PI * 2;
+
+            // Track tuft state
+            tuft.userData = {
+                type: 'grass_tuft',
+                size: 1.0,         // Full size initially (1.0 = full, 0 = depleted)
+                regrowthTimer: 0,  // Time until regrowth starts
+                position: { x, z }
+            };
+
+            GameState.scene.add(tuft);
+            GameState.grassTufts.push(tuft);
+        }
+    }
+
+    /**
+     * Deer eats from a grass tuft
+     * @param {THREE.Mesh} tuft - The grass tuft mesh
+     * @param {THREE.Mesh} deer - The deer eating
+     */
+    function eatGrassTuft(tuft, deer) {
+        if (tuft.userData.size <= 0) return; // Already depleted
+
+        // Shrink the grass
+        tuft.userData.size = Math.max(0, tuft.userData.size - 0.15);
+        tuft.scale.set(tuft.userData.size, tuft.userData.size, tuft.userData.size);
+
+        // Start regrowth timer (60 seconds)
+        if (tuft.userData.size <= 0) {
+            tuft.userData.regrowthTimer = 60;
+        }
+
+        // Deer gets satisfaction
+        if (deer.userData.hunger) {
+            deer.userData.hunger = Math.max(0, deer.userData.hunger - 20);
+        }
+    }
+
+    /**
+     * Update grass tufts (regrowth)
+     * Called from game loop
+     */
+    function updateGrassTufts(delta) {
+        if (!GameState.grassTufts) return;
+
+        GameState.grassTufts.forEach(tuft => {
+            if (tuft.userData.size < 1.0 && tuft.userData.regrowthTimer > 0) {
+                tuft.userData.regrowthTimer -= delta;
+
+                // Start regrowing after timer expires
+                if (tuft.userData.regrowthTimer <= 0) {
+                    tuft.userData.size = Math.min(1.0, tuft.userData.size + delta * 0.02);
+                    tuft.scale.set(tuft.userData.size, tuft.userData.size, tuft.userData.size);
+                }
+            }
+        });
+    }
+
+    /**
+     * Create a burrow entrance for a deer herd
+     * @param {number} x - X position
+     * @param {number} z - Z position
+     * @param {string} herdId - ID of herd that owns this burrow
+     * @returns {THREE.Group} - The burrow entrance group
+     */
+    function createBurrowEntrance(x, z, herdId) {
+        const burrow = new THREE.Group();
+        burrow.position.set(x, 0, z);
+
+        // Snow mound around entrance (slightly raised ground)
+        const moundGeometry = new THREE.CylinderGeometry(2.5, 3, 0.8, 16);
+        const snowMaterial = new THREE.MeshPhongMaterial({
+            color: 0xf5f5f5, // Bright snow white
+            flatShading: true
+        });
+        const mound = new THREE.Mesh(moundGeometry, snowMaterial);
+        mound.position.y = 0.4;
+        burrow.add(mound);
+
+        // Dark entrance hole (cylinder sunken into mound)
+        const holeGeometry = new THREE.CylinderGeometry(0.6, 0.5, 0.6, 12);
+        const holeMaterial = new THREE.MeshPhongMaterial({
+            color: 0x1a1a1a, // Very dark inside
+            flatShading: true
+        });
+        const hole = new THREE.Mesh(holeGeometry, holeMaterial);
+        hole.position.set(0, 0.3, 1.2); // Front of mound
+        hole.rotation.x = Math.PI / 6; // Angled down
+        burrow.add(hole);
+
+        // Track burrow state
+        burrow.userData = {
+            type: 'burrow_entrance',
+            herdId: herdId,
+            position: { x, z },
+            occupants: [], // Array of deer mesh IDs currently inside
+            entrancePosition: {
+                x: x + Math.sin(0) * 1.2,
+                z: z + Math.cos(0) * 1.2
+            } // Position where deer enter/exit
+        };
+
+        GameState.scene.add(burrow);
+        return burrow;
+    }
+
+    /**
+     * Deer enters burrow (hide mesh)
+     * @param {THREE.Mesh} deer - The deer entering
+     * @param {THREE.Group} burrow - The burrow entrance
+     */
+    function deerEnterBurrow(deer, burrow) {
+        deer.visible = false;
+        if (!burrow.userData.occupants.includes(deer.uuid)) {
+            burrow.userData.occupants.push(deer.uuid);
+        }
+        deer.userData.state = 'in_burrow';
+        deer.userData.currentBurrow = burrow;
+    }
+
+    /**
+     * Deer exits burrow (show mesh at entrance)
+     * @param {THREE.Mesh} deer - The deer exiting
+     */
+    function deerExitBurrow(deer) {
+        const burrow = deer.userData.currentBurrow;
+        if (!burrow) return;
+
+        // Remove from occupants
+        const idx = burrow.userData.occupants.indexOf(deer.uuid);
+        if (idx > -1) burrow.userData.occupants.splice(idx, 1);
+
+        // Position at entrance
+        deer.position.x = burrow.userData.entrancePosition.x;
+        deer.position.z = burrow.userData.entrancePosition.z;
+        deer.visible = true;
+        deer.userData.state = 'idle';
+    }
+
+    /**
+     * Deer peeks out of burrow (visible at entrance but not fully out)
+     * @param {THREE.Mesh} deer - The deer peeking
+     */
+    function deerPeekFromBurrow(deer) {
+        const burrow = deer.userData.currentBurrow;
+        if (!burrow) return;
+
+        // Show at entrance but stay in burrow
+        deer.position.x = burrow.userData.entrancePosition.x;
+        deer.position.z = burrow.userData.entrancePosition.z;
+        deer.visible = true;
+        deer.userData.state = 'peeking';
+    }
+
+    /**
      * Create a savannah-style tree (acacia-like with flat top).
      */
     function createSavannahTree(x, z) {
@@ -1363,6 +1719,13 @@ window.Environment = (function() {
         getRiverPoints: () => RIVER_POINTS,
         getRiverWidth: () => RIVER_WIDTH,
         rebuildForBiome: rebuildForBiome,
-        getCurrentBiome: () => currentBiomeId
+        getCurrentBiome: () => currentBiomeId,
+        // Deer system
+        createBurrowEntrance: createBurrowEntrance,
+        deerEnterBurrow: deerEnterBurrow,
+        deerExitBurrow: deerExitBurrow,
+        deerPeekFromBurrow: deerPeekFromBurrow,
+        eatGrassTuft: eatGrassTuft,
+        updateGrassTufts: updateGrassTufts
     };
 })();

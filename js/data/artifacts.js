@@ -123,6 +123,36 @@ Pokeir thinks they're parts of an ancient clock that measured something other th
 
 Bring us more. The more we collect, the closer we get to solving the mystery!"`,
         reward: { coins: 25, score: 50 }
+    },
+
+    // ========================================================================
+    // LEGENDARY FOSSILS
+    // ========================================================================
+    {
+        id: 'felis_dronglaticus_skull',
+        name: 'Felis Dronglaticus Skull',
+        icon: '💀',
+        rarity: 'epic',
+        spawnType: 'hidden',
+        biome: 'savannah',
+        description: 'An ancient golden skull that shimmers with mysterious energy.',
+        lore: `"BY MY SNOUT! This is... this is IMPOSSIBLE! You've found the skull of Felis Dronglaticus!
+
+*Ningle's hooves are trembling as he carefully examines the golden skull*
+
+This is the common ancestor of an entire branch of cat species, including our own Dronglous Cats! Professor Snoutworth searched her entire life for this fossil. She theorized it existed, based on teeth and claw marks she found, but she never... she never found the skull!
+
+Look at these bone structures - the powerful jaw, the forward-facing eye sockets, the prominent sagittal crest. This was an apex predator, perfectly adapted for ambush hunting from trees. The golden coloration isn't paint - it's fossilized minerals from the soil where it was buried!
+
+The age of this skull... at least 50,000 years old. Maybe more. This cat lived when the world was completely different. When there were lands we've never seen, covered in ice and snow...
+
+Wait. Professor Snoutworth's notes mentioned something. She wrote: 'If Felis Dronglaticus exists, its homeland would be the mountains. Cold, high places where the ancient cats first evolved their tree-climbing abilities on rocky outcrops.'
+
+Mountains. To the west, beyond our known lands. If this skull is here, then perhaps... perhaps there's a way to reach those mountains. The homeland of the ancient cats.
+
+This changes everything we know about our world. Keep this skull safe - it might be the key to discovering lands we've only dreamed of!"`,
+        reward: { coins: 500, score: 1000 },
+        unlocksBiome: 'snowy_mountains'  // Unlocks the snowy mountain biome!
     }
 ];
 

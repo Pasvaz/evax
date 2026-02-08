@@ -57,6 +57,7 @@
 // STATS EXPLAINED:
 //   id: Unique name for this enemy
 //   type: Which 3D model to use ('badger' or 'weasel')
+//   category: Animal type - 'carnivore', 'herbivore', or 'omnivore'
 //   speed: How fast (player walks at 6, sprints at 12)
 //   speedVariation: Random 0 to this amount added to speed
 //   damage: Health lost per second when touching
@@ -76,6 +77,7 @@ window.ENEMIES = [
     {
         id: 'badger',
         type: 'badger',                // Uses badger 3D model
+        category: 'carnivore',         // Predator
         speed: 3,                      // Slow (player walks at 6)
         speedVariation: 1,             // Final speed: 3-4
         damage: 15,                    // High damage per second!
@@ -103,6 +105,7 @@ window.ENEMIES = [
     {
         id: 'weasel',
         type: 'weasel',                // Uses weasel 3D model
+        category: 'carnivore',         // Predator
         speed: 4.5,                    // Faster than badger
         speedVariation: 1.5,           // Final speed: 4.5-6
         damage: 10,                    // Less damage than badger
@@ -131,6 +134,7 @@ window.ENEMIES = [
     {
         id: 'goose',
         type: 'goose',                 // Uses goose 3D model
+        category: 'omnivore',          // Eats plants and small animals
         speed: 3,                      // Moderate speed
         speedVariation: 1,             // Final speed: 3-4
         damage: 8,                     // Attacks enemies, not player
@@ -163,6 +167,7 @@ window.ENEMIES = [
     {
         id: 'fox',
         type: 'fox',                   // Uses fox 3D model
+        category: 'carnivore',         // Predator and egg thief
         speed: 4.5,                    // Same as weasel
         speedVariation: 1.5,           // Final speed: 4.5-6
         damage: 15,                    // Same as badger
@@ -200,6 +205,7 @@ window.ENEMIES = [
     ,{
         id: 'leopard_toad_male',
         type: 'leopard_toad',          // Uses leopard toad 3D model
+        category: 'omnivore',          // Eats insects and plants
         speed: 4,                      // Normal hopping speed
         speedVariation: 0.5,           // Final speed: 4-4.5
         fleeSpeed: 15,                 // FAST! Faster than player sprint (12)
@@ -234,6 +240,7 @@ window.ENEMIES = [
     {
         id: 'leopard_toad_female',
         type: 'leopard_toad',          // Uses same leopard toad 3D model
+        category: 'omnivore',          // Eats insects and plants
         speed: 4,                      // Same hopping speed
         speedVariation: 0.5,           // Final speed: 4-4.5
         fleeSpeed: 15,                 // Same flee speed
@@ -269,6 +276,7 @@ window.ENEMIES = [
     {
         id: 'grass_viper_male',
         type: 'grass_viper',           // Uses grass viper weasel 3D model
+        category: 'carnivore',         // Hunts toads
         speed: 5,                      // Faster than regular weasel
         speedVariation: 1,             // Final speed: 5-6
         creepSpeed: 2,                 // Speed when stalking toads
@@ -305,6 +313,7 @@ window.ENEMIES = [
     {
         id: 'grass_viper_female',
         type: 'grass_viper',           // Uses same grass viper model
+        category: 'carnivore',         // Hunts toads
         speed: 5,                      // Same speed
         speedVariation: 1,             // Final speed: 5-6
         creepSpeed: 2,                 // Speed when stalking
@@ -342,6 +351,7 @@ window.ENEMIES = [
     {
         id: 'antelope_male',
         type: 'antelope',              // Uses hartebeest-style antelope model
+        category: 'herbivore',         // Plant eater
         speed: 6,                      // Fast runners
         speedVariation: 1,             // Final speed: 6-7
         damage: 15,                    // Strong kick when defensive
@@ -381,6 +391,7 @@ window.ENEMIES = [
     {
         id: 'antelope_female',
         type: 'antelope',              // Same model but no horns
+        category: 'herbivore',         // Plant eater
         speed: 6,                      // Same speed
         speedVariation: 1,
         damage: 12,                    // Slightly less damage
@@ -425,6 +436,7 @@ window.ENEMIES = [
     {
         id: 'wild_dog_male',
         type: 'wild_dog',
+        category: 'carnivore',         // Pack hunter
         speed: 8,                      // Fast runners
         speedVariation: 1,
         damage: 18,
@@ -464,6 +476,7 @@ window.ENEMIES = [
     {
         id: 'wild_dog_female',
         type: 'wild_dog',
+        category: 'carnivore',         // Pack hunter
         speed: 8,
         speedVariation: 1,
         damage: 16,
@@ -504,6 +517,7 @@ window.ENEMIES = [
     {
         id: 'wild_dog_alpha',
         type: 'wild_dog',
+        category: 'carnivore',         // Pack leader
         speed: 8,
         speedVariation: 1,
         damage: 20,                    // Alpha is stronger
@@ -554,6 +568,7 @@ window.ENEMIES = [
     {
         id: 'saltas_gazella_male',
         type: 'saltas_gazella',
+        category: 'herbivore',         // Grazer
         speed: 10,                     // Fast base speed
         fleeSpeed: 25,                 // EXTREMELY fast when hunted!
         speedVariation: 1,
@@ -591,6 +606,7 @@ window.ENEMIES = [
     {
         id: 'saltas_gazella_female',
         type: 'saltas_gazella',
+        category: 'herbivore',         // Grazer
         speed: 10,
         fleeSpeed: 25,
         speedVariation: 1,
@@ -637,6 +653,7 @@ window.ENEMIES = [
     {
         id: 'dronglous_cat_male',
         type: 'dronglous_cat',
+        category: 'carnivore',         // Tree-dwelling predator
         speed: 8,                      // Fast hunter
         speedVariation: 1,
         damage: 12,                    // Moderate damage
@@ -668,6 +685,7 @@ window.ENEMIES = [
     {
         id: 'dronglous_cat_female',
         type: 'dronglous_cat',
+        category: 'carnivore',         // Tree-dwelling predator
         speed: 7,                      // Slightly slower than male
         speedVariation: 1,
         damage: 10,
@@ -699,6 +717,7 @@ window.ENEMIES = [
     {
         id: 'dronglous_cat_baby_male',
         type: 'dronglous_cat',
+        category: 'carnivore',         // Baby predator
         speed: 5,                      // Slower baby
         speedVariation: 1,
         damage: 3,                     // Weak
@@ -731,6 +750,7 @@ window.ENEMIES = [
     {
         id: 'dronglous_cat_baby_female',
         type: 'dronglous_cat',
+        category: 'carnivore',         // Baby predator
         speed: 5,
         speedVariation: 1,
         damage: 3,
@@ -756,6 +776,158 @@ window.ENEMIES = [
             whiskers: 0xcccccc,
             pawPads: 0xffaaaa,         // Pink paw pads
             tail: 0xe8e8e8
+        }
+    },
+
+    // ========================================================================
+    // DEERICUS IRICUS - Tiny furry mountain deer (Snowy Mountains)
+    // ========================================================================
+    // Small deer that live in burrows in snow mounds. Males are brown with horns,
+    // females are white without horns. Live in herds of 2-8. Come out to graze
+    // on grass tufts. Babies grow up after 3 minutes. Excess males form bachelor herds.
+
+    // Male Deericus Iricus - Brown with horns
+    {
+        id: 'deericus_iricus_male',
+        type: 'deericus_iricus',
+        category: 'herbivore',         // Grazer
+        speed: 5,                      // Moderate speed
+        speedVariation: 0.5,
+        damage: 8,                     // Defensive kicks
+        radius: 0.5,                   // Small-medium deer
+        size: 0.7,                     // Between fox and gazella
+        health: 20,
+        spawnWeight: 0,                // Herd-spawned only
+        minimapColor: '#8B4513',       // Brown
+        groundY: 0.25,                 // Small deer height
+        friendly: true,
+        defensive: true,
+        biome: 'snowy_mountains',
+        gender: 'male',
+        hasHorns: true,
+        isHerdAnimal: true,
+
+        colors: {
+            body: 0x8B4513,            // Saddle brown
+            belly: 0xD2B48C,           // Tan belly
+            legs: 0x6B3410,            // Darker brown legs
+            face: 0x8B4513,
+            muzzle: 0x5C3A1A,          // Dark muzzle
+            horns: 0x4A3020,           // Dark brown horns
+            ears: 0x8B4513,
+            earInner: 0xFFB6C1,        // Light pink inner ear
+            eyes: 0x1a1a1a,            // Dark eyes
+            tail: 0x6B3410,            // Dark tail
+            fur: 0xA0826D              // Lighter furry texture
+        }
+    },
+
+    // Female Deericus Iricus - White, no horns
+    {
+        id: 'deericus_iricus_female',
+        type: 'deericus_iricus',
+        category: 'herbivore',
+        speed: 5,
+        speedVariation: 0.5,
+        damage: 6,                     // Slightly weaker
+        radius: 0.45,
+        size: 0.65,                    // Slightly smaller than male
+        health: 18,
+        spawnWeight: 0,
+        minimapColor: '#FFFFFF',       // White
+        groundY: 0.23,
+        friendly: true,
+        defensive: true,
+        biome: 'snowy_mountains',
+        gender: 'female',
+        hasHorns: false,
+        isHerdAnimal: true,
+        canGetPregnant: true,
+
+        colors: {
+            body: 0xFFFFFF,            // Pure white
+            belly: 0xF5F5F5,           // Slightly off-white belly
+            legs: 0xE8E8E8,            // Light grey legs
+            face: 0xFFFFFF,
+            muzzle: 0xD3D3D3,          // Light grey muzzle
+            horns: 0x4A3020,           // (not used)
+            ears: 0xFFFFFF,
+            earInner: 0xFFB6C1,        // Light pink inner ear
+            eyes: 0x1a1a1a,
+            tail: 0xE8E8E8,
+            fur: 0xFAFAFA              // Fluffy white
+        }
+    },
+
+    // Baby Male Deericus Iricus - Ochre (yellowish-brown)
+    {
+        id: 'deericus_iricus_baby_male',
+        type: 'deericus_iricus',
+        category: 'herbivore',
+        speed: 3,                      // Slower baby
+        speedVariation: 0.5,
+        damage: 2,                     // Weak
+        radius: 0.25,
+        size: 0.35,                    // Tiny baby
+        health: 10,
+        spawnWeight: 0,
+        minimapColor: '#CC7722',       // Ochre
+        groundY: 0.15,
+        friendly: true,
+        biome: 'snowy_mountains',
+        gender: 'male',
+        isBaby: true,
+        hasHorns: false,               // Babies don't have horns yet
+        isHerdAnimal: true,
+
+        colors: {
+            body: 0xCC7722,            // Ochre/yellow-brown
+            belly: 0xE6B84D,           // Lighter ochre belly
+            legs: 0xAA6610,            // Darker ochre legs
+            face: 0xCC7722,
+            muzzle: 0x996633,
+            horns: 0x4A3020,           // (not used)
+            ears: 0xCC7722,
+            earInner: 0xFFCCCC,        // Pink inner ear
+            eyes: 0x4A3020,            // Brown eyes
+            tail: 0xAA6610,
+            fur: 0xD4984F              // Fluffy ochre
+        }
+    },
+
+    // Baby Female Deericus Iricus - Beige
+    {
+        id: 'deericus_iricus_baby_female',
+        type: 'deericus_iricus',
+        category: 'herbivore',
+        speed: 3,
+        speedVariation: 0.5,
+        damage: 2,
+        radius: 0.23,
+        size: 0.33,                    // Slightly smaller than baby male
+        health: 9,
+        spawnWeight: 0,
+        minimapColor: '#F5F5DC',       // Beige
+        groundY: 0.14,
+        friendly: true,
+        biome: 'snowy_mountains',
+        gender: 'female',
+        isBaby: true,
+        hasHorns: false,
+        isHerdAnimal: true,
+
+        colors: {
+            body: 0xF5F5DC,            // Beige
+            belly: 0xFFF8E7,           // Lighter beige belly
+            legs: 0xE3D5B8,            // Slightly darker beige legs
+            face: 0xF5F5DC,
+            muzzle: 0xD9C9A8,
+            horns: 0x4A3020,           // (not used)
+            ears: 0xF5F5DC,
+            earInner: 0xFFCCCC,        // Pink inner ear
+            eyes: 0x4A3020,            // Brown eyes
+            tail: 0xE3D5B8,
+            fur: 0xFAF0E6              // Fluffy beige
         }
     },
 

@@ -13,6 +13,34 @@
  * (like a wolf or bear) that needs different 3D geometry.
  *
  * ============================================================================
+ * HOW TO CREATE A NEW ANIMAL 3D MODEL (READ THIS!)
+ * ============================================================================
+ *
+ * RULE 1 — BUILD THE MODEL FACING +Z
+ *   The animal's HEAD/SNOUT must point toward +Z (positive Z axis).
+ *   - Head position:  (0, y, +something)   e.g. head.position.set(0, 0.5, 0.5)
+ *   - Body stretched along Z:              e.g. body.scale.set(1, 0.8, 1.4)
+ *   - Front legs at +Z, back legs at -Z
+ *   - Tail at -Z
+ *
+ * RULE 2 — SET model.rotation.y = Math.PI AT CREATION
+ *   Every model gets rotated 180° after being built.
+ *   This is the convention used by ALL animals in this file.
+ *
+ * RULE 3 — ALWAYS ADD + Math.PI / 2 WHEN SETTING ROTATION FROM MOVEMENT
+ *   When making the animal face its walking direction, ALWAYS write:
+ *
+ *     animal.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+ *
+ *   NEVER write this (it will make the animal face 90° to the left!):
+ *
+ *     animal.rotation.y = Math.atan2(dx, dz);  // BUG! Missing offset!
+ *
+ *   WHY: Math.atan2(x, z) returns 0 when moving toward +Z, but after
+ *   the Math.PI creation rotation, our model's "forward" is offset by
+ *   90°. The + Math.PI / 2 corrects for this.
+ *
+ * ============================================================================
  */
 
 window.Enemies = (function() {
@@ -2306,7 +2334,144 @@ window.Enemies = (function() {
             currentSpeed: 0
         };
 
-        console.log('✓ Enhanced Dronglous Cat model built successfully!', legs.length, 'legs, isBaby:', isBaby);
+
+        // Flip model to face forward
+        model.rotation.y = Math.PI;
+
+        return model;
+    }
+
+    /**
+     * Build a Deericus Iricus (tiny mountain deer) 3D model.
+     * Small furry deer with optional horns (males only).
+     * @param {Object} colors - Color scheme
+     * @param {boolean} hasHorns - Whether this deer has horns (males only)
+     * @param {boolean} isBaby - Whether this is a baby deer
+     * @returns {THREE.Group} - The deer model
+     */
+    function buildDeericusIricusModel(colors, hasHorns = false, isBaby = false) {
+        const model = new THREE.Group();
+
+        // Adjust size for babies
+        const sizeScale = isBaby ? 0.6 : 1.0;
+
+        // Body (furry oval)
+        const bodyGeo = new THREE.SphereGeometry(0.4 * sizeScale, 8, 8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.9 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.scale.set(1, 0.8, 1.4);  // Elongate body
+        body.position.y = 0.4 * sizeScale;
+        body.castShadow = true;
+        model.add(body);
+
+        // Belly (lighter fur)
+        const bellyGeo = new THREE.SphereGeometry(0.3 * sizeScale, 8, 6);
+        const bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.9 });
+        const belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.scale.set(0.9, 0.7, 1.2);
+        belly.position.set(0, 0.3 * sizeScale, 0);
+        model.add(belly);
+
+        // Head (small furry head)
+        const headGeo = new THREE.SphereGeometry(0.25 * sizeScale, 8, 8);
+        const headMat = new THREE.MeshStandardMaterial({ color: colors.face, roughness: 0.9 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.set(0, 0.5 * sizeScale, 0.5 * sizeScale);
+        head.castShadow = true;
+        model.add(head);
+
+        // Muzzle (small snout)
+        const muzzleGeo = new THREE.CylinderGeometry(0.08 * sizeScale, 0.1 * sizeScale, 0.15 * sizeScale, 6);
+        const muzzleMat = new THREE.MeshStandardMaterial({ color: colors.muzzle });
+        const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
+        muzzle.rotation.x = Math.PI / 2;
+        muzzle.position.set(0, 0.48 * sizeScale, 0.65 * sizeScale);
+        model.add(muzzle);
+
+        // Ears (pointy)
+        const earGeo = new THREE.ConeGeometry(0.08 * sizeScale, 0.15 * sizeScale, 4);
+        const earMat = new THREE.MeshStandardMaterial({ color: colors.ears });
+
+        const earLeft = new THREE.Mesh(earGeo, earMat);
+        earLeft.position.set(-0.15 * sizeScale, 0.65 * sizeScale, 0.45 * sizeScale);
+        earLeft.rotation.z = -0.3;
+        model.add(earLeft);
+
+        const earRight = new THREE.Mesh(earGeo, earMat);
+        earRight.position.set(0.15 * sizeScale, 0.65 * sizeScale, 0.45 * sizeScale);
+        earRight.rotation.z = 0.3;
+        model.add(earRight);
+
+        // Eyes
+        const eyeGeo = new THREE.SphereGeometry(0.04 * sizeScale, 6, 6);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+
+        const eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeLeft.position.set(-0.12 * sizeScale, 0.55 * sizeScale, 0.6 * sizeScale);
+        model.add(eyeLeft);
+
+        const eyeRight = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeRight.position.set(0.12 * sizeScale, 0.55 * sizeScale, 0.6 * sizeScale);
+        model.add(eyeRight);
+
+        // Horns (only for adult males)
+        if (hasHorns && !isBaby) {
+            const hornGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.3, 4);
+            const hornMat = new THREE.MeshStandardMaterial({ color: colors.horns, roughness: 0.7 });
+
+            const hornLeft = new THREE.Mesh(hornGeo, hornMat);
+            hornLeft.position.set(-0.1, 0.75, 0.4);
+            hornLeft.rotation.z = -0.4;
+            hornLeft.rotation.x = -0.2;
+            hornLeft.castShadow = true;
+            model.add(hornLeft);
+
+            const hornRight = new THREE.Mesh(hornGeo, hornMat);
+            hornRight.position.set(0.1, 0.75, 0.4);
+            hornRight.rotation.z = 0.4;
+            hornRight.rotation.x = -0.2;
+            hornRight.castShadow = true;
+            model.add(hornRight);
+        }
+
+        // Legs (4 thin legs)
+        const legGeo = new THREE.CylinderGeometry(0.05 * sizeScale, 0.04 * sizeScale, 0.4 * sizeScale, 4);
+        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+
+        const legPositions = [
+            { x: -0.15, z: 0.25 },  // Front left
+            { x: 0.15, z: 0.25 },   // Front right
+            { x: -0.15, z: -0.25 }, // Back left
+            { x: 0.15, z: -0.25 }   // Back right
+        ];
+
+        model.userData.legs = [];
+        legPositions.forEach((pos, i) => {
+            const legGroup = new THREE.Group();
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.y = 0.2 * sizeScale;
+            leg.castShadow = true;
+            legGroup.add(leg);
+            legGroup.position.set(pos.x * sizeScale, 0, pos.z * sizeScale);
+            model.add(legGroup);
+            model.userData.legs.push({ group: legGroup, mesh: leg });
+        });
+
+        // Tail (short fluffy tail)
+        const tailGeo = new THREE.SphereGeometry(0.08 * sizeScale, 6, 6);
+        const tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.9 });
+        const tail = new THREE.Mesh(tailGeo, tailMat);
+        tail.scale.set(0.8, 1, 0.6);
+        tail.position.set(0, 0.45 * sizeScale, -0.5 * sizeScale);
+        model.add(tail);
+        model.userData.tail = tail;
+
+        // Store model parts for animation
+        model.userData.parts = {
+            body: body,
+            head: head,
+            tail: tail
+        };
 
         // Flip model to face forward
         model.rotation.y = Math.PI;
@@ -2472,7 +2637,8 @@ window.Enemies = (function() {
         antelope: buildAntelopeModel,
         wild_dog: buildWildDogModel,
         saltas_gazella: buildSaltasGazellaModel,
-        dronglous_cat: buildDronglousCatModel
+        dronglous_cat: buildDronglousCatModel,
+        deericus_iricus: buildDeericusIricusModel
     };
 
     // ========================================================================
@@ -3438,6 +3604,712 @@ window.Enemies = (function() {
         });
 
         console.log('Spawned wild dog pack:', packMembers.length, 'members (' + maleCount + ' male, ' + femaleCount + ' female) - Pack ID:', packId);
+    }
+
+    // ========================================================================
+    // SPAWN DEERICUS IRICUS HERD (SNOWY MOUNTAINS BIOME)
+    // ========================================================================
+    /**
+     * Spawn a herd of Deericus Iricus deer
+     * @param {number} count - Total number of deer (2-8)
+     */
+    function spawnDeericusIricusHerd(count) {
+        console.log(`=== SPAWNING DEER HERD: ${count} members ===`);
+
+        // Determine family composition
+        const maleCount = Math.floor(count / 3);     // ~33% males
+        const femaleCount = Math.ceil(count / 2);    // ~50% females
+        const babyCount = count - maleCount - femaleCount; // Remaining are babies
+
+        console.log(`Family composition: ${maleCount} males, ${femaleCount} females, ${babyCount} babies`);
+
+        // Create unique herd ID
+        const herdId = `deer_herd_${Date.now()}_${Math.random()}`;
+
+        // Choose burrow location (avoid center, edges, and other burrows)
+        let burrowX, burrowZ;
+        let attempts = 0;
+        do {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 20 + Math.random() * 25; // 20-45m from center
+            burrowX = Math.cos(angle) * radius;
+            burrowZ = Math.sin(angle) * radius;
+            attempts++;
+        } while (attempts < 10 && isTooCloseToOtherBurrows(burrowX, burrowZ, 15));
+
+        // Create burrow entrance
+        console.log(`Creating burrow at (${burrowX.toFixed(1)}, ${burrowZ.toFixed(1)})`);
+        const burrow = Environment.createBurrowEntrance(burrowX, burrowZ, herdId);
+        if (!burrow) {
+            console.error('Failed to create burrow entrance!');
+            return;
+        }
+        GameState.deerBurrows.push(burrow);
+        console.log('Burrow created successfully');
+
+        // Track herd
+        const herd = {
+            id: herdId,
+            members: [],
+            burrow: burrow,
+            leader: null, // Will be set to dominant male
+            matingTimer: 0
+        };
+
+        if (!GameState.deerHerds) GameState.deerHerds = [];
+        GameState.deerHerds.push(herd);
+
+        // Spawn deer members
+        const spawnRadius = 5; // Spawn near burrow
+
+        // Spawn adult males
+        const maleData = ENEMIES.find(e => e.id === 'deericus_iricus_male');
+        console.log('Male deer data:', maleData ? 'FOUND' : 'NOT FOUND');
+        for (let i = 0; i < maleCount; i++) {
+            const deer = createEnemy(maleData,
+                burrowX + (Math.random() - 0.5) * spawnRadius,
+                burrowZ + (Math.random() - 0.5) * spawnRadius
+            );
+            if (!deer) {
+                console.error(`Failed to create male deer #${i+1}`);
+                continue;
+            }
+            console.log(`Created male deer #${i+1}`);
+            deer.userData.herdId = herdId;
+            deer.userData.herd = herd;
+            deer.userData.homeBurrow = burrow;
+            deer.userData.age = 'adult';
+            deer.userData.hunger = Math.random() * 30;
+            herd.members.push(deer);
+            GameState.enemies.push(deer);
+            GameState.scene.add(deer);
+
+            // First male becomes leader
+            if (!herd.leader) {
+                herd.leader = deer;
+                deer.userData.isLeader = true;
+            }
+        }
+
+        // Spawn adult females
+        const femaleData = ENEMIES.find(e => e.id === 'deericus_iricus_female');
+        for (let i = 0; i < femaleCount; i++) {
+            const deer = createEnemy(femaleData,
+                burrowX + (Math.random() - 0.5) * spawnRadius,
+                burrowZ + (Math.random() - 0.5) * spawnRadius
+            );
+            if (!deer) continue;
+            deer.userData.herdId = herdId;
+            deer.userData.herd = herd;
+            deer.userData.homeBurrow = burrow;
+            deer.userData.age = 'adult';
+            deer.userData.hunger = Math.random() * 30;
+            deer.userData.canGetPregnant = true;
+            herd.members.push(deer);
+            GameState.enemies.push(deer);
+            GameState.scene.add(deer);
+        }
+
+        // Spawn babies (mix of male/female)
+        for (let i = 0; i < babyCount; i++) {
+            const isMale = Math.random() < 0.5;
+            const babyDataId = isMale ? 'deericus_iricus_baby_male' : 'deericus_iricus_baby_female';
+            const babyData = ENEMIES.find(e => e.id === babyDataId);
+            const deer = createEnemy(babyData,
+                burrowX + (Math.random() - 0.5) * spawnRadius,
+                burrowZ + (Math.random() - 0.5) * spawnRadius
+            );
+            if (!deer) continue;
+            deer.userData.herdId = herdId;
+            deer.userData.herd = herd;
+            deer.userData.homeBurrow = burrow;
+            deer.userData.age = 'baby';
+            deer.userData.hunger = Math.random() * 20;
+            deer.userData.maturityTime = GameState.timeElapsed + 180;
+            deer.userData.isBaby = true;
+            herd.members.push(deer);
+            GameState.enemies.push(deer);
+            GameState.scene.add(deer);
+        }
+
+        console.log(`Spawned deer herd ${herdId}: ${maleCount} males, ${femaleCount} females, ${babyCount} babies`);
+    }
+
+    /**
+     * Check if position is too close to existing burrows
+     */
+    function isTooCloseToOtherBurrows(x, z, minDistance) {
+        if (!GameState.deerBurrows) return false;
+
+        return GameState.deerBurrows.some(burrow => {
+            const dx = burrow.userData.position.x - x;
+            const dz = burrow.userData.position.z - z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            return dist < minDistance;
+        });
+    }
+
+    /**
+     * Grow a baby deer into an adult
+     * @param {THREE.Mesh} baby - The baby deer to mature
+     */
+    function growDeerBabyToAdult(baby) {
+        const wasMale = baby.userData.enemyId.includes('baby_male');
+        const herd = baby.userData.herd;
+
+        // Determine new adult type
+        const newType = wasMale ? 'deericus_iricus_male' : 'deericus_iricus_female';
+
+        // Store position and herd data
+        const pos = baby.position.clone();
+        const herdId = baby.userData.herdId;
+        const homeBurrow = baby.userData.homeBurrow;
+        const currentState = baby.userData.state;
+
+        // Remove baby
+        Game.scene.remove(baby);
+        const idx = GameState.enemies.indexOf(baby);
+        if (idx > -1) GameState.enemies.splice(idx, 1);
+
+        if (herd) {
+            const herdIdx = herd.members.indexOf(baby);
+            if (herdIdx > -1) herd.members.splice(herdIdx, 1);
+        }
+
+        // Create adult
+        const adultData = ENEMIES.find(e => e.id === newType);
+        const adult = createEnemy(adultData, pos.x, pos.z);
+        if (!adult) return;
+
+        adult.userData.herdId = herdId;
+        adult.userData.herd = herd;
+        adult.userData.homeBurrow = homeBurrow;
+        adult.userData.age = 'adult';
+        adult.userData.justMatured = true;
+        adult.userData.state = currentState;
+
+        if (herd) {
+            herd.members.push(adult);
+        }
+        GameState.enemies.push(adult);
+        GameState.scene.add(adult);
+
+        // Males may leave to form bachelor herds
+        if (wasMale && herd && herd.members.length > 5) {
+            // 60% chance male leaves if herd is crowded
+            if (Math.random() < 0.6) {
+                adult.userData.shouldLeaveToBachelorHerd = true;
+                adult.userData.leaveTimer = 30 + Math.random() * 30; // Leave in 30-60 seconds
+            }
+        }
+
+        // Females can get pregnant
+        if (!wasMale) {
+            adult.userData.canGetPregnant = true;
+        }
+
+        console.log(`Baby deer matured into ${newType}, herd size now ${herd ? herd.members.length : 0}`);
+    }
+
+    /**
+     * Update baby deer maturation
+     * Called from main update loop
+     */
+    function updateDeerMaturation(delta) {
+        GameState.enemies.forEach(enemy => {
+            if (enemy.userData.isBaby &&
+                enemy.userData.enemyId && enemy.userData.enemyId.includes('deericus_iricus_baby') &&
+                enemy.userData.maturityTime) {
+
+                // Check if maturity time reached
+                if (GameState.timeElapsed >= enemy.userData.maturityTime) {
+                    growDeerBabyToAdult(enemy);
+                }
+            }
+        });
+    }
+
+    /**
+     * Male deer leaves family herd to form/join bachelor herd
+     * @param {THREE.Mesh} male - The male deer leaving
+     */
+    function leaveToBachelorHerd(male) {
+        const oldHerd = male.userData.herd;
+
+        // Remove from family herd
+        if (oldHerd) {
+            const idx = oldHerd.members.indexOf(male);
+            if (idx > -1) oldHerd.members.splice(idx, 1);
+            console.log(`Male deer left family herd ${oldHerd.id}, ${oldHerd.members.length} remain`);
+        }
+
+        // Find or create bachelor herd
+        let bachelorHerd = GameState.deerHerds.find(h => h.isBachelorHerd);
+
+        if (!bachelorHerd) {
+            // Create new bachelor herd with new burrow
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 35 + Math.random() * 15; // Further from center
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+
+            const bachelorBurrow = Environment.createBurrowEntrance(x, z, `bachelor_herd_${Date.now()}`);
+            GameState.deerBurrows.push(bachelorBurrow);
+
+            bachelorHerd = {
+                id: `bachelor_herd_${Date.now()}`,
+                members: [],
+                burrow: bachelorBurrow,
+                isBachelorHerd: true,
+                leader: null,
+                matingTimer: 0
+            };
+
+            GameState.deerHerds.push(bachelorHerd);
+            console.log('Created new bachelor herd');
+        }
+
+        // Join bachelor herd
+        male.userData.herd = bachelorHerd;
+        male.userData.herdId = bachelorHerd.id;
+        male.userData.homeBurrow = bachelorHerd.burrow;
+        bachelorHerd.members.push(male);
+
+        // First male becomes leader
+        if (!bachelorHerd.leader) {
+            bachelorHerd.leader = male;
+            male.userData.isLeader = true;
+        }
+
+        male.userData.shouldLeaveToBachelorHerd = false;
+        console.log(`Male joined bachelor herd, now ${bachelorHerd.members.length} members`);
+    }
+
+    /**
+     * Update bachelor herd formation timers
+     * Called from main update loop
+     */
+    function updateBachelorHerdFormation(delta) {
+        GameState.enemies.forEach(enemy => {
+            if (enemy.userData.shouldLeaveToBachelorHerd && enemy.userData.leaveTimer) {
+                enemy.userData.leaveTimer -= delta;
+
+                if (enemy.userData.leaveTimer <= 0) {
+                    leaveToBachelorHerd(enemy);
+                }
+            }
+        });
+    }
+
+    // ========================================================================
+    // DEER MATING, GRAZING AI, AND DEFENSE SYSTEMS
+    // ========================================================================
+
+    function triggerDeerMating() {
+        if (!GameState.deerHerds || GameState.deerHerds.length === 0) return;
+
+        GameState.deerHerds.forEach(herd => {
+            if (herd.isBachelorHerd) return;
+
+            const eligibleFemales = herd.members.filter(m =>
+                m.userData.gender === 'female' && m.userData.age === 'adult' &&
+                m.userData.canGetPregnant && !m.userData.isPregnant && !m.userData.gestating
+            );
+
+            const males = herd.members.filter(m =>
+                m.userData.gender === 'male' && m.userData.age === 'adult'
+            );
+
+            if (eligibleFemales.length === 0 || males.length === 0) return;
+
+            males.forEach(male => {
+                if (eligibleFemales.length === 0) return;
+                const isLeader = male === herd.leader;
+                const matingChance = isLeader ? 0.8 : 0.4;
+                if (Math.random() > matingChance) return;
+
+                const femaleIdx = Math.floor(Math.random() * eligibleFemales.length);
+                const female = eligibleFemales[femaleIdx];
+                eligibleFemales.splice(femaleIdx, 1);
+
+                if (Math.random() < 0.05 && males.length > 1) {
+                    const rivals = males.filter(m => m !== male);
+                    const rival = rivals[Math.floor(Math.random() * rivals.length)];
+                    male.userData.state = 'rutting_approach';
+                    male.userData.ruttingRival = rival;
+                    male.userData.ruttingFemale = female;
+                    male.userData.ruttingTimer = 10;
+                    rival.userData.state = 'rutting_approach';
+                    rival.userData.ruttingRival = male;
+                    rival.userData.ruttingFemale = female;
+                    rival.userData.ruttingTimer = 10;
+                } else {
+                    male.userData.state = 'mating_display';
+                    male.userData.matingPartner = female;
+                    male.userData.matingTimer = 5;
+                    female.userData.state = 'mating_display';
+                    female.userData.matingPartner = male;
+                    female.userData.matingTimer = 5;
+                }
+            });
+        });
+    }
+
+    function updateDeerMating(delta) {
+        GameState.enemies.forEach(enemy => {
+            if (!enemy.userData.enemyId || !enemy.userData.enemyId.includes('deericus_iricus')) return;
+
+            if (enemy.userData.state === 'mating_display' && enemy.userData.matingTimer) {
+                enemy.userData.matingTimer -= delta;
+                if (enemy.userData.matingTimer <= 0) {
+                    const partner = enemy.userData.matingPartner;
+                    if (enemy.userData.gender === 'male' && partner) {
+                        partner.userData.isPregnant = true;
+                        partner.userData.gestating = true;
+                        partner.userData.gestationTimer = 300;
+                        partner.userData.father = enemy;
+                        enemy.userData.state = 'idle';
+                        partner.userData.state = 'idle';
+                    }
+                }
+            }
+
+            if (enemy.userData.state === 'rutting_approach' && enemy.userData.ruttingTimer) {
+                enemy.userData.ruttingTimer -= delta;
+                if (enemy.userData.ruttingTimer <= 0) {
+                    const rival = enemy.userData.ruttingRival;
+                    const female = enemy.userData.ruttingFemale;
+                    if (rival && female) {
+                        const winner = Math.random() < 0.5 ? enemy : rival;
+                        const loser = winner === enemy ? rival : enemy;
+                        winner.userData.state = 'mating_display';
+                        winner.userData.matingPartner = female;
+                        winner.userData.matingTimer = 5;
+                        female.userData.state = 'mating_display';
+                        female.userData.matingPartner = winner;
+                        female.userData.matingTimer = 5;
+                        loser.userData.health = Math.max(0, loser.userData.health - 10);
+                        loser.userData.state = 'fleeing';
+                        loser.userData.fleeTimer = 10;
+                    }
+                }
+            }
+
+            if (enemy.userData.gestating && enemy.userData.gestationTimer) {
+                enemy.userData.gestationTimer -= delta;
+                if (enemy.userData.gestationTimer <= 0) {
+                    const numBabies = 1 + Math.floor(Math.random() * 2);
+                    const burrow = enemy.userData.homeBurrow;
+                    if (burrow) {
+                        for (let i = 0; i < numBabies; i++) {
+                            const isMale = Math.random() < 0.5;
+                            const babyType = isMale ? 'deericus_iricus_baby_male' : 'deericus_iricus_baby_female';
+                            const babyData = ENEMIES.find(e => e.id === babyType);
+                            const baby = createEnemy(babyData,
+                                burrow.userData.position.x + (Math.random() - 0.5) * 3,
+                                burrow.userData.position.z + (Math.random() - 0.5) * 3
+                            );
+                            if (!baby) continue;
+
+                            baby.userData.herdId = enemy.userData.herdId;
+                            baby.userData.herd = enemy.userData.herd;
+                            baby.userData.homeBurrow = burrow;
+                            baby.userData.age = 'baby';
+                            baby.userData.maturityTime = GameState.timeElapsed + 180;
+                            baby.userData.isBaby = true;
+                            baby.userData.mother = enemy;
+                            baby.userData.father = enemy.userData.father;
+
+                            GameState.enemies.push(baby);
+                            GameState.scene.add(baby);
+                            if (enemy.userData.herd) enemy.userData.herd.members.push(baby);
+                        }
+                    }
+                    enemy.userData.isPregnant = false;
+                    enemy.userData.gestating = false;
+                    enemy.userData.gestationTimer = null;
+                }
+            }
+        });
+    }
+
+    function updateDeerBehavior(deer, delta) {
+        if (!deer.userData.id || !deer.userData.id.includes('deericus_iricus')) return;
+        const state = deer.userData.state || 'idle';
+
+        switch(state) {
+            case 'in_burrow': updateDeerInBurrow(deer, delta); break;
+            case 'peeking': updateDeerPeeking(deer, delta); break;
+            case 'idle': updateDeerIdle(deer, delta); break;
+            case 'seeking_grass': updateDeerSeekingGrass(deer, delta); break;
+            case 'grazing': updateDeerGrazing(deer, delta); break;
+            case 'returning_home': updateDeerReturningHome(deer, delta); break;
+            case 'fleeing': updateDeerFleeing(deer, delta); break;
+            case 'fighting': updateDeerFighting(deer, delta); break;
+            case 'following_parent': updateDeerFollowingParent(deer, delta); break;
+        }
+
+        if (deer.userData.legs && state !== 'in_burrow') {
+            const swing = Math.sin(GameState.timeElapsed * 5) * 0.4;
+            if (deer.userData.legs.frontLeft) deer.userData.legs.frontLeft.rotation.x = swing;
+            if (deer.userData.legs.backRight) deer.userData.legs.backRight.rotation.x = swing;
+            if (deer.userData.legs.frontRight) deer.userData.legs.frontRight.rotation.x = -swing;
+            if (deer.userData.legs.backLeft) deer.userData.legs.backLeft.rotation.x = -swing;
+        }
+        if (deer.userData.ears) {
+            const twitch = Math.sin(GameState.timeElapsed * 2) * 0.2;
+            if (deer.userData.ears.left) deer.userData.ears.left.rotation.z = twitch;
+            if (deer.userData.ears.right) deer.userData.ears.right.rotation.z = -twitch;
+        }
+        if (deer.userData.tail) {
+            deer.userData.tail.rotation.x = Math.sin(GameState.timeElapsed * 3) * 0.5;
+        }
+    }
+
+    function updateDeerInBurrow(deer, delta) {
+        if (!deer.userData.burrowTimer) deer.userData.burrowTimer = 10 + Math.random() * 20;
+        deer.userData.burrowTimer -= delta;
+        if (deer.userData.burrowTimer <= 0) {
+            if (Math.random() < 0.3) {
+                Environment.deerPeekFromBurrow(deer);
+                deer.userData.peekTimer = 3 + Math.random() * 5;
+            } else if ((deer.userData.hunger || 0) > 50) {
+                Environment.deerExitBurrow(deer);
+                deer.userData.state = 'seeking_grass';
+            } else {
+                deer.userData.burrowTimer = 10 + Math.random() * 20;
+            }
+        }
+    }
+
+    function updateDeerPeeking(deer, delta) {
+        if (!deer.userData.peekTimer) deer.userData.peekTimer = 5;
+        deer.userData.peekTimer -= delta;
+        if (deer.userData.peekTimer <= 0) {
+            const dangerNearby = checkForPredatorsNearDeer(deer, 15);
+            if (dangerNearby) {
+                Environment.deerEnterBurrow(deer, deer.userData.homeBurrow);
+            } else if ((deer.userData.hunger || 0) > 50) {
+                Environment.deerExitBurrow(deer);
+                deer.userData.state = 'seeking_grass';
+            } else {
+                Environment.deerEnterBurrow(deer, deer.userData.homeBurrow);
+            }
+        }
+    }
+
+    function updateDeerIdle(deer, delta) {
+        deer.userData.hunger = Math.min(100, (deer.userData.hunger || 0) + delta * 2);
+        if (deer.userData.isBaby && deer.userData.mother) {
+            deer.userData.state = 'following_parent';
+            return;
+        }
+        if (deer.userData.hunger > 60) { deer.userData.state = 'seeking_grass'; return; }
+        if (deer.userData.hunger < 20) { deer.userData.state = 'returning_home'; return; }
+        if (!deer.userData.wanderTimer) {
+            deer.userData.wanderTimer = 2 + Math.random() * 4;
+            deer.userData.wanderAngle = Math.random() * Math.PI * 2;
+        }
+        deer.userData.wanderTimer -= delta;
+        const speed = 1.5;
+        const dx = Math.cos(deer.userData.wanderAngle) * speed * delta;
+        const dz = Math.sin(deer.userData.wanderAngle) * speed * delta;
+        deer.position.x += dx;
+        deer.position.z += dz;
+        deer.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+    }
+
+    function updateDeerSeekingGrass(deer, delta) {
+        const nearestGrass = findNearestGrassTuft(deer);
+        if (!nearestGrass) { deer.userData.state = 'returning_home'; return; }
+        const dx = nearestGrass.position.x - deer.position.x;
+        const dz = nearestGrass.position.z - deer.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist < 1) {
+            deer.userData.state = 'grazing';
+            deer.userData.currentGrass = nearestGrass;
+            deer.userData.grazingTimer = 5 + Math.random() * 5;
+            return;
+        }
+        const angle = Math.atan2(dz, dx);
+        const speed = 2.5;
+        const moveX = Math.cos(angle) * speed * delta;
+        const moveZ = Math.sin(angle) * speed * delta;
+        deer.position.x += moveX;
+        deer.position.z += moveZ;
+        deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+    }
+
+    function updateDeerGrazing(deer, delta) {
+        if (!deer.userData.grazingTimer) deer.userData.grazingTimer = 5;
+        deer.userData.grazingTimer -= delta;
+        if (!deer.userData.lastEatTime) deer.userData.lastEatTime = 0;
+        deer.userData.lastEatTime += delta;
+        if (deer.userData.lastEatTime >= 0.5) {
+            Environment.eatGrassTuft(deer.userData.currentGrass, deer);
+            deer.userData.lastEatTime = 0;
+        }
+        if (deer.userData.head) {
+            deer.userData.head.rotation.x = Math.sin(GameState.timeElapsed * 3) * 0.3;
+        }
+        if (deer.userData.grazingTimer <= 0 || deer.userData.hunger < 20) {
+            deer.userData.state = 'returning_home';
+            deer.userData.currentGrass = null;
+        }
+    }
+
+    function updateDeerReturningHome(deer, delta) {
+        const burrow = deer.userData.homeBurrow;
+        if (!burrow) { deer.userData.state = 'idle'; return; }
+        const entrancePos = burrow.userData.entrancePosition;
+        const dx = entrancePos.x - deer.position.x;
+        const dz = entrancePos.z - deer.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist < 0.5) { Environment.deerEnterBurrow(deer, burrow); return; }
+        const angle = Math.atan2(dz, dx);
+        const speed = 2;
+        const moveX = Math.cos(angle) * speed * delta;
+        const moveZ = Math.sin(angle) * speed * delta;
+        deer.position.x += moveX;
+        deer.position.z += moveZ;
+        deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+    }
+
+    function updateDeerFollowingParent(deer, delta) {
+        const mother = deer.userData.mother;
+        if (!mother || !mother.userData) { deer.userData.state = 'idle'; return; }
+        if (mother.userData.state === 'in_burrow') {
+            deer.userData.state = 'in_burrow';
+            Environment.deerEnterBurrow(deer, deer.userData.homeBurrow);
+            return;
+        }
+        const dx = mother.position.x - deer.position.x;
+        const dz = mother.position.z - deer.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist > 2) {
+            const angle = Math.atan2(dz, dx);
+            const speed = 3;
+            const moveX = Math.cos(angle) * speed * delta;
+            const moveZ = Math.sin(angle) * speed * delta;
+            deer.position.x += moveX;
+            deer.position.z += moveZ;
+            deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+        }
+    }
+
+    function findNearestGrassTuft(deer) {
+        if (!GameState.grassTufts) return null;
+        let nearest = null;
+        let minDist = Infinity;
+        GameState.grassTufts.forEach(tuft => {
+            if (tuft.userData.size < 0.3) return;
+            const dx = tuft.position.x - deer.position.x;
+            const dz = tuft.position.z - deer.position.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            if (dist < minDist) { minDist = dist; nearest = tuft; }
+        });
+        return nearest;
+    }
+
+    function checkForPredatorsNearDeer(deer, radius) {
+        let nearestPredator = null;
+        let minDist = radius;
+        GameState.enemies.forEach(enemy => {
+            if (enemy.userData.category === 'carnivore') {
+                const dx = enemy.position.x - deer.position.x;
+                const dz = enemy.position.z - deer.position.z;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                if (dist < minDist) { minDist = dist; nearestPredator = enemy; }
+            }
+        });
+        if (GameState.peccary) {
+            const dx = GameState.peccary.position.x - deer.position.x;
+            const dz = GameState.peccary.position.z - deer.position.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            if (dist < minDist && GameState.peccary.userData.isAttacking) {
+                nearestPredator = GameState.peccary;
+            }
+        }
+        return nearestPredator;
+    }
+
+    function updateDeerFleeing(deer, delta) {
+        if (!deer.userData.fleeTarget) {
+            const predator = checkForPredatorsNearDeer(deer, 20);
+            if (!predator) { deer.userData.state = 'returning_home'; return; }
+            deer.userData.fleeTarget = predator;
+        }
+        const predator = deer.userData.fleeTarget;
+        const dx = deer.position.x - predator.position.x;
+        const dz = deer.position.z - predator.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist > 25) {
+            deer.userData.state = 'returning_home';
+            deer.userData.fleeTarget = null;
+            return;
+        }
+        const angle = Math.atan2(dz, dx);
+        const speed = 6;
+        const moveX = Math.cos(angle) * speed * delta;
+        const moveZ = Math.sin(angle) * speed * delta;
+        deer.position.x += moveX;
+        deer.position.z += moveZ;
+        deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+        if (!deer.userData.zigzagTimer) deer.userData.zigzagTimer = 0;
+        deer.userData.zigzagTimer += delta;
+        if (deer.userData.zigzagTimer > 1) {
+            deer.position.x += (Math.random() - 0.5) * 3;
+            deer.position.z += (Math.random() - 0.5) * 3;
+            deer.userData.zigzagTimer = 0;
+        }
+    }
+
+    function updateDeerFighting(deer, delta) {
+        const target = deer.userData.fightTarget;
+        if (!target || !target.userData) { deer.userData.state = 'fleeing'; return; }
+        deer.userData.fightTimer -= delta;
+        const dx = target.position.x - deer.position.x;
+        const dz = target.position.z - deer.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        deer.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+        if (dist < 2) {
+            if (!deer.userData.lastKickTime) deer.userData.lastKickTime = 0;
+            deer.userData.lastKickTime += delta;
+            if (deer.userData.lastKickTime >= 1.5) {
+                const kickDamage = 15;
+                if (target.userData.health) target.userData.health -= kickDamage;
+                deer.userData.lastKickTime = 0;
+            }
+        }
+        if (deer.userData.fightTimer <= 0) deer.userData.state = 'fleeing';
+    }
+
+    function deerTakeDamage(deer, damage, attacker) {
+        deer.userData.health -= damage;
+        if (deer.userData.health <= 0) {
+            const herd = deer.userData.herd;
+            if (herd) {
+                const idx = herd.members.indexOf(deer);
+                if (idx > -1) herd.members.splice(idx, 1);
+                if (herd.leader === deer) {
+                    const males = herd.members.filter(m => m.userData.gender === 'male' && m.userData.age === 'adult');
+                    if (males.length > 0) { herd.leader = males[0]; males[0].userData.isLeader = true; }
+                }
+            }
+            Game.scene.remove(deer);
+            const idx2 = GameState.enemies.indexOf(deer);
+            if (idx2 > -1) GameState.enemies.splice(idx2, 1);
+            return;
+        }
+        const shouldFight = deer.userData.gender === 'male' && deer.userData.age === 'adult' && Math.random() < 0.4;
+        if (shouldFight) {
+            deer.userData.state = 'fighting';
+            deer.userData.fightTarget = attacker;
+            deer.userData.fightTimer = 5;
+        } else {
+            deer.userData.state = 'fleeing';
+            deer.userData.fleeTarget = attacker;
+        }
     }
 
     // ========================================================================
@@ -5877,7 +6749,7 @@ window.Enemies = (function() {
                     // Face target
                     const toTarget = new THREE.Vector3()
                         .subVectors(target.position, enemy.position);
-                    enemy.rotation.y = Math.atan2(toTarget.x, toTarget.z);
+                    enemy.rotation.y = Math.atan2(toTarget.x, toTarget.z) + Math.PI / 2;
 
                     // Only leader processes takedown
                     if (enemy === hunt.leader) {
@@ -8795,20 +9667,8 @@ window.Enemies = (function() {
     function updateDronglousCats(delta) {
         const cats = GameState.enemies.filter(e => e.userData.type === 'dronglous_cat');
 
-        // DEBUG: Log once per second
-        if (!window._catDebugTimer) window._catDebugTimer = 0;
-        window._catDebugTimer += delta;
-        if (window._catDebugTimer > 1) {
-            window._catDebugTimer = 0;
-            console.log(`🐱 CAT DEBUG: Found ${cats.length} cats`);
-            cats.forEach((cat, i) => {
-                console.log(`  Cat ${i}: homeTree=${!!cat.userData.homeTree}, state=${cat.userData.lifecycleState}, timer=${cat.userData.stateTimer?.toFixed(1)}`);
-            });
-        }
-
         cats.forEach(cat => {
             if (!cat.userData.homeTree) {
-                console.log('⚠️ Cat has no homeTree, skipping!');
                 return;
             }
 
@@ -8886,13 +9746,10 @@ window.Enemies = (function() {
         // Set hunt threshold once (not every frame!)
         if (!cat.userData.huntThreshold) {
             cat.userData.huntThreshold = 2 + Math.random() * 3;
-            console.log(`🎯 Cat hunt threshold set to ${cat.userData.huntThreshold.toFixed(1)} seconds`);
         }
 
         // Check if it's time to look for prey
         if (cat.userData.stateTimer > cat.userData.huntThreshold) {
-            console.log('👀 Cat checking for prey...');
-
             // Look for prey within range
             const prey = findCatPrey(cat);
             if (prey) {
@@ -8900,10 +9757,8 @@ window.Enemies = (function() {
                 cat.userData.lifecycleState = 'descending';
                 cat.userData.stateTimer = 0;
                 delete cat.userData.huntThreshold; // Reset for next time
-                console.log('🐱 Dronglous Cat spotted prey:', prey.userData.type, '- Starting descent!');
             } else {
                 // No prey found, try again in a few seconds
-                console.log('😿 No prey found, will check again soon');
                 cat.userData.stateTimer = 0;
                 cat.userData.huntThreshold = 2 + Math.random() * 3;
             }
@@ -8922,15 +9777,11 @@ window.Enemies = (function() {
         // Check if player (peccary) is in range - peccary is prey too!
         if (GameState.peccary) {
             const playerDist = cat.position.distanceTo(GameState.peccary.position);
-            console.log('🔍 Player check: dist=' + playerDist.toFixed(1) + ', range=' + huntRange);
             if (playerDist <= huntRange) {
-                console.log('🎯 Player (peccary) in range! Will hunt!');
                 // Player is medium priority prey (priority 3)
                 bestPrey = GameState.peccary;
                 bestPriority = 3;
             }
-        } else {
-            console.log('⚠️ GameState.peccary is null!');
         }
 
         GameState.enemies.forEach(enemy => {
@@ -8938,27 +9789,39 @@ window.Enemies = (function() {
             const dist = cat.position.distanceTo(enemy.position);
             if (dist > huntRange) return;
 
-            // Check if valid prey
+            // Check if valid prey using category system
             let priority = 0;
+            const category = enemy.userData.category;
             const type = enemy.userData.type;
+            const isBaby = enemy.userData.isBaby;
 
-            if (type === 'saltas_gazella' && enemy.userData.isBaby) {
-                priority = 5; // Loves baby gazella
-            } else if (type === 'antelope' && enemy.userData.isBaby) {
-                priority = 4; // Baby antelope
-            } else if (type === 'leopard_toad') {
-                priority = 3; // Toads
-            } else if (type === 'wild_dog' && enemy.userData.isBaby) {
-                // Only hunt pups if wild dog den is under cat's tree
-                const tree = cat.userData.homeTree;
-                const denNearby = GameState.wildDogDens && GameState.wildDogDens.some(den =>
-                    den.position.distanceTo(tree.position) < 10
-                );
-                if (denNearby) {
-                    priority = 4; // Pups from nearby den
+            // Herbivores - Primary prey (gazella, antelope)
+            if (category === 'herbivore') {
+                priority = isBaby ? 5 : 3; // Baby herbivores top priority, adults ok
+            }
+            // Omnivores - Good prey (toads, geese)
+            else if (category === 'omnivore') {
+                priority = isBaby ? 4 : 2; // Baby omnivores very high, adults decent
+            }
+            // Carnivores - Only hunt babies or small predators when desperate
+            else if (category === 'carnivore') {
+                if (type === 'wild_dog' && isBaby) {
+                    // Only hunt pups if wild dog den is under cat's tree
+                    const tree = cat.userData.homeTree;
+                    const denNearby = GameState.wildDogDens && GameState.wildDogDens.some(den =>
+                        den.position.distanceTo(tree.position) < 10
+                    );
+                    if (denNearby) {
+                        priority = 4; // Pups from nearby den
+                    }
+                } else if (type === 'grass_viper') {
+                    priority = 2; // Vipers (small snake predators)
+                } else if (isBaby) {
+                    priority = 3; // Baby carnivores (fox, badger, weasel babies)
+                } else if (type === 'fox' || type === 'badger' || type === 'weasel') {
+                    priority = 1; // Small adult carnivores (only if desperate)
                 }
-            } else if (type === 'grass_viper') {
-                priority = 2; // Vipers
+                // Don't hunt adult wild dogs or other adult cats
             }
 
             if (priority > bestPriority) {
@@ -9059,7 +9922,6 @@ window.Enemies = (function() {
         const targetValid = isPlayer || (target && GameState.enemies.includes(target));
 
         if (!targetValid) {
-            console.log('🚫 Cat lost target, ascending');
             cat.userData.huntTarget = null;
             cat.userData.lifecycleState = 'ascending';
             cat.userData.stateTimer = 0;
@@ -9240,7 +10102,6 @@ window.Enemies = (function() {
             }
         } else {
             // At tree - JUMP straight to top!
-            console.log('🐱 Cat jumping back into tree!');
 
             const targetY = 3 + Math.random() * 2;
             const angle = Math.random() * Math.PI * 2;
@@ -9254,8 +10115,6 @@ window.Enemies = (function() {
             // Back in tree
             cat.userData.lifecycleState = 'in_tree';
             cat.userData.stateTimer = 0;
-
-            console.log('✅ Cat jumped back into tree at Y:', targetY.toFixed(1));
 
             // Reset model rotation
             const catModel = cat.children[0];
@@ -9630,6 +10489,15 @@ window.Enemies = (function() {
         triggerDronglousCatMating: triggerDronglousCatMating,
         triggerDronglousCatHunt: triggerDronglousCatHunt,
         animateDronglousCat: animateDronglousCat,
+
+        // Deericus Iricus (deer) functions
+        spawnDeericusIricusHerd: spawnDeericusIricusHerd,
+        updateDeerMaturation: updateDeerMaturation,
+        updateBachelorHerdFormation: updateBachelorHerdFormation,
+        triggerDeerMating: triggerDeerMating,
+        updateDeerMating: updateDeerMating,
+        updateDeerBehavior: updateDeerBehavior,
+        deerTakeDamage: deerTakeDamage,
 
         // Expose model builders for advanced use
         modelBuilders: modelBuilders

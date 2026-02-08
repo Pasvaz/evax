@@ -218,6 +218,56 @@ window.Player = (function() {
     }
 
     /**
+     * Dig up the ancient skull from the rock pile!
+     * This is a major discovery that unlocks the snowy mountains biome.
+     */
+    function digUpSkull() {
+        if (!GameState.skullDigSpot || !GameState.skullDigSpot.userData.hasSkull) return;
+
+        // Mark skull as found
+        GameState.skullDigSpot.userData.hasSkull = false;
+
+        // Add skull to artifacts inventory
+        if (!GameState.artifacts) GameState.artifacts = [];
+        GameState.artifacts.push('felis_dronglaticus_skull');
+
+        // Remove the glow from the dig spot
+        const light = GameState.skullDigSpot.children.find(c => c.type === 'PointLight');
+        if (light) {
+            GameState.skullDigSpot.remove(light);
+        }
+
+        // Make rocks look dug up (darken them)
+        GameState.skullDigSpot.children.forEach(child => {
+            if (child.material) {
+                child.material.emissive.setHex(0x000000);
+                child.material.emissiveIntensity = 0;
+                child.material.color.setHex(0x5a5a5a);  // Darker grey
+            }
+        });
+
+        // Show discovery message
+        console.log('💀🏔️ INCREDIBLE DISCOVERY! You found the Felis Dronglaticus Skull!');
+        console.log('📜 The ancient skull of the cat ancestor! This could unlock new lands...');
+        console.log('🔬 Take it to Ningle at the Research Hut to learn more!');
+
+        // Play a sound effect if available
+        if (window.playSound) {
+            playSound('artifact');
+        }
+
+        // Show visual effect (particles, flash, etc.)
+        if (window.createDiscoveryEffect) {
+            createDiscoveryEffect(GameState.skullDigSpot.position);
+        }
+
+        // Update UI
+        if (window.UI && window.UI.updateArtifactsDisplay) {
+            window.UI.updateArtifactsDisplay();
+        }
+    }
+
+    /**
      * Update mounted riding controls.
      * @param {number} delta - Time elapsed since last frame
      */
@@ -308,6 +358,19 @@ window.Player = (function() {
         if (GameState.mountedAnimal) {
             updateRiding(delta);
             return;
+        }
+
+        // Check for digging up the skull (E key, not in dialog)
+        if (GameState.keys['e'] && !GameState.lastKeyE && !GameState.isDialogOpen && !GameState.nearbyVillager) {
+            if (GameState.skullDigSpot && GameState.skullDigSpot.userData.hasSkull) {
+                const dist = GameState.peccary.position.distanceTo(GameState.skullDigSpot.position);
+                if (dist < GameState.skullDigSpot.userData.interactRadius) {
+                    // Dig up the skull!
+                    digUpSkull();
+                    GameState.lastKeyE = true;
+                    return;
+                }
+            }
         }
 
         // Check for mounting a gazella (E key, not in dialog)
