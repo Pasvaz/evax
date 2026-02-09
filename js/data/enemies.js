@@ -99,12 +99,12 @@ window.ENEMIES = [
 
         // Badger colors (dark gray with white face stripes)
         colors: {
-            body: 0x2f2f2f,            // Dark gray body
-            stripes: 0xffffff,         // White face stripes
-            snout: 0x1a1a1a,           // Almost black snout
-            eyes: 0xff3333,            // Red menacing eyes
-            eyeGlow: 0x330000,         // Dark red eye glow
-            legs: 0x1a1a1a             // Black legs
+            body: "#2F2F2F",            // Dark gray body
+            stripes: "#FFFFFF",         // White face stripes
+            snout: "#1A1A1A",           // Almost black snout
+            eyes: "#FF3333",            // Red menacing eyes
+            eyeGlow: "#330000",         // Dark red eye glow
+            legs: "#1A1A1A"             // Black legs
         }
     },
 
@@ -128,13 +128,13 @@ window.ENEMIES = [
 
         // Weasel colors (brown with yellow eyes)
         colors: {
-            body: 0x8b4513,            // Saddle brown body
-            snout: 0xd2691e,           // Chocolate tan snout
-            nose: 0x1a1a1a,            // Black nose
-            eyes: 0xffff00,            // Yellow predator eyes
-            eyeGlow: 0x333300,         // Yellow eye glow
-            ears: 0x8b4513,            // Brown ears (same as body)
-            legs: 0x6b3310             // Darker brown legs
+            body: "#8B4513",            // Saddle brown body
+            snout: "#D2691E",           // Chocolate tan snout
+            nose: "#1A1A1A",            // Black nose
+            eyes: "#FFFF00",            // Yellow predator eyes
+            eyeGlow: "#333300",         // Yellow eye glow
+            ears: "#8B4513",            // Brown ears (same as body)
+            legs: "#6B3310"             // Darker brown legs
         }
     },
 
@@ -163,11 +163,11 @@ window.ENEMIES = [
 
         // Beige/cream goose colors
         colors: {
-            body: 0xf5deb3,            // Wheat/beige body
-            beak: 0xff8c00,            // Dark orange beak
-            eyes: 0x1a1a1a,            // Black eyes
-            legs: 0xff8c00,            // Orange legs
-            wings: 0xfaebd7            // Antique white wings
+            body: "#F5DEB3",            // Wheat/beige body
+            beak: "#FF8C00",            // Dark orange beak
+            eyes: "#1A1A1A",            // Black eyes
+            legs: "#FF8C00",            // Orange legs
+            wings: "#FAEBD7"            // Antique white wings
         }
     },
 
@@ -196,17 +196,17 @@ window.ENEMIES = [
 
         // Fox colors (orange-red with white chest)
         colors: {
-            body: 0xd35400,            // Dark orange body
-            chest: 0xffffff,           // White chest/belly
-            snout: 0xffffff,           // White snout
-            nose: 0x1a1a1a,            // Black nose
-            eyes: 0xffaa00,            // Amber eyes
-            eyeGlow: 0x331100,         // Amber eye glow
-            ears: 0xd35400,            // Orange ears
-            earInner: 0x1a1a1a,        // Black inner ears
-            legs: 0x1a1a1a,            // Black legs/paws
-            tail: 0xd35400,            // Orange tail
-            tailTip: 0xffffff          // White tail tip
+            body: "#D35400",            // Dark orange body
+            chest: "#FFFFFF",           // White chest/belly
+            snout: "#FFFFFF",           // White snout
+            nose: "#1A1A1A",            // Black nose
+            eyes: "#FFAA00",            // Amber eyes
+            eyeGlow: "#331100",         // Amber eye glow
+            ears: "#D35400",            // Orange ears
+            earInner: "#1A1A1A",        // Black inner ears
+            legs: "#1A1A1A",            // Black legs/paws
+            tail: "#D35400",            // Orange tail
+            tailTip: "#FFFFFF"          // White tail tip
         }
     }
 
@@ -236,12 +236,12 @@ window.ENEMIES = [
 
         // Male leopard toad colors - yellow with brown spots
         colors: {
-            body: 0xFFD700,            // Golden yellow body
-            spots: 0x4A3728,           // Dark brown spots (10 random spots)
-            belly: 0xFFF8DC,           // Cream/cornsilk belly
-            eyes: 0x2F2F2F,            // Dark eyes
-            eyeBulge: 0xFFE55C,        // Lighter yellow eye bulge
-            legs: 0xE6BE00             // Slightly darker yellow legs
+            body: "#FFD700",            // Golden yellow body
+            spots: "#4A3728",           // Dark brown spots (10 random spots)
+            belly: "#FFF8DC",           // Cream/cornsilk belly
+            eyes: "#2F2F2F",            // Dark eyes
+            eyeBulge: "#FFE55C",        // Lighter yellow eye bulge
+            legs: "#E6BE00"             // Slightly darker yellow legs
         }
     },
 
@@ -272,12 +272,12 @@ window.ENEMIES = [
 
         // Female leopard toad colors - black
         colors: {
-            body: 0x1A1A1A,            // Black body
-            spots: 0x0A0A0A,           // Very dark spots (barely visible)
-            belly: 0x2A2A2A,           // Dark gray belly
-            eyes: 0x3F3F3F,            // Dark eyes
-            eyeBulge: 0x2A2A2A,        // Dark gray eye bulge
-            legs: 0x151515             // Very dark legs
+            body: "#1A1A1A",            // Black body
+            spots: "#0A0A0A",           // Very dark spots (barely visible)
+            belly: "#2A2A2A",           // Dark gray belly
+            eyes: "#3F3F3F",            // Dark eyes
+            eyeBulge: "#2A2A2A",        // Dark gray eye bulge
+            legs: "#151515"             // Very dark legs
         }
     },
 
@@ -308,13 +308,13 @@ window.ENEMIES = [
 
         // Black grass viper colors
         colors: {
-            body: 0x0a0a0a,            // Very dark black body
-            snout: 0x1a1a1a,           // Slightly lighter snout
-            nose: 0x000000,            // Pure black nose
-            eyes: 0x33ff33,            // Green predator eyes
-            eyeGlow: 0x003300,         // Green eye glow
-            ears: 0x0a0a0a,            // Black ears
-            legs: 0x050505             // Almost black legs
+            body: "#0A0A0A",            // Very dark black body
+            snout: "#1A1A1A",           // Slightly lighter snout
+            nose: "#000000",            // Pure black nose
+            eyes: "#33FF33",            // Green predator eyes
+            eyeGlow: "#003300",         // Green eye glow
+            ears: "#0A0A0A",            // Black ears
+            legs: "#050505"             // Almost black legs
         }
     },
 
@@ -346,13 +346,13 @@ window.ENEMIES = [
 
         // Grey grass viper colors
         colors: {
-            body: 0x444444,            // Medium grey body
-            snout: 0x555555,           // Slightly lighter snout
-            nose: 0x222222,            // Dark grey nose
-            eyes: 0x33ff33,            // Same green eyes
-            eyeGlow: 0x003300,         // Green eye glow
-            ears: 0x444444,            // Grey ears
-            legs: 0x333333             // Darker grey legs
+            body: "#444444",            // Medium grey body
+            snout: "#555555",           // Slightly lighter snout
+            nose: "#222222",            // Dark grey nose
+            eyes: "#33FF33",            // Same green eyes
+            eyeGlow: "#003300",         // Green eye glow
+            ears: "#444444",            // Grey ears
+            legs: "#333333"             // Darker grey legs
         }
     },
 
@@ -383,16 +383,16 @@ window.ENEMIES = [
 
         // Rhubarb red male colors
         colors: {
-            body: 0x8B2252,            // Rhubarb red (dark pinkish-red)
-            belly: 0xA85670,           // Lighter rhubarb underneath
-            legs: 0x5C1530,            // Darker red-brown legs
-            face: 0x9B3060,            // Face slightly different shade
-            muzzle: 0x2A1520,          // Dark muzzle
-            horns: 0x3D2817,           // Dark brown horns
-            hooves: 0x1A1A1A,          // Black hooves
-            eyes: 0x1A1A1A,            // Dark eyes
-            ears: 0x8B2252,            // Same as body
-            tail: 0x5C1530             // Dark tail tuft
+            body: "#8B2252",            // Rhubarb red (dark pinkish-red)
+            belly: "#A85670",           // Lighter rhubarb underneath
+            legs: "#5C1530",            // Darker red-brown legs
+            face: "#9B3060",            // Face slightly different shade
+            muzzle: "#2A1520",          // Dark muzzle
+            horns: "#3D2817",           // Dark brown horns
+            hooves: "#1A1A1A",          // Black hooves
+            eyes: "#1A1A1A",            // Dark eyes
+            ears: "#8B2252",            // Same as body
+            tail: "#5C1530"             // Dark tail tuft
         }
     },
 
@@ -423,16 +423,16 @@ window.ENEMIES = [
 
         // Blue-grey female colors
         colors: {
-            body: 0x4A5568,            // Blue-grey body
-            belly: 0x718096,           // Lighter grey underneath
-            legs: 0x2D3748,            // Darker grey legs
-            face: 0x5A6578,            // Face slightly different shade
-            muzzle: 0x1A202C,          // Dark muzzle
-            horns: 0x3D2817,           // (not used but included for consistency)
-            hooves: 0x1A1A1A,          // Black hooves
-            eyes: 0x1A1A1A,            // Dark eyes
-            ears: 0x4A5568,            // Same as body
-            tail: 0x2D3748             // Dark tail tuft
+            body: "#4A5568",            // Blue-grey body
+            belly: "#718096",           // Lighter grey underneath
+            legs: "#2D3748",            // Darker grey legs
+            face: "#5A6578",            // Face slightly different shade
+            muzzle: "#1A202C",          // Dark muzzle
+            horns: "#3D2817",           // (not used but included for consistency)
+            hooves: "#1A1A1A",          // Black hooves
+            eyes: "#1A1A1A",            // Dark eyes
+            ears: "#4A5568",            // Same as body
+            tail: "#2D3748"             // Dark tail tuft
         }
     },
 
@@ -466,21 +466,21 @@ window.ENEMIES = [
 
         // Brown male colors with African wild dog patches
         colors: {
-            body: 0x8B4513,            // Saddle brown
-            belly: 0xD2B48C,           // Tan underbelly
-            chest: 0xA0522D,           // Sienna chest
-            patches: 0x2F2F2F,         // Dark patches
-            patchesLight: 0xFAF0E6,    // Light cream patches
-            muzzle: 0x1A1A1A,          // Black muzzle
-            nose: 0x000000,
-            eyes: 0x4A3728,            // Dark brown eyes
-            eyeGlow: 0x1A0A00,
-            ears: 0x2A2A2A,            // Dark rounded ears
-            earInner: 0xDEB887,        // Lighter inner ear
-            legs: 0x1A1A1A,            // Black legs
-            paws: 0x2F2F2F,
-            tail: 0x8B4513,            // Brown base
-            tailTip: 0xFFFFFF          // White tail tip
+            body: "#8B4513",            // Saddle brown
+            belly: "#D2B48C",           // Tan underbelly
+            chest: "#A0522D",           // Sienna chest
+            patches: "#2F2F2F",         // Dark patches
+            patchesLight: "#FAF0E6",    // Light cream patches
+            muzzle: "#1A1A1A",          // Black muzzle
+            nose: "#000000",
+            eyes: "#4A3728",            // Dark brown eyes
+            eyeGlow: "#1A0A00",
+            ears: "#2A2A2A",            // Dark rounded ears
+            earInner: "#DEB887",        // Lighter inner ear
+            legs: "#1A1A1A",            // Black legs
+            paws: "#2F2F2F",
+            tail: "#8B4513",            // Brown base
+            tailTip: "#FFFFFF"          // White tail tip
         }
     },
 
@@ -508,21 +508,21 @@ window.ENEMIES = [
 
         // Potato brown female colors
         colors: {
-            body: 0xA0522D,            // Sienna (potato brown)
-            belly: 0xDEB887,           // Burlywood
-            chest: 0xB8860B,           // Dark goldenrod chest
-            patches: 0x4A3728,         // Dark brown patches
-            patchesLight: 0xF5DEB3,    // Wheat color patches
-            muzzle: 0x1A1A1A,
-            nose: 0x000000,
-            eyes: 0x4A3728,
-            eyeGlow: 0x1A0A00,
-            ears: 0x2A2A2A,
-            earInner: 0xCD853F,
-            legs: 0x1A1A1A,
-            paws: 0x2F2F2F,
-            tail: 0xA0522D,
-            tailTip: 0xFFFFFF
+            body: "#A0522D",            // Sienna (potato brown)
+            belly: "#DEB887",           // Burlywood
+            chest: "#B8860B",           // Dark goldenrod chest
+            patches: "#4A3728",         // Dark brown patches
+            patchesLight: "#F5DEB3",    // Wheat color patches
+            muzzle: "#1A1A1A",
+            nose: "#000000",
+            eyes: "#4A3728",
+            eyeGlow: "#1A0A00",
+            ears: "#2A2A2A",
+            earInner: "#CD853F",
+            legs: "#1A1A1A",
+            paws: "#2F2F2F",
+            tail: "#A0522D",
+            tailTip: "#FFFFFF"
         }
     },
 
@@ -549,21 +549,21 @@ window.ENEMIES = [
 
         // Golden yellow alpha female colors
         colors: {
-            body: 0xDAA520,            // Goldenrod
-            belly: 0xFFE4B5,           // Moccasin
-            chest: 0xFFD700,           // Gold chest
-            patches: 0x8B6914,         // Dark goldenrod patches
-            patchesLight: 0xFFF8DC,    // Cornsilk patches
-            muzzle: 0x1A1A1A,
-            nose: 0x000000,
-            eyes: 0xB8860B,            // Dark goldenrod eyes
-            eyeGlow: 0x332200,
-            ears: 0x2A2A2A,
-            earInner: 0xF0E68C,        // Khaki
-            legs: 0x1A1A1A,
-            paws: 0x2F2F2F,
-            tail: 0xDAA520,
-            tailTip: 0xFFFFFF
+            body: "#DAA520",            // Goldenrod
+            belly: "#FFE4B5",           // Moccasin
+            chest: "#FFD700",           // Gold chest
+            patches: "#8B6914",         // Dark goldenrod patches
+            patchesLight: "#FFF8DC",    // Cornsilk patches
+            muzzle: "#1A1A1A",
+            nose: "#000000",
+            eyes: "#B8860B",            // Dark goldenrod eyes
+            eyeGlow: "#332200",
+            ears: "#2A2A2A",
+            earInner: "#F0E68C",        // Khaki
+            legs: "#1A1A1A",
+            paws: "#2F2F2F",
+            tail: "#DAA520",
+            tailTip: "#FFFFFF"
         }
     },
 
@@ -602,16 +602,16 @@ window.ENEMIES = [
 
         // Black male with white underbelly
         colors: {
-            body: 0x1a1a1a,            // Black
-            belly: 0xffffff,           // White underbelly
-            legs: 0x0d0d0d,            // Darker black legs
-            face: 0x1a1a1a,            // Black face
-            muzzle: 0x333333,          // Dark grey muzzle
-            horns: 0x2a2a2a,           // Dark grey horns
-            hooves: 0x1a1a1a,          // Black hooves
-            eyes: 0x1a1a1a,            // Dark eyes
-            ears: 0x1a1a1a,            // Black ears
-            tail: 0x1a1a1a             // Black tail
+            body: "#1A1A1A",            // Black
+            belly: "#FFFFFF",           // White underbelly
+            legs: "#0D0D0D",            // Darker black legs
+            face: "#1A1A1A",            // Black face
+            muzzle: "#333333",          // Dark grey muzzle
+            horns: "#2A2A2A",           // Dark grey horns
+            hooves: "#1A1A1A",          // Black hooves
+            eyes: "#1A1A1A",            // Dark eyes
+            ears: "#1A1A1A",            // Black ears
+            tail: "#1A1A1A"             // Black tail
         }
     },
 
@@ -641,16 +641,16 @@ window.ENEMIES = [
 
         // Creamy yellow female with white underbelly
         colors: {
-            body: 0xf5deb3,            // Creamy yellow (wheat)
-            belly: 0xffffff,           // White underbelly
-            legs: 0xd4c4a8,            // Slightly darker cream legs
-            face: 0xf5deb3,            // Cream face
-            muzzle: 0xc4a882,          // Tan muzzle
-            horns: 0x8b7355,           // Brown horns
-            hooves: 0x1a1a1a,          // Black hooves
-            eyes: 0x1a1a1a,            // Dark eyes
-            ears: 0xf5deb3,            // Cream ears
-            tail: 0xd4c4a8             // Tan tail
+            body: "#F5DEB3",            // Creamy yellow (wheat)
+            belly: "#FFFFFF",           // White underbelly
+            legs: "#D4C4A8",            // Slightly darker cream legs
+            face: "#F5DEB3",            // Cream face
+            muzzle: "#C4A882",          // Tan muzzle
+            horns: "#8B7355",           // Brown horns
+            hooves: "#1A1A1A",          // Black hooves
+            eyes: "#1A1A1A",            // Dark eyes
+            ears: "#F5DEB3",            // Cream ears
+            tail: "#D4C4A8"             // Tan tail
         }
     },
 
@@ -680,17 +680,17 @@ window.ENEMIES = [
         gender: 'male',
 
         colors: {
-            body: 0x1a1a1a,            // Black
-            belly: 0x2a2a2a,           // Slightly lighter black belly
-            face: 0x1a1a1a,            // Black face
-            ears: 0x0a0a0a,            // Darker black ears
-            earInner: 0x3a2020,        // Dark reddish inner ear
-            nose: 0x2a1a1a,            // Dark nose
-            eyes: 0xccaa00,            // Golden yellow eyes (cat eyes!)
-            eyePupil: 0x111111,        // Dark pupils
-            whiskers: 0x444444,        // Grey whiskers
-            pawPads: 0x2a1a1a,         // Dark paw pads
-            tail: 0x1a1a1a             // Black tail
+            body: "#1A1A1A",            // Black
+            belly: "#2A2A2A",           // Slightly lighter black belly
+            face: "#1A1A1A",            // Black face
+            ears: "#0A0A0A",            // Darker black ears
+            earInner: "#3A2020",        // Dark reddish inner ear
+            nose: "#2A1A1A",            // Dark nose
+            eyes: "#CCAA00",            // Golden yellow eyes (cat eyes!)
+            eyePupil: "#111111",        // Dark pupils
+            whiskers: "#444444",        // Grey whiskers
+            pawPads: "#2A1A1A",         // Dark paw pads
+            tail: "#1A1A1A"             // Black tail
         }
     },
 
@@ -712,17 +712,17 @@ window.ENEMIES = [
         gender: 'female',
 
         colors: {
-            body: 0x5a5a5a,            // Dull grey
-            belly: 0x6a6a6a,           // Lighter grey belly
-            face: 0x5a5a5a,            // Grey face
-            ears: 0x4a4a4a,            // Darker grey ears
-            earInner: 0x6a4a4a,        // Pinkish inner ear
-            nose: 0x4a3a3a,            // Greyish-pink nose
-            eyes: 0xccaa00,            // Golden yellow eyes
-            eyePupil: 0x111111,
-            whiskers: 0x7a7a7a,        // Light grey whiskers
-            pawPads: 0x4a3a3a,
-            tail: 0x5a5a5a             // Grey tail
+            body: "#5A5A5A",            // Dull grey
+            belly: "#6A6A6A",           // Lighter grey belly
+            face: "#5A5A5A",            // Grey face
+            ears: "#4A4A4A",            // Darker grey ears
+            earInner: "#6A4A4A",        // Pinkish inner ear
+            nose: "#4A3A3A",            // Greyish-pink nose
+            eyes: "#CCAA00",            // Golden yellow eyes
+            eyePupil: "#111111",
+            whiskers: "#7A7A7A",        // Light grey whiskers
+            pawPads: "#4A3A3A",
+            tail: "#5A5A5A"             // Grey tail
         }
     },
 
@@ -745,17 +745,17 @@ window.ENEMIES = [
         isBaby: true,
 
         colors: {
-            body: 0x3a3a3a,            // Dark grey
-            belly: 0x4a4a4a,           // Lighter grey belly
-            face: 0x3a3a3a,
-            ears: 0x2a2a2a,
-            earInner: 0x5a3a3a,
-            nose: 0x3a2a2a,
-            eyes: 0x88cc88,            // Baby green-yellow eyes
-            eyePupil: 0x111111,
-            whiskers: 0x5a5a5a,
-            pawPads: 0x3a2a2a,
-            tail: 0x3a3a3a
+            body: "#3A3A3A",            // Dark grey
+            belly: "#4A4A4A",           // Lighter grey belly
+            face: "#3A3A3A",
+            ears: "#2A2A2A",
+            earInner: "#5A3A3A",
+            nose: "#3A2A2A",
+            eyes: "#88CC88",            // Baby green-yellow eyes
+            eyePupil: "#111111",
+            whiskers: "#5A5A5A",
+            pawPads: "#3A2A2A",
+            tail: "#3A3A3A"
         }
     },
 
@@ -778,17 +778,17 @@ window.ENEMIES = [
         isBaby: true,
 
         colors: {
-            body: 0xe8e8e8,            // White
-            belly: 0xffffff,           // Pure white belly
-            face: 0xe8e8e8,
-            ears: 0xd8d8d8,
-            earInner: 0xffcccc,        // Pink inner ear
-            nose: 0xffaaaa,            // Pink nose
-            eyes: 0x88ccff,            // Baby blue eyes
-            eyePupil: 0x111111,
-            whiskers: 0xcccccc,
-            pawPads: 0xffaaaa,         // Pink paw pads
-            tail: 0xe8e8e8
+            body: "#E8E8E8",            // White
+            belly: "#FFFFFF",           // Pure white belly
+            face: "#E8E8E8",
+            ears: "#D8D8D8",
+            earInner: "#FFCCCC",        // Pink inner ear
+            nose: "#FFAAAA",            // Pink nose
+            eyes: "#88CCFF",            // Baby blue eyes
+            eyePupil: "#111111",
+            whiskers: "#CCCCCC",
+            pawPads: "#FFAAAA",         // Pink paw pads
+            tail: "#E8E8E8"
         }
     },
 
@@ -821,17 +821,17 @@ window.ENEMIES = [
         isHerdAnimal: true,
 
         colors: {
-            body: 0x8B4513,            // Saddle brown
-            belly: 0xD2B48C,           // Tan belly
-            legs: 0x6B3410,            // Darker brown legs
-            face: 0x8B4513,
-            muzzle: 0x5C3A1A,          // Dark muzzle
-            horns: 0x4A3020,           // Dark brown horns
-            ears: 0x8B4513,
-            earInner: 0xFFB6C1,        // Light pink inner ear
-            eyes: 0x1a1a1a,            // Dark eyes
-            tail: 0x6B3410,            // Dark tail
-            fur: 0xA0826D              // Lighter furry texture
+            body: "#8B4513",            // Saddle brown
+            belly: "#D2B48C",           // Tan belly
+            legs: "#6B3410",            // Darker brown legs
+            face: "#8B4513",
+            muzzle: "#5C3A1A",          // Dark muzzle
+            horns: "#4A3020",           // Dark brown horns
+            ears: "#8B4513",
+            earInner: "#FFB6C1",        // Light pink inner ear
+            eyes: "#1A1A1A",            // Dark eyes
+            tail: "#6B3410",            // Dark tail
+            fur: "#A0826D"              // Lighter furry texture
         }
     },
 
@@ -858,17 +858,17 @@ window.ENEMIES = [
         canGetPregnant: true,
 
         colors: {
-            body: 0xFFFFFF,            // Pure white
-            belly: 0xF5F5F5,           // Slightly off-white belly
-            legs: 0xE8E8E8,            // Light grey legs
-            face: 0xFFFFFF,
-            muzzle: 0xD3D3D3,          // Light grey muzzle
-            horns: 0x4A3020,           // (not used)
-            ears: 0xFFFFFF,
-            earInner: 0xFFB6C1,        // Light pink inner ear
-            eyes: 0x1a1a1a,
-            tail: 0xE8E8E8,
-            fur: 0xFAFAFA              // Fluffy white
+            body: "#FFFFFF",            // Pure white
+            belly: "#F5F5F5",           // Slightly off-white belly
+            legs: "#E8E8E8",            // Light grey legs
+            face: "#FFFFFF",
+            muzzle: "#D3D3D3",          // Light grey muzzle
+            horns: "#4A3020",           // (not used)
+            ears: "#FFFFFF",
+            earInner: "#FFB6C1",        // Light pink inner ear
+            eyes: "#1A1A1A",
+            tail: "#E8E8E8",
+            fur: "#FAFAFA"              // Fluffy white
         }
     },
 
@@ -894,17 +894,17 @@ window.ENEMIES = [
         isHerdAnimal: true,
 
         colors: {
-            body: 0xCC7722,            // Ochre/yellow-brown
-            belly: 0xE6B84D,           // Lighter ochre belly
-            legs: 0xAA6610,            // Darker ochre legs
-            face: 0xCC7722,
-            muzzle: 0x996633,
-            horns: 0x4A3020,           // (not used)
-            ears: 0xCC7722,
-            earInner: 0xFFCCCC,        // Pink inner ear
-            eyes: 0x4A3020,            // Brown eyes
-            tail: 0xAA6610,
-            fur: 0xD4984F              // Fluffy ochre
+            body: "#CC7722",            // Ochre/yellow-brown
+            belly: "#E6B84D",           // Lighter ochre belly
+            legs: "#AA6610",            // Darker ochre legs
+            face: "#CC7722",
+            muzzle: "#996633",
+            horns: "#4A3020",           // (not used)
+            ears: "#CC7722",
+            earInner: "#FFCCCC",        // Pink inner ear
+            eyes: "#4A3020",            // Brown eyes
+            tail: "#AA6610",
+            fur: "#D4984F"              // Fluffy ochre
         }
     },
 
@@ -930,17 +930,17 @@ window.ENEMIES = [
         isHerdAnimal: true,
 
         colors: {
-            body: 0xF5F5DC,            // Beige
-            belly: 0xFFF8E7,           // Lighter beige belly
-            legs: 0xE3D5B8,            // Slightly darker beige legs
-            face: 0xF5F5DC,
-            muzzle: 0xD9C9A8,
-            horns: 0x4A3020,           // (not used)
-            ears: 0xF5F5DC,
-            earInner: 0xFFCCCC,        // Pink inner ear
-            eyes: 0x4A3020,            // Brown eyes
-            tail: 0xE3D5B8,
-            fur: 0xFAF0E6              // Fluffy beige
+            body: "#F5F5DC",            // Beige
+            belly: "#FFF8E7",           // Lighter beige belly
+            legs: "#E3D5B8",            // Slightly darker beige legs
+            face: "#F5F5DC",
+            muzzle: "#D9C9A8",
+            horns: "#4A3020",           // (not used)
+            ears: "#F5F5DC",
+            earInner: "#FFCCCC",        // Pink inner ear
+            eyes: "#4A3020",            // Brown eyes
+            tail: "#E3D5B8",
+            fur: "#FAF0E6"              // Fluffy beige
         }
     },
 
@@ -964,13 +964,13 @@ window.ENEMIES = [
     //
     //     // Can use same colors as regular weasel, or customize:
     //     colors: {
-    //         body: 0x4a2508,        // Darker brown
-    //         snout: 0xd2691e,
-    //         nose: 0x1a1a1a,
-    //         eyes: 0xff0000,        // Red eyes!
-    //         eyeGlow: 0x330000,
-    //         ears: 0x4a2508,
-    //         legs: 0x3a1800
+    //         body: "#4A2508",        // Darker brown
+    //         snout: "#D2691E",
+    //         nose: "#1A1A1A",
+    //         eyes: "#FF0000",        // Red eyes!
+    //         eyeGlow: "#330000",
+    //         ears: "#4A2508",
+    //         legs: "#3A1800"
     //     }
     // }
     //
@@ -988,13 +988,13 @@ window.ENEMIES = [
     //     spawnWeight: 0.3,          // Uncommon
     //     minimapColor: '#ffcc00',   // Yellow dot
     //     colors: {
-    //         body: 0xd2691e,        // Lighter brown
-    //         snout: 0xffa500,
-    //         nose: 0x1a1a1a,
-    //         eyes: 0xffff00,
-    //         eyeGlow: 0x333300,
-    //         ears: 0xd2691e,
-    //         legs: 0xb8860b
+    //         body: "#D2691E",        // Lighter brown
+    //         snout: "#FFA500",
+    //         nose: "#1A1A1A",
+    //         eyes: "#FFFF00",
+    //         eyeGlow: "#333300",
+    //         ears: "#D2691E",
+    //         legs: "#B8860B"
     //     }
     // }
     //
@@ -1012,12 +1012,12 @@ window.ENEMIES = [
     //     spawnWeight: 0.05,         // Extremely rare (5% as common)
     //     minimapColor: '#ff0000',
     //     colors: {
-    //         body: 0x1a1a1a,        // Almost black
-    //         stripes: 0xcccccc,     // Gray stripes
-    //         snout: 0x0a0a0a,
-    //         eyes: 0xff0000,        // Blood red eyes
-    //         eyeGlow: 0x660000,
-    //         legs: 0x0a0a0a
+    //         body: "#1A1A1A",        // Almost black
+    //         stripes: "#CCCCCC",     // Gray stripes
+    //         snout: "#0A0A0A",
+    //         eyes: "#FF0000",        // Blood red eyes
+    //         eyeGlow: "#660000",
+    //         legs: "#0A0A0A"
     //     }
     // }
 

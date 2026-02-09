@@ -2804,10 +2804,17 @@ window.Enemies = (function() {
             return null;
         }
 
-        // Build the 3D model using colors directly from enemy data
-        // Pass isBaby flag for models that support it (like dronglous_cat)
+        // Convert colors from "#hex" strings to 0xhex numbers (if needed)
+        // Data files use "#hex" for VS Code color picker support
+        const colors = {};
+        for (const key in enemyData.colors) {
+            const val = enemyData.colors[key];
+            colors[key] = typeof val === 'string' ? parseInt(val.replace('#', ''), 16) : val;
+        }
+
+        // Build the 3D model using converted colors
         const isBaby = enemyData.isBaby || false;
-        const model = builder(enemyData.colors, isBaby);
+        const model = builder(colors, isBaby);
 
         // Apply size modifier (default to 1 if not specified)
         const size = enemyData.size || 1;
