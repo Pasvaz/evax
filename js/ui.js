@@ -141,16 +141,18 @@ window.UI = (function() {
         const px = (GameState.peccary.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
         const py = (GameState.peccary.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
         ctx.beginPath();
-        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = '#88ff88';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(px, py);
+        // Model faces +X, rotation.y=0 means +X (right on minimap)
+        // Canvas: +X = right, +Y = down (= +Z in world)
         ctx.lineTo(
-            px + Math.sin(GameState.peccary.rotation.y) * 10,
-            py + Math.cos(GameState.peccary.rotation.y) * 10
+            px + Math.cos(GameState.peccary.rotation.y) * 10,
+            py - Math.sin(GameState.peccary.rotation.y) * 10
         );
         ctx.stroke();
     }

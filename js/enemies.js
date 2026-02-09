@@ -16,29 +16,45 @@
  * HOW TO CREATE A NEW ANIMAL 3D MODEL (READ THIS!)
  * ============================================================================
  *
- * RULE 1 — BUILD THE MODEL FACING +Z
- *   The animal's HEAD/SNOUT must point toward +Z (positive Z axis).
- *   - Head position:  (0, y, +something)   e.g. head.position.set(0, 0.5, 0.5)
- *   - Body stretched along Z:              e.g. body.scale.set(1, 0.8, 1.4)
- *   - Front legs at +Z, back legs at -Z
- *   - Tail at -Z
+ * RULE 1 — BUILD THE MODEL FACING +X
+ *   The animal's HEAD/SNOUT must point toward +X (positive X axis).
+ *   - Head position:  (+something, y, 0)   e.g. head.position.set(0.5, 0.5, 0)
+ *   - Body stretched along X:              e.g. body.scale.set(1.4, 0.8, 1)
+ *   - Front legs at +X, back legs at -X
+ *   - Tail at -X
+ *   - Left side at +Z, right side at -Z
  *
- * RULE 2 — SET model.rotation.y = Math.PI AT CREATION
- *   Every model gets rotated 180° after being built.
- *   This is the convention used by ALL animals in this file.
+ * RULE 2 — DO NOT SET ANY INITIAL ROTATION
+ *   Do NOT add model.rotation.y = Math.PI or any other rotation.
+ *   The model faces +X naturally, which matches our rotation formula.
  *
- * RULE 3 — ALWAYS ADD + Math.PI / 2 WHEN SETTING ROTATION FROM MOVEMENT
+ * RULE 3 — USE -Math.atan2(dz, dx) FOR MOVEMENT ROTATION
  *   When making the animal face its walking direction, ALWAYS write:
  *
- *     animal.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+ *     animal.rotation.y = -Math.atan2(dz, dx);
  *
- *   NEVER write this (it will make the animal face 90° to the left!):
+ *   For smooth turning, use:
  *
- *     animal.rotation.y = Math.atan2(dx, dz);  // BUG! Missing offset!
+ *     const targetRotation = -Math.atan2(direction.z, direction.x);
+ *     let diff = targetRotation - enemy.rotation.y;
+ *     while (diff > Math.PI) diff -= Math.PI * 2;
+ *     while (diff < -Math.PI) diff += Math.PI * 2;
+ *     enemy.rotation.y += diff * 0.1;
  *
- *   WHY: Math.atan2(x, z) returns 0 when moving toward +Z, but after
- *   the Math.PI creation rotation, our model's "forward" is offset by
- *   90°. The + Math.PI / 2 corrects for this.
+ *   NEVER use Math.atan2(dx, dz) — that's for +Z facing models!
+ *   NEVER add + Math.PI / 2 — that was the old buggy convention!
+ *
+ *   WHY THIS WORKS: When moving toward +X, atan2(0, 1) = 0, negated = 0.
+ *   rotation.y = 0 means no rotation, so the model faces +X. Perfect match!
+ *
+ * RULE 4 — TO GET FORWARD DIRECTION FROM ROTATION
+ *   If you need to know which way an animal is facing from its rotation:
+ *
+ *     const forward = new THREE.Vector3(
+ *         Math.cos(enemy.rotation.y),
+ *         0,
+ *         -Math.sin(enemy.rotation.y)
+ *     );
  *
  * ============================================================================
  */
@@ -56,6 +72,13 @@ window.Enemies = (function() {
     //   1. Add colors to ANIMAL_TYPES in js/data/enemies.js
     //   2. Add a builder function here (e.g., buildWolfModel)
     //   3. Register it in modelBuilders below
+    //
+    // !! IMPORTANT — MODEL ORIENTATION !!
+    //   - Head/snout must point toward +X (e.g. head.position.set(0.9, 0.5, 0))
+    //   - Body elongated along X (e.g. body.scale.set(1.4, 0.8, 1))
+    //   - DO NOT add model.rotation.y = Math.PI
+    //   - For movement rotation use: -Math.atan2(dz, dx)
+    //   - See full docs at the top of this file
 
     /**
      * Build a badger 3D model.
@@ -130,8 +153,7 @@ window.Enemies = (function() {
             model.add(leg);
         });
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -216,8 +238,7 @@ window.Enemies = (function() {
         tail.position.set(-1, 0.4, 0);
         model.add(tail);
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -242,7 +263,7 @@ window.Enemies = (function() {
         // Body (oval shape)
         const bodyGeo = new THREE.SphereGeometry(0.4, 16, 16);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.scale.set(1, 0.8, 1.4);
+        body.scale.set(1.4, 0.8, 1);
         body.position.y = 0.5;
         body.castShadow = true;
         model.add(body);
@@ -307,8 +328,7 @@ window.Enemies = (function() {
             model.add(foot);
         });
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -338,7 +358,7 @@ window.Enemies = (function() {
         // Body (elongated oval)
         const bodyGeo = new THREE.SphereGeometry(0.35, 16, 16);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.scale.set(1, 0.8, 1.5);
+        body.scale.set(1.5, 0.8, 1);
         body.position.y = 0.55;
         body.castShadow = true;
         model.add(body);
@@ -477,8 +497,7 @@ window.Enemies = (function() {
             });
         });
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -660,8 +679,7 @@ window.Enemies = (function() {
             });
         });
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -764,8 +782,7 @@ window.Enemies = (function() {
         tail.position.set(-0.85, 0.32, 0);
         model.add(tail);
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -1103,8 +1120,7 @@ window.Enemies = (function() {
         tuft.position.set(-1.2, 0.95, 0);
         model.add(tuft);
 
-        // Flip model to face forward (+X direction)
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -1378,8 +1394,7 @@ window.Enemies = (function() {
         tuft.position.set(-0.95, 0.8, 0);
         model.add(tuft);
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -1854,8 +1869,7 @@ window.Enemies = (function() {
             model.add(collar);
         }
 
-        // Flip model to face forward (+X direction)
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -2335,8 +2349,7 @@ window.Enemies = (function() {
         };
 
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -2352,129 +2365,244 @@ window.Enemies = (function() {
     function buildDeericusIricusModel(colors, hasHorns = false, isBaby = false) {
         const model = new THREE.Group();
 
-        // Adjust size for babies
-        const sizeScale = isBaby ? 0.6 : 1.0;
+        // Scale factor for babies
+        const s = isBaby ? 0.6 : 1.0;
 
-        // Body (furry oval)
-        const bodyGeo = new THREE.SphereGeometry(0.4 * sizeScale, 8, 8);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.9 });
+        // Materials
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.85 });
+        const bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.9 });
+        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        const faceMat = new THREE.MeshStandardMaterial({ color: colors.face, roughness: 0.85 });
+        const muzzleMat = new THREE.MeshStandardMaterial({ color: colors.muzzle });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+        const earMat = new THREE.MeshStandardMaterial({ color: colors.ears });
+        const earInnerMat = new THREE.MeshStandardMaterial({ color: colors.earInner || 0xFFB6C1 });
+        const tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.9 });
+
+        model.userData.parts = {};
+
+        // ============================================================
+        // BODY — Compact torso, slightly sloped back
+        // ============================================================
+
+        // Main body (cylinder laid on its side along X)
+        const bodyGeo = new THREE.CylinderGeometry(0.28 * s, 0.25 * s, 0.85 * s, 10);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.scale.set(1, 0.8, 1.4);  // Elongate body
-        body.position.y = 0.4 * sizeScale;
+        body.rotation.z = Math.PI / 2 + 0.08;  // Slight slope: higher at shoulders
+        body.position.set(0, 0.65 * s, 0);
         body.castShadow = true;
         model.add(body);
 
-        // Belly (lighter fur)
-        const bellyGeo = new THREE.SphereGeometry(0.3 * sizeScale, 8, 6);
-        const bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.9 });
+        // Chest (front bulk — deer have sturdy chests)
+        const chestGeo = new THREE.SphereGeometry(0.3 * s, 10, 10);
+        const chest = new THREE.Mesh(chestGeo, bodyMat);
+        chest.scale.set(0.8, 0.9, 0.75);
+        chest.position.set(0.32 * s, 0.7 * s, 0);
+        chest.castShadow = true;
+        model.add(chest);
+
+        // Rump (back end, slightly lower)
+        const rumpGeo = new THREE.SphereGeometry(0.27 * s, 10, 10);
+        const rump = new THREE.Mesh(rumpGeo, bodyMat);
+        rump.scale.set(0.8, 0.85, 0.8);
+        rump.position.set(-0.35 * s, 0.58 * s, 0);
+        rump.castShadow = true;
+        model.add(rump);
+
+        // Belly (lighter underside)
+        const bellyGeo = new THREE.SphereGeometry(0.18 * s, 8, 8);
         const belly = new THREE.Mesh(bellyGeo, bellyMat);
-        belly.scale.set(0.9, 0.7, 1.2);
-        belly.position.set(0, 0.3 * sizeScale, 0);
+        belly.scale.set(1.5, 0.5, 0.7);
+        belly.position.set(0, 0.5 * s, 0);
         model.add(belly);
 
-        // Head (small furry head)
-        const headGeo = new THREE.SphereGeometry(0.25 * sizeScale, 8, 8);
-        const headMat = new THREE.MeshStandardMaterial({ color: colors.face, roughness: 0.9 });
-        const head = new THREE.Mesh(headGeo, headMat);
-        head.position.set(0, 0.5 * sizeScale, 0.5 * sizeScale);
-        head.castShadow = true;
-        model.add(head);
+        // ============================================================
+        // NECK — Graceful, angled upward
+        // ============================================================
 
-        // Muzzle (small snout)
-        const muzzleGeo = new THREE.CylinderGeometry(0.08 * sizeScale, 0.1 * sizeScale, 0.15 * sizeScale, 6);
-        const muzzleMat = new THREE.MeshStandardMaterial({ color: colors.muzzle });
-        const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
-        muzzle.rotation.x = Math.PI / 2;
-        muzzle.position.set(0, 0.48 * sizeScale, 0.65 * sizeScale);
-        model.add(muzzle);
+        const neckGroup = new THREE.Group();
+        neckGroup.position.set(0.38 * s, 0.75 * s, 0);
+        model.add(neckGroup);
+        model.userData.parts.neckGroup = neckGroup;
 
-        // Ears (pointy)
-        const earGeo = new THREE.ConeGeometry(0.08 * sizeScale, 0.15 * sizeScale, 4);
-        const earMat = new THREE.MeshStandardMaterial({ color: colors.ears });
+        const neckGeo = new THREE.CylinderGeometry(0.08 * s, 0.13 * s, 0.45 * s, 8);
+        const neck = new THREE.Mesh(neckGeo, bodyMat);
+        neck.rotation.z = -0.4;  // Angled forward and up
+        neck.position.set(0.1 * s, 0.2 * s, 0);
+        neck.castShadow = true;
+        neckGroup.add(neck);
 
-        const earLeft = new THREE.Mesh(earGeo, earMat);
-        earLeft.position.set(-0.15 * sizeScale, 0.65 * sizeScale, 0.45 * sizeScale);
-        earLeft.rotation.z = -0.3;
-        model.add(earLeft);
+        // ============================================================
+        // HEAD — Small, narrow deer face on a head group for animation
+        // ============================================================
 
-        const earRight = new THREE.Mesh(earGeo, earMat);
-        earRight.position.set(0.15 * sizeScale, 0.65 * sizeScale, 0.45 * sizeScale);
-        earRight.rotation.z = 0.3;
-        model.add(earRight);
+        const headGroup = new THREE.Group();
+        headGroup.position.set(0.25 * s, 0.42 * s, 0);
+        neckGroup.add(headGroup);
+        model.userData.parts.headGroup = headGroup;
 
-        // Eyes
-        const eyeGeo = new THREE.SphereGeometry(0.04 * sizeScale, 6, 6);
-        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+        // Skull
+        const skullGeo = new THREE.SphereGeometry(0.13 * s, 10, 10);
+        const skull = new THREE.Mesh(skullGeo, faceMat);
+        skull.scale.set(1.1, 0.9, 0.85);
+        skull.castShadow = true;
+        headGroup.add(skull);
 
-        const eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
-        eyeLeft.position.set(-0.12 * sizeScale, 0.55 * sizeScale, 0.6 * sizeScale);
-        model.add(eyeLeft);
+        // Muzzle — elongated deer snout pointing forward (+X)
+        const muzzleGeo = new THREE.CylinderGeometry(0.055 * s, 0.075 * s, 0.16 * s, 8);
+        const muzzle = new THREE.Mesh(muzzleGeo, faceMat);
+        muzzle.rotation.z = -Math.PI / 2 - 0.15;  // Point forward, slight downward angle
+        muzzle.position.set(0.14 * s, -0.03 * s, 0);
+        headGroup.add(muzzle);
 
-        const eyeRight = new THREE.Mesh(eyeGeo, eyeMat);
-        eyeRight.position.set(0.12 * sizeScale, 0.55 * sizeScale, 0.6 * sizeScale);
-        model.add(eyeRight);
+        // Nose (dark tip)
+        const noseGeo = new THREE.SphereGeometry(0.035 * s, 6, 6);
+        const nose = new THREE.Mesh(noseGeo, muzzleMat);
+        nose.scale.set(1.2, 0.8, 1);
+        nose.position.set(0.21 * s, -0.05 * s, 0);
+        headGroup.add(nose);
 
-        // Horns (only for adult males)
+        // Eyes — large, expressive, side-facing (deer hallmark)
+        const eyeOuterGeo = new THREE.SphereGeometry(0.035 * s, 8, 8);
+        const eyeOuterMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        const eyeInnerGeo = new THREE.SphereGeometry(0.02 * s, 8, 8);
+
+        [-1, 1].forEach(side => {
+            const eyeOuter = new THREE.Mesh(eyeOuterGeo, eyeOuterMat);
+            eyeOuter.position.set(0.06 * s, 0.02 * s, side * 0.1 * s);
+            headGroup.add(eyeOuter);
+
+            const eyeInner = new THREE.Mesh(eyeInnerGeo, eyeMat);
+            eyeInner.position.set(0.075 * s, 0.025 * s, side * 0.105 * s);
+            headGroup.add(eyeInner);
+        });
+
+        // Ears — BIG leaf-shaped ears (THE deer signature feature!)
+        [-1, 1].forEach(side => {
+            const earGroup = new THREE.Group();
+            earGroup.position.set(-0.02 * s, 0.11 * s, side * 0.07 * s);
+
+            // Outer ear (tall cone, angled outward)
+            const outerEarGeo = new THREE.ConeGeometry(0.055 * s, 0.2 * s, 6);
+            const outerEar = new THREE.Mesh(outerEarGeo, earMat);
+            outerEar.rotation.x = side * -0.6;   // Splay outward
+            outerEar.rotation.z = -0.25;          // Tilt back slightly
+            earGroup.add(outerEar);
+
+            // Inner ear (pink, slightly smaller)
+            const innerEarGeo = new THREE.ConeGeometry(0.035 * s, 0.15 * s, 6);
+            const innerEar = new THREE.Mesh(innerEarGeo, earInnerMat);
+            innerEar.rotation.x = side * -0.6;
+            innerEar.rotation.z = -0.25;
+            innerEar.position.set(0.005 * s, 0, side * 0.005 * s);
+            earGroup.add(innerEar);
+
+            headGroup.add(earGroup);
+        });
+
+        // ============================================================
+        // ANTLERS — Branching deer antlers (adult males only)
+        // Real deer antlers branch like little trees!
+        // ============================================================
+
         if (hasHorns && !isBaby) {
-            const hornGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.3, 4);
-            const hornMat = new THREE.MeshStandardMaterial({ color: colors.horns, roughness: 0.7 });
+            const antlerMat = new THREE.MeshStandardMaterial({ color: colors.horns, roughness: 0.7 });
 
-            const hornLeft = new THREE.Mesh(hornGeo, hornMat);
-            hornLeft.position.set(-0.1, 0.75, 0.4);
-            hornLeft.rotation.z = -0.4;
-            hornLeft.rotation.x = -0.2;
-            hornLeft.castShadow = true;
-            model.add(hornLeft);
+            [-1, 1].forEach(side => {
+                const antlerGroup = new THREE.Group();
+                antlerGroup.position.set(-0.02 * s, 0.12 * s, side * 0.05 * s);
 
-            const hornRight = new THREE.Mesh(hornGeo, hornMat);
-            hornRight.position.set(0.1, 0.75, 0.4);
-            hornRight.rotation.z = 0.4;
-            hornRight.rotation.x = -0.2;
-            hornRight.castShadow = true;
-            model.add(hornRight);
+                // Main beam (the tall central antler, curves back)
+                const beamGeo = new THREE.CylinderGeometry(0.012, 0.022, 0.22, 5);
+                const beam = new THREE.Mesh(beamGeo, antlerMat);
+                beam.rotation.z = -0.25;
+                beam.rotation.x = side * -0.2;
+                beam.position.set(-0.01, 0.11, side * 0.015);
+                beam.castShadow = true;
+                antlerGroup.add(beam);
+
+                // First tine (forward prong, lower)
+                const tine1Geo = new THREE.CylinderGeometry(0.008, 0.015, 0.1, 4);
+                const tine1 = new THREE.Mesh(tine1Geo, antlerMat);
+                tine1.rotation.z = 0.5;
+                tine1.rotation.x = side * -0.15;
+                tine1.position.set(0.02, 0.1, side * 0.015);
+                antlerGroup.add(tine1);
+
+                // Second tine (upper prong, branching backward)
+                const tine2Geo = new THREE.CylinderGeometry(0.006, 0.012, 0.08, 4);
+                const tine2 = new THREE.Mesh(tine2Geo, antlerMat);
+                tine2.rotation.z = -0.7;
+                tine2.rotation.x = side * -0.3;
+                tine2.position.set(-0.04, 0.19, side * 0.025);
+                antlerGroup.add(tine2);
+
+                headGroup.add(antlerGroup);
+            });
         }
 
-        // Legs (4 thin legs)
-        const legGeo = new THREE.CylinderGeometry(0.05 * sizeScale, 0.04 * sizeScale, 0.4 * sizeScale, 4);
-        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        // ============================================================
+        // LEGS — Long, slender deer legs with hooves
+        // Deer have elegant thin legs — much thinner than their body
+        // ============================================================
 
         const legPositions = [
-            { x: -0.15, z: 0.25 },  // Front left
-            { x: 0.15, z: 0.25 },   // Front right
-            { x: -0.15, z: -0.25 }, // Back left
-            { x: 0.15, z: -0.25 }   // Back right
+            { x: 0.28, z: 0.11 },   // Front left
+            { x: 0.28, z: -0.11 },  // Front right
+            { x: -0.28, z: 0.11 },  // Back left
+            { x: -0.28, z: -0.11 }  // Back right
         ];
 
         model.userData.legs = [];
-        legPositions.forEach((pos, i) => {
+        legPositions.forEach((pos) => {
             const legGroup = new THREE.Group();
-            const leg = new THREE.Mesh(legGeo, legMat);
-            leg.position.y = 0.2 * sizeScale;
-            leg.castShadow = true;
-            legGroup.add(leg);
-            legGroup.position.set(pos.x * sizeScale, 0, pos.z * sizeScale);
+            legGroup.position.set(pos.x * s, 0.32 * s, pos.z * s);
+
+            // Upper leg
+            const upperGeo = new THREE.CylinderGeometry(0.035 * s, 0.045 * s, 0.28 * s, 6);
+            const upper = new THREE.Mesh(upperGeo, legMat);
+            upper.position.y = 0;
+            upper.castShadow = true;
+            legGroup.add(upper);
+
+            // Lower leg (thinner — deer have very slender lower legs)
+            const lowerGeo = new THREE.CylinderGeometry(0.02 * s, 0.035 * s, 0.22 * s, 6);
+            const lower = new THREE.Mesh(lowerGeo, legMat);
+            lower.position.y = -0.23 * s;
+            lower.castShadow = true;
+            legGroup.add(lower);
+
+            // Hoof (small, dark)
+            const hoofGeo = new THREE.CylinderGeometry(0.025 * s, 0.03 * s, 0.035 * s, 6);
+            const hoofMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a });
+            const hoof = new THREE.Mesh(hoofGeo, hoofMat);
+            hoof.position.y = -0.35 * s;
+            legGroup.add(hoof);
+
             model.add(legGroup);
-            model.userData.legs.push({ group: legGroup, mesh: leg });
+            model.userData.legs.push({ group: legGroup, mesh: upper });
         });
 
-        // Tail (short fluffy tail)
-        const tailGeo = new THREE.SphereGeometry(0.08 * sizeScale, 6, 6);
-        const tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.9 });
+        // ============================================================
+        // TAIL — Small fluffy tail, slightly upright
+        // ============================================================
+
+        const tailGroup = new THREE.Group();
+        tailGroup.position.set(-0.42 * s, 0.62 * s, 0);
+        model.add(tailGroup);
+
+        const tailGeo = new THREE.ConeGeometry(0.035 * s, 0.1 * s, 6);
         const tail = new THREE.Mesh(tailGeo, tailMat);
-        tail.scale.set(0.8, 1, 0.6);
-        tail.position.set(0, 0.45 * sizeScale, -0.5 * sizeScale);
-        model.add(tail);
-        model.userData.tail = tail;
+        tail.rotation.z = 0.4;  // Angled slightly upward
+        tail.position.set(-0.02 * s, 0.02 * s, 0);
+        tailGroup.add(tail);
+        model.userData.tail = tailGroup;
 
         // Store model parts for animation
-        model.userData.parts = {
-            body: body,
-            head: head,
-            tail: tail
-        };
+        model.userData.parts.body = body;
+        model.userData.parts.tail = tailGroup;
 
-        // Flip model to face forward
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed (see docs at top of file)
 
         return model;
     }
@@ -2626,6 +2754,7 @@ window.Enemies = (function() {
     // ========================================================================
     // Maps animal type names to their builder functions.
     // To add a new animal: add the builder function above, then register here.
+    // Remember: model must face +X, no Math.PI rotation, use -atan2(dz, dx)!
 
     const modelBuilders = {
         badger: buildBadgerModel,
@@ -2707,9 +2836,14 @@ window.Enemies = (function() {
             groundY: groundY,                 // Store for later use in updateEnemies
             // Behavior flags from data
             friendly: enemyData.friendly || false,
-            attacksEnemies: enemyData.attacksEnemies || false,
+            defendsNest: enemyData.defendsNest || false,
             attackRange: enemyData.attackRange || 0,
-            immuneToWater: enemyData.immuneToWater || false
+            immuneToWater: enemyData.immuneToWater || false,
+            chaseSpeed: enemyData.chaseSpeed ? enemyData.chaseSpeed + Math.random() * enemyData.speedVariation : 0,
+            fleeSpeed: enemyData.fleeSpeed ? enemyData.fleeSpeed + Math.random() * enemyData.speedVariation : 0,
+            dodgeChance: enemyData.dodgeChance || 0,
+            canStealEggs: enemyData.canStealEggs || false,
+            fightsNestGuards: enemyData.fightsNestGuards || false
         };
 
         return enemy;
@@ -2767,11 +2901,15 @@ window.Enemies = (function() {
     function spawnEnemy() {
         if (GameState.enemies.length >= CONFIG.MAX_ENEMIES) return;
 
-        // Pick spawn position at world edge
-        const angle = Math.random() * Math.PI * 2;
-        const distance = CONFIG.WORLD_SIZE * 0.4 + Math.random() * 20;
-        const ex = Math.cos(angle) * distance;
-        const ez = Math.sin(angle) * distance;
+        // Pick random position across the map, avoiding the village
+        const worldLimit = CONFIG.WORLD_SIZE * 0.45;
+        let ex, ez;
+        let attempts = 0;
+        do {
+            ex = (Math.random() - 0.5) * 2 * worldLimit;
+            ez = (Math.random() - 0.5) * 2 * worldLimit;
+            attempts++;
+        } while (attempts < 20 && Environment.isInVillage && Environment.isInVillage(ex, ez));
 
         // Pick a random enemy type (weighted)
         const enemyData = pickRandomEnemy();
@@ -2858,6 +2996,8 @@ window.Enemies = (function() {
             } else if (animalType === 'saltas_gazella') {
                 enemy.userData.lifecycleState = 'grazing';
                 enemy.userData.isRideable = true;
+            } else if (animalType === 'deericus_iricus') {
+                enemy.userData.lifecycleState = 'idle';
             }
 
             GameState.enemies.push(enemy);
@@ -2884,17 +3024,31 @@ window.Enemies = (function() {
             return;
         }
 
+        // Get river points to sample near the river instead of randomly across the whole map
+        const riverPoints = Environment.getRiverPoints ? Environment.getRiverPoints() : [];
+
         let spawned = 0;
         let attempts = 0;
-        const maxAttempts = count * 20;
+        const maxAttempts = count * 50;
 
         while (spawned < count && attempts < maxAttempts) {
             attempts++;
 
-            // Pick a random position near the river
-            const worldSize = CONFIG.WORLD_SIZE;
-            const x = (Math.random() - 0.5) * worldSize * 0.8;
-            const z = (Math.random() - 0.5) * worldSize * 0.8;
+            let x, z;
+            if (riverPoints.length > 1) {
+                // Pick a random point along the river and offset to the side (riverbank)
+                const idx = Math.floor(Math.random() * (riverPoints.length - 1));
+                const p = riverPoints[idx];
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 10 + Math.random() * 8; // 10-18 units from river center
+                x = p.x + Math.cos(angle) * dist;
+                z = p.z + Math.sin(angle) * dist;
+            } else {
+                // Fallback: random position across the map
+                const worldSize = CONFIG.WORLD_SIZE;
+                x = (Math.random() - 0.5) * worldSize * 0.8;
+                z = (Math.random() - 0.5) * worldSize * 0.8;
+            }
 
             // Check if on riverbank (near river but not in it)
             if (Environment.isOnRiverbank && Environment.isOnRiverbank(x, z)) {
@@ -2914,7 +3068,7 @@ window.Enemies = (function() {
             }
         }
 
-        console.log('Spawned', spawned, 'geese on riverbank');
+        console.log('Spawned', spawned, 'geese on riverbank (attempts:', attempts, ')');
     }
 
     // ========================================================================
@@ -4116,7 +4270,7 @@ window.Enemies = (function() {
         const dz = Math.sin(deer.userData.wanderAngle) * speed * delta;
         deer.position.x += dx;
         deer.position.z += dz;
-        deer.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+        deer.rotation.y = -Math.atan2(dz, dx);
     }
 
     function updateDeerSeekingGrass(deer, delta) {
@@ -4137,7 +4291,7 @@ window.Enemies = (function() {
         const moveZ = Math.sin(angle) * speed * delta;
         deer.position.x += moveX;
         deer.position.z += moveZ;
-        deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+        deer.rotation.y = -Math.atan2(moveZ, moveX);
     }
 
     function updateDeerGrazing(deer, delta) {
@@ -4172,7 +4326,7 @@ window.Enemies = (function() {
         const moveZ = Math.sin(angle) * speed * delta;
         deer.position.x += moveX;
         deer.position.z += moveZ;
-        deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+        deer.rotation.y = -Math.atan2(moveZ, moveX);
     }
 
     function updateDeerFollowingParent(deer, delta) {
@@ -4193,7 +4347,7 @@ window.Enemies = (function() {
             const moveZ = Math.sin(angle) * speed * delta;
             deer.position.x += moveX;
             deer.position.z += moveZ;
-            deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+            deer.rotation.y = -Math.atan2(moveZ, moveX);
         }
     }
 
@@ -4254,7 +4408,7 @@ window.Enemies = (function() {
         const moveZ = Math.sin(angle) * speed * delta;
         deer.position.x += moveX;
         deer.position.z += moveZ;
-        deer.rotation.y = Math.atan2(moveX, moveZ) + Math.PI / 2;
+        deer.rotation.y = -Math.atan2(moveZ, moveX);
         if (!deer.userData.zigzagTimer) deer.userData.zigzagTimer = 0;
         deer.userData.zigzagTimer += delta;
         if (deer.userData.zigzagTimer > 1) {
@@ -4271,7 +4425,7 @@ window.Enemies = (function() {
         const dx = target.position.x - deer.position.x;
         const dz = target.position.z - deer.position.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
-        deer.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+        deer.rotation.y = -Math.atan2(dz, dx);
         if (dist < 2) {
             if (!deer.userData.lastKickTime) deer.userData.lastKickTime = 0;
             deer.userData.lastKickTime += delta;
@@ -4460,6 +4614,18 @@ window.Enemies = (function() {
     // ========================================================================
     // UPDATE ENEMIES (AI & MOVEMENT)
     // ========================================================================
+    // BEHAVIOR FLAGS — data-driven, defined in js/data/enemies.js
+    // ----------------------------------------------------------------
+    // friendly: true         — Does NOT attack the player
+    // defendsNest: true      — Patrols and attacks hostile animals near nests
+    // canStealEggs: true     — Seeks out nests, creeps up, steals eggs, flees
+    // fightsNestGuards: true — Fights back when nest-guarding animals attack
+    // dodgeChance: 0.15      — % chance to dodge incoming attacks
+    // immuneToWater: true    — Not slowed down by water
+    // chaseSpeed: N          — Sprint speed when chasing a target
+    // fleeSpeed: N           — Sprint speed when fleeing
+    // attackRange: N         — Detection range for defendsNest animals
+    // ----------------------------------------------------------------
     /**
      * Update all enemies - AI behavior, movement, and collision.
      * @param {number} delta - Time since last frame
@@ -4507,10 +4673,21 @@ window.Enemies = (function() {
                 if (state === 'finding_nest') {
                     // Find a random riverbank position and move toward it
                     if (!enemy.userData.targetNestPos) {
-                        // Find a riverbank spot
-                        for (let attempt = 0; attempt < 20; attempt++) {
-                            const rx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8;
-                            const rz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8;
+                        // Sample near river points for better hit rate
+                        const rp = Environment.getRiverPoints ? Environment.getRiverPoints() : [];
+                        for (let attempt = 0; attempt < 30; attempt++) {
+                            let rx, rz;
+                            if (rp.length > 1) {
+                                const idx = Math.floor(Math.random() * (rp.length - 1));
+                                const p = rp[idx];
+                                const angle = Math.random() * Math.PI * 2;
+                                const dist = 10 + Math.random() * 8;
+                                rx = p.x + Math.cos(angle) * dist;
+                                rz = p.z + Math.sin(angle) * dist;
+                            } else {
+                                rx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8;
+                                rz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8;
+                            }
                             if (Environment.isOnRiverbank(rx, rz) && !Environment.isInVillage(rx, rz)) {
                                 enemy.userData.targetNestPos = { x: rx, z: rz };
                                 break;
@@ -4768,8 +4945,8 @@ window.Enemies = (function() {
                     }
                 }
             }
-            // Friendly enemies that attack other enemies (like geese without lifecycle)
-            else if (enemy.userData.attacksEnemies) {
+            // Nest-defending animals that patrol and attack hostile enemies
+            else if (enemy.userData.defendsNest) {
                 // Find closest hostile enemy to attack
                 let closestEnemy = null;
                 let closestEnemyDist = enemy.userData.attackRange;
@@ -5283,10 +5460,9 @@ window.Enemies = (function() {
 
                     // Face hop direction
                     if (enemy.userData.hopTarget) {
-                        const targetAngle = Math.atan2(
-                            enemy.userData.hopTarget.x - enemy.position.x,
-                            enemy.userData.hopTarget.z - enemy.position.z
-                        ) + Math.PI / 2;
+                        const dx = enemy.userData.hopTarget.x - enemy.position.x;
+                        const dz = enemy.userData.hopTarget.z - enemy.position.z;
+                        const targetAngle = -Math.atan2(dz, dx);
                         enemy.rotation.y = targetAngle;
                     }
 
@@ -5394,7 +5570,7 @@ window.Enemies = (function() {
                     enemy.position.z += direction.z * speed * delta;
 
                     // Face flee direction
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    const targetRotation = -Math.atan2(direction.z, direction.x);
                     let diff = targetRotation - enemy.rotation.y;
                     while (diff > Math.PI) diff -= Math.PI * 2;
                     while (diff < -Math.PI) diff += Math.PI * 2;
@@ -5761,7 +5937,7 @@ window.Enemies = (function() {
                     enemy.position.z += direction.z * speed * delta;
 
                     // Face movement direction
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    const targetRotation = -Math.atan2(direction.z, direction.x);
                     let currentRotation = enemy.rotation.y;
                     let diff = targetRotation - currentRotation;
                     while (diff > Math.PI) diff -= Math.PI * 2;
@@ -6064,10 +6240,11 @@ window.Enemies = (function() {
                         }
                     } else {
                         // No flee direction, just run forward
+                        // For +X facing model: forward = (cos(theta), 0, -sin(theta))
                         direction = new THREE.Vector3(
-                            Math.sin(enemy.rotation.y),
+                            Math.cos(enemy.rotation.y),
                             0,
-                            Math.cos(enemy.rotation.y)
+                            -Math.sin(enemy.rotation.y)
                         );
                         speed = enemy.userData.speed * 1.5;
                     }
@@ -6098,7 +6275,7 @@ window.Enemies = (function() {
                         const toRival = new THREE.Vector3()
                             .subVectors(rival.position, enemy.position)
                             .normalize();
-                        enemy.rotation.y = Math.atan2(toRival.x, toRival.z) + Math.PI / 2;
+                        enemy.rotation.y = -Math.atan2(toRival.z, toRival.x);
 
                         console.log('HORNS LOCKED! Battle begins!');
                     } else {
@@ -6149,8 +6326,8 @@ window.Enemies = (function() {
                         rival.position.z -= pushDir.z * pushAmount * delta * 2;
 
                         // Keep them facing each other
-                        enemy.rotation.y = Math.atan2(pushDir.x, pushDir.z) + Math.PI / 2;
-                        rival.rotation.y = Math.atan2(-pushDir.x, -pushDir.z) + Math.PI / 2;
+                        enemy.rotation.y = -Math.atan2(pushDir.z, pushDir.x);
+                        rival.rotation.y = -Math.atan2(-pushDir.z, -pushDir.x);
 
                         // Battle animation - legs bracing, body straining
                         const strainAmount = Math.abs(Math.sin(enemy.userData.ruttingPushPhase * 2)) * 0.1;
@@ -6244,7 +6421,7 @@ window.Enemies = (function() {
                     enemy.position.z += direction.z * speed * delta;
 
                     // Face movement direction (very smooth turning)
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    const targetRotation = -Math.atan2(direction.z, direction.x);
                     let currentRotation = enemy.rotation.y;
                     let diff = targetRotation - currentRotation;
                     while (diff > Math.PI) diff -= Math.PI * 2;
@@ -6472,7 +6649,7 @@ window.Enemies = (function() {
                         direction = new THREE.Vector3()
                             .subVectors(target.position, enemy.position)
                             .normalize();
-                        speed = enemy.userData.speed * 1.5;  // Sprint chase!
+                        speed = enemy.userData.chaseSpeed || enemy.userData.speed;  // Sprint chase!
                     }
                 }
 
@@ -6634,7 +6811,7 @@ window.Enemies = (function() {
                     direction = new THREE.Vector3()
                         .subVectors(target.position, enemy.position)
                         .normalize();
-                    speed = enemy.userData.speed * 1.5;  // Sprint hunting speed!
+                    speed = enemy.userData.chaseSpeed || enemy.userData.speed;  // Sprint hunting speed!
 
                     // Make antelope flee if not already
                     if (!target.userData.isFleeing) {
@@ -6749,7 +6926,7 @@ window.Enemies = (function() {
                     // Face target
                     const toTarget = new THREE.Vector3()
                         .subVectors(target.position, enemy.position);
-                    enemy.rotation.y = Math.atan2(toTarget.x, toTarget.z) + Math.PI / 2;
+                    enemy.rotation.y = -Math.atan2(toTarget.z, toTarget.x);
 
                     // Only leader processes takedown
                     if (enemy === hunt.leader) {
@@ -6921,9 +7098,9 @@ window.Enemies = (function() {
 
                 // Always face movement direction when moving (even at slow speeds)
                 // This fixes the pack not rotating to their movement direction
-                // Add Math.PI / 2 offset because the model is built facing +X but we want it to face +Z
+                // Model faces +X, so use -atan2(dz, dx) for correct rotation
                 if (direction && (direction.x !== 0 || direction.z !== 0)) {
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    const targetRotation = -Math.atan2(direction.z, direction.x);
                     let diff = targetRotation - enemy.rotation.y;
                     while (diff > Math.PI) diff -= Math.PI * 2;
                     while (diff < -Math.PI) diff += Math.PI * 2;
@@ -7308,8 +7485,8 @@ window.Enemies = (function() {
                     enemy.position.z = Math.max(-border, Math.min(border, enemy.position.z));
 
                     // Face movement direction
-                    // Add Math.PI / 2 offset because the model is built facing +X
-                    const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                    // Model faces +X, so use -atan2(dz, dx) for correct rotation
+                    const targetRotation = -Math.atan2(direction.z, direction.x);
                     let diff = targetRotation - enemy.rotation.y;
                     while (diff > Math.PI) diff -= Math.PI * 2;
                     while (diff < -Math.PI) diff += Math.PI * 2;
@@ -7350,17 +7527,18 @@ window.Enemies = (function() {
 
                 continue;
             }
-            // Fox-specific behavior - egg stealing with creeping
-            else if (enemy.userData.id === 'fox') {
-                // Initialize fox state if needed
-                if (!enemy.userData.foxState) {
-                    enemy.userData.foxState = 'hunting'; // hunting, creeping, fleeing
+            // Egg-stealing behavior — any animal with canStealEggs: true
+            // (Fox has unique creeping animation, but the decision logic is generic)
+            else if (enemy.userData.canStealEggs) {
+                // Initialize egg-thief state if needed
+                if (!enemy.userData.eggThiefState) {
+                    enemy.userData.eggThiefState = 'hunting'; // hunting, creeping, fleeing
                     enemy.userData.targetNest = null;
                     enemy.userData.isCreeping = false;
                     enemy.userData.stolenEgg = false;
                 }
 
-                const foxState = enemy.userData.foxState;
+                const eggThiefState = enemy.userData.eggThiefState;
 
                 // Find nearest nest with an egg
                 let nearestNestWithEgg = null;
@@ -7379,65 +7557,62 @@ window.Enemies = (function() {
                     }
                 }
 
-                // Check if any goose is nearby and hostile
-                let nearbyGoose = null;
-                let nearbyGooseDist = 15;
+                // Check if any nest-defending animal is nearby (e.g. geese)
+                let nearbyGuard = null;
+                let nearbyGuardDist = 15;
                 for (const other of GameState.enemies) {
-                    if (other.userData.id === 'goose' && other !== enemy) {
+                    if (other !== enemy && other.userData.defendsNest) {
                         const dist = enemy.position.distanceTo(other.position);
-                        if (dist < nearbyGooseDist) {
-                            nearbyGooseDist = dist;
-                            nearbyGoose = other;
+                        if (dist < nearbyGuardDist) {
+                            nearbyGuardDist = dist;
+                            nearbyGuard = other;
                         }
                     }
                 }
 
                 // Apply creeping or walking animation
                 if (enemy.userData.isCreeping) {
-                    // Creeping pose - legs bent, body low
-                    const model = enemy.children[0];
-                    if (model && model.userData.legs) {
-                        model.userData.legs.forEach(leg => {
-                            // Model is flipped, use Z axis for front/back rotation
-                            // Upper leg tilts backward
-                            leg.group.rotation.z = Math.PI / 4;
-                            // Lower leg bends forward
-                            leg.lowerLegGroup.rotation.z = -Math.PI / 4;
-                        });
+                    // Fox-specific creeping pose (other animals just move slowly)
+                    if (enemy.userData.type === 'fox') {
+                        const model = enemy.children[0];
+                        if (model && model.userData.legs) {
+                            model.userData.legs.forEach(leg => {
+                                leg.group.rotation.z = Math.PI / 4;
+                                leg.lowerLegGroup.rotation.z = -Math.PI / 4;
+                            });
+                        }
+                        const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                        enemy.position.y = terrainY + (enemy.userData.groundY || 0.3) - 0.15;
                     }
-                    // Lower body position when creeping
-                    const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
-                    enemy.position.y = terrainY + (enemy.userData.groundY || 0.3) - 0.15;
-                    speed = enemy.userData.speed * 0.4; // Much slower when creeping
-                } else {
-                    // Walking animation with diagonal gait
+                    speed = enemy.userData.speed * 0.4; // All egg-thieves move slow when creeping
+                } else if (enemy.userData.type === 'fox') {
+                    // Fox-specific walking/sprinting animation with diagonal gait
                     const model = enemy.children[0];
                     if (model && model.userData.legs) {
-                        // Calculate leg swing based on time and speed
-                        const walkCycle = GameState.clock.elapsedTime * 8; // Walking speed
-                        const swingAngle = Math.PI / 4; // 45 degrees
+                        const isChasing = enemy.userData.isChasing;
+                        const cycleSpeed = isChasing ? 18 : 8;
+                        const swingAngle = isChasing ? Math.PI / 3 : Math.PI / 4;
+                        const kneeIntensity = isChasing ? 0.6 : 0.3;
+                        const walkCycle = GameState.clock.elapsedTime * cycleSpeed;
 
                         model.userData.legs.forEach(leg => {
-                            // Diagonal gait: pair A (front left + back right) and pair B (front right + back left)
-                            // move in opposite phases
                             const phase = leg.diagonalPair === 'A' ? 0 : Math.PI;
                             const swing = Math.sin(walkCycle + phase) * swingAngle;
 
-                            // Walking: legs swing forward/backward
-                            // Model is flipped (rotation.y = PI), so use rotation.z for front/back swing
                             leg.group.rotation.z = swing;
 
-                            // Lower leg bends slightly when lifting
-                            const kneeBend = Math.max(0, Math.sin(walkCycle + phase + 0.5)) * 0.3;
+                            const kneeBend = Math.max(0, Math.sin(walkCycle + phase + 0.5)) * kneeIntensity;
                             leg.lowerLegGroup.rotation.z = -kneeBend;
                         });
                     }
-                    // Use groundY for proper positioning
                     const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
-                    enemy.position.y = terrainY + (enemy.userData.groundY || 0.3);
+                    const baseY = terrainY + (enemy.userData.groundY || 0.3);
+                    const bobSpeed = enemy.userData.isChasing ? 18 : 10;
+                    const bobHeight = enemy.userData.isChasing ? 0.12 : 0.04;
+                    enemy.position.y = baseY + Math.abs(Math.sin(GameState.clock.elapsedTime * bobSpeed)) * bobHeight;
                 }
 
-                if (foxState === 'hunting') {
+                if (eggThiefState === 'hunting') {
                     // Look for nests with eggs to steal
                     if (nearestNestWithEgg && nearestNestDist < CONFIG.ENEMY_DETECTION_RANGE) {
                         enemy.userData.targetNest = nearestNestWithEgg;
@@ -7445,7 +7620,7 @@ window.Enemies = (function() {
                         // Start creeping when getting close to nest
                         if (nearestNestDist < 20) {
                             enemy.userData.isCreeping = true;
-                            enemy.userData.foxState = 'creeping';
+                            enemy.userData.eggThiefState = 'creeping';
                         }
 
                         // Move toward nest
@@ -7471,7 +7646,8 @@ window.Enemies = (function() {
                             direction = new THREE.Vector3()
                                 .subVectors(targetBaby.position, enemy.position)
                                 .normalize();
-                            speed = enemy.userData.speed * 1.2;
+                            speed = enemy.userData.chaseSpeed || enemy.userData.speed;
+                            enemy.userData.isChasing = true;
 
                             // Attack baby on contact
                             if (closestBabyDist < enemy.userData.radius + targetBaby.userData.radius) {
@@ -7488,12 +7664,14 @@ window.Enemies = (function() {
                                 }
                             }
                         } else if (distance < CONFIG.ENEMY_DETECTION_RANGE) {
-                            // Chase player
+                            // Chase player — sprint!
                             direction = new THREE.Vector3()
                                 .subVectors(GameState.peccary.position, enemy.position)
                                 .normalize();
-                            speed = enemy.userData.speed;
+                            speed = enemy.userData.chaseSpeed || enemy.userData.speed;
+                            enemy.userData.isChasing = true;
                         } else {
+                            enemy.userData.isChasing = false;
                             // Wander
                             enemy.userData.wanderTime += delta;
                             if (enemy.userData.wanderTime > 2 + Math.random() * 2) {
@@ -7504,7 +7682,7 @@ window.Enemies = (function() {
                             direction = enemy.userData.wanderDir;
                         }
                     }
-                } else if (foxState === 'creeping') {
+                } else if (eggThiefState === 'creeping') {
                     // Creeping toward nest to steal egg
                     enemy.userData.isCreeping = true;
                     const targetNest = enemy.userData.targetNest;
@@ -7513,11 +7691,11 @@ window.Enemies = (function() {
                         const nestVec = new THREE.Vector3(targetNest.position.x, 0, targetNest.position.z);
                         const distToNest = enemy.position.distanceTo(nestVec);
 
-                        // If goose spots the fox while creeping, flee!
-                        if (nearbyGoose && nearbyGooseDist < 10) {
-                            enemy.userData.foxState = 'fleeing';
+                        // If a nest guard spots the thief while creeping, flee!
+                        if (nearbyGuard && nearbyGuardDist < 10) {
+                            enemy.userData.eggThiefState = 'fleeing';
                             enemy.userData.isCreeping = false;
-                            enemy.userData.fleeFrom = nearbyGoose;
+                            enemy.userData.fleeFrom = nearbyGuard;
                         } else if (distToNest < 1.5) {
                             // Steal the egg!
                             if (targetNest.egg.mesh) {
@@ -7529,16 +7707,16 @@ window.Enemies = (function() {
                             targetNest.state = 'empty';
 
                             enemy.userData.stolenEgg = true;
-                            enemy.userData.foxState = 'fleeing';
+                            enemy.userData.eggThiefState = 'fleeing';
                             enemy.userData.isCreeping = false;
 
-                            // Parent goose becomes hostile to this fox
-                            const parentGoose = GameState.enemies.find(e => e.userData.entityId === targetNest.ownerId);
-                            if (parentGoose) {
-                                parentGoose.userData.targetFox = enemy;
+                            // Alert the nest owner that their egg was stolen
+                            const nestOwner = GameState.enemies.find(e => e.userData.entityId === targetNest.ownerId);
+                            if (nestOwner) {
+                                nestOwner.userData.targetEggThief = enemy;
                             }
 
-                            console.log('Fox stole an egg from nest!');
+                            console.log(enemy.userData.id + ' stole an egg from nest!');
                         } else {
                             // Keep creeping toward nest
                             direction = new THREE.Vector3()
@@ -7548,26 +7726,26 @@ window.Enemies = (function() {
                         }
                     } else {
                         // Nest no longer has egg, go back to hunting
-                        enemy.userData.foxState = 'hunting';
+                        enemy.userData.eggThiefState = 'hunting';
                         enemy.userData.isCreeping = false;
                         enemy.userData.targetNest = null;
                     }
-                } else if (foxState === 'fleeing') {
-                    // Run away from goose or after stealing egg
+                } else if (eggThiefState === 'fleeing') {
+                    // Run away from guard or after stealing egg
                     enemy.userData.isCreeping = false;
                     const fleeFrom = enemy.userData.fleeFrom;
 
                     if (fleeFrom) {
-                        // Flee from specific goose
+                        // Flee from specific guard
                         direction = new THREE.Vector3()
                             .subVectors(enemy.position, fleeFrom.position)
                             .normalize();
                         speed = enemy.userData.speed * 1.3;
 
-                        const distFromGoose = enemy.position.distanceTo(fleeFrom.position);
-                        if (distFromGoose > 30) {
+                        const distFromGuard = enemy.position.distanceTo(fleeFrom.position);
+                        if (distFromGuard > 30) {
                             // Safe distance, go back to hunting
-                            enemy.userData.foxState = 'hunting';
+                            enemy.userData.eggThiefState = 'hunting';
                             enemy.userData.fleeFrom = null;
                             enemy.userData.stolenEgg = false;
                         }
@@ -7584,22 +7762,21 @@ window.Enemies = (function() {
                         enemy.userData.fleeTime += delta;
                         if (enemy.userData.fleeTime > 5) {
                             // Done fleeing
-                            enemy.userData.foxState = 'hunting';
+                            enemy.userData.eggThiefState = 'hunting';
                             enemy.userData.fleeDir = null;
                             enemy.userData.stolenEgg = false;
                         }
                     }
                 }
 
-                // Fox fights back when attacked by geese
-                if (nearbyGoose && nearbyGooseDist < enemy.userData.radius + nearbyGoose.userData.radius) {
-                    // Goose is attacking fox - fox fights back
-                    if (enemy.userData.fightsBack) {
-                        nearbyGoose.userData.health -= enemy.userData.damage * delta * 0.5;
-                        if (nearbyGoose.userData.health <= 0) {
-                            const idx = GameState.enemies.indexOf(nearbyGoose);
+                // Fight back when attacked by nest guards
+                if (nearbyGuard && nearbyGuardDist < enemy.userData.radius + nearbyGuard.userData.radius) {
+                    if (enemy.userData.fightsNestGuards) {
+                        nearbyGuard.userData.health -= enemy.userData.damage * delta * 0.5;
+                        if (nearbyGuard.userData.health <= 0) {
+                            const idx = GameState.enemies.indexOf(nearbyGuard);
                             if (idx !== -1) {
-                                GameState.scene.remove(nearbyGoose);
+                                GameState.scene.remove(nearbyGuard);
                                 GameState.enemies.splice(idx, 1);
                                 if (idx < i) i--;
                             }
@@ -7629,7 +7806,7 @@ window.Enemies = (function() {
                     direction = new THREE.Vector3()
                         .subVectors(targetBaby.position, enemy.position)
                         .normalize();
-                    speed = enemy.userData.speed * 1.2; // Faster when hunting babies
+                    speed = enemy.userData.chaseSpeed || enemy.userData.speed; // Sprint when hunting babies
                     enemy.userData.isChasing = true;
 
                     // Attack baby on contact
@@ -7657,8 +7834,8 @@ window.Enemies = (function() {
                         .subVectors(GameState.peccary.position, enemy.position)
                         .normalize();
 
-                    speed = enemy.userData.speed;
-                    if (distance < 15) speed *= 1.3;
+                    // Use chaseSpeed from enemy data
+                    speed = enemy.userData.chaseSpeed || enemy.userData.speed;
 
                     enemy.userData.isChasing = true;
                 } else {
@@ -7698,7 +7875,7 @@ window.Enemies = (function() {
             enemy.position.z += direction.z * speed * delta;
 
             // Rotate to face movement direction
-            const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+            const targetRotation = -Math.atan2(direction.z, direction.x);
 
             let currentEnemyRotation = enemy.rotation.y;
             let enemyDiff = targetRotation - currentEnemyRotation;
@@ -9875,7 +10052,7 @@ window.Enemies = (function() {
             // Face landing direction
             const catModel = cat.children[0];
             if (catModel) {
-                catModel.rotation.y = landAngle;
+                catModel.rotation.y = -landAngle;
             }
         }
 
@@ -10120,7 +10297,7 @@ window.Enemies = (function() {
             const catModel = cat.children[0];
             if (catModel) {
                 catModel.rotation.x = 0;
-                catModel.rotation.y = Math.PI;
+                catModel.rotation.y = 0;
                 catModel.rotation.z = 0;
             }
         }
@@ -10148,7 +10325,7 @@ window.Enemies = (function() {
 
             cat.position.x += dir.x * cat.userData.speed * 1.2 * delta;
             cat.position.z += dir.z * cat.userData.speed * 1.2 * delta;
-            cat.rotation.y = Math.atan2(dir.x, dir.z) + Math.PI / 2;
+            cat.rotation.y = -Math.atan2(dir.z, dir.x);
         } else {
             // Attack! Deal damage
             threat.userData.health = (threat.userData.health || 10) - cat.userData.damage * delta;
@@ -10259,7 +10436,7 @@ window.Enemies = (function() {
             if (cat.userData.playDir) {
                 cat.position.x += cat.userData.playDir.x * 3 * delta;
                 cat.position.z += cat.userData.playDir.z * 3 * delta;
-                cat.rotation.y = Math.atan2(cat.userData.playDir.x, cat.userData.playDir.z) + Math.PI / 2;
+                cat.rotation.y = -Math.atan2(cat.userData.playDir.z, cat.userData.playDir.x);
             }
 
             // Playful hop animation

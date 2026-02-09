@@ -357,20 +357,20 @@ window.Items = (function() {
             GameState.resourceCounts.eggs++;
             GameState.pigCoins += CONFIG.RESOURCE_PRICES.eggs;
 
-            // Check if this egg came from a nest and trigger parent goose defense
+            // Check if this egg came from a nest and trigger nest owner defense
             if (resource.userData.nestId && GameState.nests) {
                 const nest = GameState.nests.find(n => n.id === resource.userData.nestId);
                 if (nest && nest.ownerId) {
-                    // Find the parent goose
-                    const parentGoose = GameState.enemies.find(e => e.userData.entityId === nest.ownerId);
-                    if (parentGoose && parentGoose.userData.id === 'goose') {
-                        // Make goose hostile and chase player
-                        parentGoose.userData.lifecycleState = 'defending';
-                        parentGoose.userData.chasingPlayer = true;
-                        parentGoose.userData.friendly = false;
+                    // Find the nest owner (any nest-defending animal)
+                    const nestOwner = GameState.enemies.find(e => e.userData.entityId === nest.ownerId);
+                    if (nestOwner && nestOwner.userData.defendsNest) {
+                        // Make nest owner hostile and chase player
+                        nestOwner.userData.lifecycleState = 'defending';
+                        nestOwner.userData.chasingPlayer = true;
+                        nestOwner.userData.friendly = false;
                         if (!GameState.chasingGeese) GameState.chasingGeese = [];
-                        if (!GameState.chasingGeese.includes(parentGoose)) {
-                            GameState.chasingGeese.push(parentGoose);
+                        if (!GameState.chasingGeese.includes(nestOwner)) {
+                            GameState.chasingGeese.push(nestOwner);
                         }
                     }
                 }

@@ -483,6 +483,15 @@ window.Inventory = (function() {
                             model = modelBuilder(enemyData.colors, isPregnant);
                             break;
                         }
+                        case 'dronglous_cat': {
+                            model = modelBuilder(enemyData.colors, isBaby);
+                            break;
+                        }
+                        case 'deericus_iricus': {
+                            const hasHorns = !isBaby && enemyData.hasHorns !== false;
+                            model = modelBuilder(enemyData.colors, hasHorns, isBaby);
+                            break;
+                        }
                         default: {
                             // Simple model builders: badger, weasel, goose, fox, leopard_toad
                             model = modelBuilder(enemyData.colors);
@@ -491,10 +500,11 @@ window.Inventory = (function() {
                     }
 
                     if (model) {
-                        // Scale babies to be smaller
-                        // Note: saltas_gazella model builder already handles baby size internally
-                        // Other animals need manual scaling for babies
-                        if (isBaby && animal.id !== 'saltas_gazella') {
+                        // Scale babies to be smaller — but only for builders
+                        // that DON'T handle baby size internally
+                        // Builders with internal baby scaling: saltas_gazella, dronglous_cat, deericus_iricus
+                        const builderHandlesBabySize = ['saltas_gazella', 'dronglous_cat', 'deericus_iricus'];
+                        if (isBaby && !builderHandlesBabySize.includes(animal.id)) {
                             model.scale.set(0.5, 0.5, 0.5);
                         }
                         bestiaryModel.add(model);

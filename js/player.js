@@ -113,8 +113,7 @@ window.Player = (function() {
         collar.position.set(0.5, 0.8, 0);
         model.add(collar);
 
-        // Flip the model to face -X (forward in game)
-        model.rotation.y = Math.PI;
+        // Model built facing +X — no initial rotation needed
         GameState.peccary.add(model);
 
         // Spawn player in the village (safe zone)
@@ -291,22 +290,30 @@ window.Player = (function() {
         const isSprinting = GameState.keys['shift'];
         let moveSpeed = isSprinting ? gazella.userData.fleeSpeed : gazella.userData.speed;
 
-        const direction = new THREE.Vector3();
-        if (GameState.keys['w'] || GameState.keys['arrowup']) direction.z -= 1;
-        if (GameState.keys['s'] || GameState.keys['arrowdown']) direction.z += 1;
-        if (GameState.keys['a'] || GameState.keys['arrowleft']) direction.x -= 1;
-        if (GameState.keys['d'] || GameState.keys['arrowright']) direction.x += 1;
+        const rawDir = new THREE.Vector3();
+        if (GameState.keys['w'] || GameState.keys['arrowup']) rawDir.z -= 1;
+        if (GameState.keys['s'] || GameState.keys['arrowdown']) rawDir.z += 1;
+        if (GameState.keys['a'] || GameState.keys['arrowleft']) rawDir.x -= 1;
+        if (GameState.keys['d'] || GameState.keys['arrowright']) rawDir.x += 1;
 
-        if (direction.length() > 0) {
-            direction.normalize();
+        if (rawDir.length() > 0) {
+            rawDir.normalize();
+
+            // Rotate input direction by camera angle so movement is relative to camera view
+            const angle = GameState.cameraAngle;
+            const direction = new THREE.Vector3(
+                rawDir.x * Math.cos(angle) + rawDir.z * Math.sin(angle),
+                0,
+                -rawDir.x * Math.sin(angle) + rawDir.z * Math.cos(angle)
+            );
 
             // Move the gazella
             gazella.position.x += direction.x * moveSpeed * delta;
             gazella.position.z += direction.z * moveSpeed * delta;
 
             // Rotate to face movement direction
-            // Add Math.PI / 2 offset because the model is built facing +X
-            const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+            // Model faces +X, so use -atan2(dz, dx) for correct rotation
+            const targetRotation = -Math.atan2(direction.z, direction.x);
             let currentRotation = gazella.rotation.y;
             let diff = targetRotation - currentRotation;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -421,20 +428,28 @@ window.Player = (function() {
             }
         }
 
-        const direction = new THREE.Vector3();
+        const rawDir = new THREE.Vector3();
 
-        if (GameState.keys['w'] || GameState.keys['arrowup']) direction.z -= 1;
-        if (GameState.keys['s'] || GameState.keys['arrowdown']) direction.z += 1;
-        if (GameState.keys['a'] || GameState.keys['arrowleft']) direction.x -= 1;
-        if (GameState.keys['d'] || GameState.keys['arrowright']) direction.x += 1;
+        if (GameState.keys['w'] || GameState.keys['arrowup']) rawDir.z -= 1;
+        if (GameState.keys['s'] || GameState.keys['arrowdown']) rawDir.z += 1;
+        if (GameState.keys['a'] || GameState.keys['arrowleft']) rawDir.x -= 1;
+        if (GameState.keys['d'] || GameState.keys['arrowright']) rawDir.x += 1;
 
-        if (direction.length() > 0) {
-            direction.normalize();
+        if (rawDir.length() > 0) {
+            rawDir.normalize();
+
+            // Rotate input direction by camera angle so movement is relative to camera view
+            const angle = GameState.cameraAngle;
+            const direction = new THREE.Vector3(
+                rawDir.x * Math.cos(angle) + rawDir.z * Math.sin(angle),
+                0,
+                -rawDir.x * Math.sin(angle) + rawDir.z * Math.cos(angle)
+            );
 
             GameState.peccary.position.x += direction.x * moveSpeed * delta;
             GameState.peccary.position.z += direction.z * moveSpeed * delta;
 
-            const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+            const targetRotation = -Math.atan2(direction.z, direction.x);
 
             let currentRotation = GameState.peccary.rotation.y;
             let diff = targetRotation - currentRotation;
@@ -454,7 +469,7 @@ window.Player = (function() {
                 }
             }
 
-            if (isSprinting && !GameState.wasSprinting && Math.random() < 0.7) {
+            if (isSprinting && !GameState.wasSprinting) {
                 Game.playSound('peccary');
             }
         } else if (inWater && !GameState.isJumping) {

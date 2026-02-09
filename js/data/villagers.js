@@ -125,7 +125,7 @@ window.VILLAGERS = [
         hatColor: 0x2a0050,           // Dark purple hat (use null for no hat)
 
         // Position in village (relative to village center)
-        position: { x: 0, z: 0 },     // Center of village
+        position: { x: 5, z: 5 },     // In front of main hut, to the side
 
         // --------------------------------------------------------------------
         // CONVERSATION
@@ -237,7 +237,7 @@ window.VILLAGERS = [
         outfitColor: 0x228b22,        // Forest green overalls
         hatColor: 0xdaa520,           // Golden straw hat #281532
 
-        position: { x: 25, z: -15 },
+        position: { x: 30, z: -8 },    // In front of hut4, to the side
 
         conversation: {
             start: 'greeting',
@@ -308,7 +308,7 @@ window.VILLAGERS = [
         outfitColor: 0x2f2f2f,        // Dark gray apron
         hatColor: null,               // No hat
 
-        position: { x: -20, z: 18 },
+        position: { x: -12, z: 22 },   // In front of hut3, to the side
 
         conversation: {
             start: 'greeting',
@@ -467,7 +467,7 @@ window.VILLAGERS = [
         outfitColor: 0xffffff,        // White dress
         hatColor: 0xff69b4,           // Hot pink bonnet
 
-        position: { x: -18, z: -20 },
+        position: { x: -16, z: -25 },  // In front of hut5, to the side
 
         conversation: {
             start: 'greeting',

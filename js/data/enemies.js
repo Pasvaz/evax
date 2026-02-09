@@ -12,6 +12,14 @@
  *
  * Just copy an existing enemy and change the values!
  *
+ * ⚠️  REMINDER: Adding a new animal requires updating 5 FILES:
+ *    1. THIS FILE (js/data/enemies.js) - stats and colors
+ *    2. js/enemies.js - 3D model builder function
+ *    3. js/data/bestiary.js - encyclopedia entry
+ *    4. index.html - test spawn buttons
+ *    5. js/enemies.js - lifecycle state mapping
+ *    See ~/.claude/memory/adding-new-animals.md for full guide!
+ *
  * Example - A giant rare weasel:
  *
  *   {
@@ -80,6 +88,7 @@ window.ENEMIES = [
         category: 'carnivore',         // Predator
         speed: 3,                      // Slow (player walks at 6)
         speedVariation: 1,             // Final speed: 3-4
+        chaseSpeed: 7,                 // Sprint speed when chasing player
         damage: 15,                    // High damage per second!
         radius: 0.8,                   // Chunky hitbox
         size: 1,                       // Normal size
@@ -108,6 +117,7 @@ window.ENEMIES = [
         category: 'carnivore',         // Predator
         speed: 4.5,                    // Faster than badger
         speedVariation: 1.5,           // Final speed: 4.5-6
+        chaseSpeed: 9,                 // Sprint speed when chasing player
         damage: 10,                    // Less damage than badger
         radius: 0.6,                   // Slim hitbox
         size: 1,                       // Normal size
@@ -147,7 +157,7 @@ window.ENEMIES = [
 
         // Special behavior flags
         friendly: true,                // Does NOT attack the player
-        attacksEnemies: true,          // Attacks badgers and weasels
+        defendsNest: true,             // Attacks hostile animals near its nest/territory
         attackRange: 20,               // How close enemies need to be
         immuneToWater: true,           // Not slowed by water
 
@@ -170,6 +180,7 @@ window.ENEMIES = [
         category: 'carnivore',         // Predator and egg thief
         speed: 4.5,                    // Same as weasel
         speedVariation: 1.5,           // Final speed: 4.5-6
+        chaseSpeed: 10,                // Sprint speed when chasing player (fastest predator!)
         damage: 15,                    // Same as badger
         radius: 0.7,                   // Medium hitbox
         size: 1,                       // Normal size
@@ -181,7 +192,7 @@ window.ENEMIES = [
         // Special behavior flags
         dodgeChance: 0.15,             // 15% chance to dodge attacks
         canStealEggs: true,            // Can steal eggs from nests
-        fightsBack: true,              // Will fight geese when attacked
+        fightsNestGuards: true,        // Will fight back against nest-guarding animals (like geese)
 
         // Fox colors (orange-red with white chest)
         colors: {
@@ -219,7 +230,7 @@ window.ENEMIES = [
 
         // Special behavior flags
         friendly: true,                // Does NOT attack the player normally
-        attacksEnemies: false,         // Toads don't attack enemies
+        defendsNest: false,            // Toads don't defend against enemies
         immuneToWater: true,           // Lives in/near water
         biome: 'savannah',             // Only spawns in savannah biome
 
@@ -254,7 +265,7 @@ window.ENEMIES = [
 
         // Special behavior flags
         friendly: true,                // Does NOT attack the player normally
-        attacksEnemies: false,         // Toads don't attack enemies
+        defendsNest: false,            // Toads don't defend against enemies
         immuneToWater: true,           // Lives in/near water
         biome: 'savannah',             // Only spawns in savannah biome
         canLayEggs: true,              // Females lay eggs
@@ -439,6 +450,7 @@ window.ENEMIES = [
         category: 'carnivore',         // Pack hunter
         speed: 8,                      // Fast runners
         speedVariation: 1,
+        chaseSpeed: 12,                // Sprint when hunting prey
         damage: 18,
         radius: 0.7,
         size: 1,
@@ -479,6 +491,7 @@ window.ENEMIES = [
         category: 'carnivore',         // Pack hunter
         speed: 8,
         speedVariation: 1,
+        chaseSpeed: 12,                // Sprint when hunting prey
         damage: 16,
         radius: 0.65,                  // Slightly smaller
         size: 0.95,                    // 95% male size

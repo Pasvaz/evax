@@ -560,57 +560,212 @@ window.Environment = (function() {
     function createHut(x, z, size, rotation) {
         size = size || 1;
         rotation = rotation || 0;
+        const s = size;
 
         const hut = new THREE.Group();
 
-        const floorGeo = new THREE.BoxGeometry(6 * size, 0.3, 5 * size);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.position.y = 0.15;
-        floor.receiveShadow = true;
-        hut.add(floor);
+        // Materials
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xd4c4a0, roughness: 0.9 });
+        const wallDarkMat = new THREE.MeshStandardMaterial({ color: 0xb8a882, roughness: 0.9 });
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x7a6b4e });
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0x6b3a2a, roughness: 0.85, side: THREE.DoubleSide });
+        const roofEdgeMat = new THREE.MeshStandardMaterial({ color: 0x5a2d1e });
+        const beamMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a2f1a, roughness: 0.7 });
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0x8cb8d0, emissive: 0x1a3040, emissiveIntensity: 0.3 });
+        const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x808075, roughness: 1.0 });
 
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0xdeb887 });
+        // ============================================================
+        // FOUNDATION — stone base lifts the house off the ground
+        // ============================================================
+        const foundGeo = new THREE.BoxGeometry(6.4 * s, 0.5, 5.4 * s);
+        const foundation = new THREE.Mesh(foundGeo, stoneMat);
+        foundation.position.y = 0.25;
+        foundation.receiveShadow = true;
+        foundation.castShadow = true;
+        hut.add(foundation);
 
-        const wallFrontGeo = new THREE.BoxGeometry(6 * size, 3 * size, 0.3);
+        // ============================================================
+        // WALLS — main structure with slight inset for depth
+        // ============================================================
+        const wallH = 3.2 * s;
+        const wallBase = 0.5;
+
+        // Front wall
+        const wallFrontGeo = new THREE.BoxGeometry(6 * s, wallH, 0.25);
         const wallFront = new THREE.Mesh(wallFrontGeo, wallMat);
-        wallFront.position.set(0, 1.5 * size + 0.3, 2.5 * size);
+        wallFront.position.set(0, wallBase + wallH / 2, 2.5 * s);
         wallFront.castShadow = true;
+        wallFront.receiveShadow = true;
         hut.add(wallFront);
 
-        const wallBack = wallFront.clone();
-        wallBack.position.z = -2.5 * size;
+        // Back wall (slightly darker)
+        const wallBack = new THREE.Mesh(wallFrontGeo, wallDarkMat);
+        wallBack.position.set(0, wallBase + wallH / 2, -2.5 * s);
+        wallBack.castShadow = true;
+        wallBack.receiveShadow = true;
         hut.add(wallBack);
 
-        const wallSideGeo = new THREE.BoxGeometry(0.3, 3 * size, 5 * size);
-        const wallLeft = new THREE.Mesh(wallSideGeo, wallMat);
-        wallLeft.position.set(-3 * size, 1.5 * size + 0.3, 0);
+        // Side walls
+        const wallSideGeo = new THREE.BoxGeometry(0.25, wallH, 5 * s);
+        const wallLeft = new THREE.Mesh(wallSideGeo, wallDarkMat);
+        wallLeft.position.set(-3 * s, wallBase + wallH / 2, 0);
         wallLeft.castShadow = true;
+        wallLeft.receiveShadow = true;
         hut.add(wallLeft);
 
-        const wallRight = wallLeft.clone();
-        wallRight.position.x = 3 * size;
+        const wallRight = new THREE.Mesh(wallSideGeo, wallMat);
+        wallRight.position.set(3 * s, wallBase + wallH / 2, 0);
+        wallRight.castShadow = true;
+        wallRight.receiveShadow = true;
         hut.add(wallRight);
 
-        const roofMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-        const roofGeo = new THREE.ConeGeometry(4.5 * size, 2.5 * size, 4);
+        // ============================================================
+        // TIMBER FRAME — exposed wooden beams for character
+        // ============================================================
+        const beamThick = 0.18;
+
+        // Corner posts (vertical beams)
+        const cornerGeo = new THREE.BoxGeometry(beamThick, wallH + 0.1, beamThick);
+        [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) => {
+            const corner = new THREE.Mesh(cornerGeo, beamMat);
+            corner.position.set(sx * 3 * s, wallBase + wallH / 2, sz * 2.5 * s);
+            hut.add(corner);
+        });
+
+        // Horizontal beam along front top
+        const hBeamFrontGeo = new THREE.BoxGeometry(6 * s + beamThick, beamThick, beamThick);
+        const hBeamFront = new THREE.Mesh(hBeamFrontGeo, beamMat);
+        hBeamFront.position.set(0, wallBase + wallH, 2.5 * s);
+        hut.add(hBeamFront);
+
+        // Horizontal beam along back top
+        const hBeamBack = hBeamFront.clone();
+        hBeamBack.position.z = -2.5 * s;
+        hut.add(hBeamBack);
+
+        // Cross beam on front wall (decorative X)
+        const crossLen = Math.sqrt((3 * s) * (3 * s) + (wallH * 0.5) * (wallH * 0.5));
+        const crossGeo = new THREE.BoxGeometry(crossLen, 0.1, 0.1);
+
+        // Only add cross on the side wall (right side, visible)
+        const crossAngle = Math.atan2(wallH * 0.4, 2.5 * s);
+        const cross1 = new THREE.Mesh(crossGeo, beamMat);
+        cross1.position.set(3 * s + 0.05, wallBase + wallH * 0.5, 0);
+        cross1.rotation.y = Math.PI / 2;
+        cross1.rotation.x = crossAngle;
+        hut.add(cross1);
+
+        const cross2 = new THREE.Mesh(crossGeo, beamMat);
+        cross2.position.set(3 * s + 0.05, wallBase + wallH * 0.5, 0);
+        cross2.rotation.y = Math.PI / 2;
+        cross2.rotation.x = -crossAngle;
+        hut.add(cross2);
+
+        // ============================================================
+        // ROOF — pyramid roof using ConeGeometry (reliable at any rotation)
+        // ============================================================
+        const roofH = 2.5 * s;
+        const roofY = wallBase + wallH;
+
+        // ConeGeometry with 4 sides = pyramid shape
+        // Radius needs to reach from center to the corners of the roof
+        const roofRadius = 4.5 * s;  // Overhang past walls
+        const roofGeo = new THREE.ConeGeometry(roofRadius, roofH, 4);
         const roof = new THREE.Mesh(roofGeo, roofMat);
-        roof.position.y = 4 * size + 0.3;
-        roof.rotation.y = Math.PI / 4;
+        roof.position.set(0, roofY + roofH / 2, 0);
+        roof.rotation.y = Math.PI / 4;  // Rotate 45° so edges align with walls
         roof.castShadow = true;
+        roof.receiveShadow = true;
         hut.add(roof);
 
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
-        const doorGeo = new THREE.BoxGeometry(1.2 * size, 2 * size, 0.4);
+        // ============================================================
+        // DOOR — with frame and small step
+        // ============================================================
+        const doorW = 1.2 * s;
+        const doorH = 2.2 * s;
+
+        // Door recess (dark behind the door)
+        const doorGeo = new THREE.BoxGeometry(doorW, doorH, 0.3);
         const door = new THREE.Mesh(doorGeo, doorMat);
-        door.position.set(0, 1 * size + 0.3, 2.5 * size);
+        door.position.set(0, wallBase + doorH / 2, 2.5 * s);
         hut.add(door);
 
-        const windowMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, emissive: 0x222233 });
-        const windowGeo = new THREE.BoxGeometry(0.4, 0.8 * size, 0.8 * size);
-        const windowMesh = new THREE.Mesh(windowGeo, windowMat);
-        windowMesh.position.set(3 * size, 2 * size, 0);
-        hut.add(windowMesh);
+        // Door frame
+        const frameThick = 0.12;
+        const frameVGeo = new THREE.BoxGeometry(frameThick, doorH + frameThick, frameThick);
+        const frameHGeo = new THREE.BoxGeometry(doorW + frameThick * 2, frameThick, frameThick);
+
+        [-1, 1].forEach(side => {
+            const frameV = new THREE.Mesh(frameVGeo, beamMat);
+            frameV.position.set(side * (doorW / 2 + frameThick / 2), wallBase + doorH / 2, 2.5 * s + 0.1);
+            hut.add(frameV);
+        });
+        const frameTop = new THREE.Mesh(frameHGeo, beamMat);
+        frameTop.position.set(0, wallBase + doorH + frameThick / 2, 2.5 * s + 0.1);
+        hut.add(frameTop);
+
+        // Doorstep
+        const stepGeo = new THREE.BoxGeometry(1.8 * s, 0.15, 0.6);
+        const step = new THREE.Mesh(stepGeo, stoneMat);
+        step.position.set(0, 0.58, 2.8 * s);
+        hut.add(step);
+
+        // ============================================================
+        // WINDOWS — with shutters and cross frame
+        // ============================================================
+        const winW = 0.9 * s;
+        const winH = 0.8 * s;
+
+        // Side windows (both sides)
+        [[-1, wallMat], [1, wallMat]].forEach(([side]) => {
+            // Window glass
+            const winGeo = new THREE.BoxGeometry(0.3, winH, winW);
+            const win = new THREE.Mesh(winGeo, windowMat);
+            win.position.set(side * (3 * s + 0.05), wallBase + wallH * 0.55, 0.8 * s);
+            hut.add(win);
+
+            // Window frame (cross pattern)
+            const frameCrossV = new THREE.BoxGeometry(0.32, winH, 0.06);
+            const fv = new THREE.Mesh(frameCrossV, windowFrameMat);
+            fv.position.set(side * (3 * s + 0.08), wallBase + wallH * 0.55, 0.8 * s);
+            hut.add(fv);
+
+            const frameCrossH = new THREE.BoxGeometry(0.32, 0.06, winW);
+            const fh = new THREE.Mesh(frameCrossH, windowFrameMat);
+            fh.position.set(side * (3 * s + 0.08), wallBase + wallH * 0.55, 0.8 * s);
+            hut.add(fh);
+        });
+
+        // Front window (next to door)
+        const frontWinGeo = new THREE.BoxGeometry(winW, winH, 0.3);
+        const frontWin = new THREE.Mesh(frontWinGeo, windowMat);
+        frontWin.position.set(1.8 * s, wallBase + wallH * 0.55, 2.5 * s + 0.05);
+        hut.add(frontWin);
+
+        // Front window cross
+        const fwcV = new THREE.Mesh(new THREE.BoxGeometry(0.06, winH, 0.32), windowFrameMat);
+        fwcV.position.set(1.8 * s, wallBase + wallH * 0.55, 2.5 * s + 0.08);
+        hut.add(fwcV);
+        const fwcH = new THREE.Mesh(new THREE.BoxGeometry(winW, 0.06, 0.32), windowFrameMat);
+        fwcH.position.set(1.8 * s, wallBase + wallH * 0.55, 2.5 * s + 0.08);
+        hut.add(fwcH);
+
+        // ============================================================
+        // CHIMNEY — small stone chimney on the back
+        // ============================================================
+        const chimGeo = new THREE.BoxGeometry(0.7 * s, 2.5 * s, 0.7 * s);
+        const chimney = new THREE.Mesh(chimGeo, stoneMat);
+        chimney.position.set(-1.5 * s, roofY + 1 * s, -2 * s);
+        chimney.castShadow = true;
+        hut.add(chimney);
+
+        // Chimney top (wider cap)
+        const chimCapGeo = new THREE.BoxGeometry(0.9 * s, 0.15, 0.9 * s);
+        const chimCap = new THREE.Mesh(chimCapGeo, stoneMat);
+        chimCap.position.set(-1.5 * s, roofY + 2.25 * s, -2 * s);
+        hut.add(chimCap);
 
         hut.position.set(x, 0, z);
         hut.rotation.y = rotation;
@@ -834,6 +989,126 @@ window.Environment = (function() {
             GameState.scene.add(lantern);
             trackObject(lantern);
         });
+
+        // ============================================================
+        // CROSSROAD SIGNPOST — points to biomes and unknown lands
+        // ============================================================
+        const signpost = new THREE.Group();
+        const signX = vx + 10;
+        const signZ = vz - 5;
+
+        // Tall wooden pole
+        const signPoleMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        const signPoleGeo = new THREE.CylinderGeometry(0.15, 0.2, 5, 8);
+        const signPole = new THREE.Mesh(signPoleGeo, signPoleMat);
+        signPole.position.y = 2.5;
+        signPole.castShadow = true;
+        signpost.add(signPole);
+
+        // Helper: create a sign plank with text using canvas texture
+        function makeSignPlank(text, color, yPos, rotY, pointRight) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            // Wooden plank background
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, 256, 64);
+
+            // Darker wood grain lines
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 5 + i * 8);
+                ctx.lineTo(256, 5 + i * 8 + (Math.random() - 0.5) * 4);
+                ctx.stroke();
+            }
+
+            // Text
+            ctx.fillStyle = '#1a1008';
+            ctx.font = 'bold 28px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const plankMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 });
+
+            // Arrow-shaped plank: wider on pointing side, narrow on pole side
+            const plankW = 2.4;
+            const plankH = 0.4;
+            const plankD = 0.12;
+            const plankGeo = new THREE.BoxGeometry(plankW, plankH, plankD);
+
+            const plank = new THREE.Mesh(plankGeo, plankMat);
+            // Offset so one end is at the pole
+            plank.position.set(pointRight ? plankW / 2 + 0.15 : -plankW / 2 - 0.15, yPos, 0);
+            plank.rotation.y = rotY;
+            plank.castShadow = true;
+
+            // Arrow tip (triangle pointing outward)
+            const tipGeo = new THREE.BufferGeometry();
+            const tipDir = pointRight ? 1 : -1;
+            const tipX = tipDir * (plankW / 2);
+            tipGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+                tipX, -plankH * 0.7, 0,
+                tipX, plankH * 0.7, 0,
+                tipX + tipDir * 0.4, 0, 0,
+            ]), 3));
+            tipGeo.computeVertexNormals();
+            const tipMat = new THREE.MeshStandardMaterial({
+                color: parseInt(color.replace('#', '0x')),
+                roughness: 0.9,
+                side: THREE.DoubleSide
+            });
+            const tip = new THREE.Mesh(tipGeo, tipMat);
+            tip.position.copy(plank.position);
+            tip.rotation.y = rotY;
+
+            const group = new THREE.Group();
+            group.add(plank);
+            group.add(tip);
+            return group;
+        }
+
+        // 4 signs at different heights pointing in correct world directions
+        // In Three.js: north = -Z, south = +Z, west = -X, east = +X
+        // rotation.y = 0 points along +X (east)
+        // rotation.y = PI/2 points along -Z (north)
+        // rotation.y = PI points along -X (west)
+
+        // North (-Z): Savannah (warm golden color) — pointRight extends to +X, rotate PI/2 to face -Z
+        const sign1 = makeSignPlank('Savannah', '#b8860b', 4.2, 0, true);
+        sign1.rotation.y = Math.PI / 2;
+        signpost.add(sign1);
+
+        // Northwest: Snowy Mountains (cool blue-gray) — via savannah then west
+        const sign2 = makeSignPlank('Snowy Mountains', '#8b9dad', 3.6, 0, false);
+        sign2.rotation.y = -Math.PI / 4;  // pointLeft=-X, rotated to point northwest
+        signpost.add(sign2);
+
+        // South-East: Unknown (weathered look)
+        const sign3 = makeSignPlank('Unknown', '#7a6b55', 3.0, 0, true);
+        sign3.rotation.y = -Math.PI / 4;  // pointRight=+X, rotated to point southeast
+        signpost.add(sign3);
+
+        // South-West: Unknown (weathered look)
+        const sign4 = makeSignPlank('Unknown', '#7a6b55', 2.4, 0, false);
+        sign4.rotation.y = Math.PI / 4;  // pointLeft=-X, rotated to point southwest
+        signpost.add(sign4);
+        signpost.add(sign4);
+
+        // Top cap (decorative sphere on top of pole)
+        const capGeo = new THREE.SphereGeometry(0.22, 8, 8);
+        const cap = new THREE.Mesh(capGeo, signPoleMat);
+        cap.position.y = 5.05;
+        signpost.add(cap);
+
+        signpost.position.set(signX, 0, signZ);
+        GameState.scene.add(signpost);
+        trackObject(signpost);
 
         Dialogs.createVillagers();
     }

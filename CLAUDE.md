@@ -56,13 +56,7 @@ Happy coding! 🎮
 
 
 # ROADMAP - What we must finish
-At the moment there are 3 main branch under development.
+Read the file ROADMAP.md and try to keep the developer on track with the priorities because he tends to sway quite easily.
 
-## Trading System
-We drafted the basic trading system but we need to refine it in a direction that makes sense. Having a currency should also make sense and the trading system should gravitatate around it.
-
-## Crafting System
-Same as for the trading system, we got a place holder but it'a actually useless in game. We need to answer questions like why do we need to craftand what advantages do I get from that.
-
-## Player Progression
-In general survival mechanics and score are very primitive, we do not understand how to progress and why we should progress. We added hunger and thirst to push the player to collect resources to feed itself, but we must move into something more complex and the score which at the moment is pointless should be used to encourage the player progression, maybe some sort of levelling system?
+# TEACHING NOTES
+Read TEACHING-NOTES.md at the start of each session. It contains topics to discuss with the developer. When a topic comes up naturally or there's a good moment, walk through it together. Mark topics as DISCUSSED once covered.

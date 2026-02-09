@@ -6,6 +6,13 @@
  * This file contains all the information about animals in the game.
  * Each animal has descriptions, stats, behaviors, and variant info.
  *
+ * ⚠️  REMINDER: When adding a new animal, update ALL 5 files:
+ *    1. js/data/enemies.js - stats/colors
+ *    2. js/enemies.js - 3D model + registration
+ *    3. THIS FILE - encyclopedia entry
+ *    4. index.html - test spawn buttons
+ *    5. js/enemies.js - lifecycle mapping
+ *
  * ============================================================================
  */
 
@@ -321,6 +328,42 @@ window.BESTIARY = [
             babyColors: 'Males are dark grey, Females are pure white',
             matingPeriod: '4 minutes pregnancy, 3 babies born',
             growUpTime: '4 minutes to adulthood'
+        }
+    },
+
+    // ========================================================================
+    // DEERICUS IRICUS (Mountain Deer)
+    // ========================================================================
+    {
+        id: 'deericus_iricus',
+        name: 'Deericus Iricus',
+        type: 'Mountain Herbivore',
+        icon: '🦌',
+        biome: 'Snowy Mountains',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male', hasHorns: true },
+            { id: 'female', name: 'Female', gender: 'female', hasHorns: false },
+            { id: 'baby_male', name: 'Baby Male', gender: 'male', isBaby: true },
+            { id: 'baby_female', name: 'Baby Female', gender: 'female', isBaby: true }
+        ],
+        animations: ['idle', 'walk', 'run', 'graze', 'fight', 'flee'],
+        stats: {
+            health: '20 (male) / 18 (female)',
+            speed: 'Moderate (5 base speed)',
+            damage: '8 (defensive kicks)',
+            diet: 'Herbivore'
+        },
+        description: 'The Deericus Iricus is a small, elegant mountain deer that thrives in the harsh snowy environment. Males sport branching antlers and have brown coats, while females are pure white without antlers. They have distinctively large, expressive ears - a hallmark of the species - and graceful proportions with long, slender legs ending in small hooves.',
+        behavior: 'Deericus Iricus are social herd animals with complex family structures. They spend most of their time grazing on mountain vegetation. Males compete for dominance through antler fights during mating season. When threatened, they flee with surprising speed and agility. They are defensive rather than aggressive - only fighting when cornered or protecting their young.',
+        habitat: 'Found exclusively in the Snowy Mountains biome. They prefer areas with some vegetation where they can graze, but are well-adapted to the cold climate.',
+        tips: 'These deer are friendly and won\'t attack unprovoked. Watch for their behavior - males will fight each other for dominance! Baby deer stay close to their mothers and can be spotted following the herd.',
+        special: {
+            herdAnimal: true,
+            antlers: 'Males only - branching style with 2-3 tines',
+            colorDimorphism: 'Males are brown, females are white',
+            distinctiveFeature: 'Exceptionally large, leaf-shaped ears with pink inner ear',
+            territoryBehavior: 'Live in herds, share grazing areas',
+            matingBehavior: 'Males compete through antler fights'
         }
     }
 ];

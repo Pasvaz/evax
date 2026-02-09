@@ -136,6 +136,13 @@ window.GameState = {
     lastPlayerPosition: { x: 0, z: 0 },
     onBorder: null,  // Which border: 'north', 'south', or null
 
+    // Camera orbit (click-and-drag to rotate)
+    cameraAngle: 0,              // Horizontal orbit angle in radians
+    cameraDragging: false,
+    cameraDragStartX: 0,
+    cameraDragStartAngle: 0,
+    cameraDragMoved: false,
+
     // Testing mode
     isTestingMode: false,
     isTestingMenuOpen: false,
@@ -277,7 +284,16 @@ window.Game = (function() {
      * Update camera position to follow the player.
      */
     function updateCamera() {
-        const offset = new THREE.Vector3(0, 8, 12);
+        // Camera orbits the player based on cameraAngle
+        const distance = 12;
+        const height = 8;
+        const angle = GameState.cameraAngle;
+
+        const offset = new THREE.Vector3(
+            Math.sin(angle) * distance,
+            height,
+            Math.cos(angle) * distance
+        );
         const targetPosition = new THREE.Vector3()
             .copy(GameState.peccary.position)
             .add(offset);
@@ -1109,6 +1125,27 @@ window.Game = (function() {
 
             window.addEventListener('keyup', (e) => GameState.keys[e.key.toLowerCase()] = false);
 
+            // Camera orbit — click and drag to rotate camera around player
+            window.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;  // Left click only
+                if (!GameState.gameRunning) return;
+                GameState.cameraDragging = true;
+                GameState.cameraDragStartX = e.clientX;
+                GameState.cameraDragStartAngle = GameState.cameraAngle;
+                GameState.cameraDragMoved = false;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!GameState.cameraDragging) return;
+                const deltaX = e.clientX - GameState.cameraDragStartX;
+                if (Math.abs(deltaX) > 3) GameState.cameraDragMoved = true;
+                GameState.cameraAngle = GameState.cameraDragStartAngle - deltaX * 0.005;
+            });
+
+            window.addEventListener('mouseup', () => {
+                GameState.cameraDragging = false;
+            });
+
             // Start screen buttons
             document.getElementById('explore-btn').addEventListener('click', () => startGame(false));
             document.getElementById('testing-btn').addEventListener('click', showPasswordPopup);
@@ -1436,6 +1473,7 @@ window.Game = (function() {
     function onTestingClick(event) {
         if (!GameState.isTestingMode || !GameState.gameRunning) return;
         if (GameState.isTestingMenuOpen) return; // Don't select while menu open
+        if (GameState.cameraDragMoved) return;   // Don't select after camera drag
 
         // Raycast to find clicked animal
         const mouse = new THREE.Vector2();
@@ -1543,19 +1581,28 @@ window.Game = (function() {
             const isSprinting = GameState.keys['shift'];
             let moveSpeed = (target.userData.speed || 5) * (isSprinting ? 1.5 : 1);
 
-            const direction = new THREE.Vector3();
-            if (GameState.keys['w'] || GameState.keys['arrowup']) direction.z -= 1;
-            if (GameState.keys['s'] || GameState.keys['arrowdown']) direction.z += 1;
-            if (GameState.keys['a'] || GameState.keys['arrowleft']) direction.x -= 1;
-            if (GameState.keys['d'] || GameState.keys['arrowright']) direction.x += 1;
+            const rawDir = new THREE.Vector3();
+            if (GameState.keys['w'] || GameState.keys['arrowup']) rawDir.z -= 1;
+            if (GameState.keys['s'] || GameState.keys['arrowdown']) rawDir.z += 1;
+            if (GameState.keys['a'] || GameState.keys['arrowleft']) rawDir.x -= 1;
+            if (GameState.keys['d'] || GameState.keys['arrowright']) rawDir.x += 1;
 
-            if (direction.length() > 0) {
-                direction.normalize();
+            if (rawDir.length() > 0) {
+                rawDir.normalize();
+
+                // Rotate input direction by camera angle so movement is relative to camera view
+                const angle = GameState.cameraAngle;
+                const direction = new THREE.Vector3(
+                    rawDir.x * Math.cos(angle) + rawDir.z * Math.sin(angle),
+                    0,
+                    -rawDir.x * Math.sin(angle) + rawDir.z * Math.cos(angle)
+                );
+
                 target.position.x += direction.x * moveSpeed * delta;
                 target.position.z += direction.z * moveSpeed * delta;
 
                 // Rotate to face direction
-                const targetRotation = Math.atan2(direction.x, direction.z) + Math.PI / 2;
+                const targetRotation = -Math.atan2(direction.z, direction.x);
                 target.rotation.y = targetRotation;
             }
 
@@ -1565,8 +1612,15 @@ window.Game = (function() {
             target.position.z = Math.max(-bound, Math.min(bound, target.position.z));
         }
 
-        // Both modes: camera follows target
-        const offset = new THREE.Vector3(0, 8, 12);
+        // Both modes: camera follows target with orbit angle
+        const distance = 12;
+        const height = 8;
+        const angle = GameState.cameraAngle;
+        const offset = new THREE.Vector3(
+            Math.sin(angle) * distance,
+            height,
+            Math.cos(angle) * distance
+        );
         const cameraTarget = new THREE.Vector3()
             .copy(target.position)
             .add(offset);
