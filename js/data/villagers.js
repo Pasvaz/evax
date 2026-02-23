@@ -314,41 +314,97 @@ window.VILLAGERS = [
             start: 'greeting',
             nodes: {
                 'greeting': {
-                    text: "*CLANG CLANG* Oh! Didn't see you there, little one.",
+                    text: "*CLANG CLANG* Oh! Didn't see you there, little one. Welcome to the forge!",
                     choices: [
                         { text: "What are you making?", nextNode: 'forge_info' },
-                        { text: "Any combat tips?", nextNode: 'combat_tips' },
+                        { text: "Buy weapons", nextNode: 'buy_weapons' },
+                        { text: "Buy materials", nextNode: 'buy_materials' },
                         { text: "Goodbye.", nextNode: null }
                     ]
                 },
 
                 'forge_info': {
-                    text: "I forge tools and horseshoes. Tough work but honest living!",
+                    text: "I forge tools, weapons, and horseshoes. Tough work but honest living! I also smelt glass from sand.",
                     choices: [
-                        { text: "Can you make weapons?", nextNode: 'weapons' },
+                        { text: "Can I buy a weapon?", nextNode: 'buy_weapons' },
+                        { text: "Can I buy some glass?", nextNode: 'buy_materials' },
                         { text: "Impressive!", nextNode: null }
                     ]
                 },
 
-                'weapons': {
-                    text: "We're peaceful folk. No weapons here, just good sturdy tools.",
+                'buy_weapons': {
+                    text: "Ah, looking to defend yourself? I've got a sturdy wood sword and a sharp wood axe. 30 coins each!",
                     choices: [
-                        { text: "I understand.", nextNode: null }
+                        {
+                            text: "Buy Wood Sword (30 coins)",
+                            nextNode: 'weapon_success',
+                            effect: { type: 'trade', cost: { coins: 30 }, reward: { item: 'wood_sword' } },
+                            failNode: 'buy_fail'
+                        },
+                        {
+                            text: "Buy Wood Axe (30 coins)",
+                            nextNode: 'weapon_success',
+                            effect: { type: 'trade', cost: { coins: 30 }, reward: { item: 'wood_axe' } },
+                            failNode: 'buy_fail'
+                        },
+                        { text: "Not now.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'weapon_success': {
+                    text: "Fine craftsmanship! Open your inventory and equip it to your hotbar. Sword hits enemies, axe chops trees!",
+                    choices: [
+                        { text: "Buy another weapon", nextNode: 'buy_weapons' },
+                        { text: "Thanks!", nextNode: null }
+                    ]
+                },
+
+                'buy_materials': {
+                    text: "I've got glass fresh from the furnace! 3 pig coins per piece. Good for crafting all sorts of things.",
+                    choices: [
+                        {
+                            text: "Buy 1 glass (3 coins)",
+                            nextNode: 'buy_success',
+                            effect: { type: 'trade', cost: { coins: 3 }, reward: { glass: 1 } },
+                            failNode: 'buy_fail'
+                        },
+                        {
+                            text: "Buy 5 glass (15 coins)",
+                            nextNode: 'buy_success',
+                            effect: { type: 'trade', cost: { coins: 15 }, reward: { glass: 5 } },
+                            failNode: 'buy_fail'
+                        },
+                        { text: "Not now.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'buy_success': {
+                    text: "Here you go! Handle it carefully, it's fragile stuff.",
+                    choices: [
+                        { text: "Buy more glass", nextNode: 'buy_materials' },
+                        { text: "Thanks!", nextNode: null }
+                    ]
+                },
+
+                'buy_fail': {
+                    text: "You don't have enough coins! Go collect some resources and come back.",
+                    choices: [
+                        { text: "I'll be back.", nextNode: 'greeting' }
                     ]
                 },
 
                 'combat_tips': {
-                    text: "Those badgers have thick hides. Best to run than fight!",
+                    text: "Those badgers have thick hides, but a good wood sword will do the trick! Two hits should take down most critters.",
                     choices: [
-                        { text: "What about weasels?", nextNode: 'weasel_advice' },
+                        { text: "How do I use the sword?", nextNode: 'sword_tips' },
                         { text: "Got it. Thanks!", nextNode: null }
                     ]
                 },
 
-                'weasel_advice': {
-                    text: "Weasels are fast but smaller. Still, running is your best bet!",
+                'sword_tips': {
+                    text: "Equip it to your hotbar, select it with a number key, then click on an enemy to swing! You need to be close though — no throwing swords here!",
                     choices: [
-                        { text: "Thanks for the advice!", nextNode: null }
+                        { text: "Thanks for the tip!", nextNode: null }
                     ]
                 }
             }
@@ -404,7 +460,7 @@ window.VILLAGERS = [
                 },
 
                 'trade_nuts_offer': {
-                    text: "I'll give you 15 health and 50 score for just 5 nuts!",
+                    text: "I'll give you 15 health and 5 score for just 5 nuts!",
                     choices: [
                         {
                             text: "Trade 5 nuts",
@@ -412,7 +468,7 @@ window.VILLAGERS = [
                             effect: {
                                 type: 'trade',
                                 cost: { berries: 0, nuts: 5, mushrooms: 0 },
-                                reward: { health: 15, coins: 0, score: 50 }
+                                reward: { health: 15, coins: 0, score: 5 }
                             },
                             failNode: 'trade_fail'
                         },

@@ -176,6 +176,10 @@ window.Environment = (function() {
 
         tree.position.set(x, 0, z);
         tree.userData.radius = 1.5;
+        tree.userData.type = 'tree';
+        tree.userData.health = 10;
+        tree.userData.maxHealth = 10;
+        tree.userData.biome = 'arboreal';
         return tree;
     }
 
@@ -1500,8 +1504,13 @@ window.Environment = (function() {
         // Create Ningle's Research Hut in the southeast corner
         createResearchHut(35, 35);
 
-        // Create the ancient skull dig spot (special rock pile)
-        createSkullDigSpot(-40, 20);
+        // Create the ancient skull dig spot — half-buried in the back wall of Ningle's hut
+        // Hut is at (35, 35) and faces southwest, so the back wall is northeast
+        // hut rotation = atan2(-35, -35) ≈ -2.36 rad, back is opposite = +0.79 rad
+        const hutBackAngle = Math.atan2(-35, -35) + Math.PI;
+        const skullX = 35 + Math.cos(hutBackAngle) * 4.2;  // Right at the wall edge
+        const skullZ = 35 + Math.sin(hutBackAngle) * 4.2;
+        createSkullDigSpot(skullX, skullZ);
     }
 
     /**
@@ -1538,7 +1547,169 @@ window.Environment = (function() {
             createSnowParticles(biomeData.snowParticles);
         }
 
-        console.log(`🏔️ Created ${numRocks} snow-covered rock mounds`);
+        // Create the Snow Temple of the Great Mages of Andurat
+        createSnowTemple(350, 350);
+
+        console.log(`🏔️ Created ${numRocks} snow-covered rock mounds + Snow Temple`);
+    }
+
+    /**
+     * Create the Snow Temple of the Great Mages of Andurat.
+     * An ancient stone monument with raised platform, steps, totem poles,
+     * and a central plinth holding the drongulinat cat tooth artifact.
+     */
+    function createSnowTemple(x, z) {
+        var templeGroup = new THREE.Group();
+        templeGroup.position.set(x, 0, z);
+
+        // --- RAISED PLATFORM ---
+        // Large circular stone platform
+        var platformGeo = new THREE.CylinderGeometry(12, 13, 1.5, 24);
+        var stoneMat = new THREE.MeshStandardMaterial({
+            color: 0x8a8a8a,  // Grey stone
+            roughness: 0.9,
+            metalness: 0.05
+        });
+        var platform = new THREE.Mesh(platformGeo, stoneMat);
+        platform.position.y = 0.75;
+        platform.castShadow = true;
+        platform.receiveShadow = true;
+        templeGroup.add(platform);
+
+        // --- STEPS (4 directions: N/S/E/W) ---
+        var darkStoneMat = new THREE.MeshStandardMaterial({
+            color: 0x6a6a6a,
+            roughness: 0.9,
+            metalness: 0.05
+        });
+
+        var stepDirections = [
+            { dx: 0, dz: -13 },   // North
+            { dx: 0, dz: 13 },    // South
+            { dx: 13, dz: 0 },    // East
+            { dx: -13, dz: 0 }    // West
+        ];
+
+        stepDirections.forEach(function(dir) {
+            // 3 steps, each getting lower
+            for (var s = 0; s < 3; s++) {
+                var stepGeo = new THREE.BoxGeometry(4, 0.4, 1.5);
+                var step = new THREE.Mesh(stepGeo, darkStoneMat);
+                var fraction = (s + 1) / 3;
+                step.position.set(
+                    dir.dx * fraction,
+                    1.5 - s * 0.5,
+                    dir.dz * fraction
+                );
+                // Rotate steps to face outward
+                if (dir.dx !== 0) {
+                    step.rotation.y = Math.PI / 2;
+                }
+                step.castShadow = true;
+                step.receiveShadow = true;
+                templeGroup.add(step);
+            }
+        });
+
+        // --- 4 TOTEM POLES (at corners of platform) ---
+        var totemPositions = [
+            { x: 8, z: 8 },
+            { x: -8, z: 8 },
+            { x: 8, z: -8 },
+            { x: -8, z: -8 }
+        ];
+
+        var totemStoneMat = new THREE.MeshStandardMaterial({
+            color: 0x7a7a70,
+            roughness: 0.85,
+            metalness: 0.1
+        });
+
+        totemPositions.forEach(function(pos) {
+            var totemGroup = new THREE.Group();
+            totemGroup.position.set(pos.x, 1.5, pos.z);
+
+            // 3 stacked cylindrical segments
+            for (var seg = 0; seg < 3; seg++) {
+                var segRadius = 0.8 - seg * 0.15;
+                var segGeo = new THREE.CylinderGeometry(segRadius, segRadius + 0.05, 2, 8);
+                var segment = new THREE.Mesh(segGeo, totemStoneMat);
+                segment.position.y = seg * 2 + 1;
+                segment.castShadow = true;
+                templeGroup.add(segment);
+                // Position relative to totem
+                segment.position.x = pos.x;
+                segment.position.z = pos.z;
+                segment.position.y = 1.5 + seg * 2 + 1;
+            }
+
+            // Cat face on top segment — golden eyes
+            var eyeMat = new THREE.MeshStandardMaterial({
+                color: 0xccaa00,
+                emissive: 0xccaa00,
+                emissiveIntensity: 0.4
+            });
+
+            // Left eye
+            var eyeGeo = new THREE.SphereGeometry(0.12, 8, 8);
+            var leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(pos.x - 0.25, 1.5 + 5.2, pos.z + 0.6);
+            templeGroup.add(leftEye);
+
+            // Right eye
+            var rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+            rightEye.position.set(pos.x + 0.25, 1.5 + 5.2, pos.z + 0.6);
+            templeGroup.add(rightEye);
+
+            // Nose (small cone)
+            var noseGeo = new THREE.ConeGeometry(0.1, 0.2, 4);
+            var noseMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+            var nose = new THREE.Mesh(noseGeo, noseMat);
+            nose.position.set(pos.x, 1.5 + 4.9, pos.z + 0.7);
+            nose.rotation.x = Math.PI / 2;
+            templeGroup.add(nose);
+        });
+
+        // --- CENTRAL PLINTH ---
+        // Stone pillar in the middle of the platform
+        var plinthGeo = new THREE.CylinderGeometry(1.2, 1.4, 2, 12);
+        var plinthMat = new THREE.MeshStandardMaterial({
+            color: 0x5a5a5a,  // Dark stone
+            roughness: 0.85,
+            metalness: 0.15
+        });
+        var plinth = new THREE.Mesh(plinthGeo, plinthMat);
+        plinth.position.y = 2.5;  // On top of platform
+        plinth.castShadow = true;
+        templeGroup.add(plinth);
+
+        // Flat stone slab on top of plinth
+        var slabGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.2, 12);
+        var slabMat = new THREE.MeshStandardMaterial({
+            color: 0x4a4a4a,
+            roughness: 0.7,
+            metalness: 0.2
+        });
+        var slab = new THREE.Mesh(slabGeo, slabMat);
+        slab.position.y = 3.6;
+        templeGroup.add(slab);
+
+        // --- TOOTH ARTIFACT on top of plinth ---
+        // Only place if player hasn't already collected it
+        var alreadyHas = GameState.artifacts && GameState.artifacts.includes('drongulinat_cat_tooth');
+        var alreadyGave = GameState.artifactsGiven && GameState.artifactsGiven.includes('drongulinat_cat_tooth');
+        if (!alreadyHas && !alreadyGave) {
+            var tooth = Items.createArtifact('drongulinat_cat_tooth');
+            if (tooth) {
+                tooth.position.set(x, 4.2, z);  // World coordinates (above plinth)
+                GameState.scene.add(tooth);
+                Items.trackArtifact(tooth);
+            }
+        }
+
+        GameState.scene.add(templeGroup);
+        trackObject(templeGroup);
+        console.log('Snow Temple created at (' + x + ', ' + z + ')');
     }
 
     /**
@@ -1694,41 +1865,55 @@ window.Environment = (function() {
     function createSkullDigSpot(x, z) {
         const digSpot = new THREE.Group();
 
-        // Create a pile of rocks
-        for (let i = 0; i < 8; i++) {
-            const rockGeo = new THREE.DodecahedronGeometry(0.8 + Math.random() * 0.5, 1);
+        // Small rubble half-buried in the hut wall — looks like debris
+        // Only 4 small rocks so it blends in and is easy to miss
+        for (let i = 0; i < 4; i++) {
+            const rockGeo = new THREE.DodecahedronGeometry(0.4 + Math.random() * 0.3, 1);
             const rockMat = new THREE.MeshStandardMaterial({
-                color: 0x8b7355,  // Slightly brown/golden rocks
-                roughness: 0.7,
-                emissive: 0xffd700,  // Golden glow
-                emissiveIntensity: 0.1
+                color: 0xc4a882,  // Same adobe color as the hut wall
+                roughness: 0.8,
+                emissive: 0xffd700,  // Faint golden shimmer
+                emissiveIntensity: 0.05  // Very subtle — you have to look closely
             });
             const rock = new THREE.Mesh(rockGeo, rockMat);
 
-            // Position rocks in a pile
-            const angle = (i / 8) * Math.PI * 2;
-            const radius = 1 + Math.random() * 0.5;
+            // Tight cluster against the wall
+            const angle = (i / 4) * Math.PI * 2;
+            const radius = 0.4 + Math.random() * 0.3;
             rock.position.set(
                 Math.cos(angle) * radius,
-                Math.random() * 0.5,
+                Math.random() * 0.3,
                 Math.sin(angle) * radius
             );
-            rock.scale.y = 0.6;
+            rock.scale.y = 0.5;
             rock.castShadow = true;
             rock.receiveShadow = true;
             digSpot.add(rock);
         }
 
-        // Add a central glowing light to make it obvious
-        const light = new THREE.PointLight(0xffd700, 0.5, 8);
-        light.position.y = 1;
+        // One bone-colored piece poking out — the skull hint!
+        const boneGeo = new THREE.SphereGeometry(0.25, 6, 4);
+        const boneMat = new THREE.MeshStandardMaterial({
+            color: 0xf5e6c8,  // Bone/ivory color
+            roughness: 0.6,
+            emissive: 0xffd700,
+            emissiveIntensity: 0.08
+        });
+        const bone = new THREE.Mesh(boneGeo, boneMat);
+        bone.position.set(0, 0.2, 0);
+        bone.scale.set(1, 0.6, 0.8);  // Flattened like a skull fragment
+        digSpot.add(bone);
+
+        // Very faint glow — only visible up close or at night
+        const light = new THREE.PointLight(0xffd700, 0.2, 4);
+        light.position.y = 0.5;
         digSpot.add(light);
 
         digSpot.position.set(x, 0, z);
         digSpot.userData = {
             type: 'skull_dig_spot',
-            radius: 3,
-            interactRadius: 4,  // Distance at which E prompt appears
+            radius: 2,
+            interactRadius: 3,  // Distance at which E prompt appears
             hasSkull: true      // Set to false after player digs it up
         };
 
@@ -1943,6 +2128,10 @@ window.Environment = (function() {
 
         tree.position.set(x, 0, z);
         tree.userData.radius = 1.5;
+        tree.userData.type = 'tree';
+        tree.userData.health = 10;
+        tree.userData.maxHealth = 10;
+        tree.userData.biome = 'savannah';
         tree.userData.treeType = 'acacia';  // Mark as acacia for Dronglous Cats
         return tree;
     }
@@ -1980,6 +2169,96 @@ window.Environment = (function() {
         return 0;
     }
 
+    // ========================================================================
+    // TREE CHOPPING SYSTEM
+    // ========================================================================
+    /**
+     * Damage a tree with the wood axe.
+     * Each hit gives 1 thous pine wood.
+     * After 10 hits (health reaches 0), tree falls and respawns after 2 minutes.
+     */
+    function damageTree(tree) {
+        if (!tree || !tree.userData || tree.userData.type !== 'tree') return;
+        if (tree.userData.falling) return; // Already falling, don't chop again
+
+        // Take 1 damage
+        tree.userData.health -= 1;
+
+        // Give 1 thous pine wood
+        GameState.resourceCounts.thous_pine_wood += 1;
+        Game.playSound('collect');
+        UI.updateUI();
+
+        // Hit flash — briefly change trunk color to white
+        tree.traverse(function(child) {
+            if (child.isMesh && child.material) {
+                var origColor = child.material.color.getHex();
+                child.material = child.material.clone();
+                child.material.color.setHex(0xffffff);
+                setTimeout(function() {
+                    if (child.material) {
+                        child.material.color.setHex(origColor);
+                    }
+                }, 100);
+            }
+        });
+
+        // Check if tree is dead
+        if (tree.userData.health <= 0) {
+            tree.userData.falling = true;
+
+            // Fall animation — rotate 90 degrees over 1 second
+            var fallStart = Date.now();
+            var fallDuration = 1000; // 1 second
+            var fallDirection = Math.random() * Math.PI * 2; // Random fall direction
+
+            function animateFall() {
+                var elapsed = Date.now() - fallStart;
+                var progress = Math.min(elapsed / fallDuration, 1);
+
+                // Ease-in fall (accelerates like gravity)
+                var easedProgress = progress * progress;
+
+                // Rotate tree to fall over
+                tree.rotation.x = Math.sin(fallDirection) * easedProgress * (Math.PI / 2);
+                tree.rotation.z = Math.cos(fallDirection) * easedProgress * (Math.PI / 2);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateFall);
+                } else {
+                    // Tree has fallen — remove after 2 minutes and spawn a new one
+                    setTimeout(function() {
+                        // Remove fallen tree
+                        GameState.scene.remove(tree);
+                        var idx = GameState.trees.indexOf(tree);
+                        if (idx > -1) GameState.trees.splice(idx, 1);
+
+                        // Spawn a new tree at a random position
+                        var newX, newZ;
+                        if (tree.userData.biome === 'arboreal') {
+                            do {
+                                newX = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                                newZ = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                            } while (Math.sqrt(newX * newX + newZ * newZ) < 15 || isInVillage(newX, newZ) || isInRiver(newX, newZ));
+                            var newTree = createTree(newX, newZ);
+                        } else {
+                            do {
+                                newX = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                                newZ = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+                            } while (Math.sqrt(newX * newX + newZ * newZ) < 15 || isInWateringHole(newX, newZ));
+                            var newTree = createSavannahTree(newX, newZ);
+                        }
+                        GameState.trees.push(newTree);
+                        GameState.scene.add(newTree);
+                        trackObject(newTree);
+                    }, 120000); // 2 minutes
+                }
+            }
+
+            animateFall();
+        }
+    }
+
     // Public API
     return {
         setupLighting: setupLighting,
@@ -2001,6 +2280,8 @@ window.Environment = (function() {
         deerExitBurrow: deerExitBurrow,
         deerPeekFromBurrow: deerPeekFromBurrow,
         eatGrassTuft: eatGrassTuft,
-        updateGrassTufts: updateGrassTufts
+        updateGrassTufts: updateGrassTufts,
+        // Tree chopping
+        damageTree: damageTree
     };
 })();

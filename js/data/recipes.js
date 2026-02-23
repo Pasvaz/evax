@@ -186,32 +186,68 @@ window.RECIPES = [
             type: 'item',
             item: 'saddle'
         }
-    }
+    },
 
     // ========================================================================
-    // ADD MORE RECIPES HERE!
+    // RECIPE 7: Wood Sword
     // ========================================================================
-    //
-    // Example of a new recipe you could add:
-    //
-    // {
-    //     id: 'mega_potion',
-    //     name: 'Mega Potion',
-    //     description: 'Heal 60 health and gain 25 coins!',
-    //     cost: {
-    //         berries: 12,
-    //         nuts: 8,
-    //         mushrooms: 6
-    //     },
-    //     effect: {
-    //         type: 'combo',
-    //         effects: [
-    //             { type: 'heal', amount: 60 },
-    //             { type: 'give_coins', amount: 25 }
-    //         ]
-    //     }
-    // }
-    //
-    // Don't forget to add a comma after the recipe above if you add more!
+    // Craft a sword from thous pine wood to fight enemies!
+    {
+        id: 'wood_sword',
+        name: 'Wood Sword',
+        description: 'Craft a wooden sword to fight enemies! (Select from hotbar)',
+        requiredScore: 100,
+
+        cost: {
+            thous_pine_wood: 15
+        },
+
+        effect: {
+            type: 'item',
+            item: 'wood_sword'
+        }
+    },
+
+    // ========================================================================
+    // RECIPE 8: Wood Axe
+    // ========================================================================
+    // Craft an axe from thous pine wood to chop trees!
+    {
+        id: 'wood_axe',
+        name: 'Wood Axe',
+        description: 'Craft a wooden axe to chop trees for wood! (Select from hotbar)',
+        requiredScore: 100,
+
+        cost: {
+            thous_pine_wood: 15
+        },
+
+        effect: {
+            type: 'item',
+            item: 'wood_axe'
+        }
+    },
+
+    // ========================================================================
+    // RECIPE 9: Arsen Bomb
+    // ========================================================================
+    // A devastating area-of-effect weapon!
+    {
+        id: 'arsen_bomb',
+        name: 'Arsen Bomb',
+        description: 'A toxic bomb that creates a poison puddle! (Select from hotbar, click to throw)',
+        requiredScore: 450,
+
+        cost: {
+            glass: 2,
+            seaweed: 1,
+            arsenic_mushrooms: 3
+        },
+
+        effect: {
+            type: 'item',
+            item: 'arsen_bomb'
+        }
+    }
 
 ];

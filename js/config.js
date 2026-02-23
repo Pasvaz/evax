@@ -128,6 +128,7 @@ window.CONFIG = {
             description: recipe.description,
             cost: recipe.cost,
             effect: recipe.effect,  // Keep the effect data for use in inventory
+            requiredScore: recipe.requiredScore || 0,  // Score needed to see this recipe
             // Function to add item to inventory (not use immediately)
             craft: function() {
                 // Add to inventory instead of using immediately
@@ -226,6 +227,28 @@ window.CONFIG = {
     // These come from js/data/enemies.js
     // Use these to quickly adjust difficulty.
 
-    ENEMY_PRESETS: ENEMY_PRESETS
+    ENEMY_PRESETS: ENEMY_PRESETS,
+
+    // ========================================================================
+    // PROGRESSION (Score-based Villager Unlocks)
+    // ========================================================================
+    // These come from js/data/progression.js
+    // Milestones define what score you need to unlock each villager.
+
+    PROGRESSION_MILESTONES: PROGRESSION.milestones,
+
+    LOCKED_MESSAGES: PROGRESSION.lockedMessages,
+
+    // Quick lookup: villager name -> required score
+    // Built automatically from milestones so you don't have to maintain two lists
+    VILLAGER_REQUIRED_SCORE: (function() {
+        var lookup = {};
+        PROGRESSION.milestones.forEach(function(milestone) {
+            if (milestone.villager) {
+                lookup[milestone.villager] = milestone.score;
+            }
+        });
+        return lookup;
+    })()
 
 };

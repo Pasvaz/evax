@@ -176,6 +176,9 @@ window.Effects = (function() {
 
         // Take the resources
         if (effect.cost) {
+            if (effect.cost.coins) {
+                GameState.pigCoins -= effect.cost.coins;
+            }
             if (effect.cost.berries) {
                 GameState.resourceCounts.berries -= effect.cost.berries;
             }
@@ -200,6 +203,17 @@ window.Effects = (function() {
             }
             if (effect.reward.score) {
                 GameState.score += effect.reward.score;
+            }
+            // Resource rewards
+            if (effect.reward.glass) {
+                GameState.resourceCounts.glass += effect.reward.glass;
+            }
+            if (effect.reward.thous_pine_wood) {
+                GameState.resourceCounts.thous_pine_wood += effect.reward.thous_pine_wood;
+            }
+            // Item reward (e.g. buying a sword from a shop)
+            if (effect.reward.item) {
+                executeItem({ item: effect.reward.item });
             }
         }
 
@@ -272,6 +286,41 @@ window.Effects = (function() {
                 UI.updateUI();
                 return true;
 
+            case 'wood_sword':
+            case 'wood_axe':
+            case 'arsen_bomb':
+                // These go into inventory as equippable items
+                var existing = GameState.inventoryItems.find(function(item) {
+                    return item.id === effect.item;
+                });
+                if (existing) {
+                    existing.count++;
+                } else {
+                    var itemNames = {
+                        wood_sword: 'Wood Sword',
+                        wood_axe: 'Wood Axe',
+                        arsen_bomb: 'Arsen Bomb'
+                    };
+                    var itemDescs = {
+                        wood_sword: 'A sturdy wooden sword. Equip from hotbar to fight!',
+                        wood_axe: 'A sharp wooden axe. Equip from hotbar to chop trees!',
+                        arsen_bomb: 'A toxic bomb. Equip from hotbar, click to throw!'
+                    };
+                    GameState.inventoryItems.push({
+                        id: effect.item,
+                        name: itemNames[effect.item],
+                        description: itemDescs[effect.item],
+                        effect: effect,
+                        count: 1
+                    });
+                }
+                Game.playSound('collect');
+                if (GameState.isInventoryOpen) {
+                    Inventory.refreshInventory();
+                }
+                UI.updateUI();
+                return true;
+
             default:
                 console.warn('Effects.executeItem: Unknown item:', effect.item);
                 return false;
@@ -292,6 +341,11 @@ window.Effects = (function() {
      */
     function canAfford(cost) {
         if (!cost) return true;
+
+        // Check coin cost
+        if (cost.coins && GameState.pigCoins < cost.coins) {
+            return false;
+        }
 
         // Check each resource type
         if (cost.berries && GameState.resourceCounts.berries < cost.berries) {

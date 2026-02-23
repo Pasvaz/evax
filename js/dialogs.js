@@ -176,7 +176,28 @@ window.Dialogs = (function() {
         });
 
         if (GameState.nearbyVillager && !GameState.isDialogOpen) {
+            const villagerName = GameState.nearbyVillager.userData.name;
+            const requiredScore = CONFIG.VILLAGER_REQUIRED_SCORE[villagerName] || 0;
+            const isUnlocked = GameState.score >= requiredScore;
+
             interactPrompt.classList.remove('hidden');
+            if (isUnlocked) {
+                interactPrompt.textContent = 'Press E to talk';
+                interactPrompt.classList.remove('locked-villager');
+            } else {
+                interactPrompt.textContent = 'Press E to talk (Locked \u2014 Need ' + requiredScore + ' score)';
+                interactPrompt.classList.add('locked-villager');
+            }
+        } else if (GameState.skullDigSpot && GameState.skullDigSpot.userData.hasSkull && !GameState.isDialogOpen) {
+            // Check if player is near the skull dig spot
+            const dist = GameState.peccary.position.distanceTo(GameState.skullDigSpot.position);
+            if (dist < GameState.skullDigSpot.userData.interactRadius) {
+                interactPrompt.classList.remove('hidden');
+                interactPrompt.classList.remove('locked-villager');
+                interactPrompt.textContent = 'Press E to dig';
+            } else {
+                interactPrompt.classList.add('hidden');
+            }
         } else {
             interactPrompt.classList.add('hidden');
         }
@@ -187,6 +208,40 @@ window.Dialogs = (function() {
      */
     function openDialog(villager) {
         if (!villager) return;
+
+        // Check if villager is locked by score requirement
+        const villagerName = villager.userData.name;
+        const requiredScore = CONFIG.VILLAGER_REQUIRED_SCORE[villagerName] || 0;
+
+        if (GameState.score < requiredScore) {
+            // Villager is LOCKED — show locked dialog
+            GameState.isDialogOpen = true;
+            GameState.currentDialogVillager = villager;
+
+            const dialogBox = document.getElementById('dialog-box');
+            dialogBox.classList.remove('hidden');
+            document.getElementById('interact-prompt').classList.add('hidden');
+
+            document.getElementById('dialog-name').textContent =
+                villagerName + ' - ' + villager.userData.role + ' (LOCKED)';
+            document.getElementById('dialog-text').textContent =
+                CONFIG.LOCKED_MESSAGES[villagerName] ||
+                "I'm not ready to talk to you yet. Come back when you're stronger!";
+
+            const dialogOptions = document.getElementById('dialog-options');
+            dialogOptions.innerHTML = '';
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'dialog-option';
+            optionDiv.setAttribute('data-option-number', 1);
+            optionDiv.textContent = '1. Goodbye.';
+            optionDiv.onclick = function() { closeDialog(); };
+            dialogOptions.appendChild(optionDiv);
+
+            document.getElementById('dialog-hint').textContent =
+                'Need ' + requiredScore + ' score to unlock. You have ' + GameState.score + '.';
+            Game.playSound('hurt');
+            return;
+        }
 
         GameState.isDialogOpen = true;
         GameState.currentDialogVillager = villager;

@@ -51,6 +51,7 @@ window.BIOMES = {
         id: 'savannah',
         name: 'New World Savannah',
         displayName: 'New World Savannah',
+        requiredScore: 500,  // Must reach Village Champion (unlock all villagers) to enter
 
         // Colors
         groundColor: 0xc2a83e,         // Yellow/golden savannah
@@ -149,6 +150,10 @@ window.BIOMES = {
         // Deericus Iricus - mountain deer
         spawnDeer: true,
         deer: 2,                       // 2 herds
+
+        // Drongulinat Cats - snow predators
+        spawnDrongulinatCats: true,
+        drongulinatCats: 4,            // 2 male + 2 female (2 pairs)
 
         // Requirements
         requiresArtifact: 'felis_dronglaticus_skull'  // Need the skull to enter!

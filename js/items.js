@@ -63,9 +63,28 @@ window.Items = (function() {
                     hungerAmount = foodHunger.eggs;
                 }
                 break;
+            case 'arsenic_mushroom':
+                if (GameState.resourceCounts.arsenic_mushrooms > 0) {
+                    GameState.resourceCounts.arsenic_mushrooms--;
+                    hasResource = true;
+                    healAmount = -10; // TOXIC: damages player!
+                    hungerAmount = -10; // Makes you feel sick
+                }
+                break;
         }
 
         if (hasResource) {
+            // Check if this is a toxic resource
+            if (healAmount < 0) {
+                // Toxic! Damage the player
+                GameState.health = Math.max(0, GameState.health + healAmount);
+                GameState.hunger = Math.max(0, GameState.hunger + hungerAmount);
+                Game.showBlockedMessage('That was poisonous! 🍄💀');
+                Game.playSound('hurt');
+                UI.updateUI();
+                return true;
+            }
+
             // Restore health if not full
             if (GameState.health < 100) {
                 GameState.health = Math.min(100, GameState.health + healAmount);
@@ -97,7 +116,7 @@ window.Items = (function() {
             case 'berry':
                 color = 0x4169e1;
                 healAmount = 5;
-                value = 10;
+                value = 1;
                 for (let i = 0; i < 5; i++) {
                     const berry = new THREE.Mesh(
                         new THREE.SphereGeometry(0.15, 8, 8),
@@ -120,7 +139,7 @@ window.Items = (function() {
             case 'nut':
                 color = 0x8b4513;
                 healAmount = 8;
-                value = 15;
+                value = 2;
                 const nutBody = new THREE.Mesh(
                     new THREE.SphereGeometry(0.2, 8, 8),
                     new THREE.MeshStandardMaterial({ color: color })
@@ -146,7 +165,7 @@ window.Items = (function() {
             case 'mushroom':
                 color = 0xff6347;
                 healAmount = 12;
-                value = 20;
+                value = 3;
                 const mushroomStem = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.1, 0.12, 0.3, 8),
                     new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
@@ -177,7 +196,7 @@ window.Items = (function() {
                 // Green seaweed that grows on riverbanks
                 color = 0x2e8b57; // Sea green
                 healAmount = 20;
-                value = 25;
+                value = 4;
                 const seaweedMat = new THREE.MeshStandardMaterial({
                     color: color,
                     side: THREE.DoubleSide
@@ -215,11 +234,43 @@ window.Items = (function() {
                 }
                 break;
 
+            case 'arsenic_mushroom':
+                // Toxic black mushroom with orange spots — savannah only!
+                color = 0x1a1a1a; // Nearly black
+                healAmount = -10; // TOXIC: damages player
+                value = 0; // No score for collecting
+                const arsenicStem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.08, 0.1, 0.25, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x2a2a2a })
+                );
+                arsenicStem.position.y = 0.12;
+                resource.add(arsenicStem);
+                const arsenicCap = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.22, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: color })
+                );
+                arsenicCap.scale.y = 0.5;
+                arsenicCap.position.y = 0.3;
+                resource.add(arsenicCap);
+                // Orange warning spots
+                const orangeSpotMat = new THREE.MeshStandardMaterial({ color: 0xff6600 });
+                for (let i = 0; i < 6; i++) {
+                    const spot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), orangeSpotMat);
+                    const angle = (i / 6) * Math.PI * 2;
+                    spot.position.set(
+                        Math.cos(angle) * 0.13,
+                        0.35,
+                        Math.sin(angle) * 0.13
+                    );
+                    resource.add(spot);
+                }
+                break;
+
             case 'egg':
                 // Beige goose egg with brown speckles
                 color = 0xf5f5dc; // Beige
                 healAmount = 40;
-                value = 60;
+                value = 6;
                 // Create egg body (oval sphere)
                 const eggBody = new THREE.Mesh(
                     new THREE.SphereGeometry(0.25, 16, 16),
@@ -305,6 +356,14 @@ window.Items = (function() {
             }
         }
 
+        // 5% chance to spawn arsenic mushroom in savannah only
+        if (GameState.currentBiome === 'savannah' && Math.random() < 0.05) {
+            const resource = createResource('arsenic_mushroom');
+            GameState.resources.push(resource);
+            GameState.scene.add(resource);
+            return;
+        }
+
         // Otherwise spawn regular resources
         const types = ['berry', 'nut', 'mushroom'];
         const type = types[Math.floor(Math.random() * types.length)];
@@ -343,19 +402,16 @@ window.Items = (function() {
 
         if (type === 'berry') {
             GameState.resourceCounts.berries++;
-            GameState.pigCoins += CONFIG.RESOURCE_PRICES.berries;
         } else if (type === 'nut') {
             GameState.resourceCounts.nuts++;
-            GameState.pigCoins += CONFIG.RESOURCE_PRICES.nuts;
         } else if (type === 'mushroom') {
             GameState.resourceCounts.mushrooms++;
-            GameState.pigCoins += CONFIG.RESOURCE_PRICES.mushrooms;
         } else if (type === 'seaweed') {
             GameState.resourceCounts.seaweed++;
-            GameState.pigCoins += CONFIG.RESOURCE_PRICES.seaweed;
+        } else if (type === 'arsenic_mushroom') {
+            GameState.resourceCounts.arsenic_mushrooms++;
         } else if (type === 'egg') {
             GameState.resourceCounts.eggs++;
-            GameState.pigCoins += CONFIG.RESOURCE_PRICES.eggs;
 
             // Check if this egg came from a nest and trigger nest owner defense
             if (resource.userData.nestId && GameState.nests) {
@@ -405,6 +461,11 @@ window.Items = (function() {
         recipesContainer.innerHTML = '';
 
         CONFIG.CRAFT_RECIPES.forEach(recipe => {
+            // Skip recipes that require a higher score
+            if (recipe.requiredScore && GameState.score < recipe.requiredScore) {
+                return;
+            }
+
             const recipeDiv = document.createElement('div');
             recipeDiv.className = 'craft-recipe';
 
@@ -412,7 +473,10 @@ window.Items = (function() {
                 GameState.resourceCounts.berries >= (recipe.cost.berries || 0) &&
                 GameState.resourceCounts.nuts >= (recipe.cost.nuts || 0) &&
                 GameState.resourceCounts.mushrooms >= (recipe.cost.mushrooms || 0) &&
-                GameState.resourceCounts.seaweed >= (recipe.cost.seaweed || 0);
+                GameState.resourceCounts.seaweed >= (recipe.cost.seaweed || 0) &&
+                GameState.resourceCounts.arsenic_mushrooms >= (recipe.cost.arsenic_mushrooms || 0) &&
+                GameState.resourceCounts.thous_pine_wood >= (recipe.cost.thous_pine_wood || 0) &&
+                GameState.resourceCounts.glass >= (recipe.cost.glass || 0);
 
             if (!canCraft) {
                 recipeDiv.classList.add('disabled');
@@ -471,6 +535,36 @@ window.Items = (function() {
                 costDiv.appendChild(seaweedCost);
             }
 
+            if (recipe.cost.arsenic_mushrooms > 0) {
+                const arsenicCost = document.createElement('div');
+                arsenicCost.className = 'craft-cost-item';
+                if (GameState.resourceCounts.arsenic_mushrooms < recipe.cost.arsenic_mushrooms) {
+                    arsenicCost.classList.add('insufficient');
+                }
+                arsenicCost.innerHTML = `<span class="arsenic-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="10" rx="9" ry="6" fill="#1a1a1a"/><rect x="10" y="14" width="4" height="7" rx="1" fill="#2a2a2a"/><circle cx="7" cy="9" r="1.5" fill="#ff6600"/><circle cx="12" cy="7" r="1.5" fill="#ff6600"/><circle cx="17" cy="9" r="1.5" fill="#ff6600"/><circle cx="9" cy="12" r="1.2" fill="#ff6600"/><circle cx="15" cy="12" r="1.2" fill="#ff6600"/></svg></span><span>${recipe.cost.arsenic_mushrooms}</span>`;
+                costDiv.appendChild(arsenicCost);
+            }
+
+            if (recipe.cost.thous_pine_wood > 0) {
+                const woodCost = document.createElement('div');
+                woodCost.className = 'craft-cost-item';
+                if (GameState.resourceCounts.thous_pine_wood < recipe.cost.thous_pine_wood) {
+                    woodCost.classList.add('insufficient');
+                }
+                woodCost.innerHTML = `<span>🪵</span><span>${recipe.cost.thous_pine_wood}</span>`;
+                costDiv.appendChild(woodCost);
+            }
+
+            if (recipe.cost.glass > 0) {
+                const glassCost = document.createElement('div');
+                glassCost.className = 'craft-cost-item';
+                if (GameState.resourceCounts.glass < recipe.cost.glass) {
+                    glassCost.classList.add('insufficient');
+                }
+                glassCost.innerHTML = `<span>🔮</span><span>${recipe.cost.glass}</span>`;
+                costDiv.appendChild(glassCost);
+            }
+
             recipeDiv.appendChild(costDiv);
 
             const craftBtn = document.createElement('button');
@@ -492,7 +586,10 @@ window.Items = (function() {
         if (GameState.resourceCounts.berries < (recipe.cost.berries || 0) ||
             GameState.resourceCounts.nuts < (recipe.cost.nuts || 0) ||
             GameState.resourceCounts.mushrooms < (recipe.cost.mushrooms || 0) ||
-            GameState.resourceCounts.seaweed < (recipe.cost.seaweed || 0)) {
+            GameState.resourceCounts.seaweed < (recipe.cost.seaweed || 0) ||
+            GameState.resourceCounts.arsenic_mushrooms < (recipe.cost.arsenic_mushrooms || 0) ||
+            GameState.resourceCounts.thous_pine_wood < (recipe.cost.thous_pine_wood || 0) ||
+            GameState.resourceCounts.glass < (recipe.cost.glass || 0)) {
             return;
         }
 
@@ -500,6 +597,9 @@ window.Items = (function() {
         GameState.resourceCounts.nuts -= (recipe.cost.nuts || 0);
         GameState.resourceCounts.mushrooms -= (recipe.cost.mushrooms || 0);
         GameState.resourceCounts.seaweed -= (recipe.cost.seaweed || 0);
+        GameState.resourceCounts.arsenic_mushrooms -= (recipe.cost.arsenic_mushrooms || 0);
+        GameState.resourceCounts.thous_pine_wood -= (recipe.cost.thous_pine_wood || 0);
+        GameState.resourceCounts.glass -= (recipe.cost.glass || 0);
 
         // Add to inventory instead of using immediately
         recipe.craft();
@@ -678,6 +778,16 @@ window.Items = (function() {
     }
 
     /**
+     * Track an externally-created artifact for collection and animation.
+     * Used when placing artifacts at fixed locations (e.g. Snow Temple plinth).
+     */
+    function trackArtifact(artifact) {
+        if (artifact && !artifactsInWorld.includes(artifact)) {
+            artifactsInWorld.push(artifact);
+        }
+    }
+
+    /**
      * Get artifacts currently in the world.
      */
     function getArtifactsInWorld() {
@@ -699,6 +809,7 @@ window.Items = (function() {
         spawnArtifact: spawnArtifact,
         updateArtifacts: updateArtifacts,
         clearArtifacts: clearArtifacts,
-        getArtifactsInWorld: getArtifactsInWorld
+        getArtifactsInWorld: getArtifactsInWorld,
+        trackArtifact: trackArtifact
     };
 })();

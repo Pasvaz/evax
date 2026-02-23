@@ -945,6 +945,145 @@ window.ENEMIES = [
     },
 
     // ========================================================================
+    // DRONGULINAT CAT - Living relative of Felis Dronglaticus (Snow Biome)
+    // ========================================================================
+    // Larger than dronglous cat with BIG paws for snow. Males are grey-white,
+    // females are pure white. Hunts deer, mates randomly, gives birth to 3 kittens.
+    // Only attacks player if provoked (hit first).
+    // Baby males are reddish purple, baby females are pumpkin seed green.
+
+    // Male Drongulinat Cat - Grey-white coat
+    {
+        id: 'drongulinat_cat_male',
+        type: 'drongulinat_cat',
+        category: 'carnivore',
+        speed: 8,
+        speedVariation: 1,
+        damage: 15,
+        radius: 0.7,
+        size: 1.1,                     // Larger than dronglous (0.9)
+        health: 25,
+        spawnWeight: 0,                // Spawned via special system
+        minimapColor: '#C0C8D0',
+        groundY: 0.33,
+        friendly: false,
+        gender: 'male',
+
+        colors: {
+            body: "#C0C8D0",            // Grey-white
+            belly: "#D0D8E0",           // Lighter grey-white belly
+            face: "#C0C8D0",
+            ears: "#B0B8C0",            // Slightly darker ears
+            earInner: "#E8D0D0",        // Pinkish inner ear
+            nose: "#3A2A2A",            // Dark nose
+            eyes: "#CCAA00",            // Golden yellow eyes (like ancestor)
+            eyePupil: "#111111",
+            whiskers: "#E8E8E8",        // Light grey whiskers
+            pawPads: "#3A2A2A",         // Dark paw pads
+            tail: "#C0C8D0"
+        }
+    },
+
+    // Female Drongulinat Cat - Full white coat
+    {
+        id: 'drongulinat_cat_female',
+        type: 'drongulinat_cat',
+        category: 'carnivore',
+        speed: 7,
+        speedVariation: 1,
+        damage: 12,
+        radius: 0.6,
+        size: 0.95,                    // Slightly smaller than male
+        health: 20,
+        spawnWeight: 0,
+        minimapColor: '#F0F0F0',
+        groundY: 0.3,
+        friendly: false,
+        gender: 'female',
+        canGetPregnant: true,
+
+        colors: {
+            body: "#F0F0F0",            // Full white
+            belly: "#FAFAFA",           // Near-white belly
+            face: "#F0F0F0",
+            ears: "#E8E8E8",
+            earInner: "#FFD0D0",        // Pink inner ear
+            nose: "#FFA0A0",            // Pink nose
+            eyes: "#CCAA00",            // Golden yellow eyes
+            eyePupil: "#111111",
+            whiskers: "#FFFFFF",
+            pawPads: "#FFA0A0",         // Pink paw pads
+            tail: "#F0F0F0"
+        }
+    },
+
+    // Baby Male Drongulinat Cat - Reddish purple
+    {
+        id: 'drongulinat_cat_baby_male',
+        type: 'drongulinat_cat',
+        category: 'carnivore',
+        speed: 5,
+        speedVariation: 1,
+        damage: 3,
+        radius: 0.35,
+        size: 0.5,
+        health: 10,
+        spawnWeight: 0,
+        minimapColor: '#8B3A62',
+        groundY: 0.18,
+        friendly: true,                // Babies don't attack
+        gender: 'male',
+        isBaby: true,
+
+        colors: {
+            body: "#8B3A62",            // Reddish purple
+            belly: "#9B4A72",           // Lighter reddish purple belly
+            face: "#8B3A62",
+            ears: "#7B2A52",
+            earInner: "#C08090",
+            nose: "#5A2040",
+            eyes: "#88CC88",            // Baby green-yellow eyes
+            eyePupil: "#111111",
+            whiskers: "#A05080",
+            pawPads: "#5A2040",
+            tail: "#8B3A62"
+        }
+    },
+
+    // Baby Female Drongulinat Cat - Pumpkin seed green
+    {
+        id: 'drongulinat_cat_baby_female',
+        type: 'drongulinat_cat',
+        category: 'carnivore',
+        speed: 5,
+        speedVariation: 1,
+        damage: 3,
+        radius: 0.33,
+        size: 0.45,
+        health: 8,
+        spawnWeight: 0,
+        minimapColor: '#7A9A4A',
+        groundY: 0.16,
+        friendly: true,
+        gender: 'female',
+        isBaby: true,
+
+        colors: {
+            body: "#7A9A4A",            // Pumpkin seed green
+            belly: "#8AAA5A",           // Lighter green belly
+            face: "#7A9A4A",
+            ears: "#6A8A3A",
+            earInner: "#B0C080",
+            nose: "#5A7030",
+            eyes: "#88CCFF",            // Baby blue eyes
+            eyePupil: "#111111",
+            whiskers: "#90AA60",
+            pawPads: "#5A7030",
+            tail: "#7A9A4A"
+        }
+    },
+
+    // ========================================================================
     // ADD MORE ENEMIES HERE!
     // ========================================================================
     //

@@ -133,7 +133,7 @@ Bring us more. The more we collect, the closer we get to solving the mystery!"`,
         name: 'Felis Dronglaticus Skull',
         icon: '💀',
         rarity: 'epic',
-        spawnType: 'hidden',
+        spawnType: 'fixed',  // Always at Ningle's hut wall — not random spawned
         biome: 'savannah',
         description: 'An ancient golden skull that shimmers with mysterious energy.',
         lore: `"BY MY SNOUT! This is... this is IMPOSSIBLE! You've found the skull of Felis Dronglaticus!
@@ -153,6 +153,37 @@ Mountains. To the west, beyond our known lands. If this skull is here, then perh
 This changes everything we know about our world. Keep this skull safe - it might be the key to discovering lands we've only dreamed of!"`,
         reward: { coins: 500, score: 1000 },
         unlocksBiome: 'snowy_mountains'  // Unlocks the snowy mountain biome!
+    },
+
+    // ========================================================================
+    // SNOWY MOUNTAINS ARTIFACTS
+    // ========================================================================
+    {
+        id: 'drongulinat_cat_tooth',
+        name: 'Drongulinat Cat Tooth',
+        icon: '🦷',
+        rarity: 'rare',
+        spawnType: 'fixed',  // Always on the Snow Temple plinth
+        biome: 'snowy_mountains',
+        description: 'A massive fossilized canine tooth, perfectly preserved in ice. It glows faintly golden.',
+        lore: `"INCREDIBLE! A tooth from a Drongulinat Cat! And not just any tooth — this is an ancient one, thousands of years old!
+
+*Ningle holds the tooth up to the light, his eyes wide with excitement*
+
+Do you remember the Felis Dronglaticus skull you found? That was the COMMON ANCESTOR — the original ancient cat. Well, over tens of thousands of years, that one species split into TWO branches!
+
+The first branch adapted to warm forests and savannahs. They became smaller, learned to climb trees, and developed ambush hunting from the canopy. Those are our Dronglous Cats — the ones you see in the savannah, hiding in acacia trees!
+
+The second branch went the OTHER way. They climbed higher, into the frozen mountains. They grew BIGGER, developed massive paws like snowshoes so they wouldn't sink in the snow, and became pursuit hunters — chasing prey across open ground instead of ambushing from above.
+
+Those are the Drongulinat Cats. And this tooth proves they've been in those mountains for THOUSANDS of years!
+
+Professor Snoutworth theorized this exact split. She wrote: 'The ancient cat faced a choice — the warmth of the lowlands, or the cold of the peaks. Some chose comfort. Others chose challenge. Both survived. Both thrived. That is the beauty of evolution.'
+
+The Snow Temple where you found this... the Great Mages of Andurat built it to honor these magnificent predators. They carved cat faces into the totem poles with golden eyes — the same golden eyes both species inherited from their ancient ancestor.
+
+This is a missing piece of the puzzle. With the skull AND the tooth, we now have evidence of the full evolutionary tree. Extraordinary work, young explorer!"`,
+        reward: { coins: 200, score: 400 }
     }
 ];
 

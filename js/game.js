@@ -71,9 +71,20 @@ window.GameState = {
     squatTimer: 0,
 
     score: 0,
-    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0 },
+    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0 },
     pigCoins: 0,
     timeElapsed: 0,
+
+    // Progression system
+    unlockedVillagers: [],
+    currentLevel: "Newborn Peccary",
+
+    // Hotbar (Minecraft-style equipment slots)
+    hotbarSlots: [null, null, null, null, null, null, null, null, null],
+    selectedHotbarSlot: 0,
+
+    // Arsen bomb puddle system
+    activePuddles: [],
 
     // Input handling
     keys: {},
@@ -359,7 +370,7 @@ window.Game = (function() {
         if (testingMode) {
             // Testing mode - infinite resources and coins
             GameState.pigCoins = 99999;
-            GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999 };
+            GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999 };
             GameState.hasSaddle = true;  // Give saddle for riding gazella
             // Give all artifacts
             GameState.artifacts = ARTIFACTS.map(a => a.id);
@@ -415,9 +426,23 @@ window.Game = (function() {
         GameState.thirst = 100;
         GameState.dehydrationTimer = 0;
         GameState.score = 0;
-        GameState.resourceCounts = { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0 };
-        GameState.pigCoins = 50;
+        GameState.resourceCounts = { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0 };
+        GameState.pigCoins = 0;
         GameState.timeElapsed = 0;
+
+        // Reset progression
+        GameState.unlockedVillagers = [];
+        GameState.currentLevel = "Newborn Peccary";
+
+        // Reset hotbar
+        GameState.hotbarSlots = [null, null, null, null, null, null, null, null, null];
+        GameState.selectedHotbarSlot = 0;
+
+        // Clear arsen bomb puddles
+        GameState.activePuddles.forEach(function(puddle) {
+            GameState.scene.remove(puddle.mesh);
+        });
+        GameState.activePuddles = [];
 
         // Clear bathroom mechanic
         GameState.poopQueue = [];
@@ -593,6 +618,22 @@ window.Game = (function() {
     }
 
     /**
+     * Show an on-screen message when the player is blocked from entering a biome.
+     * Reuses the biome transition banner but with red border.
+     */
+    function showBlockedMessage(text) {
+        const el = document.getElementById('biome-transition');
+        const textEl = document.getElementById('biome-transition-text');
+        textEl.textContent = text;
+        el.style.display = 'block';
+        el.style.borderColor = '#ff6666';
+        setTimeout(function() {
+            el.style.display = 'none';
+            el.style.borderColor = '#ffcc00';
+        }, 3000);
+    }
+
+    /**
      * Transition to a new biome.
      * @param {string} targetBiome - The biome ID to transition to
      * @param {string} direction - The direction of travel ('north' or 'south')
@@ -602,14 +643,22 @@ window.Game = (function() {
 
         const targetData = getBiomeData(targetBiome);
 
+        // Check if this biome requires a minimum score to enter
+        if (targetData.requiredScore && !GameState.isTestingMode) {
+            if (GameState.score < targetData.requiredScore) {
+                showBlockedMessage('You need ' + targetData.requiredScore + ' score to enter ' + targetData.displayName + '! Talk to all the villagers first.');
+                GameState.borderTransitionTimer = 0;
+                GameState.onBorder = null;
+                return;
+            }
+        }
+
         // Check if this biome requires an artifact to enter
         if (targetData.requiresArtifact) {
             if (!GameState.artifacts || !GameState.artifacts.includes(targetData.requiresArtifact)) {
                 const artifactData = window.getArtifactData(targetData.requiresArtifact);
                 const artifactName = artifactData ? artifactData.name : 'a special artifact';
-                console.log(`🚫 You need ${artifactName} to enter ${targetData.displayName}!`);
-                console.log('🔍 Explore the savannah to find ancient secrets...');
-                // Reset border so player can try again later
+                showBlockedMessage('You need the ' + artifactName + ' to enter ' + targetData.displayName + '!');
                 GameState.borderTransitionTimer = 0;
                 GameState.onBorder = null;
                 return;
@@ -721,6 +770,13 @@ window.Game = (function() {
                 }
                 // Reset deer mating timer
                 GameState.deerMatingTimer = 0;
+            }
+
+            // Spawn Drongulinat Cats in snowy mountains biome
+            if (targetData.spawnDrongulinatCats && targetData.drongulinatCats > 0) {
+                Enemies.spawnDrongulinatCats(targetData.drongulinatCats);
+                // Reset mating timer
+                GameState.drongulinatCatMatingTimer = 0;
             }
 
             // Spawn initial resources
@@ -888,6 +944,7 @@ window.Game = (function() {
             Dialogs.updateVillagers(delta);
             updateSnowParticles(delta);
             Environment.updateGrassTufts(delta);
+            updatePuddles(delta);
             checkBiomeTransition(delta);
             updateCamera();
             UI.updateMinimap();
@@ -895,11 +952,14 @@ window.Game = (function() {
 
             // Testing mode - keep resources infinite
             if (GameState.isTestingMode) {
-                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999 };
+                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999 };
                 GameState.pigCoins = 99999;
                 GameState.hunger = 100;
                 GameState.thirst = 100;
-            } else {
+            }
+
+            // --- Non-testing-only: hunger/thirst drain ---
+            if (!GameState.isTestingMode) {
                 // Normal mode - hunger/thirst decrease over time
                 // Hunger decreases slowly over time (about 1 point every 6 seconds)
                 GameState.hunger = Math.max(0, GameState.hunger - delta * 0.17);
@@ -980,8 +1040,9 @@ window.Game = (function() {
                 }
             }
 
-            // Deer lifecycle timers (snowy mountains biome only)
-            if (GameState.currentBiome === 'snowy_mountains') {
+            // Deer updates — always run when deer exist (they live in snowy biome
+            // but need to keep updating even when player visits other biomes)
+            if (GameState.deerHerds && GameState.deerHerds.length > 0) {
                 // Update deer maturation (babies grow up after 3 minutes)
                 Enemies.updateDeerMaturation(delta);
 
@@ -991,7 +1052,7 @@ window.Game = (function() {
                 // Update deer mating behaviors (gestation, displays, fighting)
                 Enemies.updateDeerMating(delta);
 
-                // Update deer AI behaviors (grazing, burrows, defense)
+                // Update deer AI behaviors (grazing, burrows, defense, walking animation)
                 GameState.enemies.forEach(enemy => {
                     if (enemy.userData.id && enemy.userData.id.includes('deericus_iricus')) {
                         Enemies.updateDeerBehavior(enemy, delta);
@@ -1005,12 +1066,15 @@ window.Game = (function() {
                     Enemies.triggerDeerMating();
                 }
             }
+
+            // Dronglous Cat update - runs in all biomes for testing
+            Enemies.updateDronglousCats(delta);
+
+            // Drongulinat Cat update - snowy mountain predators
+            Enemies.updateDrongulinatCats(delta);
+
+            GameState.renderer.render(GameState.scene, GameState.camera);
         }
-
-        // Dronglous Cat update - runs in all biomes for testing
-        Enemies.updateDronglousCats(delta);
-
-        GameState.renderer.render(GameState.scene, GameState.camera);
     }
 
     /**
@@ -1112,6 +1176,12 @@ window.Game = (function() {
                     if (GameState.isTestingMode && GameState.gameRunning && !GameState.isDialogOpen && !GameState.isInsideHut) {
                         toggleTestingMenu();
                     }
+                }
+
+                // Number keys: hotbar selection (when not in dialog/menu)
+                if (/^[1-9]$/.test(e.key) && !GameState.isDialogOpen && !GameState.isShopOpen && !GameState.isInventoryOpen && !GameState.isCraftMenuOpen) {
+                    GameState.selectedHotbarSlot = parseInt(e.key) - 1;
+                    UI.updateHotbar();
                 }
 
                 if (GameState.isDialogOpen && /^[1-9]$/.test(e.key)) {
@@ -1337,6 +1407,9 @@ window.Game = (function() {
             // Click to select animal (for become/pregnancy)
             document.addEventListener('click', onTestingClick);
 
+            // Combat click handler — sword attacks, axe chops, bomb throws
+            document.addEventListener('click', onCombatClick);
+
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('start-screen').classList.remove('hidden');
 
@@ -1505,6 +1578,269 @@ window.Game = (function() {
                             obj.children[0].material.emissive = new THREE.Color(origColor);
                         }
                     }, 300);
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // ARSEN BOMB PUDDLE SYSTEM
+    // ========================================================================
+
+    /**
+     * Create a toxic puddle at the given position.
+     * The puddle damages any enemy that walks through it.
+     */
+    function createArsenPuddle(position) {
+        // Create the visual puddle — dark semi-transparent circle on the ground
+        var puddleGeo = new THREE.CircleGeometry(7.5, 32);
+        var puddleMat = new THREE.MeshStandardMaterial({
+            color: 0x1a0a2e,       // Dark purple-black
+            transparent: true,
+            opacity: 0.7,
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        var puddleMesh = new THREE.Mesh(puddleGeo, puddleMat);
+        puddleMesh.rotation.x = -Math.PI / 2; // Lay flat on ground
+        puddleMesh.position.set(position.x, 0.05, position.z); // Just above ground
+        GameState.scene.add(puddleMesh);
+
+        // Add some toxic bubbles on top for visual effect
+        var bubbleGroup = new THREE.Group();
+        var bubbleMat = new THREE.MeshStandardMaterial({
+            color: 0x00ff44,
+            transparent: true,
+            opacity: 0.6,
+            emissive: 0x00ff44,
+            emissiveIntensity: 0.3
+        });
+        for (var i = 0; i < 8; i++) {
+            var angle = (i / 8) * Math.PI * 2;
+            var dist = Math.random() * 5;
+            var bubble = new THREE.Mesh(
+                new THREE.SphereGeometry(0.15 + Math.random() * 0.2, 8, 8),
+                bubbleMat
+            );
+            bubble.position.set(
+                Math.cos(angle) * dist,
+                0.15,
+                Math.sin(angle) * dist
+            );
+            bubbleGroup.add(bubble);
+        }
+        bubbleGroup.position.set(position.x, 0, position.z);
+        GameState.scene.add(bubbleGroup);
+
+        // Store the puddle data
+        GameState.activePuddles.push({
+            mesh: puddleMesh,
+            bubbles: bubbleGroup,
+            position: new THREE.Vector3(position.x, 0, position.z),
+            radius: 7.5,
+            createdAt: GameState.timeElapsed,
+            duration: 30,  // 30 seconds
+            damagedEnemies: {} // Track which enemies are inside (by id)
+        });
+    }
+
+    /**
+     * Update all active arsen bomb puddles.
+     * - Damages enemies inside puddles (2 dmg/sec)
+     * - Deals 5 exit damage when an enemy leaves
+     * - Removes expired puddles after 30 seconds
+     */
+    function updatePuddles(delta) {
+        if (GameState.activePuddles.length === 0) return;
+
+        var currentTime = GameState.timeElapsed;
+        var toRemove = [];
+
+        for (var p = 0; p < GameState.activePuddles.length; p++) {
+            var puddle = GameState.activePuddles[p];
+
+            // Check if puddle has expired
+            if (currentTime - puddle.createdAt >= puddle.duration) {
+                // Fade out and remove
+                GameState.scene.remove(puddle.mesh);
+                GameState.scene.remove(puddle.bubbles);
+                toRemove.push(p);
+                continue;
+            }
+
+            // Fade out during last 5 seconds
+            var timeLeft = puddle.duration - (currentTime - puddle.createdAt);
+            if (timeLeft < 5) {
+                puddle.mesh.material.opacity = 0.7 * (timeLeft / 5);
+                puddle.bubbles.children.forEach(function(b) {
+                    b.material.opacity = 0.6 * (timeLeft / 5);
+                });
+            }
+
+            // Animate bubbles — bob up and down
+            puddle.bubbles.children.forEach(function(bubble, i) {
+                bubble.position.y = 0.15 + Math.sin(currentTime * 3 + i) * 0.1;
+            });
+
+            // Track which enemies are currently inside this puddle
+            var currentlyInside = {};
+
+            // Check all enemies against this puddle
+            for (var e = 0; e < GameState.enemies.length; e++) {
+                var enemy = GameState.enemies[e];
+                if (!enemy || !enemy.userData || !enemy.userData.type) continue;
+
+                var enemyId = enemy.userData.id || e;
+                var dist = enemy.position.distanceTo(puddle.position);
+
+                if (dist <= puddle.radius) {
+                    // Enemy is INSIDE the puddle
+                    currentlyInside[enemyId] = true;
+
+                    // Deal 2 damage per second (scaled by delta)
+                    if (!puddle.damagedEnemies[enemyId]) {
+                        puddle.damagedEnemies[enemyId] = { damageAccum: 0 };
+                    }
+                    puddle.damagedEnemies[enemyId].damageAccum += delta;
+
+                    // Apply 2 damage for every full second accumulated
+                    if (puddle.damagedEnemies[enemyId].damageAccum >= 1) {
+                        puddle.damagedEnemies[enemyId].damageAccum -= 1;
+                        Enemies.damageEnemy(enemy, 2);
+                    }
+                }
+            }
+
+            // Check for enemies that LEFT the puddle (were inside, now outside)
+            for (var prevId in puddle.damagedEnemies) {
+                if (!currentlyInside[prevId]) {
+                    // Enemy left the puddle! Deal 5 exit damage after 1 second
+                    var leavingEnemy = null;
+                    for (var e2 = 0; e2 < GameState.enemies.length; e2++) {
+                        var eid = GameState.enemies[e2].userData.id || e2;
+                        if (String(eid) === String(prevId)) {
+                            leavingEnemy = GameState.enemies[e2];
+                            break;
+                        }
+                    }
+                    if (leavingEnemy) {
+                        // Delayed exit damage
+                        (function(enemy) {
+                            setTimeout(function() {
+                                if (enemy && enemy.userData && enemy.userData.health > 0) {
+                                    Enemies.damageEnemy(enemy, 5);
+                                }
+                            }, 1000);
+                        })(leavingEnemy);
+                    }
+                    delete puddle.damagedEnemies[prevId];
+                }
+            }
+        }
+
+        // Remove expired puddles (iterate backwards to avoid index issues)
+        for (var r = toRemove.length - 1; r >= 0; r--) {
+            GameState.activePuddles.splice(toRemove[r], 1);
+        }
+    }
+
+    /**
+     * Handle click events for combat — sword, axe, bomb.
+     */
+    function onCombatClick(event) {
+        if (!GameState.gameRunning) return;
+        if (GameState.isDialogOpen || GameState.isCraftMenuOpen || GameState.isInventoryOpen) return;
+        if (GameState.cameraDragMoved) return; // Don't attack after camera drag
+        if (GameState.isInsideHut) return;
+
+        // Get the selected hotbar item
+        const hotbarItem = UI.getSelectedHotbarItem();
+        if (!hotbarItem) return;
+
+        const itemId = hotbarItem.id;
+
+        // Only handle combat items
+        if (itemId !== 'wood_sword' && itemId !== 'wood_axe' && itemId !== 'arsen_bomb') return;
+
+        // Raycast from mouse position
+        const mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, GameState.camera);
+
+        if (itemId === 'wood_sword') {
+            // SWORD: raycast against enemies
+            const intersects = raycaster.intersectObjects(GameState.enemies, true);
+            if (intersects.length > 0) {
+                // Walk up to the root enemy group
+                let obj = intersects[0].object;
+                while (obj.parent && !obj.userData.type) {
+                    obj = obj.parent;
+                }
+
+                if (obj.userData && obj.userData.type) {
+                    const distance = GameState.peccary.position.distanceTo(obj.position);
+                    if (distance <= 15) {
+                        // Hit! Deal 2 damage
+                        Enemies.damageEnemy(obj, 2);
+                        Game.playSound('hurt');
+                    } else {
+                        showBlockedMessage('Too far away to hit!');
+                    }
+                }
+            }
+        }
+        if (itemId === 'wood_axe') {
+            // AXE: raycast against trees
+            const intersects = raycaster.intersectObjects(GameState.trees, true);
+            if (intersects.length > 0) {
+                // Walk up to the root tree group
+                let obj = intersects[0].object;
+                while (obj.parent && obj.userData.type !== 'tree') {
+                    obj = obj.parent;
+                }
+
+                if (obj.userData && obj.userData.type === 'tree') {
+                    const distance = GameState.peccary.position.distanceTo(obj.position);
+                    if (distance <= 15) {
+                        // Chop! Deal 1 damage to tree, get 1 wood
+                        Environment.damageTree(obj);
+                    } else {
+                        showBlockedMessage('Too far away to chop!');
+                    }
+                }
+            }
+        }
+        if (itemId === 'arsen_bomb') {
+            // BOMB: raycast to find where on the ground the player clicked
+            // Create a horizontal plane at y=0 to intersect with
+            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const intersectPoint = new THREE.Vector3();
+            raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+
+            if (intersectPoint) {
+                const distance = GameState.peccary.position.distanceTo(intersectPoint);
+                if (distance <= 35) {
+                    // Consume 1 bomb from the hotbar slot
+                    // (when you equip to hotbar, items move OUT of inventory INTO the hotbar)
+                    if (!hotbarItem || hotbarItem.count <= 0) {
+                        showBlockedMessage('No bombs left!');
+                        return;
+                    }
+                    hotbarItem.count--;
+                    if (hotbarItem.count <= 0) {
+                        // Clear the hotbar slot — no bombs left
+                        GameState.hotbarSlots[GameState.selectedHotbarSlot] = null;
+                    }
+                    UI.updateHotbar();
+
+                    // Create the puddle!
+                    createArsenPuddle(intersectPoint);
+                    Game.playSound('hurt');
+                } else {
+                    showBlockedMessage('Too far away to throw!');
                 }
             }
         }
@@ -1730,6 +2066,7 @@ window.Game = (function() {
         toggleTestingMenu: toggleTestingMenu,
         teleportToBiome: teleportToBiome,
         updateBecomeAnimal: updateBecomeAnimal,
-        stopBecomeAnimal: stopBecomeAnimal
+        stopBecomeAnimal: stopBecomeAnimal,
+        showBlockedMessage: showBlockedMessage
     };
 })();

@@ -168,6 +168,9 @@ window.UI = (function() {
         document.getElementById('mushrooms-count').textContent = GameState.resourceCounts.mushrooms;
         document.getElementById('seaweed-count').textContent = GameState.resourceCounts.seaweed;
         document.getElementById('eggs-count').textContent = GameState.resourceCounts.eggs;
+        document.getElementById('arsenic-mushrooms-count').textContent = GameState.resourceCounts.arsenic_mushrooms;
+        document.getElementById('thous-pine-wood-count').textContent = GameState.resourceCounts.thous_pine_wood;
+        document.getElementById('glass-count').textContent = GameState.resourceCounts.glass;
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
 
         // Update hunger bar
@@ -202,6 +205,9 @@ window.UI = (function() {
         } else {
             chaseWarning.style.display = 'none';
         }
+
+        // Check for progression unlocks
+        checkProgressionUnlocks();
     }
 
     /**
@@ -348,7 +354,10 @@ window.UI = (function() {
             nuts: { name: 'Nuts', icon: '🥜' },
             mushrooms: { name: 'Mushrooms', icon: '🍄' },
             seaweed: { name: 'Seaweed', icon: '🌿' },
-            eggs: { name: 'Eggs', icon: '🥚' }
+            eggs: { name: 'Eggs', icon: '🥚' },
+            arsenic_mushrooms: { name: 'Arsenic Mushrooms', icon: '☠️' },
+            thous_pine_wood: { name: 'Thous Pine Wood', icon: '🪵' },
+            glass: { name: 'Glass', icon: '🔮' }
         };
 
         Object.keys(CONFIG.RESOURCE_PRICES).forEach(resourceType => {
@@ -466,6 +475,157 @@ window.UI = (function() {
     }
 
     // Public API
+    // ========================================================================
+    // PROGRESSION SYSTEM
+    // ========================================================================
+
+    /**
+     * Check if the player has reached any new progression milestones.
+     * Called every time the UI updates.
+     */
+    function checkProgressionUnlocks() {
+        if (!CONFIG.PROGRESSION_MILESTONES) return;
+
+        CONFIG.PROGRESSION_MILESTONES.forEach(function(milestone) {
+            if (milestone.villager && GameState.score >= milestone.score) {
+                // Check if we already announced this unlock
+                if (!GameState.unlockedVillagers.includes(milestone.villager)) {
+                    GameState.unlockedVillagers.push(milestone.villager);
+                    GameState.currentLevel = milestone.title;
+                    showUnlockNotification(milestone);
+                }
+            }
+
+            // Update current level title (even without new unlock)
+            if (GameState.score >= milestone.score) {
+                GameState.currentLevel = milestone.title;
+            }
+        });
+
+        // Update the level display in HUD
+        var levelDisplay = document.getElementById('level-display');
+        if (levelDisplay) {
+            levelDisplay.textContent = GameState.currentLevel;
+        }
+
+        // Update progress bar toward next milestone
+        updateProgressBar();
+    }
+
+    /**
+     * Show a notification when the player unlocks a new villager.
+     */
+    function showUnlockNotification(milestone) {
+        var notification = document.getElementById('unlock-notification');
+        if (!notification) return;
+
+        var notifTitle = document.getElementById('unlock-title');
+        var notifText = document.getElementById('unlock-text');
+
+        notifTitle.textContent = 'NEW LEVEL: ' + milestone.title + '!';
+        notifText.textContent = milestone.unlockMessage || (milestone.villager + ' is now available!');
+
+        notification.classList.remove('hidden');
+        notification.classList.add('unlock-animate');
+
+        // Hide after 4 seconds
+        setTimeout(function() {
+            notification.classList.add('hidden');
+            notification.classList.remove('unlock-animate');
+        }, 4000);
+
+        Game.playSound('collect');
+    }
+
+    /**
+     * Update the progress bar showing distance to next milestone.
+     */
+    function updateProgressBar() {
+        var progressBar = document.getElementById('progress-bar');
+        var progressText = document.getElementById('progress-text');
+        if (!progressBar || !progressText) return;
+
+        var milestones = CONFIG.PROGRESSION_MILESTONES;
+        var currentMilestone = milestones[0];
+        var nextMilestone = null;
+
+        for (var i = 0; i < milestones.length; i++) {
+            if (GameState.score >= milestones[i].score) {
+                currentMilestone = milestones[i];
+                nextMilestone = milestones[i + 1] || null;
+            }
+        }
+
+        if (nextMilestone) {
+            var scoreInRange = GameState.score - currentMilestone.score;
+            var rangeSize = nextMilestone.score - currentMilestone.score;
+            var percent = Math.min(100, (scoreInRange / rangeSize) * 100);
+
+            progressBar.style.width = percent + '%';
+            progressText.textContent = 'Next: ' + nextMilestone.title + ' (' + nextMilestone.score + ')';
+        } else {
+            progressBar.style.width = '100%';
+            progressText.textContent = 'MAX LEVEL!';
+        }
+    }
+
+    // ========================================================================
+    // HOTBAR SYSTEM
+    // ========================================================================
+
+    var hotbarIcons = {
+        wood_sword: '🗡️',
+        wood_axe: '🪓',
+        arsen_bomb: '💣'
+    };
+
+    /**
+     * Update the hotbar display.
+     * Shows equipped items in their slots and highlights the selected slot.
+     */
+    function updateHotbar() {
+        var slots = document.querySelectorAll('.hotbar-slot');
+        slots.forEach(function(slot, index) {
+            // Update selected highlight
+            if (index === GameState.selectedHotbarSlot) {
+                slot.classList.add('selected');
+            } else {
+                slot.classList.remove('selected');
+            }
+
+            // Update slot content
+            var iconEl = slot.querySelector('.hotbar-icon');
+            var countEl = slot.querySelector('.hotbar-count');
+            var item = GameState.hotbarSlots[index];
+
+            if (item) {
+                iconEl.textContent = hotbarIcons[item.id] || '📦';
+                // Show count if more than 1
+                if (item.count > 1) {
+                    if (!countEl) {
+                        countEl = document.createElement('span');
+                        countEl.className = 'hotbar-count';
+                        slot.appendChild(countEl);
+                    }
+                    countEl.textContent = item.count;
+                } else {
+                    if (countEl) countEl.remove();
+                }
+            } else {
+                iconEl.textContent = '';
+                if (countEl) countEl.remove();
+            }
+        });
+    }
+
+    /**
+     * Get the currently selected hotbar item.
+     * @returns {Object|null} The item in the selected slot, or null
+     */
+    function getSelectedHotbarItem() {
+        return GameState.hotbarSlots[GameState.selectedHotbarSlot] || null;
+    }
+
     return {
         setupMinimap: setupMinimap,
         updateMinimap: updateMinimap,
@@ -475,6 +635,10 @@ window.UI = (function() {
         renderShop: renderShop,
         switchShopTab: switchShopTab,
         buyItem: buyItem,
-        sellResource: sellResource
+        sellResource: sellResource,
+        checkProgressionUnlocks: checkProgressionUnlocks,
+        showUnlockNotification: showUnlockNotification,
+        updateHotbar: updateHotbar,
+        getSelectedHotbarItem: getSelectedHotbarItem
     };
 })();

@@ -91,7 +91,10 @@ window.SETTINGS = {
         nuts: 5,         // Nuts are medium, worth 5 coins
         mushrooms: 10,   // Mushrooms are rare, worth 10 coins
         seaweed: 15,     // Seaweed grows on riverbanks, worth 15 coins
-        eggs: 50         // Eggs are rare and valuable, worth 50 coins
+        eggs: 50,        // Eggs are rare and valuable, worth 50 coins
+        arsenic_mushrooms: 45,  // Toxic! High risk, high reward
+        thous_pine_wood: 35,    // From chopping arboreal trees
+        glass: 1                // Crafting material, barely worth selling
     },
 
     // How much health each food restores when eaten (press 1, 2, 3, 4, or 5)
@@ -109,7 +112,10 @@ window.SETTINGS = {
         nuts: 15,        // 15 points per nut
         mushrooms: 20,   // 20 points per mushroom
         seaweed: 25,     // 25 points per seaweed
-        eggs: 60         // 60 points per egg
+        eggs: 60,        // 60 points per egg
+        arsenic_mushrooms: 0,  // No score - you collect these for crafting
+        thous_pine_wood: 0,    // No score - crafting material
+        glass: 0               // No score - crafting material
     },
 
     // ========================================================================

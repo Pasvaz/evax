@@ -365,6 +365,37 @@ window.BESTIARY = [
             territoryBehavior: 'Live in herds, share grazing areas',
             matingBehavior: 'Males compete through antler fights'
         }
+    },
+
+    // =========================================================================
+    // DRONGULINAT CAT - Snow Mountain Predator
+    // =========================================================================
+    {
+        id: 'drongulinat_cat',
+        name: 'Drongulinat Cat',
+        icon: '🐱',
+        biome: 'snowy_mountains',
+        variants: {
+            male: { name: 'Male', color: '#C0C8D0', size: 'Large (1.1x)' },
+            female: { name: 'Female', color: '#F0F0F0', size: 'Medium (0.95x)' },
+            baby_male: { name: 'Kitten (Male)', color: '#8B3A62', size: 'Small (0.5x)' },
+            baby_female: { name: 'Kitten (Female)', color: '#7A9A4A', size: 'Small (0.45x)' }
+        },
+        description: 'The Drongulinat Cat is a powerful snow predator and a living descendant of the ancient Felis Dronglaticus. Unlike its savannah cousin the Dronglous Cat (a tree-dwelling ambush hunter), the Drongulinat evolved for life in the frozen mountains. Its most striking adaptation is its massive, oversized paws — natural snowshoes that let it walk on deep snow without sinking. Males have a grey-white coat that blends with rocky outcrops, while females are pure white like fresh snow. Both share the signature golden eyes of the Dronglaticus lineage.',
+        behavior: 'Drongulinat Cats are apex predators of the snowy mountains. They hunt Deericus Iricus in dramatic chases across the snow, though the deer are often fast enough to escape. When a cat does catch its prey, it performs a violent takedown — throwing the deer around before delivering a killing bite. Despite their ferocity as hunters, Drongulinat Cats are not aggressive toward peccaries unless provoked. Attack one, however, and it will retaliate with terrifying speed and power.',
+        habitat: 'Found exclusively in the Snowy Mountains biome. They roam the open snow fields in mated pairs, establishing loose territories near deer grazing areas.',
+        tips: 'These cats are neutral — they won\'t bother you unless you hit them first! Watch them from a safe distance to see their hunting behavior. If you see a pregnant female, stick around — she\'ll give birth to 3 adorable kittens. Baby males are reddish-purple and baby females are pumpkin-seed green.',
+        special: {
+            predator: true,
+            huntsPrey: 'Deericus Iricus',
+            snowAdaptation: 'Oversized paws act as natural snowshoes',
+            colorDimorphism: 'Males grey-white, females pure white',
+            babyColors: 'Males reddish-purple (#8B3A62), females pumpkin-seed green (#7A9A4A)',
+            goldenEyes: 'Inherited from Felis Dronglaticus ancestor',
+            matingBehavior: 'Males seek out females, 5 minute pregnancy, 3 kittens per litter',
+            evolutionaryRelative: 'Dronglous Cat (savannah cousin)',
+            combatBehavior: 'Only attacks if provoked by player'
+        }
     }
 ];
 

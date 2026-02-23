@@ -111,6 +111,13 @@ window.Inventory = (function() {
      * @param {string} itemId - The item ID
      * @returns {string} - The emoji icon
      */
+    // Items that can be equipped to the hotbar
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'arsen_bomb'];
+
+    function isEquippable(itemId) {
+        return EQUIPPABLE_ITEMS.includes(itemId);
+    }
+
     function getItemIcon(itemId) {
         const icons = {
             health_potion: '🧪',
@@ -118,7 +125,10 @@ window.Inventory = (function() {
             super_heal: '💖',
             fortune_charm: '🍀',
             survival_kit: '🎒',
-            gazella_saddle: '🪑'
+            gazella_saddle: '🪑',
+            wood_sword: '🗡️',
+            wood_axe: '🪓',
+            arsen_bomb: '💣'
         };
         return icons[itemId] || '📦';
     }
@@ -157,10 +167,13 @@ window.Inventory = (function() {
                     <span class="inventory-slot-name">${item.name}</span>
                     ${item.count > 1 ? `<span class="inventory-slot-count">${item.count}</span>` : ''}
                 `;
-                slot.title = `${item.description}\n\nClick to use!`;
-
-                // All crafted items are usable!
-                slot.addEventListener('click', () => useItem(item));
+                if (isEquippable(item.id)) {
+                    slot.title = `${item.description}\n\nClick to equip to hotbar!`;
+                    slot.addEventListener('click', () => equipToHotbar(item));
+                } else {
+                    slot.title = `${item.description}\n\nClick to use!`;
+                    slot.addEventListener('click', () => useItem(item));
+                }
                 slot.style.cursor = 'pointer';
 
                 grid.appendChild(slot);
@@ -226,6 +239,53 @@ window.Inventory = (function() {
 
         if (item.count <= 0) {
             GameState.inventoryItems.splice(itemIndex, 1);
+        }
+    }
+
+    /**
+     * Equip an item to the currently selected hotbar slot.
+     * Moves item from inventory to hotbar.
+     */
+    function equipToHotbar(item) {
+        if (!item || item.count <= 0) return;
+
+        const slot = GameState.selectedHotbarSlot;
+
+        // If something is already in this slot, put it back in inventory
+        const existing = GameState.hotbarSlots[slot];
+        if (existing) {
+            addItemToInventory(existing.id, existing.name, existing.description, existing.effect, existing.count);
+        }
+
+        // Put the item in the hotbar slot
+        GameState.hotbarSlots[slot] = {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            effect: item.effect,
+            count: item.count
+        };
+
+        // Remove ALL of this item from inventory (moved to hotbar)
+        const itemIndex = GameState.inventoryItems.findIndex(i => i.id === item.id);
+        if (itemIndex !== -1) {
+            GameState.inventoryItems.splice(itemIndex, 1);
+        }
+
+        Game.playSound('collect');
+        refreshInventory();
+        UI.updateHotbar();
+    }
+
+    /**
+     * Add an item to inventory (used when unequipping from hotbar).
+     */
+    function addItemToInventory(id, name, description, effect, count) {
+        const existing = GameState.inventoryItems.find(i => i.id === id);
+        if (existing) {
+            existing.count += count;
+        } else {
+            GameState.inventoryItems.push({ id: id, name: name, description: description, effect: effect, count: count });
         }
     }
 
@@ -993,6 +1053,9 @@ window.Inventory = (function() {
         refreshArtifacts: refreshArtifacts,
         addArtifact: addArtifact,
         removeArtifact: removeArtifact,
-        hasArtifact: hasArtifact
+        hasArtifact: hasArtifact,
+        equipToHotbar: equipToHotbar,
+        addItemToInventory: addItemToInventory,
+        isEquippable: isEquippable
     };
 })();

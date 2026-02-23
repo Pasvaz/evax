@@ -2221,6 +2221,7 @@ window.Enemies = (function() {
 
             // ============ SEGMENT 5: Paw with toes ============
             const pawGroup = new THREE.Group();
+            pawGroup.userData.isPaw = true; // Tag for drongulinat cat big paw scaling
             ankleGroup.add(pawGroup);
 
             // Main paw
@@ -2350,6 +2351,31 @@ window.Enemies = (function() {
 
 
         // Model built facing +X — no initial rotation needed (see docs at top of file)
+
+        return model;
+    }
+
+    /**
+     * Build a Drongulinat Cat model — living relative of Felis Dronglaticus.
+     * LARGER than the Dronglous Cat with BIG PAWS for walking on snow.
+     * Reuses the Dronglous Cat model with scaled-up paws.
+     *
+     * @param {Object} colors - Color scheme from ENEMIES data
+     * @param {boolean} isBaby - Whether this is a baby cat
+     * @returns {THREE.Group} - The cat model with oversized paws
+     */
+    function buildDrongulinatCatModel(colors, isBaby = false) {
+        // Build the same model as the dronglous cat (same bone structure)
+        const model = buildDronglousCatModel(colors, isBaby);
+
+        // Scale up ALL paw groups 1.5x for snow adaptation (like snowshoes!)
+        model.traverse(function(child) {
+            if (child.userData && child.userData.isPaw) {
+                child.scale.x *= 1.5;
+                child.scale.y *= 1.3;
+                child.scale.z *= 1.5;
+            }
+        });
 
         return model;
     }
@@ -2547,40 +2573,50 @@ window.Enemies = (function() {
         // ============================================================
 
         const legPositions = [
-            { x: 0.28, z: 0.11 },   // Front left
-            { x: 0.28, z: -0.11 },  // Front right
-            { x: -0.28, z: 0.11 },  // Back left
-            { x: -0.28, z: -0.11 }  // Back right
+            { x: 0.28, z: -0.11, front: true },   // Front right
+            { x: 0.28, z: 0.11, front: true },     // Front left
+            { x: -0.28, z: -0.11, front: false },  // Back right
+            { x: -0.28, z: 0.11, front: false }    // Back left
         ];
 
         model.userData.legs = [];
         legPositions.forEach((pos) => {
+            // Hip pivot — the whole leg swings from here
             const legGroup = new THREE.Group();
             legGroup.position.set(pos.x * s, 0.32 * s, pos.z * s);
 
-            // Upper leg
+            // Upper leg (thigh)
             const upperGeo = new THREE.CylinderGeometry(0.035 * s, 0.045 * s, 0.28 * s, 6);
             const upper = new THREE.Mesh(upperGeo, legMat);
             upper.position.y = 0;
             upper.castShadow = true;
             legGroup.add(upper);
 
-            // Lower leg (thinner — deer have very slender lower legs)
+            // Knee pivot — lower leg bends from here
+            const lowerLegGroup = new THREE.Group();
+            lowerLegGroup.position.y = -0.14 * s;  // At the bottom of the upper leg
+            legGroup.add(lowerLegGroup);
+
+            // Lower leg (shin — thinner, elegant deer legs)
             const lowerGeo = new THREE.CylinderGeometry(0.02 * s, 0.035 * s, 0.22 * s, 6);
             const lower = new THREE.Mesh(lowerGeo, legMat);
-            lower.position.y = -0.23 * s;
+            lower.position.y = -0.11 * s;  // Centered below knee pivot
             lower.castShadow = true;
-            legGroup.add(lower);
+            lowerLegGroup.add(lower);
 
             // Hoof (small, dark)
             const hoofGeo = new THREE.CylinderGeometry(0.025 * s, 0.03 * s, 0.035 * s, 6);
             const hoofMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a });
             const hoof = new THREE.Mesh(hoofGeo, hoofMat);
-            hoof.position.y = -0.35 * s;
-            legGroup.add(hoof);
+            hoof.position.y = -0.23 * s;  // Below shin
+            lowerLegGroup.add(hoof);
 
             model.add(legGroup);
-            model.userData.legs.push({ group: legGroup, mesh: upper });
+            model.userData.legs.push({
+                group: legGroup,               // Hip pivot
+                lowerLegGroup: lowerLegGroup,  // Knee pivot
+                isFront: pos.front
+            });
         });
 
         // ============================================================
@@ -2767,6 +2803,7 @@ window.Enemies = (function() {
         wild_dog: buildWildDogModel,
         saltas_gazella: buildSaltasGazellaModel,
         dronglous_cat: buildDronglousCatModel,
+        drongulinat_cat: buildDrongulinatCatModel,
         deericus_iricus: buildDeericusIricusModel
     };
 
@@ -2814,7 +2851,11 @@ window.Enemies = (function() {
 
         // Build the 3D model using converted colors
         const isBaby = enemyData.isBaby || false;
-        const model = builder(colors, isBaby);
+        const hasHorns = enemyData.hasHorns || false;
+        // Deer builder needs (colors, hasHorns, isBaby) — other builders vary
+        const model = (enemyData.type === 'deericus_iricus')
+            ? builder(colors, hasHorns, isBaby)
+            : builder(colors, isBaby);
 
         // Apply size modifier (default to 1 if not specified)
         const size = enemyData.size || 1;
@@ -3768,6 +3809,60 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // SPAWN DRONGULINAT CATS (SNOWY MOUNTAINS BIOME)
+    // ========================================================================
+    /**
+     * Spawn Drongulinat Cats in the snowy mountains.
+     * Spawns male/female pairs at random positions.
+     * @param {number} count - Total number of cats (spawned as pairs)
+     */
+    function spawnDrongulinatCats(count) {
+        console.log(`=== SPAWNING ${count} DRONGULINAT CATS ===`);
+
+        const maleData = ENEMIES.find(function(e) { return e.id === 'drongulinat_cat_male'; });
+        const femaleData = ENEMIES.find(function(e) { return e.id === 'drongulinat_cat_female'; });
+
+        if (!maleData || !femaleData) {
+            console.error('Drongulinat cat data not found!');
+            return;
+        }
+
+        // Spawn in pairs (1 male, 1 female per pair)
+        var pairs = Math.ceil(count / 2);
+
+        for (var i = 0; i < pairs; i++) {
+            // Random position in the snowy mountains (spread out)
+            var angle = Math.random() * Math.PI * 2;
+            var radius = 30 + Math.random() * 50;
+            var x = Math.cos(angle) * radius;
+            var z = Math.sin(angle) * radius;
+
+            // Spawn male
+            var male = createEnemy(maleData, x, z);
+            male.userData.ignoreGravity = true;  // Skip updateEnemies — we handle movement
+            male.userData.matingTimer = Math.random() * 120 + 60; // 1-3 min until first mating
+            male.userData.hungerTimer = Math.random() * 60 + 30;  // 0.5-1.5 min until hungry
+            male.userData.isRetaliating = false;
+            male.userData.wasAttackedByPlayer = false;
+            GameState.scene.add(male);
+            GameState.enemies.push(male);
+
+            // Spawn female nearby
+            var female = createEnemy(femaleData, x + 4, z + 4);
+            female.userData.ignoreGravity = true;  // Skip updateEnemies — we handle movement
+            female.userData.isPregnant = false;
+            female.userData.gestationTimer = 0;
+            female.userData.hungerTimer = Math.random() * 60 + 30;
+            female.userData.isRetaliating = false;
+            female.userData.wasAttackedByPlayer = false;
+            GameState.scene.add(female);
+            GameState.enemies.push(female);
+        }
+
+        console.log('Spawned ' + pairs + ' drongulinat cat pairs');
+    }
+
+    // ========================================================================
     // SPAWN DEERICUS IRICUS HERD (SNOWY MOUNTAINS BIOME)
     // ========================================================================
     /**
@@ -3915,7 +4010,7 @@ window.Enemies = (function() {
      * @param {THREE.Mesh} baby - The baby deer to mature
      */
     function growDeerBabyToAdult(baby) {
-        const wasMale = baby.userData.enemyId.includes('baby_male');
+        const wasMale = baby.userData.id.includes('baby_male');
         const herd = baby.userData.herd;
 
         // Determine new adult type
@@ -3979,7 +4074,7 @@ window.Enemies = (function() {
     function updateDeerMaturation(delta) {
         GameState.enemies.forEach(enemy => {
             if (enemy.userData.isBaby &&
-                enemy.userData.enemyId && enemy.userData.enemyId.includes('deericus_iricus_baby') &&
+                enemy.userData.id && enemy.userData.id.includes('deericus_iricus_baby') &&
                 enemy.userData.maturityTime) {
 
                 // Check if maturity time reached
@@ -4118,7 +4213,7 @@ window.Enemies = (function() {
 
     function updateDeerMating(delta) {
         GameState.enemies.forEach(enemy => {
-            if (!enemy.userData.enemyId || !enemy.userData.enemyId.includes('deericus_iricus')) return;
+            if (!enemy.userData.id || !enemy.userData.id.includes('deericus_iricus')) return;
 
             if (enemy.userData.state === 'mating_display' && enemy.userData.matingTimer) {
                 enemy.userData.matingTimer -= delta;
@@ -4210,20 +4305,67 @@ window.Enemies = (function() {
             case 'following_parent': updateDeerFollowingParent(deer, delta); break;
         }
 
-        if (deer.userData.legs && state !== 'in_burrow') {
-            const swing = Math.sin(GameState.timeElapsed * 5) * 0.4;
-            if (deer.userData.legs.frontLeft) deer.userData.legs.frontLeft.rotation.x = swing;
-            if (deer.userData.legs.backRight) deer.userData.legs.backRight.rotation.x = swing;
-            if (deer.userData.legs.frontRight) deer.userData.legs.frontRight.rotation.x = -swing;
-            if (deer.userData.legs.backLeft) deer.userData.legs.backLeft.rotation.x = -swing;
+        // Keep deer at correct terrain height (deer are skipped in updateEnemies)
+        if (state !== 'in_burrow' && state !== 'peeking') {
+            const terrainY = Environment.getTerrainHeight(deer.position.x, deer.position.z);
+            deer.userData.groundY_actual = terrainY + (deer.userData.groundY || 0.25);
+            deer.position.y = deer.userData.groundY_actual;
         }
-        if (deer.userData.ears) {
-            const twitch = Math.sin(GameState.timeElapsed * 2) * 0.2;
-            if (deer.userData.ears.left) deer.userData.ears.left.rotation.z = twitch;
-            if (deer.userData.ears.right) deer.userData.ears.right.rotation.z = -twitch;
-        }
-        if (deer.userData.tail) {
-            deer.userData.tail.rotation.x = Math.sin(GameState.timeElapsed * 3) * 0.5;
+
+        // Walking animation — uses the articulated leg structure from the model
+        const deerModel = deer.children[0];
+        if (deerModel && deerModel.userData.legs && state !== 'in_burrow' && state !== 'peeking') {
+            // Check if the deer actually moved this frame by comparing positions
+            if (!deer.userData._lastPos) {
+                deer.userData._lastPos = { x: deer.position.x, z: deer.position.z };
+            }
+            const dx = deer.position.x - deer.userData._lastPos.x;
+            const dz = deer.position.z - deer.userData._lastPos.z;
+            const moved = (dx * dx + dz * dz) > 0.0001;  // Tiny threshold
+            deer.userData._lastPos.x = deer.position.x;
+            deer.userData._lastPos.z = deer.position.z;
+
+            if (moved) {
+                // Speed-based walk cycle
+                const walkSpeed = (state === 'fleeing') ? 8 : 5;
+
+                if (deer.userData.walkPhase === undefined) {
+                    deer.userData.walkPhase = 0;
+                }
+                deer.userData.walkPhase += delta * walkSpeed;
+
+                deerModel.userData.legs.forEach((leg, idx) => {
+                    // Diagonal gait: front-right(0) + back-left(3), front-left(1) + back-right(2)
+                    const isPairA = (idx === 0 || idx === 3);
+                    const phase = isPairA ? deer.userData.walkPhase : deer.userData.walkPhase + Math.PI;
+
+                    const cyclePos = Math.sin(phase);
+                    const cycleAbs = Math.abs(cyclePos);
+
+                    // Hip swing (forward/back)
+                    const swingAmount = leg.isFront ? 0.4 : 0.5;
+                    leg.group.rotation.z = cyclePos * swingAmount;
+
+                    // Knee bend (only when leg is lifting)
+                    const kneeAmount = leg.isFront ? 0.5 : 0.7;
+                    if (cyclePos > 0) {
+                        leg.lowerLegGroup.rotation.z = -cycleAbs * kneeAmount;
+                    } else {
+                        leg.lowerLegGroup.rotation.z = cycleAbs * 0.1;
+                    }
+                });
+
+                // Subtle body bob while walking
+                const bodyBob = Math.abs(Math.sin(deer.userData.walkPhase * 2)) * 0.015;
+                deer.position.y = deer.userData.groundY_actual + bodyBob;
+
+            } else {
+                // Standing still — smoothly return legs to neutral
+                deerModel.userData.legs.forEach(leg => {
+                    leg.group.rotation.z *= 0.9;
+                    leg.lowerLegGroup.rotation.z *= 0.9;
+                });
+            }
         }
     }
 
@@ -4649,6 +4791,7 @@ window.Enemies = (function() {
             if (enemy.userData.ignoreGravity) {
                 continue;
             }
+
 
             const distance = enemy.position.distanceTo(GameState.peccary.position);
 
@@ -7872,35 +8015,38 @@ window.Enemies = (function() {
                 direction = enemy.userData.wanderDir;
             }
 
-            // Apply water slowdown (50% speed) - unless immune
-            if (inWater && !enemy.userData.immuneToWater) {
-                speed *= 0.5;
-            }
+            // Skip generic movement + bob for deer and drongulinat cats — they have custom behavior
+            if (enemy.userData.type !== 'deericus_iricus' && enemy.userData.type !== 'drongulinat_cat') {
+                // Apply water slowdown (50% speed) - unless immune
+                if (inWater && !enemy.userData.immuneToWater) {
+                    speed *= 0.5;
+                }
 
-            // Move enemy
-            enemy.position.x += direction.x * speed * delta;
-            enemy.position.z += direction.z * speed * delta;
+                // Move enemy
+                enemy.position.x += direction.x * speed * delta;
+                enemy.position.z += direction.z * speed * delta;
 
-            // Rotate to face movement direction
-            const targetRotation = -Math.atan2(direction.z, direction.x);
+                // Rotate to face movement direction
+                const targetRotation = -Math.atan2(direction.z, direction.x);
 
-            let currentEnemyRotation = enemy.rotation.y;
-            let enemyDiff = targetRotation - currentEnemyRotation;
-            while (enemyDiff > Math.PI) enemyDiff -= Math.PI * 2;
-            while (enemyDiff < -Math.PI) enemyDiff += Math.PI * 2;
-            enemy.rotation.y = currentEnemyRotation + enemyDiff * 0.1;
+                let currentEnemyRotation = enemy.rotation.y;
+                let enemyDiff = targetRotation - currentEnemyRotation;
+                while (enemyDiff > Math.PI) enemyDiff -= Math.PI * 2;
+                while (enemyDiff < -Math.PI) enemyDiff += Math.PI * 2;
+                enemy.rotation.y = currentEnemyRotation + enemyDiff * 0.1;
 
-            // Animation - swimming or walking
-            // Use terrain height + groundY for proper positioning
-            const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
-            const baseY = terrainY + (enemy.userData.groundY || 0.3);
+                // Animation - swimming or walking
+                // Use terrain height + groundY for proper positioning
+                const terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                const baseY = terrainY + (enemy.userData.groundY || 0.3);
 
-            if (inWater) {
-                // Swimming animation - lower body, slower bob
-                enemy.position.y = baseY - 0.2 + Math.sin(GameState.clock.elapsedTime * 4 + i) * 0.1;
-            } else {
-                // Normal bobbing animation
-                enemy.position.y = baseY + Math.abs(Math.sin(GameState.clock.elapsedTime * 12 + i)) * 0.05;
+                if (inWater) {
+                    // Swimming animation - lower body, slower bob
+                    enemy.position.y = baseY - 0.2 + Math.sin(GameState.clock.elapsedTime * 4 + i) * 0.1;
+                } else {
+                    // Normal bobbing animation
+                    enemy.position.y = baseY + Math.abs(Math.sin(GameState.clock.elapsedTime * 12 + i)) * 0.05;
+                }
             }
 
             // Collision with player - only for hostile enemies
@@ -8133,7 +8279,7 @@ window.Enemies = (function() {
                     // Add to player inventory (reuse egg resource)
                     GameState.resourceCounts.eggs++;
                     GameState.health = Math.min(100, GameState.health + 40);
-                    GameState.score += 50;
+                    GameState.score += 6;
                     Game.playSound('collect');
 
                     console.log('Collected toad egg! Eggs remaining:', nest.eggs.filter(e => e.exists).length);
@@ -10645,6 +10791,483 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // DRONGULINAT CAT BEHAVIOR (SNOWY MOUNTAINS)
+    // ========================================================================
+
+    /**
+     * Main update loop for all Drongulinat Cats.
+     * Handles: wandering, mating, pregnancy/birth, hunting deer, retaliation.
+     */
+    function updateDrongulinatCats(delta) {
+        var cats = GameState.enemies.filter(function(e) {
+            return e.userData.type === 'drongulinat_cat';
+        });
+
+        cats.forEach(function(cat) {
+            // --- Baby maturity ---
+            if (cat.userData.isBaby && cat.userData.maturityTime) {
+                if (GameState.clock.elapsedTime > cat.userData.maturityTime) {
+                    growDrongulinatKitten(cat);
+                    return; // Skip rest this frame
+                }
+            }
+
+            // --- Provoked combat: chase player ---
+            if (cat.userData.wasAttackedByPlayer) {
+                chaseDrongulinatPlayer(cat, delta);
+                return; // Combat overrides everything
+            }
+
+            // --- Hunting (males and non-pregnant females) ---
+            if (!cat.userData.isBaby) {
+                cat.userData.hungerTimer -= delta;
+
+                if (cat.userData.isEating) {
+                    cat.userData.eatingTimer -= delta;
+                    if (cat.userData.eatingTimer <= 0) {
+                        cat.userData.isEating = false;
+                        cat.userData.hungerTimer = 120 + Math.random() * 60; // 2-3 min
+                    }
+                    // Stay still while eating
+                    animateDrongulinatCat(cat, delta);
+                    return;
+                }
+
+                if (cat.userData.hungerTimer <= 0 && !cat.userData.isHunting) {
+                    // Try to find a deer to hunt
+                    var deer = findNearestDeer(cat, 30);
+                    if (deer) {
+                        cat.userData.isHunting = true;
+                        cat.userData.huntTarget = deer;
+                        deer.userData.isFleeing = true;
+                        deer.userData.fleeingFrom = cat;
+                    }
+                }
+
+                if (cat.userData.isHunting) {
+                    huntDeer(cat, delta);
+                    return;
+                }
+            }
+
+            // --- Mating (males only) ---
+            if (cat.userData.id && cat.userData.id.includes('male') && !cat.userData.id.includes('baby') && !cat.userData.id.includes('female')) {
+                cat.userData.matingTimer -= delta;
+                if (cat.userData.matingTimer <= 0 && !cat.userData.isMating) {
+                    var female = findNearestDrongulinatFemale(cat);
+                    if (female) {
+                        cat.userData.isMating = true;
+                        cat.userData.mateTarget = female;
+                    } else {
+                        cat.userData.matingTimer = 30; // Try again in 30s
+                    }
+                }
+
+                if (cat.userData.isMating) {
+                    mateDrongulinat(cat, delta);
+                    return;
+                }
+            }
+
+            // --- Pregnancy (females only) ---
+            if (cat.userData.isPregnant) {
+                cat.userData.gestationTimer -= delta;
+                if (cat.userData.gestationTimer <= 0) {
+                    giveBirthDrongulinat(cat);
+                }
+            }
+
+            // --- Default: wander around ---
+            wanderDrongulinat(cat, delta);
+            animateDrongulinatCat(cat, delta);
+        });
+    }
+
+    /**
+     * Simple walking animation for drongulinat cats (bob + leg movement).
+     */
+    function animateDrongulinatCat(cat, delta) {
+        var time = GameState.clock.elapsedTime;
+        var terrainY = Environment.getTerrainHeight(cat.position.x, cat.position.z);
+        var baseY = terrainY + (cat.userData.groundY || 0.3);
+
+        // Walking bob
+        if (cat.userData.isMoving) {
+            cat.position.y = baseY + Math.abs(Math.sin(time * 12)) * 0.05;
+        } else {
+            cat.position.y = baseY;
+        }
+    }
+
+    /**
+     * Wander randomly around the snow.
+     */
+    function wanderDrongulinat(cat, delta) {
+        cat.userData.isMoving = true;
+
+        // Pick a new wander direction periodically
+        if (!cat.userData.wanderDir || !cat.userData.wanderTime) {
+            cat.userData.wanderDir = new THREE.Vector3(
+                Math.random() * 2 - 1, 0, Math.random() * 2 - 1
+            ).normalize();
+            cat.userData.wanderTime = 3 + Math.random() * 5; // 3-8 seconds
+        }
+
+        cat.userData.wanderTime -= delta;
+        if (cat.userData.wanderTime <= 0) {
+            cat.userData.wanderDir = new THREE.Vector3(
+                Math.random() * 2 - 1, 0, Math.random() * 2 - 1
+            ).normalize();
+            cat.userData.wanderTime = 3 + Math.random() * 5;
+        }
+
+        var speed = (cat.userData.speed || 3) * 0.3; // Slow wander
+        cat.position.x += cat.userData.wanderDir.x * speed * delta;
+        cat.position.z += cat.userData.wanderDir.z * speed * delta;
+
+        // Face movement direction
+        var targetRot = -Math.atan2(cat.userData.wanderDir.z, cat.userData.wanderDir.x);
+        var diff = targetRot - cat.rotation.y;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        cat.rotation.y += diff * 0.1;
+
+        // Keep within world bounds
+        var bound = CONFIG.WORLD_SIZE * 0.6;
+        if (Math.abs(cat.position.x) > bound || Math.abs(cat.position.z) > bound) {
+            cat.userData.wanderDir = new THREE.Vector3(
+                -cat.position.x * 0.1, 0, -cat.position.z * 0.1
+            ).normalize();
+            cat.userData.wanderTime = 3;
+        }
+    }
+
+    /**
+     * Find nearest non-pregnant female drongulinat cat.
+     */
+    function findNearestDrongulinatFemale(male) {
+        var nearest = null;
+        var nearestDist = Infinity;
+
+        GameState.enemies.forEach(function(e) {
+            if (e.userData.type === 'drongulinat_cat' &&
+                e.userData.id && e.userData.id.includes('female') &&
+                !e.userData.id.includes('baby') &&
+                !e.userData.isPregnant) {
+                var dx = e.position.x - male.position.x;
+                var dz = e.position.z - male.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < nearestDist && dist < 40) {
+                    nearest = e;
+                    nearestDist = dist;
+                }
+            }
+        });
+        return nearest;
+    }
+
+    /**
+     * Male runs to female to mate.
+     */
+    function mateDrongulinat(male, delta) {
+        var female = male.userData.mateTarget;
+        if (!female || !female.parent) {
+            male.userData.isMating = false;
+            male.userData.matingTimer = 60 + Math.random() * 60;
+            return;
+        }
+
+        var dx = female.position.x - male.position.x;
+        var dz = female.position.z - male.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist < 2) {
+            // Arrived! Impregnate female
+            female.userData.isPregnant = true;
+            female.userData.gestationTimer = 300; // 5 minutes
+            female.userData.father = male;
+            male.userData.isMating = false;
+            male.userData.matingTimer = 120 + Math.random() * 60; // 2-3 min
+            console.log('Drongulinat cat mating! Gestation: 5 minutes');
+        } else {
+            // Move toward female at full speed
+            var speed = male.userData.speed || 8;
+            var dirX = dx / dist;
+            var dirZ = dz / dist;
+            male.position.x += dirX * speed * delta;
+            male.position.z += dirZ * speed * delta;
+
+            var targetRot = -Math.atan2(dirZ, dirX);
+            var diff = targetRot - male.rotation.y;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            male.rotation.y += diff * 0.15;
+        }
+
+        // Animate running
+        var terrainY = Environment.getTerrainHeight(male.position.x, male.position.z);
+        male.position.y = terrainY + (male.userData.groundY || 0.3) + Math.abs(Math.sin(GameState.clock.elapsedTime * 14)) * 0.08;
+    }
+
+    /**
+     * Female gives birth to 3 kittens.
+     */
+    function giveBirthDrongulinat(mother) {
+        console.log('Drongulinat cat giving birth!');
+        mother.userData.isPregnant = false;
+        mother.userData.gestationTimer = 0;
+
+        var babyMaleData = ENEMIES.find(function(e) { return e.id === 'drongulinat_cat_baby_male'; });
+        var babyFemaleData = ENEMIES.find(function(e) { return e.id === 'drongulinat_cat_baby_female'; });
+
+        for (var i = 0; i < 3; i++) {
+            var isMale = Math.random() > 0.5;
+            var babyData = isMale ? babyMaleData : babyFemaleData;
+            if (!babyData) continue;
+
+            var angle = (Math.PI * 2 / 3) * i;
+            var bx = mother.position.x + Math.cos(angle) * 2;
+            var bz = mother.position.z + Math.sin(angle) * 2;
+
+            var baby = createEnemy(babyData, bx, bz);
+            baby.userData.ignoreGravity = true;  // Skip updateEnemies
+            baby.userData.mother = mother;
+            baby.userData.maturityTime = GameState.clock.elapsedTime + 180; // 3 minutes
+            baby.userData.isBaby = true;
+            baby.userData.hungerTimer = 999;
+            baby.userData.wasAttackedByPlayer = false;
+            baby.userData.isRetaliating = false;
+            GameState.scene.add(baby);
+            GameState.enemies.push(baby);
+        }
+        console.log('3 drongulinat kittens born!');
+    }
+
+    /**
+     * Grow a baby kitten into an adult.
+     */
+    function growDrongulinatKitten(baby) {
+        console.log('Drongulinat kitten growing up!');
+        var isMale = baby.userData.id && baby.userData.id.includes('male');
+        var adultData = ENEMIES.find(function(e) {
+            return e.id === (isMale ? 'drongulinat_cat_male' : 'drongulinat_cat_female');
+        });
+        if (!adultData) return;
+
+        var adult = createEnemy(adultData, baby.position.x, baby.position.z);
+        adult.userData.ignoreGravity = true;  // Skip updateEnemies
+        adult.userData.matingTimer = 60 + Math.random() * 60;
+        adult.userData.hungerTimer = 30 + Math.random() * 30;
+        adult.userData.wasAttackedByPlayer = false;
+        adult.userData.isRetaliating = false;
+        if (!isMale) {
+            adult.userData.isPregnant = false;
+            adult.userData.gestationTimer = 0;
+        }
+        GameState.scene.add(adult);
+        GameState.enemies.push(adult);
+
+        // Remove baby
+        GameState.scene.remove(baby);
+        var idx = GameState.enemies.indexOf(baby);
+        if (idx > -1) GameState.enemies.splice(idx, 1);
+    }
+
+    /**
+     * Find nearest deer to hunt.
+     */
+    function findNearestDeer(cat, maxRange) {
+        var nearest = null;
+        var nearestDist = Infinity;
+
+        GameState.enemies.forEach(function(e) {
+            if (e.userData.type === 'deericus_iricus') {
+                var dx = e.position.x - cat.position.x;
+                var dz = e.position.z - cat.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < nearestDist && dist < maxRange) {
+                    nearest = e;
+                    nearestDist = dist;
+                }
+            }
+        });
+        return nearest;
+    }
+
+    /**
+     * Chase and hunt a deer.
+     */
+    function huntDeer(cat, delta) {
+        var deer = cat.userData.huntTarget;
+
+        if (!deer || !deer.parent) {
+            cat.userData.isHunting = false;
+            cat.userData.huntTarget = null;
+            cat.userData.hungerTimer = 30;
+            return;
+        }
+
+        var dx = deer.position.x - cat.position.x;
+        var dz = deer.position.z - cat.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        // Give up if deer is too far
+        if (dist > 50) {
+            cat.userData.isHunting = false;
+            cat.userData.huntTarget = null;
+            cat.userData.hungerTimer = 30;
+            deer.userData.isFleeing = false;
+            deer.userData.fleeingFrom = null;
+            return;
+        }
+
+        // Chase at high speed
+        var speed = 10;
+        var dirX = dx / dist;
+        var dirZ = dz / dist;
+        cat.position.x += dirX * speed * delta;
+        cat.position.z += dirZ * speed * delta;
+
+        var targetRot = -Math.atan2(dirZ, dirX);
+        var diff = targetRot - cat.rotation.y;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        cat.rotation.y += diff * 0.2;
+
+        // Animate running (faster bob)
+        var terrainY = Environment.getTerrainHeight(cat.position.x, cat.position.z);
+        cat.position.y = terrainY + (cat.userData.groundY || 0.3) + Math.abs(Math.sin(GameState.clock.elapsedTime * 16)) * 0.1;
+
+        // Catch the deer!
+        if (dist < 1.5) {
+            performTakedown(cat, deer);
+        }
+    }
+
+    /**
+     * Dramatic takedown when cat catches a deer.
+     */
+    function performTakedown(cat, deer) {
+        console.log('Drongulinat cat takedown!');
+
+        // Remove deer from scene
+        GameState.scene.remove(deer);
+        var idx = GameState.enemies.indexOf(deer);
+        if (idx > -1) GameState.enemies.splice(idx, 1);
+
+        // Cat enters eating state
+        cat.userData.isHunting = false;
+        cat.userData.huntTarget = null;
+        cat.userData.isEating = true;
+        cat.userData.eatingTimer = 30;
+        cat.userData.isMoving = false;
+    }
+
+    /**
+     * Chase and attack the player (retaliation).
+     */
+    function chaseDrongulinatPlayer(cat, delta) {
+        var player = GameState.peccary;
+        if (!player) return;
+
+        var dx = player.position.x - cat.position.x;
+        var dz = player.position.z - cat.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        // Give up if player gets very far away
+        if (dist > 40) {
+            cat.userData.wasAttackedByPlayer = false;
+            cat.userData.isRetaliating = false;
+            return;
+        }
+
+        // Chase aggressively
+        var speed = 10;
+        var dirX = dx / dist;
+        var dirZ = dz / dist;
+        cat.position.x += dirX * speed * delta;
+        cat.position.z += dirZ * speed * delta;
+
+        var targetRot = -Math.atan2(dirZ, dirX);
+        var diff = targetRot - cat.rotation.y;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        cat.rotation.y += diff * 0.2;
+
+        // Animate running
+        var terrainY = Environment.getTerrainHeight(cat.position.x, cat.position.z);
+        cat.position.y = terrainY + (cat.userData.groundY || 0.3) + Math.abs(Math.sin(GameState.clock.elapsedTime * 16)) * 0.1;
+
+        // Deal damage on contact
+        if (dist < 1.5) {
+            Game.takeDamage(cat.userData.damage * delta, 'drongulinat_cat');
+        }
+    }
+
+    // ========================================================================
+    // PLAYER COMBAT - Damage an enemy with a weapon
+    // ========================================================================
+    /**
+     * Deal damage to an enemy from the player's weapon.
+     * Handles health reduction, hit flash, death, and rewards.
+     * @param {THREE.Group} enemy - The enemy to damage
+     * @param {number} amount - Damage amount
+     */
+    function damageEnemy(enemy, amount) {
+        if (!enemy || !enemy.userData) return;
+
+        // Drongulinat cats retaliate when attacked by player
+        if (enemy.userData.type === 'drongulinat_cat') {
+            enemy.userData.wasAttackedByPlayer = true;
+        }
+
+        enemy.userData.health -= amount;
+
+        // Hit flash — turn enemy red briefly
+        const meshes = [];
+        enemy.traverse(function(child) {
+            if (child.isMesh && child.material) {
+                meshes.push({ mesh: child, origColor: child.material.color.getHex() });
+                child.material = child.material.clone();
+                child.material.color.setHex(0xff0000);
+            }
+        });
+        // Restore original colors after 150ms
+        setTimeout(function() {
+            meshes.forEach(function(entry) {
+                if (entry.mesh.material) {
+                    entry.mesh.material.color.setHex(entry.origColor);
+                }
+            });
+        }, 150);
+
+        // Check for death
+        if (enemy.userData.health <= 0) {
+            // Remove from scene and enemies array
+            GameState.scene.remove(enemy);
+            const idx = GameState.enemies.indexOf(enemy);
+            if (idx > -1) GameState.enemies.splice(idx, 1);
+
+            // Give score and coins as reward
+            var scoreReward = 10;
+            var coinReward = 5;
+            // Tougher enemies give better rewards
+            if (enemy.userData.maxHealth >= 5) {
+                scoreReward = 25;
+                coinReward = 15;
+            }
+            if (enemy.userData.maxHealth >= 10) {
+                scoreReward = 50;
+                coinReward = 30;
+            }
+            GameState.score += scoreReward;
+            GameState.pigCoins += coinReward;
+            Game.playSound('collect');
+            UI.updateUI();
+        }
+    }
+
+    // ========================================================================
     // PUBLIC API
     // ========================================================================
     return {
@@ -10682,6 +11305,13 @@ window.Enemies = (function() {
         updateDeerMating: updateDeerMating,
         updateDeerBehavior: updateDeerBehavior,
         deerTakeDamage: deerTakeDamage,
+
+        // Drongulinat Cat functions
+        spawnDrongulinatCats: spawnDrongulinatCats,
+        updateDrongulinatCats: updateDrongulinatCats,
+
+        // Player combat
+        damageEnemy: damageEnemy,
 
         // Expose model builders for advanced use
         modelBuilders: modelBuilders

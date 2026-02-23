@@ -703,6 +703,38 @@ window.ResearchHut = (function() {
             });
         }
 
+        // All scientists can sell glass
+        options.push({
+            text: "Buy 1 glass (3 coins)",
+            action: () => {
+                if (GameState.pigCoins >= 3) {
+                    GameState.pigCoins -= 3;
+                    GameState.resourceCounts.glass += 1;
+                    Game.playSound('collect');
+                    UI.updateUI();
+                    showScientistDialog(scientist.userData.name,
+                        "Here's a piece of lab-grade glass! Very useful for crafting.",
+                        [{
+                            text: "Buy more glass",
+                            action: () => openScientistDialog(scientist)
+                        },
+                        {
+                            text: "Thanks!",
+                            action: () => closeScientistDialog()
+                        }]
+                    );
+                } else {
+                    showScientistDialog(scientist.userData.name,
+                        "You don't have enough coins! Glass costs 3 pig coins per piece.",
+                        [{
+                            text: "I'll come back.",
+                            action: () => closeScientistDialog()
+                        }]
+                    );
+                }
+            }
+        });
+
         options.push({
             text: "Nevermind",
             action: () => closeScientistDialog()

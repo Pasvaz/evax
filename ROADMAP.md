@@ -104,3 +104,11 @@ These make the survival gameplay deeper and more fun.
 - [x] Cottage-style village houses
 - [x] Model rotation convention (all animals face +X)
 - [x] Testing spawn menu for all biomes
+- [x] Hotbar system (Minecraft-style, 9 slots, number keys)
+- [x] Wood Sword + combat system (click enemies to hit)
+- [x] Wood Axe + tree chopping (chop trees for thous pine wood)
+- [x] Arsen Bomb + puddle system (area damage, 30s duration)
+- [x] New resources: arsenic mushrooms, thous pine wood, glass
+- [x] Bruno the Blacksmith NPC (weapons + glass shop)
+- [x] Score-gated recipes (crafting unlocks at milestones)
+- [x] Score-gated progression notifications

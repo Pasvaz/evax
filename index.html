@@ -224,6 +224,12 @@
         .resource-icon span {
             font-size: 20px;
         }
+        .arsenic-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+        }
         #minimap {
             position: fixed;
             bottom: 20px;
@@ -271,6 +277,123 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
+
+        /* ============================================================ */
+        /* PROGRESSION SYSTEM                                           */
+        /* ============================================================ */
+
+        #progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(to right, #ffcc00, #ffee88);
+            transition: width 0.5s ease;
+        }
+        #progress-text {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 2px;
+        }
+        #interact-prompt.locked-villager {
+            color: #ff6666;
+            border-color: #ff6666;
+        }
+        #unlock-notification {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            pointer-events: none;
+            text-align: center;
+        }
+        #unlock-title {
+            font-size: 32px;
+            color: #ffcc00;
+            text-shadow: 3px 3px 6px #000;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 15px;
+            border: 3px solid #ffcc00;
+        }
+        #unlock-text {
+            font-size: 18px;
+            color: #f5deb3;
+            text-shadow: 2px 2px 4px #000;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 30px;
+            border-radius: 10px;
+        }
+        @keyframes unlockPop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .unlock-animate {
+            animation: unlockPop 0.5s ease forwards;
+        }
+
+        /* ============================================================ */
+        /* HOTBAR (Minecraft-style equipment slots)                     */
+        /* ============================================================ */
+
+        #hotbar {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .hotbar-slot {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #555;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            pointer-events: auto;
+        }
+        .hotbar-slot.selected {
+            border-color: #ffcc00;
+            box-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+        }
+        .hotbar-key {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 10px;
+            color: #888;
+        }
+        .hotbar-slot.selected .hotbar-key {
+            color: #ffcc00;
+        }
+        .hotbar-icon {
+            font-size: 24px;
+        }
+        .hotbar-count {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+
         #dialog-box {
             position: fixed;
             bottom: 50px;
@@ -1418,6 +1541,10 @@
                             <button class="spawn-btn" data-spawn="deericus_iricus_male">Deer (Male)</button>
                             <button class="spawn-btn" data-spawn="deericus_iricus_female">Deer (Female)</button>
                             <button class="spawn-btn" data-spawn="deericus_iricus_baby">Deer (Baby)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_male">Drongulinat Cat (Male)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_female">Drongulinat Cat (Female)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_baby_male">Drongulinat Cat Baby (M)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_baby_female">Drongulinat Cat Baby (F)</button>
                         </div>
                     </div>
                 </div>
@@ -1456,8 +1583,12 @@
                 </div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Score</div>
+                <div class="stat-label" id="level-display">Newborn Peccary</div>
                 <div class="stat-value" id="score-display">0</div>
+                <div id="progress-bar-container">
+                    <div id="progress-bar"></div>
+                </div>
+                <div id="progress-text">Next: Piglet Explorer (25)</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">Resources</div>
@@ -1467,6 +1598,9 @@
                     <div class="resource-icon"><span>🍄</span><span id="mushrooms-count">0</span></div>
                     <div class="resource-icon"><span>🌿</span><span id="seaweed-count">0</span></div>
                     <div class="resource-icon"><span>🥚</span><span id="eggs-count">0</span></div>
+                    <div class="resource-icon"><span class="arsenic-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="10" rx="9" ry="6" fill="#1a1a1a"/><rect x="10" y="14" width="4" height="7" rx="1" fill="#2a2a2a"/><circle cx="7" cy="9" r="1.5" fill="#ff6600"/><circle cx="12" cy="7" r="1.5" fill="#ff6600"/><circle cx="17" cy="9" r="1.5" fill="#ff6600"/><circle cx="9" cy="12" r="1.2" fill="#ff6600"/><circle cx="15" cy="12" r="1.2" fill="#ff6600"/></svg></span><span id="arsenic-mushrooms-count">0</span></div>
+                    <div class="resource-icon"><span>🪵</span><span id="thous-pine-wood-count">0</span></div>
+                    <div class="resource-icon"><span>🔮</span><span id="glass-count">0</span></div>
                 </div>
             </div>
             <div class="stat-box">
@@ -1508,8 +1642,27 @@
         ANGRY GOOSE CHASING YOU! GET TO THE VILLAGE!
     </div>
 
+    <!-- Unlock notification -->
+    <div id="unlock-notification" class="hidden">
+        <div id="unlock-title">NEW LEVEL!</div>
+        <div id="unlock-text"></div>
+    </div>
+
     <!-- Interaction prompt -->
     <div id="interact-prompt" class="hidden">Press E to talk</div>
+
+    <!-- Hotbar (Minecraft-style item slots) -->
+    <div id="hotbar">
+        <div class="hotbar-slot selected" data-slot="0"><span class="hotbar-key">1</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="1"><span class="hotbar-key">2</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="2"><span class="hotbar-key">3</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="3"><span class="hotbar-key">4</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="4"><span class="hotbar-key">5</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="5"><span class="hotbar-key">6</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="6"><span class="hotbar-key">7</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="7"><span class="hotbar-key">8</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="8"><span class="hotbar-key">9</span><span class="hotbar-icon"></span></div>
+    </div>
 
     <!-- Dialog box for villager conversations -->
     <div id="dialog-box" class="hidden">
@@ -1608,6 +1761,7 @@
     <script src="js/data/biomes.js"></script>
     <script src="js/data/bestiary.js"></script>
     <script src="js/data/artifacts.js"></script>
+    <script src="js/data/progression.js"></script>
 
     <!-- ================================================================== -->
     <!-- LOGIC FILES - Game behavior (load after data!) -->
