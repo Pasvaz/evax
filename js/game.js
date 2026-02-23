@@ -378,7 +378,7 @@ window.Game = (function() {
             document.getElementById('testing-indicator').classList.remove('hidden');
         } else {
             // Normal mode
-            GameState.pigCoins = 50;
+            GameState.pigCoins = CONFIG.STARTING_COINS || 50;
         }
 
         GameState.hunger = 100;
@@ -421,13 +421,16 @@ window.Game = (function() {
         document.getElementById('testing-indicator').classList.add('hidden');
         document.getElementById('testing-menu').classList.add('hidden');
 
-        GameState.health = 100;
+        GameState.health = CONFIG.STARTING_HEALTH || 100;
         GameState.hunger = 100;
         GameState.thirst = 100;
         GameState.dehydrationTimer = 0;
         GameState.score = 0;
-        GameState.resourceCounts = { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0 };
-        GameState.pigCoins = 0;
+        GameState.resourceCounts = Object.assign(
+            { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0 },
+            CONFIG.STARTING_RESOURCES || {}
+        );
+        GameState.pigCoins = CONFIG.STARTING_COINS || 0;
         GameState.timeElapsed = 0;
 
         // Reset progression
@@ -480,6 +483,12 @@ window.Game = (function() {
         GameState.resources = [];
         GameState.nests = [];
         GameState.chasingGeese = [];
+
+        // Remove all carcasses
+        if (GameState.carcasses) {
+            GameState.carcasses.forEach(c => GameState.scene.remove(c));
+            GameState.carcasses = [];
+        }
 
         // Respawn player in the village (safe zone)
         GameState.peccary.position.set(
@@ -834,6 +843,12 @@ window.Game = (function() {
         GameState.enemies.forEach(e => GameState.scene.remove(e));
         GameState.enemies = [];
 
+        // Remove all carcasses
+        if (GameState.carcasses) {
+            GameState.carcasses.forEach(c => GameState.scene.remove(c));
+            GameState.carcasses = [];
+        }
+
         // Remove all resources from scene
         GameState.resources.forEach(r => GameState.scene.remove(r));
         GameState.resources = [];
@@ -1072,6 +1087,9 @@ window.Game = (function() {
 
             // Drongulinat Cat update - snowy mountain predators
             Enemies.updateDrongulinatCats(delta);
+
+            // Update carcasses - decomposition, color changes, sinking
+            Enemies.updateCarcasses(delta);
 
             GameState.renderer.render(GameState.scene, GameState.camera);
         }

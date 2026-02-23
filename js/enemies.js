@@ -4590,18 +4590,8 @@ window.Enemies = (function() {
     function deerTakeDamage(deer, damage, attacker) {
         deer.userData.health -= damage;
         if (deer.userData.health <= 0) {
-            const herd = deer.userData.herd;
-            if (herd) {
-                const idx = herd.members.indexOf(deer);
-                if (idx > -1) herd.members.splice(idx, 1);
-                if (herd.leader === deer) {
-                    const males = herd.members.filter(m => m.userData.gender === 'male' && m.userData.age === 'adult');
-                    if (males.length > 0) { herd.leader = males[0]; males[0].userData.isLeader = true; }
-                }
-            }
-            Game.scene.remove(deer);
-            const idx2 = GameState.enemies.indexOf(deer);
-            if (idx2 > -1) GameState.enemies.splice(idx2, 1);
+            // Convert to carcass (herd removal is handled inside convertToCarcass)
+            convertToCarcass(deer);
             return;
         }
         const shouldFight = deer.userData.gender === 'male' && deer.userData.age === 'adult' && Math.random() < 0.4;
@@ -4959,13 +4949,8 @@ window.Enemies = (function() {
                                     // Attack hits
                                     closestEnemy.userData.health -= enemy.userData.damage * delta;
                                     if (closestEnemy.userData.health <= 0) {
-                                        // Remove killed enemy
-                                        const idx = GameState.enemies.indexOf(closestEnemy);
-                                        if (idx !== -1) {
-                                            GameState.scene.remove(closestEnemy);
-                                            GameState.enemies.splice(idx, 1);
-                                            if (idx < i) i--;
-                                        }
+                                        // Convert to carcass
+                                        convertToCarcass(closestEnemy);
                                     }
                                 }
                                 // else: dodged!
@@ -5127,14 +5112,8 @@ window.Enemies = (function() {
                         if (Math.random() >= dodgeChance) {
                             closestEnemy.userData.health -= enemy.userData.damage * delta;
                             if (closestEnemy.userData.health <= 0) {
-                                // Remove killed enemy
-                                const idx = GameState.enemies.indexOf(closestEnemy);
-                                if (idx !== -1) {
-                                    GameState.scene.remove(closestEnemy);
-                                    GameState.enemies.splice(idx, 1);
-                                    // Adjust index if needed
-                                    if (idx < i) i--;
-                                }
+                                // Convert to carcass
+                                convertToCarcass(closestEnemy);
                             }
                         }
                     }
@@ -5857,10 +5836,8 @@ window.Enemies = (function() {
                             console.log('Grass viper attacked toad! Toad health:', target.userData.health);
 
                             if (target.userData.health <= 0) {
-                                // Toad died from attack
-                                GameState.scene.remove(target);
-                                const idx = GameState.enemies.indexOf(target);
-                                if (idx > -1) GameState.enemies.splice(idx, 1);
+                                // Convert toad to carcass
+                                convertToCarcass(target);
                                 console.log('Toad killed by grass viper attack');
                             } else {
                                 // Toad survived - alert it and it escapes
@@ -6550,15 +6527,11 @@ window.Enemies = (function() {
                             }
                             console.log('Antelope herd provoked! They are angry!');
                         } else {
-                            // Antelope died
-                            GameState.scene.remove(enemy);
-                            const herd = GameState.antelopeHerds.find(h => h.id === enemy.userData.herdId);
-                            if (herd) {
-                                herd.members = herd.members.filter(m => m !== enemy);
-                            }
-                            GameState.enemies.splice(i, 1);
-                            i--;
-                            GameState.score += 20;
+                            // Antelope died — convert to carcass
+                            convertToCarcass(enemy);
+                            var antelopeRewards = CONFIG.KILL_REWARDS || {};
+                            var antelopeTier = (enemy.userData.maxHealth || 0) >= 10 ? antelopeRewards.tough : (enemy.userData.maxHealth || 0) >= 5 ? antelopeRewards.medium : antelopeRewards.weak;
+                            if (antelopeTier) { GameState.score += antelopeTier.score; GameState.pigCoins += antelopeTier.coins; }
                             console.log('Antelope killed');
                             continue;
                         }
@@ -6777,11 +6750,9 @@ window.Enemies = (function() {
                         target.userData.health -= 50;  // Big damage from wild dog
 
                         if (target.userData.health <= 0) {
-                            // Killed the weasel!
+                            // Convert to carcass
                             console.log('Wild dog killed a grass viper!');
-                            GameState.scene.remove(target);
-                            const idx = GameState.enemies.indexOf(target);
-                            if (idx > -1) GameState.enemies.splice(idx, 1);
+                            convertToCarcass(target);
                         } else {
                             console.log('Wild dog attacked grass viper! Health:', target.userData.health);
                         }
@@ -7087,21 +7058,16 @@ window.Enemies = (function() {
                             // Kill the antelope!
                             console.log('Wild dogs successfully killed antelope!');
 
-                            // Remove from herd
-                            GameState.antelopeHerds.forEach(herd => {
-                                const idx = herd.members.indexOf(target);
-                                if (idx > -1) herd.members.splice(idx, 1);
-                            });
+                            // Convert to carcass (herd removal handled inside)
+                            convertToCarcass(target);
 
-                            // Remove from game
-                            GameState.scene.remove(target);
-                            const idx = GameState.enemies.indexOf(target);
-                            if (idx > -1) GameState.enemies.splice(idx, 1);
-
-                            // Transition to eating
+                            // Transition to eating — track the carcass
                             hunt.state = 'eating';
                             hunt.timer = 0;
                             hunt.killPosition = target.position.clone();
+                            hunt.carcass = target;
+                            target.userData.carcassBeingEaten = true;
+                            target.userData.carcassEater = hunt.leader;
                             hunt.participants.forEach(p => {
                                 p.userData.lifecycleState = 'eating';
                             });
@@ -7138,6 +7104,11 @@ window.Enemies = (function() {
                     if (model && model.userData.parts && model.userData.parts.neckGroup) {
                         const eatPhase = (GameState.clock.elapsedTime * 2) % (Math.PI * 2);
                         model.userData.parts.neckGroup.rotation.z = 0.7 + Math.sin(eatPhase) * 0.15;
+                    }
+
+                    // All pack members eating consume from the carcass
+                    if (hunt.carcass && hunt.carcass.userData && hunt.carcass.userData.isCarcass) {
+                        eatFromCarcass(enemy, hunt.carcass, delta);
                     }
 
                     // Only leader processes eating timer
@@ -7805,12 +7776,7 @@ window.Enemies = (function() {
                                 if (targetBaby.userData.health <= 0) {
                                     const parent = GameState.enemies.find(e => e.userData.entityId === targetBaby.userData.parentId);
                                     if (parent) parent.userData.hasOffspring = false;
-                                    const idx = GameState.enemies.indexOf(targetBaby);
-                                    if (idx !== -1) {
-                                        GameState.scene.remove(targetBaby);
-                                        GameState.enemies.splice(idx, 1);
-                                        if (idx < i) i--;
-                                    }
+                                    convertToCarcass(targetBaby);
                                 }
                             }
                         } else if (distance < CONFIG.ENEMY_DETECTION_RANGE) {
@@ -7924,12 +7890,7 @@ window.Enemies = (function() {
                     if (enemy.userData.fightsNestGuards) {
                         nearbyGuard.userData.health -= enemy.userData.damage * delta * 0.5;
                         if (nearbyGuard.userData.health <= 0) {
-                            const idx = GameState.enemies.indexOf(nearbyGuard);
-                            if (idx !== -1) {
-                                GameState.scene.remove(nearbyGuard);
-                                GameState.enemies.splice(idx, 1);
-                                if (idx < i) i--;
-                            }
+                            convertToCarcass(nearbyGuard);
                         }
                     }
                 }
@@ -7968,14 +7929,7 @@ window.Enemies = (function() {
                             if (parent) {
                                 parent.userData.hasOffspring = false;
                             }
-
-                            // Kill baby goose
-                            const idx = GameState.enemies.indexOf(targetBaby);
-                            if (idx !== -1) {
-                                GameState.scene.remove(targetBaby);
-                                GameState.enemies.splice(idx, 1);
-                                if (idx < i) i--;
-                            }
+                            convertToCarcass(targetBaby);
                         }
                     }
                 } else if (distance < CONFIG.ENEMY_DETECTION_RANGE) {
@@ -8279,7 +8233,7 @@ window.Enemies = (function() {
                     // Add to player inventory (reuse egg resource)
                     GameState.resourceCounts.eggs++;
                     GameState.health = Math.min(100, GameState.health + 40);
-                    GameState.score += 6;
+                    GameState.score += 20;
                     Game.playSound('collect');
 
                     console.log('Collected toad egg! Eggs remaining:', nest.eggs.filter(e => e.exists).length);
@@ -10371,10 +10325,11 @@ window.Enemies = (function() {
                 cat.userData.stateTimer = 0;
                 cat.userData.mealSize = target.userData.size || 1;
 
-                // Remove prey from game
-                GameState.scene.remove(target);
-                const idx = GameState.enemies.indexOf(target);
-                if (idx !== -1) GameState.enemies.splice(idx, 1);
+                // Convert prey to carcass and start eating it
+                convertToCarcass(target);
+                cat.userData.eatingCarcass = target;
+                target.userData.carcassBeingEaten = true;
+                target.userData.carcassEater = cat;
 
                 cat.userData.huntTarget = null;
                 console.log('Dronglous Cat killed prey!');
@@ -10392,10 +10347,27 @@ window.Enemies = (function() {
             model.userData.parts.head.rotation.x = Math.sin(GameState.timeElapsed * 2) * 0.1;
         }
 
+        // Eat from carcass if available
+        var carcass = cat.userData.eatingCarcass;
+        if (carcass && carcass.userData && carcass.userData.isCarcass) {
+            var stillEating = eatFromCarcass(cat, carcass, delta);
+            if (!stillEating) {
+                stopEatingCarcass(carcass);
+                cat.userData.eatingCarcass = null;
+                cat.userData.lifecycleState = 'ascending';
+                cat.userData.stateTimer = 0;
+                return;
+            }
+        }
+
         // Eating time based on meal size
         const eatTime = 5 + (cat.userData.mealSize || 1) * 3;
 
         if (cat.userData.stateTimer > eatTime) {
+            if (carcass) {
+                stopEatingCarcass(carcass);
+                cat.userData.eatingCarcass = null;
+            }
             cat.userData.lifecycleState = 'ascending';
             cat.userData.stateTimer = 0;
         }
@@ -10484,8 +10456,11 @@ window.Enemies = (function() {
             threat.userData.health = (threat.userData.health || 10) - cat.userData.damage * delta;
 
             if (threat.userData.health <= 0) {
-                // Threat killed or fled
+                // Threat killed
                 console.log('Mother cat drove off threat!');
+                if (threat !== GameState.peccary) {
+                    convertToCarcass(threat);
+                }
                 cat.userData.lifecycleState = 'ascending';
                 cat.userData.defenseThreat = null;
             }
@@ -10823,10 +10798,25 @@ window.Enemies = (function() {
                 cat.userData.hungerTimer -= delta;
 
                 if (cat.userData.isEating) {
-                    cat.userData.eatingTimer -= delta;
-                    if (cat.userData.eatingTimer <= 0) {
-                        cat.userData.isEating = false;
-                        cat.userData.hungerTimer = 120 + Math.random() * 60; // 2-3 min
+                    // Eat from the carcass if we have one
+                    var carcass = cat.userData.eatingCarcass;
+                    if (carcass && carcass.userData && carcass.userData.isCarcass) {
+                        var stillEating = eatFromCarcass(cat, carcass, delta);
+                        if (!stillEating) {
+                            // Carcass fully consumed
+                            stopEatingCarcass(carcass);
+                            cat.userData.isEating = false;
+                            cat.userData.eatingCarcass = null;
+                            cat.userData.hungerTimer = 120 + Math.random() * 60;
+                        }
+                    } else {
+                        // No carcass (maybe it decomposed), just stop eating
+                        cat.userData.eatingTimer -= delta;
+                        if (cat.userData.eatingTimer <= 0) {
+                            cat.userData.isEating = false;
+                            cat.userData.eatingCarcass = null;
+                            cat.userData.hungerTimer = 120 + Math.random() * 60;
+                        }
                     }
                     // Stay still while eating
                     animateDrongulinatCat(cat, delta);
@@ -10834,7 +10824,32 @@ window.Enemies = (function() {
                 }
 
                 if (cat.userData.hungerTimer <= 0 && !cat.userData.isHunting) {
-                    // Try to find a deer to hunt
+                    // First check for nearby carcasses (free food!)
+                    var nearbyCarcass = findNearestCarcass(cat, 25);
+                    if (nearbyCarcass) {
+                        // Walk to the carcass and eat it
+                        var dx = nearbyCarcass.position.x - cat.position.x;
+                        var dz = nearbyCarcass.position.z - cat.position.z;
+                        var distToCarcass = Math.sqrt(dx * dx + dz * dz);
+                        if (distToCarcass < 2) {
+                            // Close enough — start eating
+                            cat.userData.isEating = true;
+                            cat.userData.eatingCarcass = nearbyCarcass;
+                            cat.userData.isMoving = false;
+                            nearbyCarcass.userData.carcassBeingEaten = true;
+                            nearbyCarcass.userData.carcassEater = cat;
+                        } else {
+                            // Walk toward carcass
+                            cat.position.x += (dx / distToCarcass) * cat.userData.speed * delta;
+                            cat.position.z += (dz / distToCarcass) * cat.userData.speed * delta;
+                            cat.rotation.y = -Math.atan2(dz, dx);
+                            cat.userData.isMoving = true;
+                            animateDrongulinatCat(cat, delta);
+                        }
+                        return;
+                    }
+
+                    // No carcass nearby — try to find a deer to hunt
                     var deer = findNearestDeer(cat, 30);
                     if (deer) {
                         cat.userData.isHunting = true;
@@ -11150,17 +11165,20 @@ window.Enemies = (function() {
     function performTakedown(cat, deer) {
         console.log('Drongulinat cat takedown!');
 
-        // Remove deer from scene
-        GameState.scene.remove(deer);
-        var idx = GameState.enemies.indexOf(deer);
-        if (idx > -1) GameState.enemies.splice(idx, 1);
+        // Convert deer to carcass instead of removing
+        convertToCarcass(deer);
 
-        // Cat enters eating state
+        // Cat enters eating state — now eats from the carcass
         cat.userData.isHunting = false;
         cat.userData.huntTarget = null;
         cat.userData.isEating = true;
         cat.userData.eatingTimer = 30;
+        cat.userData.eatingCarcass = deer;  // Track which carcass it's eating
         cat.userData.isMoving = false;
+
+        // Mark carcass as being eaten by this cat
+        deer.userData.carcassBeingEaten = true;
+        deer.userData.carcassEater = cat;
     }
 
     /**
@@ -11205,6 +11223,234 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // CARCASS SYSTEM - Dead animals leave bodies that predators eat
+    // ========================================================================
+
+    /**
+     * Convert a dead enemy into a carcass.
+     * The body tips on its side, shrinks as predators eat, and decomposes after 5 min.
+     * @param {THREE.Group} enemy - The enemy that just died
+     * @param {THREE.Group|null} killer - The predator that killed it (if any)
+     */
+    function convertToCarcass(enemy) {
+        if (!enemy || !enemy.userData) return;
+
+        // Remove from enemies array (no longer alive)
+        var idx = GameState.enemies.indexOf(enemy);
+        if (idx > -1) GameState.enemies.splice(idx, 1);
+
+        // Remove from herd if it was a deer
+        if (enemy.userData.herd) {
+            var herd = enemy.userData.herd;
+            var hIdx = herd.members.indexOf(enemy);
+            if (hIdx > -1) herd.members.splice(hIdx, 1);
+            if (herd.leader === enemy) {
+                var males = herd.members.filter(function(m) {
+                    return m.userData.gender === 'male' && m.userData.age === 'adult';
+                });
+                if (males.length > 0) { herd.leader = males[0]; males[0].userData.isLeader = true; }
+            }
+        }
+
+        // Remove from antelope herds if applicable
+        if (GameState.antelopeHerds) {
+            GameState.antelopeHerds.forEach(function(herd) {
+                var aIdx = herd.members.indexOf(enemy);
+                if (aIdx > -1) herd.members.splice(aIdx, 1);
+            });
+        }
+
+        // Tip it on its side (rotate 90 degrees around Z axis)
+        enemy.rotation.z = Math.PI / 2;
+
+        // Store original colors for the decay stages
+        var originalColors = [];
+        enemy.traverse(function(child) {
+            if (child.isMesh && child.material) {
+                child.material = child.material.clone(); // Clone so we can change colors
+                originalColors.push({
+                    mesh: child,
+                    color: child.material.color.getHex()
+                });
+            }
+        });
+
+        // Mark as carcass with all the data we need
+        enemy.userData.isCarcass = true;
+        enemy.userData.carcassOriginalColors = originalColors;
+        enemy.userData.carcassMeatLeft = 1.0;       // 1.0 = full, 0.0 = skeleton
+        enemy.userData.carcassOriginalScale = enemy.scale.x;
+        enemy.userData.carcassDecomposeTimer = 300;  // 5 min (300 seconds) until decompose
+        enemy.userData.carcassBeingEaten = false;     // Is a predator currently eating?
+        enemy.userData.carcassEater = null;            // Which predator is eating
+        enemy.userData.carcassSinking = false;         // Has it started sinking?
+        enemy.userData.carcassAge = 0;                 // How long since death
+
+        // Initialize carcasses array if needed
+        if (!GameState.carcasses) GameState.carcasses = [];
+        GameState.carcasses.push(enemy);
+
+        console.log('Carcass created:', enemy.userData.type, 'meat:', enemy.userData.carcassMeatLeft);
+    }
+
+    /**
+     * Update all carcasses — handle color decay, predator eating, and decomposition.
+     * Called every frame from the game loop.
+     */
+    function updateCarcasses(delta) {
+        if (!GameState.carcasses || GameState.carcasses.length === 0) return;
+
+        for (var i = GameState.carcasses.length - 1; i >= 0; i--) {
+            var carcass = GameState.carcasses[i];
+            if (!carcass || !carcass.userData) {
+                GameState.carcasses.splice(i, 1);
+                continue;
+            }
+
+            carcass.userData.carcassAge += delta;
+
+            // === SINKING PHASE ===
+            if (carcass.userData.carcassSinking) {
+                // Sink into the ground over 3 seconds
+                carcass.position.y -= delta * 0.5;
+                // Fade opacity
+                carcass.traverse(function(child) {
+                    if (child.isMesh && child.material) {
+                        child.material.transparent = true;
+                        child.material.opacity = Math.max(0, child.material.opacity - delta * 0.3);
+                    }
+                });
+                // Fully sunk — remove
+                if (carcass.position.y < -2) {
+                    GameState.scene.remove(carcass);
+                    GameState.carcasses.splice(i, 1);
+                }
+                continue;
+            }
+
+            // === DECOMPOSE TIMER (only counts down when NOT being eaten) ===
+            if (!carcass.userData.carcassBeingEaten) {
+                carcass.userData.carcassDecomposeTimer -= delta;
+                if (carcass.userData.carcassDecomposeTimer <= 0) {
+                    // Start sinking into the ground
+                    carcass.userData.carcassSinking = true;
+                    continue;
+                }
+            }
+
+            // === UPDATE VISUAL APPEARANCE based on meat left ===
+            var meat = carcass.userData.carcassMeatLeft;
+            var colors = carcass.userData.carcassOriginalColors;
+
+            // Shrink the body as meat is consumed
+            var minScale = carcass.userData.carcassOriginalScale * 0.3; // Don't shrink below 30%
+            var currentScale = carcass.userData.carcassOriginalScale * (0.3 + 0.7 * meat);
+            carcass.scale.set(currentScale, currentScale, currentScale);
+
+            // Color stages: fresh → raw red → bone grey
+            if (colors) {
+                for (var c = 0; c < colors.length; c++) {
+                    var entry = colors[c];
+                    var origR = ((entry.color >> 16) & 0xff) / 255;
+                    var origG = ((entry.color >> 8) & 0xff) / 255;
+                    var origB = (entry.color & 0xff) / 255;
+
+                    if (meat > 0.5) {
+                        // Fresh → Raw: blend toward red
+                        var t = 1 - (meat - 0.5) * 2; // 0 at meat=1, 1 at meat=0.5
+                        var r = origR + (0.7 - origR) * t;
+                        var g = origG + (0.2 - origG) * t;
+                        var b = origB + (0.2 - origB) * t;
+                        entry.mesh.material.color.setRGB(r, g, b);
+                    } else {
+                        // Raw → Bone: blend from red toward grey-white
+                        var t2 = 1 - meat * 2; // 0 at meat=0.5, 1 at meat=0
+                        var r2 = 0.7 + (0.85 - 0.7) * t2;
+                        var g2 = 0.2 + (0.82 - 0.2) * t2;
+                        var b2 = 0.2 + (0.78 - 0.2) * t2;
+                        entry.mesh.material.color.setRGB(r2, g2, b2);
+                    }
+                }
+            }
+
+            // === If fully eaten (meat = 0), start sinking ===
+            if (meat <= 0) {
+                carcass.userData.carcassSinking = true;
+            }
+        }
+    }
+
+    /**
+     * Find the nearest carcass to a predator within a given range.
+     * @param {THREE.Group} predator - The hungry predator
+     * @param {number} maxRange - Maximum search distance
+     * @returns {THREE.Group|null} - Nearest carcass, or null
+     */
+    function findNearestCarcass(predator, maxRange) {
+        if (!GameState.carcasses || GameState.carcasses.length === 0) return null;
+
+        var closest = null;
+        var closestDist = maxRange;
+
+        for (var i = 0; i < GameState.carcasses.length; i++) {
+            var carcass = GameState.carcasses[i];
+            if (!carcass || !carcass.userData) continue;
+            if (carcass.userData.carcassSinking) continue;  // Don't eat sinking ones
+            if (carcass.userData.carcassBeingEaten && carcass.userData.carcassEater !== predator) continue;  // Someone else is eating it
+            if (carcass.userData.carcassMeatLeft <= 0) continue;
+
+            var dx = carcass.position.x - predator.position.x;
+            var dz = carcass.position.z - predator.position.z;
+            var dist = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = carcass;
+            }
+        }
+        return closest;
+    }
+
+    /**
+     * Make a predator eat from a carcass.
+     * Bigger predators eat faster (take more meat per second).
+     * @param {THREE.Group} predator - The predator eating
+     * @param {THREE.Group} carcass - The carcass being eaten
+     * @param {number} delta - Time since last frame
+     */
+    function eatFromCarcass(predator, carcass, delta) {
+        if (!carcass || !carcass.userData || carcass.userData.carcassMeatLeft <= 0) return false;
+
+        // Mark carcass as being eaten (pauses decompose timer)
+        carcass.userData.carcassBeingEaten = true;
+        carcass.userData.carcassEater = predator;
+
+        // Bigger predators eat faster
+        // predator size is usually 0.5 (baby) to 1.5 (big cat)
+        var predatorSize = predator.userData.size || 1;
+        var eatRate = 0.03 * predatorSize * delta;  // ~3% per second for size-1 predator
+
+        carcass.userData.carcassMeatLeft = Math.max(0, carcass.userData.carcassMeatLeft - eatRate);
+
+        // If fully eaten, predator is done
+        if (carcass.userData.carcassMeatLeft <= 0) {
+            carcass.userData.carcassBeingEaten = false;
+            carcass.userData.carcassEater = null;
+            return false; // No more meat
+        }
+        return true; // Still eating
+    }
+
+    /**
+     * Stop a predator from eating (e.g. if disturbed or full).
+     */
+    function stopEatingCarcass(carcass) {
+        if (!carcass || !carcass.userData) return;
+        carcass.userData.carcassBeingEaten = false;
+        carcass.userData.carcassEater = null;
+    }
+
+    // ========================================================================
     // PLAYER COMBAT - Damage an enemy with a weapon
     // ========================================================================
     /**
@@ -11243,25 +11489,14 @@ window.Enemies = (function() {
 
         // Check for death
         if (enemy.userData.health <= 0) {
-            // Remove from scene and enemies array
-            GameState.scene.remove(enemy);
-            const idx = GameState.enemies.indexOf(enemy);
-            if (idx > -1) GameState.enemies.splice(idx, 1);
+            // Convert to carcass instead of removing
+            convertToCarcass(enemy);
 
-            // Give score and coins as reward
-            var scoreReward = 10;
-            var coinReward = 5;
-            // Tougher enemies give better rewards
-            if (enemy.userData.maxHealth >= 5) {
-                scoreReward = 25;
-                coinReward = 15;
-            }
-            if (enemy.userData.maxHealth >= 10) {
-                scoreReward = 50;
-                coinReward = 30;
-            }
-            GameState.score += scoreReward;
-            GameState.pigCoins += coinReward;
+            // Give score and coins as reward (tiered by enemy toughness)
+            var rewards = CONFIG.KILL_REWARDS || { weak: { score: 10, coins: 5 }, medium: { score: 25, coins: 15 }, tough: { score: 50, coins: 30 } };
+            var tier = enemy.userData.maxHealth >= 10 ? rewards.tough : enemy.userData.maxHealth >= 5 ? rewards.medium : rewards.weak;
+            GameState.score += tier.score;
+            GameState.pigCoins += tier.coins;
             Game.playSound('collect');
             UI.updateUI();
         }
@@ -11312,6 +11547,11 @@ window.Enemies = (function() {
 
         // Player combat
         damageEnemy: damageEnemy,
+
+        // Carcass system
+        updateCarcasses: updateCarcasses,
+        convertToCarcass: convertToCarcass,
+        findNearestCarcass: findNearestCarcass,
 
         // Expose model builders for advanced use
         modelBuilders: modelBuilders

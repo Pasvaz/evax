@@ -106,16 +106,37 @@ window.SETTINGS = {
         eggs: 40         // Eggs heal 40 health
     },
 
+    // How much hunger each food restores when eaten
+    FOOD_HUNGER: {
+        berries: 10,     // Berries fill 10 hunger
+        nuts: 15,        // Nuts fill 15 hunger
+        mushrooms: 20,   // Mushrooms fill 20 hunger
+        seaweed: 12,     // Seaweed fills 12 hunger
+        eggs: 25         // Eggs fill 25 hunger
+    },
+
     // Score points for collecting each resource
     RESOURCE_SCORES: {
-        berries: 10,     // 10 points per berry
-        nuts: 15,        // 15 points per nut
-        mushrooms: 20,   // 20 points per mushroom
-        seaweed: 25,     // 25 points per seaweed
-        eggs: 60,        // 60 points per egg
+        berries: 5,
+        nuts: 5,   
+        mushrooms: 10,
+        seaweed: 15,
+        eggs: 20,   
         arsenic_mushrooms: 0,  // No score - you collect these for crafting
         thous_pine_wood: 0,    // No score - crafting material
         glass: 0               // No score - crafting material
+    },
+
+    // ========================================================================
+    // KILL REWARDS
+    // ========================================================================
+    // What the player gets for killing enemies with weapons
+    // Rewards are tiered by enemy max health
+
+    KILL_REWARDS: {
+        weak:   { score: 10, coins: 5 },   // maxHealth < 5
+        medium: { score: 25, coins: 15 },   // maxHealth 5-9
+        tough:  { score: 50, coins: 30 }    // maxHealth >= 10
     },
 
     // ========================================================================

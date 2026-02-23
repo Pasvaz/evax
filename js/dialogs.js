@@ -378,7 +378,7 @@ window.Dialogs = (function() {
                 if (GameState.resourceCounts.nuts >= 5) {
                     GameState.resourceCounts.nuts -= 5;
                     GameState.health = Math.min(100, GameState.health + 15);
-                    GameState.score += 50;
+                    GameState.score += 5;
                     UI.updateUI();
                     return true;
                 }

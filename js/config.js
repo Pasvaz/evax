@@ -80,6 +80,21 @@ window.CONFIG = {
     // How much health each food type restores when eaten
 
     FOOD_HEALING: SETTINGS.FOOD_HEALING,
+    FOOD_HUNGER: SETTINGS.FOOD_HUNGER,
+
+    // ========================================================================
+    // RESOURCE SCORES
+    // ========================================================================
+    // Score points for collecting each resource type
+
+    RESOURCE_SCORES: SETTINGS.RESOURCE_SCORES,
+
+    // ========================================================================
+    // KILL REWARDS
+    // ========================================================================
+    // What the player gets for killing enemies
+
+    KILL_REWARDS: SETTINGS.KILL_REWARDS,
 
     // ========================================================================
     // PLAYER SETTINGS

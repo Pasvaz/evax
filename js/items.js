@@ -67,8 +67,8 @@ window.Items = (function() {
                 if (GameState.resourceCounts.arsenic_mushrooms > 0) {
                     GameState.resourceCounts.arsenic_mushrooms--;
                     hasResource = true;
-                    healAmount = -10; // TOXIC: damages player!
-                    hungerAmount = -10; // Makes you feel sick
+                    healAmount = -10; // TOXIC: damages player! (special case, not in CONFIG)
+                    hungerAmount = -10; // Makes you feel sick (special case)
                 }
                 break;
         }
@@ -110,13 +110,17 @@ window.Items = (function() {
      */
     function createResource(type) {
         const resource = new THREE.Group();
-        let color, value, healAmount;
+        let color;
+
+        // Look up score and healing from CONFIG instead of hardcoding
+        const resourceScores = CONFIG.RESOURCE_SCORES || {};
+        const scoreKey = type === 'berry' ? 'berries' : type === 'nut' ? 'nuts' : type === 'mushroom' ? 'mushrooms' : type === 'arsenic_mushroom' ? 'arsenic_mushrooms' : type === 'egg' ? 'eggs' : type;
+        let value = resourceScores[scoreKey] || 0;
+        let healAmount = (CONFIG.FOOD_HEALING || {})[scoreKey] || 0;
 
         switch(type) {
             case 'berry':
                 color = 0x4169e1;
-                healAmount = 5;
-                value = 1;
                 for (let i = 0; i < 5; i++) {
                     const berry = new THREE.Mesh(
                         new THREE.SphereGeometry(0.15, 8, 8),
@@ -138,8 +142,6 @@ window.Items = (function() {
 
             case 'nut':
                 color = 0x8b4513;
-                healAmount = 8;
-                value = 2;
                 const nutBody = new THREE.Mesh(
                     new THREE.SphereGeometry(0.2, 8, 8),
                     new THREE.MeshStandardMaterial({ color: color })
@@ -164,8 +166,6 @@ window.Items = (function() {
 
             case 'mushroom':
                 color = 0xff6347;
-                healAmount = 12;
-                value = 3;
                 const mushroomStem = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.1, 0.12, 0.3, 8),
                     new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
@@ -195,8 +195,6 @@ window.Items = (function() {
             case 'seaweed':
                 // Green seaweed that grows on riverbanks
                 color = 0x2e8b57; // Sea green
-                healAmount = 20;
-                value = 4;
                 const seaweedMat = new THREE.MeshStandardMaterial({
                     color: color,
                     side: THREE.DoubleSide
@@ -237,8 +235,7 @@ window.Items = (function() {
             case 'arsenic_mushroom':
                 // Toxic black mushroom with orange spots — savannah only!
                 color = 0x1a1a1a; // Nearly black
-                healAmount = -10; // TOXIC: damages player
-                value = 0; // No score for collecting
+                healAmount = -10; // TOXIC: damages player (override CONFIG)
                 const arsenicStem = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.08, 0.1, 0.25, 8),
                     new THREE.MeshStandardMaterial({ color: 0x2a2a2a })
@@ -269,8 +266,6 @@ window.Items = (function() {
             case 'egg':
                 // Beige goose egg with brown speckles
                 color = 0xf5f5dc; // Beige
-                healAmount = 40;
-                value = 6;
                 // Create egg body (oval sphere)
                 const eggBody = new THREE.Mesh(
                     new THREE.SphereGeometry(0.25, 16, 16),
