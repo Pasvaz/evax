@@ -394,6 +394,33 @@
             text-shadow: 1px 1px 2px #000;
         }
 
+        /* Drag-and-drop: ghost element follows cursor */
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.85;
+            font-size: 40px;
+            background: rgba(30, 25, 20, 0.9);
+            border: 2px solid #ffcc00;
+            border-radius: 8px;
+            padding: 6px 10px;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Drag-and-drop: hotbar slots glow green when valid drop target */
+        .hotbar-slot.drag-over {
+            border-color: #00ff88 !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6) !important;
+            transform: scale(1.15);
+            transition: all 0.15s;
+        }
+
+        /* Drag-and-drop: source slot dims while dragging */
+        .inventory-slot.dragging {
+            opacity: 0.4;
+        }
+
         #dialog-box {
             position: fixed;
             bottom: 50px;
@@ -854,6 +881,88 @@
             color: #666;
             font-size: 18px;
             margin-top: 50px;
+        }
+        /* Quest Panel */
+        #quest-log {
+            padding: 10px;
+        }
+        .quest-title {
+            font-size: 24px;
+            color: #ffcc00;
+            margin-bottom: 5px;
+        }
+        .quest-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        .quest-clue {
+            background: rgba(60, 50, 40, 0.6);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+        }
+        .quest-clue.discovered {
+            border-color: #8b7355;
+            background: rgba(80, 65, 45, 0.7);
+        }
+        .quest-clue.locked {
+            opacity: 0.4;
+        }
+        .quest-clue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .quest-clue-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #e8a850;
+        }
+        .quest-clue-status {
+            font-size: 13px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .quest-clue-status.found {
+            background: #2a5a2a;
+            color: #6aff6a;
+        }
+        .quest-clue-status.not-found {
+            background: #4a3a2a;
+            color: #888;
+        }
+        .quest-clue-status.locked-status {
+            background: #3a2a2a;
+            color: #aa5555;
+        }
+        .quest-clue-text {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.4;
+        }
+        .quest-ingredient-list {
+            margin-top: 15px;
+            padding: 12px 16px;
+            background: rgba(40, 35, 30, 0.8);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+        }
+        .quest-ingredient-list h3 {
+            color: #ffcc00;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .quest-ingredient {
+            font-size: 14px;
+            padding: 3px 0;
+            color: #aaa;
+        }
+        .quest-ingredient.found {
+            color: #6aff6a;
         }
         /* Artifacts Panel */
         .artifacts-header {
@@ -1486,6 +1595,9 @@
                     <button class="testing-action-btn" id="trigger-cat-mating-btn">Dronglous Cat Mating</button>
                     <button class="testing-action-btn" id="trigger-cat-hunt-btn">Dronglous Cat Hunt</button>
                     <button class="testing-action-btn" id="spawn-test-cat-btn">Spawn Test Cat Nearby</button>
+                    <button class="testing-action-btn" id="trigger-snow-caninon-hunt-btn">Dog Hunt (Snow)</button>
+                    <button class="testing-action-btn" id="trigger-oxen-mating-btn">Oxen Mating</button>
+                    <button class="testing-action-btn" id="trigger-dog-hunt-oxen-btn">Dog Hunt Oxen</button>
                     <button class="testing-action-btn" id="trigger-pregnancy-btn" disabled>Make Pregnant</button>
                     <p id="pregnancy-status" class="testing-status">Select a female animal first</p>
                 </div>
@@ -1545,6 +1657,14 @@
                             <button class="spawn-btn" data-spawn="drongulinat_cat_female">Drongulinat Cat (Female)</button>
                             <button class="spawn-btn" data-spawn="drongulinat_cat_baby_male">Drongulinat Cat Baby (M)</button>
                             <button class="spawn-btn" data-spawn="drongulinat_cat_baby_female">Drongulinat Cat Baby (F)</button>
+                            <button class="spawn-btn" data-spawn="snow_caninon_male">Snow Caninon (Male)</button>
+                            <button class="spawn-btn" data-spawn="snow_caninon_female">Snow Caninon (Female)</button>
+                            <button class="spawn-btn" data-spawn="snow_caninon_leader">Snow Caninon (Leader)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_male">Oxen (Male)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_female">Oxen (Female)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_leader">Oxen (Leader)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_baby_male">Oxen Calf (M)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_baby_female">Oxen Calf (F)</button>
                         </div>
                     </div>
                 </div>
@@ -1601,6 +1721,9 @@
                     <div class="resource-icon"><span class="arsenic-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="10" rx="9" ry="6" fill="#1a1a1a"/><rect x="10" y="14" width="4" height="7" rx="1" fill="#2a2a2a"/><circle cx="7" cy="9" r="1.5" fill="#ff6600"/><circle cx="12" cy="7" r="1.5" fill="#ff6600"/><circle cx="17" cy="9" r="1.5" fill="#ff6600"/><circle cx="9" cy="12" r="1.2" fill="#ff6600"/><circle cx="15" cy="12" r="1.2" fill="#ff6600"/></svg></span><span id="arsenic-mushrooms-count">0</span></div>
                     <div class="resource-icon"><span>🪵</span><span id="thous-pine-wood-count">0</span></div>
                     <div class="resource-icon"><span>🔮</span><span id="glass-count">0</span></div>
+                    <div class="resource-icon"><span>🪵</span><span id="manglecacia-wood-count">0</span></div>
+                    <div class="resource-icon"><span>🪵</span><span id="seaspray-birch-wood-count">0</span></div>
+                    <div class="resource-icon"><span>🌾</span><span id="cinnamon-count">0</span></div>
                 </div>
             </div>
             <div class="stat-box">
@@ -1688,6 +1811,7 @@
             <button class="inventory-tab active" data-tab="inventory">Inventory</button>
             <button class="inventory-tab" data-tab="artifacts">Artifacts</button>
             <button class="inventory-tab" data-tab="bestiary">Bestiary</button>
+            <button class="inventory-tab" data-tab="quest">Quest</button>
         </div>
         <div id="inventory-content">
             <!-- Inventory Panel -->
@@ -1722,6 +1846,10 @@
                     </div>
                     <div id="bestiary-detail-info"></div>
                 </div>
+            </div>
+            <!-- Quest Panel -->
+            <div id="quest-panel" class="inventory-panel">
+                <div id="quest-log"></div>
             </div>
         </div>
         <div id="inventory-footer">Press I to close</div>
@@ -1762,6 +1890,7 @@
     <script src="js/data/bestiary.js"></script>
     <script src="js/data/artifacts.js"></script>
     <script src="js/data/progression.js"></script>
+    <script src="js/data/tools.js"></script>
 
     <!-- ================================================================== -->
     <!-- LOGIC FILES - Game behavior (load after data!) -->

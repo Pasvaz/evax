@@ -1084,6 +1084,186 @@ window.ENEMIES = [
     },
 
     // ========================================================================
+    // SNOW CANINON LARTUS - XL Bully Pack Dogs (Snowy Mountains)
+    // ========================================================================
+    // XL bully dog morphology with larger paws for snow. Male-led packs.
+    // Males: black, Females: dark grey.
+    // Pups: lighter versions (male pups = dark grey, female pups = light grey).
+    // Hunt deer in packs, dig dens for pups, interact with drongulinat cats.
+
+    // Male Snow Caninon - Black coat, muscular
+    {
+        id: 'snow_caninon_male',
+        type: 'snow_caninon',
+        category: 'carnivore',
+        speed: 7,
+        speedVariation: 1,
+        chaseSpeed: 11,
+        damage: 22,
+        radius: 0.75,
+        size: 1.1,
+        health: 40,
+        spawnWeight: 0,
+        minimapColor: '#0a0a0a',
+        groundY: 0.4,
+
+        friendly: true,
+        defensive: false,
+        biome: 'snowy_mountains',
+        isPackAnimal: true,
+
+        colors: {
+            body: "#0a0a0a",            // Black body
+            belly: "#1a1a1a",           // Very dark grey belly
+            chest: "#0f0f0f",           // Near-black chest
+            patches: "#000000",         // Pure black patches
+            muzzle: "#1a1a1a",          // Dark grey muzzle
+            nose: "#000000",            // Black nose
+            eyes: "#CC8800",            // Amber eyes
+            eyeGlow: "#221100",         // Amber glow
+            ears: "#0a0a0a",            // Black ears
+            earInner: "#2a1a1a",        // Dark reddish inner ear
+            legs: "#050505",            // Near-black legs
+            paws: "#1a1a1a",            // Dark grey paws (BIG!)
+            tail: "#0a0a0a",            // Black tail
+            tailTip: "#2a2a2a"          // Dark grey tail tip
+        }
+    },
+
+    // Female Snow Caninon - Dark grey coat, slightly smaller
+    {
+        id: 'snow_caninon_female',
+        type: 'snow_caninon',
+        category: 'carnivore',
+        speed: 7,
+        speedVariation: 1,
+        chaseSpeed: 11,
+        damage: 18,
+        radius: 0.7,
+        size: 1.0,
+        health: 35,
+        spawnWeight: 0,
+        minimapColor: '#3a3a3a',
+        groundY: 0.38,
+
+        friendly: true,
+        defensive: false,
+        biome: 'snowy_mountains',
+        isPackAnimal: true,
+        canGetPregnant: true,
+
+        colors: {
+            body: "#3a3a3a",            // Dark grey body
+            belly: "#4a4a4a",           // Medium grey belly
+            chest: "#333333",           // Grey chest
+            patches: "#2a2a2a",         // Darker grey patches
+            muzzle: "#2a2a2a",          // Dark grey muzzle
+            nose: "#000000",            // Black nose
+            eyes: "#CC8800",            // Amber eyes
+            eyeGlow: "#221100",         // Amber glow
+            ears: "#3a3a3a",            // Dark grey ears
+            earInner: "#4a3030",        // Greyish-pink inner ear
+            legs: "#2a2a2a",            // Dark grey legs
+            paws: "#3a3a3a",            // Grey paws (BIG!)
+            tail: "#3a3a3a",            // Grey tail
+            tailTip: "#4a4a4a"          // Lighter grey tail tip
+        }
+    },
+
+    // ========================================================================
+    // SNOW BALUBAN OXEN - Musk Ox Herds (Snowy Mountains)
+    // ========================================================================
+    // Largest beast in the game. Musk ox build with shaggy fur skirt.
+    // Males: blue-grey, Females: black. Both have horns (males larger).
+    // Live in herds of 18 (6M + 12F). Hunted by Snow Caninon packs.
+    // Calves: mud brown (males), potato colour (females).
+
+    // Male Baluban Oxen - Blue-grey coat, massive build
+    {
+        id: 'baluban_oxen_male',
+        type: 'baluban_oxen',
+        category: 'herbivore',
+        speed: 4,
+        speedVariation: 0.5,
+        chaseSpeed: 7,
+        damage: 25,
+        radius: 1.1,
+        size: 1.2,
+        health: 60,
+        spawnWeight: 0,
+        minimapColor: '#6B7B8B',
+        groundY: 0.55,
+
+        friendly: true,
+        defensive: true,
+        biome: 'snowy_mountains',
+        isHerdAnimal: true,
+        hasHorns: true,
+        hornSize: 1,
+
+        colors: {
+            body: "#6B7B8B",            // Blue-grey body
+            belly: "#8090A0",           // Lighter blue-grey belly
+            chest: "#7A8A9A",           // Slightly lighter chest
+            shoulder: "#5A6A7A",        // Darker shoulder hump
+            rump: "#6B7B8B",            // Same as body
+            muzzle: "#3A4A5A",          // Dark blue-grey muzzle
+            nose: "#1A1A1A",            // Black nose
+            eyes: "#1A1A1A",            // Dark eyes
+            ears: "#5A6A7A",            // Blue-grey ears
+            earInner: "#7A6A6A",        // Pinkish inner ear
+            legs: "#4A5A6A",            // Darker blue-grey legs
+            hooves: "#1A1A1A",          // Black hooves
+            horns: "#3D2817",           // Dark brown horns
+            tail: "#5A6A7A",            // Blue-grey tail
+            skirt: "#4A5A6A"            // Darker shaggy fur skirt
+        }
+    },
+
+    // Female Baluban Oxen - Black coat, slightly smaller
+    {
+        id: 'baluban_oxen_female',
+        type: 'baluban_oxen',
+        category: 'herbivore',
+        speed: 4,
+        speedVariation: 0.5,
+        chaseSpeed: 7,
+        damage: 15,
+        radius: 1.0,
+        size: 1.1,
+        health: 50,
+        spawnWeight: 0,
+        minimapColor: '#1A1A1A',
+        groundY: 0.5,
+
+        friendly: true,
+        defensive: true,
+        biome: 'snowy_mountains',
+        isHerdAnimal: true,
+        hasHorns: true,
+        hornSize: 0.6,
+        canGetPregnant: true,
+
+        colors: {
+            body: "#1A1A1A",            // Black body
+            belly: "#2A2A2A",           // Dark grey belly
+            chest: "#222222",           // Near-black chest
+            shoulder: "#151515",        // Very dark shoulder
+            rump: "#1A1A1A",            // Black rump
+            muzzle: "#0D0D0D",          // Near-black muzzle
+            nose: "#000000",            // Black nose
+            eyes: "#1A1A1A",            // Dark eyes
+            ears: "#1A1A1A",            // Black ears
+            earInner: "#3A2A2A",        // Dark pinkish inner ear
+            legs: "#0D0D0D",            // Near-black legs
+            hooves: "#000000",          // Black hooves
+            horns: "#2A1A0A",           // Very dark brown horns
+            tail: "#151515",            // Dark tail
+            skirt: "#0D0D0D"            // Very dark shaggy skirt
+        }
+    },
+
+    // ========================================================================
     // ADD MORE ENEMIES HERE!
     // ========================================================================
     //

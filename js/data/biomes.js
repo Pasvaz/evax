@@ -31,7 +31,8 @@ window.BIOMES = {
 
         // Transitions (which direction leads to which biome)
         transitions: {
-            north: 'savannah'          // Go north to reach savannah
+            north: 'savannah',         // Go north to reach savannah
+            south: 'coastal'           // Go south to reach coastal biome
         },
 
         // Spawn position when entering this biome
@@ -155,8 +156,70 @@ window.BIOMES = {
         spawnDrongulinatCats: true,
         drongulinatCats: 4,            // 2 male + 2 female (2 pairs)
 
+        // Snow Caninons Lartus - XL bully pack dogs
+        spawnSnowCaninons: true,
+        snowCaninonPacks: 2,           // 2 packs (4 dogs each = 8 total)
+
+        // Snow Baluban Oxen - massive musk ox herds
+        spawnBalubanOxen: true,
+        balubanOxenHerds: 2,           // 2 herds (18 each = 36 total)
+
         // Requirements
         requiresArtifact: 'felis_dronglaticus_skull'  // Need the skull to enter!
+    },
+
+    // The coastal biome - seaspray birch forest and ocean
+    coastal: {
+        id: 'coastal',
+        name: 'Coastal Biome',
+        displayName: 'Coastal Biome',
+
+        // Colors
+        groundColor: 0x4a5a3a,         // Green-brown forest floor
+        grassColor: 0x3d6b3d,          // Forest green grass
+        minimapBackground: '#2a3a2a',  // Dark green-brown
+
+        // Special ground colors for the coastal split
+        sandColor: 0xd2b48c,           // Sandy tan for the beach strip
+        oceanColor: 0x5a7a6a,          // Grey-green ocean
+
+        // Sky
+        skyColor: 0x9ab5c8,            // Coastal hazy sky
+        fogColor: 0xb0c4d4,            // Light sea fog
+        fogDensity: 0.008,             // Light coastal fog
+
+        // Water feature
+        waterFeature: 'ocean',         // Large ocean plane on south half
+
+        // Transitions
+        transitions: {
+            north: 'arboreal'          // Go north to return to arboreal
+        },
+
+        // Spawn position when entering this biome
+        spawnOffset: {
+            fromNorth: { x: 0, z: 10 }
+        },
+
+        // Features
+        hasVillage: false,
+        hasForest: false,
+        spawnGeese: false,
+        geese: 0,
+
+        // Coastal features
+        hasBirchForest: true,
+        birchTrees: 70,
+        hasOcean: true,
+        hasBeach: true,
+
+        // Layout boundaries (world Z coordinates)
+        // Forest = north half (z < 0), sand = z 0 to 200, ocean = z > 200
+        forestEndZ: 0,
+        sandEndZ: 200,
+
+        // Requirements
+        requiresArtifact: 'uronal_seal_tooth'
     }
 };
 

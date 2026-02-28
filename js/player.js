@@ -393,7 +393,7 @@ window.Player = (function() {
 
         checkResourceUseKeys();
 
-        // Check if player is in water (river OR watering hole)
+        // Check if player is in water (river OR watering hole OR shallow ocean)
         const inRiver = Environment.isInRiver(
             GameState.peccary.position.x,
             GameState.peccary.position.z
@@ -402,7 +402,11 @@ window.Player = (function() {
             GameState.peccary.position.x,
             GameState.peccary.position.z
         );
-        const inWater = inRiver || inWateringHole;
+        const inShallowOcean = Environment.isInShallowOcean(
+            GameState.peccary.position.x,
+            GameState.peccary.position.z
+        );
+        const inWater = inRiver || inWateringHole || inShallowOcean;
         GameState.playerInWater = inWater;
 
         const isSprinting = GameState.keys['shift'];
@@ -518,6 +522,11 @@ window.Player = (function() {
         GameState.peccary.position.x = Math.max(-bound, Math.min(bound, GameState.peccary.position.x));
         GameState.peccary.position.z = Math.max(-bound, Math.min(bound, GameState.peccary.position.z));
 
+        // Block deep ocean — can't swim past the deep water boundary
+        if (Environment.isInDeepOcean(GameState.peccary.position.x, GameState.peccary.position.z)) {
+            GameState.peccary.position.z = GameState.oceanDeepZ;
+        }
+
         // Tree collision
         GameState.trees.forEach(tree => {
             const dist = GameState.peccary.position.distanceTo(tree.position);
@@ -528,6 +537,64 @@ window.Player = (function() {
                 GameState.peccary.position.add(pushDir.multiplyScalar(0.1));
             }
         });
+
+        // Temple collision (snowy mountains only)
+        if (GameState.currentBiome === 'snowy_mountains' && GameState.templePosition) {
+            var tx = GameState.templePosition.x;
+            var tz = GameState.templePosition.z;
+            var px = GameState.peccary.position.x;
+            var pz = GameState.peccary.position.z;
+            var dx = px - tx;
+            var dz = pz - tz;
+            var dist2D = Math.sqrt(dx * dx + dz * dz);
+
+            var platformRadius = 12;
+            var outerStairRadius = 15;  // How far stairs extend outward
+            var stairHalfWidth = 2.5;   // Stairs are 4 wide, give a little extra
+            var platformTop = 1.5;
+
+            // Check if player is on a staircase corridor (N/S/E/W axis, within stairHalfWidth)
+            var onNorthSouthStair = Math.abs(dx) < stairHalfWidth && (dz < -2 || dz > 2);
+            var onEastWestStair = Math.abs(dz) < stairHalfWidth && (dx < -2 || dx > 2);
+            var onStairCorridor = onNorthSouthStair || onEastWestStair;
+
+            if (dist2D < outerStairRadius) {
+                if (dist2D < platformRadius) {
+                    if (onStairCorridor || dist2D < platformRadius - 1) {
+                        // On the platform — set ground level to platform top
+                        GameState.groundLevel = platformTop;
+                        if (!GameState.isJumping && GameState.peccary.position.y < platformTop) {
+                            GameState.peccary.position.y = platformTop;
+                        }
+                    } else {
+                        // Hitting the platform edge (not on a stair) — push out
+                        var pushX = dx / dist2D;
+                        var pushZ = dz / dist2D;
+                        GameState.peccary.position.x = tx + pushX * platformRadius;
+                        GameState.peccary.position.z = tz + pushZ * platformRadius;
+                    }
+                } else if (onStairCorridor) {
+                    // On the stairs between platform edge and outer edge
+                    // Ramp from ground (0) at outerStairRadius to platformTop at platformRadius
+                    var stairProgress = 1 - (dist2D - platformRadius) / (outerStairRadius - platformRadius);
+                    stairProgress = Math.max(0, Math.min(1, stairProgress));
+                    var stairY = stairProgress * platformTop;
+                    GameState.groundLevel = stairY;
+                    if (!GameState.isJumping && GameState.peccary.position.y < stairY) {
+                        GameState.peccary.position.y = stairY;
+                    }
+                } else {
+                    // Between platform and outer stair radius, but NOT on a stair
+                    // Reset ground level so player doesn't float
+                    GameState.groundLevel = 0;
+                }
+            } else {
+                // Outside temple area — reset ground level
+                if (GameState.groundLevel > 0) {
+                    GameState.groundLevel = 0;
+                }
+            }
+        }
 
         // Update bathroom mechanic
         updateBathroom(delta);

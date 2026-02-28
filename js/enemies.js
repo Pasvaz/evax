@@ -2381,6 +2381,661 @@ window.Enemies = (function() {
     }
 
     /**
+     * Build a Snow Caninon Lartus 3D model.
+     * XL bully dog with large paws for snow. Chunky, muscular build.
+     * Based on wild dog model but wider/stockier with bigger paws.
+     *
+     * @param {Object} colors - Color values from ENEMIES data
+     * @param {boolean} isBaby - Whether this is a pup
+     * @param {boolean} isLeader - Whether this is the pack leader (10% larger)
+     * @param {boolean} isPregnant - Whether to add pregnancy belly
+     * @returns {THREE.Group} - The dog model
+     */
+    function buildSnowCaninonModel(colors, isBaby = false, isLeader = false, isPregnant = false) {
+        const model = new THREE.Group();
+        model.userData.parts = {};
+        model.userData.legs = [];
+
+        // Scale: babies are 50% size, leader is 10% larger
+        var s = isBaby ? 0.5 : 1.0;
+
+        // Materials
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.9 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.85 });
+        var chestMat = new THREE.MeshStandardMaterial({ color: colors.chest, roughness: 0.85 });
+        var muzzleMat = new THREE.MeshStandardMaterial({ color: colors.muzzle, roughness: 0.8 });
+        var noseMat = new THREE.MeshStandardMaterial({ color: colors.nose, roughness: 0.3 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, emissive: colors.eyeGlow, roughness: 0.3 });
+        var earMat = new THREE.MeshStandardMaterial({ color: colors.ears, roughness: 0.9 });
+        var earInnerMat = new THREE.MeshStandardMaterial({ color: colors.earInner, roughness: 0.7 });
+        var legMat = new THREE.MeshStandardMaterial({ color: colors.legs, roughness: 0.9 });
+        var pawMat = new THREE.MeshStandardMaterial({ color: colors.paws, roughness: 0.85 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.9 });
+        var tailTipMat = new THREE.MeshStandardMaterial({ color: colors.tailTip, roughness: 0.85 });
+
+        // ============================================================
+        // BODY — XL Bully: wide, barrel-chested, muscular
+        // ============================================================
+
+        // Main torso — wider than wild dog (0.42 vs 0.35 radius)
+        var torsoGeo = new THREE.CylinderGeometry(0.42 * s, 0.38 * s, 1.0 * s, 12);
+        var torso = new THREE.Mesh(torsoGeo, bodyMat);
+        torso.rotation.z = Math.PI / 2;
+        torso.position.set(0, 0.8 * s, 0);
+        torso.castShadow = true;
+        model.add(torso);
+
+        // Chest — massive XL bully chest
+        var chestGeo = new THREE.SphereGeometry(0.45 * s, 12, 10);
+        var chest = new THREE.Mesh(chestGeo, chestMat);
+        chest.scale.set(0.95, 1, 0.9);
+        chest.position.set(0.4 * s, 0.82 * s, 0);
+        chest.castShadow = true;
+        model.add(chest);
+
+        // Shoulder hump — thick muscles
+        var shoulderGeo = new THREE.SphereGeometry(0.28 * s, 10, 8);
+        var shoulder = new THREE.Mesh(shoulderGeo, bodyMat);
+        shoulder.scale.set(1.2, 0.85, 1.1);
+        shoulder.position.set(0.25 * s, 0.98 * s, 0);
+        model.add(shoulder);
+
+        // Hip — powerful rear
+        var hipGeo = new THREE.SphereGeometry(0.34 * s, 10, 8);
+        var hip = new THREE.Mesh(hipGeo, bodyMat);
+        hip.scale.set(0.9, 0.85, 1);
+        hip.position.set(-0.38 * s, 0.75 * s, 0);
+        hip.castShadow = true;
+        model.add(hip);
+
+        // Belly
+        var bellyGeo = new THREE.SphereGeometry(0.28 * s, 10, 8);
+        var belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.scale.set(1.6, 0.6, 0.9);
+        belly.position.set(0, 0.6 * s, 0);
+        model.add(belly);
+
+        // Pregnancy belly (optional) — big and noticeable!
+        if (isPregnant) {
+            var pregGeo = new THREE.SphereGeometry(0.42 * s, 12, 10);
+            var pregMat = new THREE.MeshStandardMaterial({ color: 0x5a3a3a, emissive: 0x331111, roughness: 0.8 });
+            var pregBelly = new THREE.Mesh(pregGeo, pregMat);
+            pregBelly.scale.set(1.6, 1.1, 1.3);
+            pregBelly.position.set(-0.05 * s, 0.45 * s, 0);
+            model.add(pregBelly);
+        }
+
+        // ============================================================
+        // NECK — Thick, muscular XL bully neck
+        // ============================================================
+
+        var neckGroup = new THREE.Group();
+        neckGroup.position.set(0.5 * s, 0.9 * s, 0);
+        model.add(neckGroup);
+        model.userData.parts.neckGroup = neckGroup;
+
+        var neckGeo = new THREE.CylinderGeometry(0.18 * s, 0.22 * s, 0.35 * s, 10);
+        var neck = new THREE.Mesh(neckGeo, bodyMat);
+        neck.rotation.z = -0.3;
+        neck.position.set(0.1 * s, 0.12 * s, 0);
+        neck.castShadow = true;
+        neckGroup.add(neck);
+
+        // Neck muscle bulge
+        var neckMuscleGeo = new THREE.SphereGeometry(0.15 * s, 8, 6);
+        var neckMuscle = new THREE.Mesh(neckMuscleGeo, bodyMat);
+        neckMuscle.scale.set(1.2, 0.8, 1);
+        neckMuscle.position.set(0.05 * s, 0.05 * s, 0);
+        neckGroup.add(neckMuscle);
+
+        // ============================================================
+        // HEAD — Wide, blocky bully head
+        // ============================================================
+
+        var headGroup = new THREE.Group();
+        headGroup.position.set(0.22 * s, 0.3 * s, 0);
+        neckGroup.add(headGroup);
+        model.userData.parts.headGroup = headGroup;
+
+        // Skull — wider than wild dog
+        var skullGeo = new THREE.SphereGeometry(0.18 * s, 10, 8);
+        var skull = new THREE.Mesh(skullGeo, bodyMat);
+        skull.scale.set(1.15, 0.9, 1.1);
+        headGroup.add(skull);
+
+        // Brow ridge — more prominent for bully look
+        var browGeo = new THREE.CylinderGeometry(0.1 * s, 0.12 * s, 0.2 * s, 8);
+        var brow = new THREE.Mesh(browGeo, bodyMat);
+        brow.rotation.z = Math.PI / 2;
+        brow.position.set(0.08 * s, 0.1 * s, 0);
+        headGroup.add(brow);
+
+        // Snout — shorter and wider than wild dog (bully characteristic)
+        var snoutGeo = new THREE.CylinderGeometry(0.08 * s, 0.12 * s, 0.2 * s, 8);
+        var snout = new THREE.Mesh(snoutGeo, muzzleMat);
+        snout.rotation.z = Math.PI / 2 + 0.1;
+        snout.position.set(0.22 * s, -0.02 * s, 0);
+        headGroup.add(snout);
+
+        // Nose
+        var noseGeo = new THREE.SphereGeometry(0.05 * s, 8, 6);
+        var nose = new THREE.Mesh(noseGeo, noseMat);
+        nose.scale.set(1, 0.7, 1.3);
+        nose.position.set(0.32 * s, -0.02 * s, 0);
+        headGroup.add(nose);
+
+        // Mouth line
+        var mouthGeo = new THREE.CylinderGeometry(0.01 * s, 0.01 * s, 0.12 * s, 6);
+        var mouth = new THREE.Mesh(mouthGeo, noseMat);
+        mouth.rotation.z = Math.PI / 2;
+        mouth.position.set(0.24 * s, -0.07 * s, 0);
+        headGroup.add(mouth);
+
+        // Eyes — babies get bigger eyes
+        var eyeSize = isBaby ? 0.04 * s : 0.035 * s;
+        var eyeSocketMat = new THREE.MeshStandardMaterial({ color: 0x1A1A1A });
+        var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xFFFAF0 });
+
+        [-1, 1].forEach(function(side) {
+            var eyeSocket = new THREE.Mesh(new THREE.SphereGeometry(eyeSize * 1.2, 8, 6), eyeSocketMat);
+            eyeSocket.position.set(0.1 * s, 0.06 * s, side * 0.12 * s);
+            headGroup.add(eyeSocket);
+
+            var eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(eyeSize, 8, 6), eyeWhiteMat);
+            eyeWhite.position.set(0.11 * s, 0.065 * s, side * 0.125 * s);
+            headGroup.add(eyeWhite);
+
+            var pupil = new THREE.Mesh(new THREE.SphereGeometry(eyeSize * 0.6, 6, 6), eyeMat);
+            pupil.position.set(0.125 * s, 0.065 * s, side * 0.135 * s);
+            headGroup.add(pupil);
+        });
+
+        // Ears — small, folded (bully style, not tall like wild dog)
+        [-1, 1].forEach(function(side) {
+            var earGroup = new THREE.Group();
+            earGroup.position.set(-0.02 * s, 0.15 * s, side * 0.1 * s);
+            earGroup.rotation.set(side * 0.3, side * 0.3, 0.4);
+            headGroup.add(earGroup);
+
+            var earGeo = new THREE.SphereGeometry(0.07 * s, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+            var ear = new THREE.Mesh(earGeo, earMat);
+            ear.scale.set(0.6, 0.7, 0.15);
+            earGroup.add(ear);
+
+            var earInner = new THREE.Mesh(new THREE.SphereGeometry(0.05 * s, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2), earInnerMat);
+            earInner.scale.set(0.5, 0.6, 0.1);
+            earInner.position.set(0, 0.01 * s, side * 0.005 * s);
+            earGroup.add(earInner);
+        });
+
+        // ============================================================
+        // LEGS — Short, thick, powerful (bully build) with BIG PAWS
+        // ============================================================
+
+        var legPositions = [
+            { x: 0.3, z: 0.18, front: true, side: 'right' },
+            { x: 0.3, z: -0.18, front: true, side: 'left' },
+            { x: -0.32, z: 0.18, front: false, side: 'right' },
+            { x: -0.32, z: -0.18, front: false, side: 'left' }
+        ];
+
+        legPositions.forEach(function(pos, idx) {
+            // Hip/shoulder joint group
+            var legGroup = new THREE.Group();
+            legGroup.position.set(pos.x * s, 0.65 * s, pos.z * s);
+            model.add(legGroup);
+
+            // Upper leg — thick (bully!)
+            var upperLegGeo = new THREE.CylinderGeometry(0.07 * s, 0.08 * s, 0.3 * s, 8);
+            var upperLeg = new THREE.Mesh(upperLegGeo, legMat);
+            upperLeg.position.y = -0.15 * s;
+            legGroup.add(upperLeg);
+
+            // Thigh muscle bulge
+            var thighGeo = new THREE.SphereGeometry(0.065 * s, 6, 6);
+            var thigh = new THREE.Mesh(thighGeo, legMat);
+            thigh.scale.set(1, 1.3, 0.8);
+            thigh.position.set(pos.front ? 0.02 * s : -0.02 * s, -0.08 * s, 0);
+            legGroup.add(thigh);
+
+            // Lower leg group (knee joint)
+            var lowerLegGroup = new THREE.Group();
+            lowerLegGroup.position.y = -0.3 * s;
+            legGroup.add(lowerLegGroup);
+
+            // Knee
+            var knee = new THREE.Mesh(new THREE.SphereGeometry(0.05 * s, 8, 6), legMat);
+            knee.scale.set(1, 0.8, 0.9);
+            lowerLegGroup.add(knee);
+
+            // Lower leg
+            var lowerLegGeo = new THREE.CylinderGeometry(0.04 * s, 0.05 * s, 0.28 * s, 8);
+            var lowerLeg = new THREE.Mesh(lowerLegGeo, legMat);
+            lowerLeg.position.y = -0.14 * s;
+            lowerLegGroup.add(lowerLeg);
+
+            // BIG PAW — 1.5x larger than wild dog (snow adaptation!)
+            var pawGeo = new THREE.SphereGeometry(0.06 * s, 8, 6);
+            var paw = new THREE.Mesh(pawGeo, pawMat);
+            paw.userData.isPaw = true;
+            paw.scale.set(1.5, 0.6, 1.4);
+            paw.position.y = -0.3 * s;
+            lowerLegGroup.add(paw);
+
+            // Toe pads (5 toes, big and spread)
+            for (var t = 0; t < 5; t++) {
+                var toeGeo = new THREE.SphereGeometry(0.018 * s, 6, 6);
+                var toe = new THREE.Mesh(toeGeo, pawMat);
+                var toeAngle = ((t - 2) / 4) * 1.0;
+                toe.position.set(
+                    0.05 * s * Math.cos(toeAngle),
+                    -0.32 * s,
+                    0.05 * s * Math.sin(toeAngle) + pos.z * 0.03 * s
+                );
+                lowerLegGroup.add(toe);
+            }
+
+            // Store leg data for animation
+            model.userData.legs.push({
+                group: legGroup,
+                lowerLegGroup: lowerLegGroup,
+                isFront: pos.front,
+                side: pos.side,
+                originalY: 0.65 * s,
+                phase: idx % 2 === 0 ? 0 : Math.PI
+            });
+        });
+
+        // ============================================================
+        // TAIL — Short, thick tail (bully dogs have short tails)
+        // ============================================================
+
+        var tailGroup = new THREE.Group();
+        tailGroup.position.set(-0.5 * s, 0.7 * s, 0);
+        model.add(tailGroup);
+        model.userData.parts.tailGroup = tailGroup;
+
+        var tailBaseGeo = new THREE.CylinderGeometry(0.04 * s, 0.06 * s, 0.18 * s, 8);
+        var tailBase = new THREE.Mesh(tailBaseGeo, tailMat);
+        tailBase.rotation.z = Math.PI / 2 + 0.6;
+        tailBase.position.set(-0.08 * s, 0, 0);
+        tailGroup.add(tailBase);
+
+        var tailTipGeo = new THREE.CylinderGeometry(0.02 * s, 0.035 * s, 0.12 * s, 8);
+        var tailTip = new THREE.Mesh(tailTipGeo, tailTipMat);
+        tailTip.rotation.z = Math.PI / 2 + 0.4;
+        tailTip.position.set(-0.2 * s, -0.06 * s, 0);
+        tailGroup.add(tailTip);
+
+        // Leader gets 10% scale boost
+        if (isLeader) {
+            model.scale.set(1.1, 1.1, 1.1);
+        }
+
+        // Model built facing +X
+        return model;
+    }
+
+    // ========================================================================
+    // SNOW BALUBAN OXEN MODEL BUILDER
+    // ========================================================================
+    /**
+     * Build a Snow Baluban Oxen (musk ox) 3D model.
+     * Largest beast in the game. Massive barrel body, shoulder hump, shaggy fur skirt.
+     * Both genders have horns — musk ox style curving down then outward.
+     * Babies are slimmer with proportionally longer legs, no fur skirt.
+     * @param {Object} colors - Color scheme
+     * @param {boolean} hasHorns - Whether to show horns
+     * @param {number} hornScale - Horn size multiplier (1.0 normal, 1.5 leader, 0.6 female)
+     * @param {boolean} isBaby - Whether this is a calf
+     * @param {boolean} isPregnant - Whether to show pregnancy belly
+     * @returns {THREE.Group} - The oxen model
+     */
+    function buildBalubanOxenModel(colors, hasHorns = true, hornScale = 1, isBaby = false, isPregnant = false) {
+        const model = new THREE.Group();
+        model.userData.parts = {};
+        model.userData.legs = [];
+
+        // Scale: babies are 50% size
+        var s = isBaby ? 0.5 : 1.0;
+        // Baby body proportion: slimmer body, longer legs
+        var bodyWidth = isBaby ? 0.7 : 1.0; // babies are slimmer
+
+        // Materials
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.95 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.9 });
+        var chestMat = new THREE.MeshStandardMaterial({ color: colors.chest, roughness: 0.9 });
+        var shoulderMat = new THREE.MeshStandardMaterial({ color: colors.shoulder, roughness: 0.95 });
+        var muzzleMat = new THREE.MeshStandardMaterial({ color: colors.muzzle, roughness: 0.85 });
+        var noseMat = new THREE.MeshStandardMaterial({ color: colors.nose, roughness: 0.3 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.3 });
+        var earMat = new THREE.MeshStandardMaterial({ color: colors.ears, roughness: 0.9 });
+        var earInnerMat = new THREE.MeshStandardMaterial({ color: colors.earInner, roughness: 0.7 });
+        var legMat = new THREE.MeshStandardMaterial({ color: colors.legs, roughness: 0.9 });
+        var hoofMat = new THREE.MeshStandardMaterial({ color: colors.hooves, roughness: 0.4 });
+        var hornMat = new THREE.MeshStandardMaterial({ color: colors.horns, roughness: 0.6 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.9 });
+        var skirtMat = new THREE.MeshStandardMaterial({ color: colors.skirt, roughness: 1.0 });
+
+        // ============================================================
+        // BODY — Massive barrel torso (larger than antelope!)
+        // ============================================================
+
+        // Main torso — thick barrel shape
+        var torsoGeo = new THREE.CylinderGeometry(0.6 * s * bodyWidth, 0.55 * s * bodyWidth, 2.0 * s, 14);
+        var torso = new THREE.Mesh(torsoGeo, bodyMat);
+        torso.rotation.z = Math.PI / 2;
+        torso.position.set(0, 1.4 * s, 0);
+        torso.castShadow = true;
+        model.add(torso);
+
+        // Massive chest — wider than antelope
+        var chestGeo = new THREE.SphereGeometry(0.65 * s * bodyWidth, 14, 12);
+        var chest = new THREE.Mesh(chestGeo, chestMat);
+        chest.scale.set(0.9, 1, 0.85);
+        chest.position.set(0.8 * s, 1.5 * s, 0);
+        chest.castShadow = true;
+        model.add(chest);
+
+        // Shoulder hump — distinctive musk ox feature
+        var shoulderGeo = new THREE.SphereGeometry(0.45 * s * bodyWidth, 12, 10);
+        var shoulderHump = new THREE.Mesh(shoulderGeo, shoulderMat);
+        shoulderHump.scale.set(1.2, 0.9, 1.1);
+        shoulderHump.position.set(0.5 * s, 1.85 * s, 0);
+        shoulderHump.castShadow = true;
+        model.add(shoulderHump);
+
+        // Heavy rump
+        var rumpGeo = new THREE.SphereGeometry(0.55 * s * bodyWidth, 12, 10);
+        var rump = new THREE.Mesh(rumpGeo, bodyMat);
+        rump.scale.set(0.85, 0.9, 0.95);
+        rump.position.set(-0.85 * s, 1.25 * s, 0);
+        rump.castShadow = true;
+        model.add(rump);
+
+        // Belly
+        var bellyGeo = new THREE.SphereGeometry(0.4 * s * bodyWidth, 12, 10);
+        var belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.scale.set(1.8, 0.65, 0.85);
+        belly.position.set(0, 1.1 * s, 0);
+        model.add(belly);
+
+        // Pregnancy belly
+        if (isPregnant) {
+            var pregGeo = new THREE.SphereGeometry(0.45 * s, 12, 10);
+            var pregMat2 = new THREE.MeshStandardMaterial({ color: colors.belly, emissive: 0x221111, roughness: 0.8 });
+            var pregBelly = new THREE.Mesh(pregGeo, pregMat2);
+            pregBelly.scale.set(1.5, 1.0, 1.2);
+            pregBelly.position.set(-0.2 * s, 0.9 * s, 0);
+            model.add(pregBelly);
+        }
+
+        // ============================================================
+        // SHAGGY FUR SKIRT — hangs below body (not on babies!)
+        // ============================================================
+        if (!isBaby) {
+            // Long shaggy fur panels hanging from body sides
+            var skirtPositions = [
+                { x: 0.3, z: 0.45, rx: 0.2 },   // Right front
+                { x: -0.2, z: 0.45, rx: 0.15 },  // Right mid
+                { x: -0.6, z: 0.4, rx: 0.1 },    // Right back
+                { x: 0.3, z: -0.45, rx: -0.2 },  // Left front
+                { x: -0.2, z: -0.45, rx: -0.15 }, // Left mid
+                { x: -0.6, z: -0.4, rx: -0.1 }   // Left back
+            ];
+            skirtPositions.forEach(function(sp) {
+                var panelGeo = new THREE.BoxGeometry(0.35 * s, 0.55 * s, 0.08 * s);
+                var panel = new THREE.Mesh(panelGeo, skirtMat);
+                panel.position.set(sp.x * s, 0.75 * s, sp.z * s);
+                panel.rotation.x = sp.rx;
+                panel.rotation.z = (Math.random() - 0.5) * 0.1;
+                panel.castShadow = true;
+                model.add(panel);
+            });
+
+            // Front chest fur — hanging bib
+            var bibGeo = new THREE.BoxGeometry(0.15 * s, 0.5 * s, 0.4 * s);
+            var bib = new THREE.Mesh(bibGeo, skirtMat);
+            bib.position.set(0.7 * s, 0.9 * s, 0);
+            bib.rotation.z = 0.2;
+            model.add(bib);
+        }
+
+        // ============================================================
+        // NECK — Thick, powerful
+        // ============================================================
+
+        var neckGroup = new THREE.Group();
+        neckGroup.position.set(0.95 * s, 1.6 * s, 0);
+        model.add(neckGroup);
+        model.userData.parts.neckGroup = neckGroup;
+
+        var neckGeo = new THREE.CylinderGeometry(0.22 * s, 0.3 * s, 0.7 * s, 12);
+        var neck = new THREE.Mesh(neckGeo, bodyMat);
+        neck.rotation.z = -0.4;
+        neck.position.set(0.2 * s, 0.25 * s, 0);
+        neck.castShadow = true;
+        neckGroup.add(neck);
+
+        // Neck fur (thick mane)
+        var maneFurGeo = new THREE.SphereGeometry(0.2 * s, 8, 6);
+        var maneFur = new THREE.Mesh(maneFurGeo, skirtMat);
+        maneFur.scale.set(1.3, 1.5, 1.0);
+        maneFur.position.set(0.1 * s, 0.1 * s, 0);
+        neckGroup.add(maneFur);
+
+        // ============================================================
+        // HEAD — Broad, blocky with wide muzzle
+        // ============================================================
+
+        var headGroup = new THREE.Group();
+        headGroup.position.set(0.45 * s, 0.55 * s, 0);
+        neckGroup.add(headGroup);
+        model.userData.parts.headGroup = headGroup;
+
+        // Skull — wide and blocky
+        var skullGeo = new THREE.SphereGeometry(0.22 * s, 12, 10);
+        var skull = new THREE.Mesh(skullGeo, bodyMat);
+        skull.scale.set(1.1, 0.85, 1.0);
+        headGroup.add(skull);
+
+        // Long face
+        var faceGeo = new THREE.CylinderGeometry(0.14 * s, 0.18 * s, 0.45 * s, 10);
+        var face = new THREE.Mesh(faceGeo, bodyMat);
+        face.rotation.z = Math.PI / 2 + 0.2;
+        face.position.set(0.28 * s, -0.08 * s, 0);
+        headGroup.add(face);
+
+        // Wide muzzle
+        var muzzleGeo = new THREE.SphereGeometry(0.12 * s, 10, 8);
+        var muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
+        muzzle.scale.set(1.0, 0.7, 1.1);
+        muzzle.position.set(0.5 * s, -0.18 * s, 0);
+        headGroup.add(muzzle);
+
+        // Nostrils
+        [-1, 1].forEach(function(side) {
+            var nostrilGeo = new THREE.SphereGeometry(0.03 * s, 6, 6);
+            var nostril = new THREE.Mesh(nostrilGeo, noseMat);
+            nostril.position.set(0.58 * s, -0.22 * s, side * 0.05 * s);
+            headGroup.add(nostril);
+        });
+
+        // Eyes
+        var eyeSize = isBaby ? 0.04 * s : 0.035 * s;
+        [-1, 1].forEach(function(side) {
+            var eyeSocket = new THREE.Mesh(
+                new THREE.SphereGeometry(eyeSize * 1.3, 8, 6),
+                new THREE.MeshStandardMaterial({ color: 0x1A1A1A })
+            );
+            eyeSocket.position.set(0.15 * s, 0.05 * s, side * 0.15 * s);
+            headGroup.add(eyeSocket);
+
+            var eyeWhite = new THREE.Mesh(
+                new THREE.SphereGeometry(eyeSize, 8, 6),
+                new THREE.MeshStandardMaterial({ color: 0xFFFAF0 })
+            );
+            eyeWhite.position.set(0.16 * s, 0.055 * s, side * 0.155 * s);
+            headGroup.add(eyeWhite);
+
+            var pupil = new THREE.Mesh(
+                new THREE.SphereGeometry(eyeSize * 0.6, 6, 6),
+                eyeMat
+            );
+            pupil.position.set(0.175 * s, 0.055 * s, side * 0.165 * s);
+            headGroup.add(pupil);
+        });
+
+        // Ears — small, sticking out sideways
+        [-1, 1].forEach(function(side) {
+            var earGeo = new THREE.ConeGeometry(0.06 * s, 0.12 * s, 6);
+            var ear = new THREE.Mesh(earGeo, earMat);
+            ear.position.set(0, 0.12 * s, side * 0.2 * s);
+            ear.rotation.set(side * 0.4, 0, side * 0.8);
+            headGroup.add(ear);
+
+            var earIn = new THREE.Mesh(
+                new THREE.ConeGeometry(0.04 * s, 0.08 * s, 6),
+                earInnerMat
+            );
+            earIn.position.set(0, 0.12 * s, side * 0.21 * s);
+            earIn.rotation.set(side * 0.4, 0, side * 0.8);
+            headGroup.add(earIn);
+        });
+
+        // ============================================================
+        // HORNS — Musk ox style: curve down from skull then outward
+        // ============================================================
+        if (hasHorns) {
+            [-1, 1].forEach(function(side) {
+                // Horn boss (thick base plate on top of skull)
+                var bossGeo = new THREE.CylinderGeometry(0.1 * s * hornScale, 0.12 * s * hornScale, 0.08 * s, 10);
+                var boss = new THREE.Mesh(bossGeo, hornMat);
+                boss.position.set(0.02 * s, 0.15 * s, side * 0.08 * s);
+                boss.rotation.z = Math.PI / 2;
+                headGroup.add(boss);
+
+                // Horn curves down along side of head
+                var hornDownGeo = new THREE.CylinderGeometry(0.06 * s * hornScale, 0.09 * s * hornScale, 0.3 * s * hornScale, 8);
+                var hornDown = new THREE.Mesh(hornDownGeo, hornMat);
+                hornDown.position.set(0.02 * s, -0.02 * s, side * 0.18 * s);
+                hornDown.rotation.z = 0;
+                hornDown.rotation.x = side * 0.3;
+                headGroup.add(hornDown);
+
+                // Horn curves outward and slightly up (the hook)
+                var hornOutGeo = new THREE.CylinderGeometry(0.03 * s * hornScale, 0.06 * s * hornScale, 0.25 * s * hornScale, 8);
+                var hornOut = new THREE.Mesh(hornOutGeo, hornMat);
+                hornOut.position.set(0.05 * s, -0.18 * s, side * 0.28 * s);
+                hornOut.rotation.z = 0.3;
+                hornOut.rotation.x = side * 0.8;
+                headGroup.add(hornOut);
+
+                // Horn tip — sharp point curving forward
+                var tipGeo = new THREE.ConeGeometry(0.025 * s * hornScale, 0.15 * s * hornScale, 6);
+                var tip = new THREE.Mesh(tipGeo, hornMat);
+                tip.position.set(0.12 * s, -0.12 * s, side * 0.38 * s);
+                tip.rotation.z = Math.PI / 2 - 0.3;
+                tip.rotation.x = side * 0.5;
+                headGroup.add(tip);
+            });
+        }
+
+        // ============================================================
+        // LEGS — Sturdy, thick, powerful with hooves
+        // ============================================================
+
+        var legPositions = [
+            { x: 0.55, z: 0.25, front: true, side: 'right' },
+            { x: 0.55, z: -0.25, front: true, side: 'left' },
+            { x: -0.65, z: 0.25, front: false, side: 'right' },
+            { x: -0.65, z: -0.25, front: false, side: 'left' }
+        ];
+
+        // Baby legs are proportionally longer
+        var legLengthMult = isBaby ? 1.2 : 1.0;
+
+        legPositions.forEach(function(pos, idx) {
+            var legGroup = new THREE.Group();
+            legGroup.position.set(pos.x * s, 1.15 * s, pos.z * s);
+            model.add(legGroup);
+
+            // Upper leg — thick!
+            var upperLegGeo = new THREE.CylinderGeometry(0.1 * s, 0.12 * s, 0.5 * s * legLengthMult, 8);
+            var upperLeg = new THREE.Mesh(upperLegGeo, legMat);
+            upperLeg.position.y = -0.25 * s * legLengthMult;
+            legGroup.add(upperLeg);
+
+            // Thigh muscle
+            var thighGeo = new THREE.SphereGeometry(0.09 * s, 8, 6);
+            var thigh = new THREE.Mesh(thighGeo, legMat);
+            thigh.scale.set(1, 1.3, 0.9);
+            thigh.position.set(pos.front ? 0.02 * s : -0.02 * s, -0.1 * s, 0);
+            legGroup.add(thigh);
+
+            // Lower leg group (knee joint)
+            var lowerLegGroup = new THREE.Group();
+            lowerLegGroup.position.y = -0.5 * s * legLengthMult;
+            legGroup.add(lowerLegGroup);
+
+            // Knee
+            var knee = new THREE.Mesh(new THREE.SphereGeometry(0.08 * s, 8, 6), legMat);
+            knee.scale.set(1, 0.85, 0.9);
+            lowerLegGroup.add(knee);
+
+            // Shin
+            var shinGeo = new THREE.CylinderGeometry(0.06 * s, 0.08 * s, 0.45 * s * legLengthMult, 8);
+            var shin = new THREE.Mesh(shinGeo, legMat);
+            shin.position.y = -0.22 * s * legLengthMult;
+            lowerLegGroup.add(shin);
+
+            // Ankle
+            var ankle = new THREE.Mesh(new THREE.SphereGeometry(0.05 * s, 6, 6), legMat);
+            ankle.position.y = -0.45 * s * legLengthMult;
+            lowerLegGroup.add(ankle);
+
+            // Hoof — wide and flat
+            var hoofGeo = new THREE.CylinderGeometry(0.065 * s, 0.07 * s, 0.08 * s, 8);
+            var hoof = new THREE.Mesh(hoofGeo, hoofMat);
+            hoof.position.y = -0.52 * s * legLengthMult;
+            lowerLegGroup.add(hoof);
+
+            // Store leg data for animation
+            model.userData.legs.push({
+                group: legGroup,
+                lowerLegGroup: lowerLegGroup,
+                isFront: pos.front,
+                side: pos.side,
+                originalY: 1.15 * s,
+                phase: idx % 2 === 0 ? 0 : Math.PI
+            });
+        });
+
+        // ============================================================
+        // TAIL — Short, thick
+        // ============================================================
+
+        var tailGroup = new THREE.Group();
+        tailGroup.position.set(-1.0 * s, 1.2 * s, 0);
+        model.add(tailGroup);
+        model.userData.parts.tailGroup = tailGroup;
+
+        var tailBaseGeo = new THREE.CylinderGeometry(0.04 * s, 0.06 * s, 0.2 * s, 8);
+        var tailBase = new THREE.Mesh(tailBaseGeo, tailMat);
+        tailBase.rotation.z = Math.PI / 2 + 0.7;
+        tailBase.position.set(-0.08 * s, -0.02 * s, 0);
+        tailGroup.add(tailBase);
+
+        var tailTuftGeo = new THREE.SphereGeometry(0.05 * s, 6, 6);
+        var tailTuft = new THREE.Mesh(tailTuftGeo, tailMat);
+        tailTuft.scale.set(1, 1.5, 1);
+        tailTuft.position.set(-0.2 * s, -0.08 * s, 0);
+        tailGroup.add(tailTuft);
+
+        return model;
+    }
+
+    /**
      * Build a Deericus Iricus (tiny mountain deer) 3D model.
      * Small furry deer with optional horns (males only).
      * @param {Object} colors - Color scheme
@@ -2804,6 +3459,8 @@ window.Enemies = (function() {
         saltas_gazella: buildSaltasGazellaModel,
         dronglous_cat: buildDronglousCatModel,
         drongulinat_cat: buildDrongulinatCatModel,
+        snow_caninon: buildSnowCaninonModel,
+        baluban_oxen: buildBalubanOxenModel,
         deericus_iricus: buildDeericusIricusModel
     };
 
@@ -2852,10 +3509,15 @@ window.Enemies = (function() {
         // Build the 3D model using converted colors
         const isBaby = enemyData.isBaby || false;
         const hasHorns = enemyData.hasHorns || false;
-        // Deer builder needs (colors, hasHorns, isBaby) — other builders vary
-        const model = (enemyData.type === 'deericus_iricus')
-            ? builder(colors, hasHorns, isBaby)
-            : builder(colors, isBaby);
+        // Different builders have different signatures — special-case as needed
+        var model;
+        if (enemyData.type === 'deericus_iricus') {
+            model = builder(colors, hasHorns, isBaby);
+        } else if (enemyData.type === 'baluban_oxen') {
+            model = builder(colors, hasHorns, enemyData.hornSize || 1, isBaby, false);
+        } else {
+            model = builder(colors, isBaby);
+        }
 
         // Apply size modifier (default to 1 if not specified)
         const size = enemyData.size || 1;
@@ -3000,6 +3662,10 @@ window.Enemies = (function() {
             }
         } else if (variant === 'leader') {
             enemyId = animalType + '_leader';
+            // Fallback: leaders use male data if no specific leader entry exists
+            if (!ENEMIES.find(e => e.id === enemyId)) {
+                enemyId = animalType + '_male';
+            }
         } else if (variant === 'alpha') {
             enemyId = animalType + '_alpha';
         } else {
@@ -3046,6 +3712,11 @@ window.Enemies = (function() {
                 enemy.userData.isRideable = true;
             } else if (animalType === 'deericus_iricus') {
                 enemy.userData.lifecycleState = 'idle';
+            } else if (animalType === 'snow_caninon') {
+                enemy.userData.lifecycleState = 'following';
+            } else if (animalType === 'baluban_oxen') {
+                enemy.userData.lifecycleState = 'grazing';
+                enemy.userData.ignoreGravity = true;
             }
 
             GameState.enemies.push(enemy);
@@ -3863,6 +4534,3052 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // SPAWN SNOW CANINON PACK (SNOWY MOUNTAINS BIOME)
+    // ========================================================================
+    /**
+     * Spawn a pack of Snow Caninon Lartus (XL bully dogs).
+     * Each pack: 2 males + 2 females. First male = leader (10% larger).
+     * @param {number} packIndex - Which pack number (for spread positioning)
+     */
+    function spawnSnowCaninonPack(packIndex) {
+        console.log('=== SPAWNING SNOW CANINON PACK #' + packIndex + ' ===');
+
+        var maleData = ENEMIES.find(function(e) { return e.id === 'snow_caninon_male'; });
+        var femaleData = ENEMIES.find(function(e) { return e.id === 'snow_caninon_female'; });
+
+        if (!maleData || !femaleData) {
+            console.error('Snow caninon data not found!');
+            return;
+        }
+
+        // Pack position — spread packs across the snowy biome
+        var packAngles = [0.8, 2.5, 4.2]; // ~120 degrees apart
+        var angle = packAngles[packIndex % packAngles.length] + (Math.random() - 0.5) * 0.5;
+        var radius = 40 + Math.random() * 30; // 40-70m from center
+        var packCenterX = Math.cos(angle) * radius;
+        var packCenterZ = Math.sin(angle) * radius;
+
+        var packId = 'snow_pack_' + Date.now() + '_' + packIndex;
+        var packMembers = [];
+        var leader = null;
+
+        // Convert colors from hex strings
+        function convertColors(data) {
+            var colors = {};
+            for (var key in data.colors) {
+                var val = data.colors[key];
+                colors[key] = typeof val === 'string' ? parseInt(val.replace('#', ''), 16) : val;
+            }
+            return colors;
+        }
+
+        // Spawn 2 males (first = leader)
+        for (var i = 0; i < 2; i++) {
+            var x = packCenterX + (Math.random() - 0.5) * 6;
+            var z = packCenterZ + (Math.random() - 0.5) * 6;
+            var isLeader = (i === 0);
+
+            var colors = convertColors(maleData);
+            var model = buildSnowCaninonModel(colors, false, isLeader, false);
+            var dog = new THREE.Group();
+            dog.add(model);
+            dog.scale.set(maleData.size, maleData.size, maleData.size);
+
+            var terrainY = Environment.getTerrainHeight(x, z);
+            dog.position.set(x, terrainY + maleData.groundY, z);
+
+            dog.userData = {
+                id: maleData.id,
+                type: 'snow_caninon',
+                entityId: 'snowcaninon_' + Date.now() + '_' + Math.random(),
+                gender: 'male',
+                isLeader: isLeader,
+                speed: maleData.speed + Math.random() * (maleData.speedVariation || 0),
+                chaseSpeed: maleData.chaseSpeed || 11,
+                damage: isLeader ? maleData.damage + 5 : maleData.damage,
+                radius: maleData.radius,
+                health: isLeader ? maleData.health + 10 : maleData.health,
+                maxHealth: isLeader ? maleData.health + 10 : maleData.health,
+                groundY: maleData.groundY,
+                friendly: true,
+                defensive: false,
+                minimapColor: maleData.minimapColor,
+                ignoreGravity: true,
+
+                // Pack properties
+                packId: packId,
+                isPackAnimal: true,
+                isBaby: false,
+
+                // Mating (males only)
+                matingTimer: 30 + Math.random() * 60, // 30s-90s first attempt
+
+                // Behavior state
+                lifecycleState: 'following',
+                wanderDir: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
+                wanderTime: 0,
+                walkPhase: Math.random() * Math.PI * 2
+            };
+
+            GameState.enemies.push(dog);
+            GameState.scene.add(dog);
+            packMembers.push(dog);
+
+            if (isLeader) {
+                leader = dog;
+                console.log('Snow Caninon LEADER spawned (10% larger black male)');
+            }
+        }
+
+        // Spawn 2 females
+        for (var j = 0; j < 2; j++) {
+            var fx = packCenterX + (Math.random() - 0.5) * 6;
+            var fz = packCenterZ + (Math.random() - 0.5) * 6;
+
+            var fcolors = convertColors(femaleData);
+            var fmodel = buildSnowCaninonModel(fcolors, false, false, false);
+            var fdog = new THREE.Group();
+            fdog.add(fmodel);
+            fdog.scale.set(femaleData.size, femaleData.size, femaleData.size);
+
+            var fterrainY = Environment.getTerrainHeight(fx, fz);
+            fdog.position.set(fx, fterrainY + femaleData.groundY, fz);
+
+            fdog.userData = {
+                id: femaleData.id,
+                type: 'snow_caninon',
+                entityId: 'snowcaninon_' + Date.now() + '_' + Math.random(),
+                gender: 'female',
+                isLeader: false,
+                speed: femaleData.speed + Math.random() * (femaleData.speedVariation || 0),
+                chaseSpeed: femaleData.chaseSpeed || 11,
+                damage: femaleData.damage,
+                radius: femaleData.radius,
+                health: femaleData.health,
+                maxHealth: femaleData.health,
+                groundY: femaleData.groundY,
+                friendly: true,
+                defensive: false,
+                minimapColor: femaleData.minimapColor,
+                ignoreGravity: true,
+
+                // Pack properties
+                packId: packId,
+                isPackAnimal: true,
+                isBaby: false,
+
+                // Female-specific
+                canGetPregnant: true,
+                isPregnant: false,
+                gestationTimer: 0,
+                isMother: false,
+                pups: [],
+
+                // Behavior state
+                lifecycleState: 'following',
+                wanderDir: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
+                wanderTime: 0,
+                walkPhase: Math.random() * Math.PI * 2
+            };
+
+            GameState.enemies.push(fdog);
+            GameState.scene.add(fdog);
+            packMembers.push(fdog);
+        }
+
+        // Set leader reference for all pack members
+        if (leader) {
+            packMembers.forEach(function(member) {
+                member.userData.leader = leader;
+            });
+        }
+
+        // Store pack in GameState
+        if (!GameState.snowCaninonPacks) {
+            GameState.snowCaninonPacks = [];
+        }
+        GameState.snowCaninonPacks.push({
+            id: packId,
+            leader: leader,
+            members: packMembers,
+            den: null,
+            homePosition: { x: packCenterX, z: packCenterZ },
+            huntTimer: 300 + Math.random() * 180 // 5-8 min until first hunt
+        });
+
+        console.log('Spawned snow caninon pack: ' + packMembers.length + ' members - Pack ID: ' + packId);
+    }
+
+    // ========================================================================
+    // SNOW CANINON BEHAVIOR UPDATE
+    // ========================================================================
+    /**
+     * Update all Snow Caninon packs each frame.
+     * Phase 1: Basic pack following + walking animation.
+     */
+    function updateSnowCaninonBehavior(delta) {
+        if (!GameState.snowCaninonPacks || GameState.snowCaninonPacks.length === 0) return;
+
+        GameState.snowCaninonPacks.forEach(function(pack) {
+            // Remove dead members
+            pack.members = pack.members.filter(function(dog) {
+                return dog.parent && dog.userData.health > 0;
+            });
+
+            if (pack.members.length === 0) return;
+
+            // If leader died, promote next male (or any member)
+            if (!pack.leader || !pack.leader.parent || pack.leader.userData.health <= 0) {
+                var newLeader = pack.members.find(function(m) { return m.userData.gender === 'male' && !m.userData.isBaby; });
+                if (!newLeader) newLeader = pack.members.find(function(m) { return !m.userData.isBaby; });
+                if (newLeader) {
+                    pack.leader = newLeader;
+                    newLeader.userData.isLeader = true;
+                    pack.members.forEach(function(m) { m.userData.leader = newLeader; });
+                }
+            }
+
+            // Pack-level: player near den — mother attacks!
+            if (pack.den && pack.den.state === 'active' && GameState.peccary) {
+                var pdx = GameState.peccary.position.x - pack.den.position.x;
+                var pdz = GameState.peccary.position.z - pack.den.position.z;
+                var pDenDist = Math.sqrt(pdx * pdx + pdz * pdz);
+                if (pDenDist < 3) {
+                    // Find the mother
+                    var denMother = pack.members.find(function(m) {
+                        return m.userData.entityId === pack.den.motherId;
+                    });
+                    if (denMother && denMother.userData.lifecycleState === 'denning') {
+                        // Mother attacks player!
+                        denMother.visible = true;
+                        denMother.userData.lifecycleState = 'defending';
+                        denMother.userData.defendTarget = GameState.peccary;
+                        denMother.userData.defendReturnTimer = 12;
+                        denMother.position.set(pack.den.entrancePosition.x, 0, pack.den.entrancePosition.z);
+                        pack.den.occupants = pack.den.occupants.filter(function(id) {
+                            return id !== denMother.userData.entityId;
+                        });
+                        console.log('Stay away from the den! Mother Snow Caninon attacks!');
+                    }
+                }
+            }
+
+            // Pack-level: hunt timer
+            if (pack.huntTimer !== undefined && !pack.currentHunt) {
+                pack.huntTimer -= delta;
+                if (pack.huntTimer <= 0) {
+                    triggerSnowCaninonHunt(pack);
+                    pack.huntTimer = 300 + Math.random() * 180; // Reset: 5-8 min
+                }
+            }
+
+            // Pack-level: active hunt update (eating timer)
+            if (pack.currentHunt && pack.currentHunt.state === 'eating') {
+                pack.currentHunt.eatTimer -= delta;
+                // Eat from carcass
+                if (pack.currentHunt.carcass && pack.currentHunt.carcass.parent) {
+                    pack.members.forEach(function(m) {
+                        if (m.userData.lifecycleState === 'eating' && m.visible !== false) {
+                            eatFromCarcass(m, pack.currentHunt.carcass, delta);
+                        }
+                    });
+                }
+                if (pack.currentHunt.eatTimer <= 0 || !pack.currentHunt.carcass || !pack.currentHunt.carcass.parent
+                    || (pack.currentHunt.carcass.userData && pack.currentHunt.carcass.userData.carcassMeatLeft <= 0)) {
+                    // Done eating — return to following
+                    endSnowCaninonHunt(pack);
+                }
+            }
+
+            // Pack-level: standoff with oxen
+            if (pack.currentHunt && pack.currentHunt.state === 'standoff') {
+                updateOxenHuntStandoff(pack, delta);
+            }
+
+            // Pack-level: den digging timer
+            if (pack.digTimer !== undefined && pack.digTimer > 0) {
+                pack.digTimer -= delta;
+
+                // Grow den mesh over 10 seconds (0.1 -> 1.0 scale)
+                if (pack.den && pack.den.mesh) {
+                    var progress = Math.max(0, 1 - pack.digTimer / 10);
+                    var s = 0.1 + progress * 0.9;
+                    pack.den.mesh.scale.set(s, s, s);
+                }
+
+                // Digging complete!
+                if (pack.digTimer <= 0) {
+                    pack.digTimer = undefined;
+                    pack.den.state = 'active';
+                    pack.den.mesh.scale.set(1, 1, 1);
+
+                    // Mother enters den and gives birth
+                    var mother = pack.diggingMother;
+                    if (mother && mother.parent) {
+                        mother.userData.lifecycleState = 'denning';
+                        mother.userData.isPregnant = false;
+                        mother.userData.isMother = true;
+                        mother.visible = false; // Hide in den
+                        mother.userData.den = pack.den;
+                        pack.den.occupants.push(mother.userData.entityId);
+
+                        // Spawn 2 pups
+                        spawnSnowCaninonPups(mother, pack, pack.den);
+                        console.log('Den complete! Mother entered den, 2 pups born.');
+                    }
+
+                    // Rest of pack returns to following
+                    pack.members.forEach(function(m) {
+                        if (m.userData.lifecycleState === 'digging_den') {
+                            m.userData.lifecycleState = 'following';
+                        }
+                    });
+                    pack.diggingMother = null;
+                }
+            }
+
+            // Update each member
+            pack.members.forEach(function(dog) {
+                if (!dog.parent || dog.userData.health <= 0) return;
+
+                var state = dog.userData.lifecycleState;
+
+                if (state === 'following') {
+                    updateSnowCaninonFollowing(dog, pack, delta);
+
+                    // Males: mating timer
+                    if (dog.userData.gender === 'male' && !dog.userData.isBaby && dog.userData.matingTimer !== undefined) {
+                        dog.userData.matingTimer -= delta;
+                        if (dog.userData.matingTimer <= 0) {
+                            triggerSnowCaninonMating(pack);
+                            dog.userData.matingTimer = 120 + Math.random() * 180; // Reset: 2-5 min
+                        }
+                    }
+
+                    // Females: pregnancy countdown
+                    if (dog.userData.isPregnant) {
+                        var prevTimer = dog.userData.gestationTimer;
+                        dog.userData.gestationTimer -= delta;
+                        // Log every 10 seconds
+                        if (Math.floor(prevTimer / 10) !== Math.floor(dog.userData.gestationTimer / 10)) {
+                            console.log('Gestation: ' + Math.ceil(dog.userData.gestationTimer) + 's remaining');
+                        }
+                        if (dog.userData.gestationTimer <= 0) {
+                            console.log('Gestation complete! Starting den dig...');
+                            initiateSnowCaninonDenDigging(dog, pack);
+                        }
+                    }
+
+                } else if (state === 'digging_den') {
+                    // Move toward dig target, play digging animation
+                    updateSnowCaninonDigging(dog, delta);
+
+                } else if (state === 'denning') {
+                    // Mother stays hidden in den
+                    // Check if all pups have matured -> exit den
+                    if (dog.userData.pups && dog.userData.pups.length > 0) {
+                        var allMature = dog.userData.pups.every(function(p) {
+                            return !p.parent || p.userData.health <= 0 || !p.userData.isBaby;
+                        });
+                        if (allMature) {
+                            // All pups grew up or died — mother exits den
+                            dog.visible = true;
+                            dog.userData.lifecycleState = 'following';
+                            dog.userData.isMother = false;
+                            dog.userData.pups = [];
+                            dog.position.set(pack.den.entrancePosition.x, 0, pack.den.entrancePosition.z);
+
+                            // Remove den
+                            if (pack.den.mesh) GameState.scene.remove(pack.den.mesh);
+                            if (GameState.snowCaninonDens) {
+                                GameState.snowCaninonDens = GameState.snowCaninonDens.filter(function(d) {
+                                    return d.id !== pack.den.id;
+                                });
+                            }
+                            pack.den = null;
+                            console.log('All pups matured/gone. Mother exits den, den removed.');
+                        }
+                    }
+
+                } else if (state === 'pup') {
+                    updateSnowCaninonPup(dog, pack, delta);
+
+                } else if (state === 'hunting_chase') {
+                    // Leader chases deer, others follow leader
+                    updateSnowCaninonHuntChase(dog, pack, delta);
+
+                } else if (state === 'eating') {
+                    // Gather at carcass and eat
+                    updateSnowCaninonEating(dog, pack, delta);
+
+                } else if (state === 'defending') {
+                    // Mother chasing a cat to defend pups
+                    var target = dog.userData.defendTarget;
+                    var terrainYd = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+                    dog.position.y = terrainYd + (dog.userData.groundY || 0.4);
+
+                    dog.userData.defendReturnTimer -= delta;
+
+                    if (!target || !target.parent || target.userData.health <= 0 || dog.userData.defendReturnTimer <= 0) {
+                        // Cat gone or timer expired — return to den
+                        dog.userData.lifecycleState = 'denning';
+                        dog.userData.defendTarget = null;
+                        var denRef = dog.userData.den;
+                        if (denRef) {
+                            dog.visible = false;
+                            denRef.occupants.push(dog.userData.entityId);
+                        }
+                        dog.userData.currentMoveSpeed = 0;
+                    } else {
+                        // Chase the cat!
+                        var ctx = target.position.x - dog.position.x;
+                        var ctz = target.position.z - dog.position.z;
+                        var ctDist = Math.sqrt(ctx * ctx + ctz * ctz);
+
+                        if (ctDist > 30) {
+                            // Too far — give up
+                            dog.userData.defendReturnTimer = 0;
+                        } else if (ctDist < 1.5) {
+                            // Hit the cat!
+                            target.userData.health -= dog.userData.damage * delta * 2;
+                            target.userData.wasAttackedByPlayer = true; // Makes cat flee
+                            dog.userData.currentMoveSpeed = 0;
+                        } else {
+                            // Chase at high speed
+                            var chaseSpd = dog.userData.chaseSpeed || 12;
+                            dog.position.x += (ctx / ctDist) * chaseSpd * delta;
+                            dog.position.z += (ctz / ctDist) * chaseSpd * delta;
+                            dog.rotation.y = -Math.atan2(ctz, ctx);
+                            dog.userData.currentMoveSpeed = chaseSpd;
+                        }
+                    }
+                } else if (state === 'carrying_meat') {
+                    // Walk back to den with meat chunk in mouth
+                    var terrainYm = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+                    dog.position.y = terrainYm + (dog.userData.groundY || 0.4);
+
+                    if (pack.den && pack.den.entrancePosition) {
+                        var denX = pack.den.entrancePosition.x - dog.position.x;
+                        var denZ = pack.den.entrancePosition.z - dog.position.z;
+                        var denDist = Math.sqrt(denX * denX + denZ * denZ);
+
+                        if (denDist > 2) {
+                            var carrySpeed = dog.userData.speed || 6;
+                            dog.position.x += (denX / denDist) * carrySpeed * delta;
+                            dog.position.z += (denZ / denDist) * carrySpeed * delta;
+                            dog.rotation.y = -Math.atan2(denZ, denX);
+                            dog.userData.currentMoveSpeed = carrySpeed;
+                        } else {
+                            // Arrived at den — drop meat, return to following
+                            dog.userData.lifecycleState = 'following';
+                            dog.userData.currentMoveSpeed = 0;
+
+                            // Remove meat chunk visual
+                            var dogModel = dog.children[0];
+                            if (dogModel && dogModel.userData && dogModel.userData.parts && dogModel.userData.parts.headGroup) {
+                                var meatChunk = dogModel.userData.parts.headGroup.getObjectByName('meatChunk');
+                                if (meatChunk) {
+                                    dogModel.userData.parts.headGroup.remove(meatChunk);
+                                }
+                            }
+                            console.log('Dog delivered meat to den!');
+                        }
+                    } else {
+                        // No den — just drop meat and follow
+                        dog.userData.lifecycleState = 'following';
+                        var dogModel2 = dog.children[0];
+                        if (dogModel2 && dogModel2.userData && dogModel2.userData.parts && dogModel2.userData.parts.headGroup) {
+                            var meatChunk2 = dogModel2.userData.parts.headGroup.getObjectByName('meatChunk');
+                            if (meatChunk2) {
+                                dogModel2.userData.parts.headGroup.remove(meatChunk2);
+                            }
+                        }
+                    }
+                }
+
+                // Walking animation (skip hidden dogs)
+                if (dog.visible !== false) {
+                    animateSnowCaninon(dog, delta);
+                }
+            });
+        });
+    }
+
+    /**
+     * Following behavior: leader wanders, others follow leader.
+     */
+    function updateSnowCaninonFollowing(dog, pack, delta) {
+        var speed = dog.userData.speed;
+        var terrainY = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+        dog.position.y = terrainY + (dog.userData.groundY || 0.4);
+
+        if (dog.userData.isLeader) {
+            // Leader wanders near homePosition
+            dog.userData.wanderTime -= delta;
+            if (dog.userData.wanderTime <= 0) {
+                // Pick new direction, biased toward home
+                var homeX = pack.homePosition.x;
+                var homeZ = pack.homePosition.z;
+                var dx = homeX - dog.position.x;
+                var dz = homeZ - dog.position.z;
+                var distHome = Math.sqrt(dx * dx + dz * dz);
+
+                if (distHome > 40) {
+                    // Too far from home, head back
+                    dog.userData.wanderDir.set(dx / distHome, 0, dz / distHome);
+                } else {
+                    // Random wander with slight home bias
+                    var rx = Math.random() - 0.5;
+                    var rz = Math.random() - 0.5;
+                    if (distHome > 20) {
+                        rx += dx / distHome * 0.3;
+                        rz += dz / distHome * 0.3;
+                    }
+                    dog.userData.wanderDir.set(rx, 0, rz).normalize();
+                }
+                dog.userData.wanderTime = 8 + Math.random() * 12; // 8-20 seconds
+            }
+
+            // Move leader at slow wander speed
+            var wanderSpeed = speed * 0.2;
+            dog.position.x += dog.userData.wanderDir.x * wanderSpeed * delta;
+            dog.position.z += dog.userData.wanderDir.z * wanderSpeed * delta;
+
+            // Face movement direction
+            if (dog.userData.wanderDir.x !== 0 || dog.userData.wanderDir.z !== 0) {
+                dog.rotation.y = -Math.atan2(dog.userData.wanderDir.z, dog.userData.wanderDir.x);
+            }
+
+            dog.userData.currentMoveSpeed = wanderSpeed;
+        } else {
+            // Non-leader: follow the leader loosely
+            var leaderRef = dog.userData.leader;
+            if (!leaderRef || !leaderRef.parent) {
+                dog.userData.currentMoveSpeed = 0;
+                return;
+            }
+
+            var dlx = leaderRef.position.x - dog.position.x;
+            var dlz = leaderRef.position.z - dog.position.z;
+            var distToLeader = Math.sqrt(dlx * dlx + dlz * dlz);
+
+            var moveSpeed = 0;
+
+            if (distToLeader > 18) {
+                // Too far — sprint to catch up
+                moveSpeed = speed * 0.8;
+                var ndx = dlx / distToLeader;
+                var ndz = dlz / distToLeader;
+                dog.position.x += ndx * moveSpeed * delta;
+                dog.position.z += ndz * moveSpeed * delta;
+                dog.rotation.y = -Math.atan2(ndz, ndx);
+            } else if (distToLeader > 10) {
+                // Medium distance — walk toward leader
+                moveSpeed = speed * 0.4;
+                var ndx2 = dlx / distToLeader;
+                var ndz2 = dlz / distToLeader;
+                dog.position.x += ndx2 * moveSpeed * delta;
+                dog.position.z += ndz2 * moveSpeed * delta;
+                dog.rotation.y = -Math.atan2(ndz2, ndx2);
+            } else {
+                // Close enough — gentle wander with leader bias
+                dog.userData.wanderTime -= delta;
+                if (dog.userData.wanderTime <= 0) {
+                    var wrx = Math.random() - 0.5 + dlx / distToLeader * 0.2;
+                    var wrz = Math.random() - 0.5 + dlz / distToLeader * 0.2;
+                    dog.userData.wanderDir.set(wrx, 0, wrz).normalize();
+                    dog.userData.wanderTime = 4 + Math.random() * 6;
+                }
+                moveSpeed = speed * 0.15;
+                dog.position.x += dog.userData.wanderDir.x * moveSpeed * delta;
+                dog.position.z += dog.userData.wanderDir.z * moveSpeed * delta;
+                if (dog.userData.wanderDir.x !== 0 || dog.userData.wanderDir.z !== 0) {
+                    dog.rotation.y = -Math.atan2(dog.userData.wanderDir.z, dog.userData.wanderDir.x);
+                }
+            }
+
+            dog.userData.currentMoveSpeed = moveSpeed;
+        }
+
+        // Keep within world bounds
+        var worldLimit = CONFIG.WORLD_SIZE * 0.48;
+        dog.position.x = Math.max(-worldLimit, Math.min(worldLimit, dog.position.x));
+        dog.position.z = Math.max(-worldLimit, Math.min(worldLimit, dog.position.z));
+    }
+
+    /**
+     * Simple walking animation for Snow Caninons.
+     * Leg swing on rotation.z (model faces +X).
+     */
+    function animateSnowCaninon(dog, delta) {
+        // Find inner model
+        var dogModel = dog;
+        if (!dog.userData.legs && dog.children.length > 0) dogModel = dog.children[0];
+        if (!dogModel.userData || !dogModel.userData.legs) return;
+
+        var legs = dogModel.userData.legs;
+        var moveSpeed = dog.userData.currentMoveSpeed || 0;
+
+        if (!dog.userData._walkCycle) dog.userData._walkCycle = 0;
+
+        if (moveSpeed > 0.5) {
+            // Walking/running animation
+            dog.userData._walkCycle += delta * moveSpeed * 2.5;
+            var cycle = dog.userData._walkCycle;
+
+            legs.forEach(function(leg) {
+                var phase = leg.isFront ? 0 : Math.PI;
+                var sidePhase = leg.side === 'right' ? Math.PI : 0;
+                var legCycle = cycle + phase + sidePhase;
+
+                // Forward/backward swing on Z axis (model faces +X)
+                leg.group.rotation.z = Math.sin(legCycle) * 0.3;
+                if (leg.lowerLegGroup) {
+                    leg.lowerLegGroup.rotation.z = Math.max(0, Math.sin(legCycle + 0.5)) * 0.25;
+                }
+            });
+
+            // Gentle body bob
+            dogModel.position.y = Math.sin(dog.userData._walkCycle * 2) * 0.015;
+        } else {
+            // Idle — slowly return legs to neutral
+            legs.forEach(function(leg) {
+                leg.group.rotation.z *= 0.9;
+                if (leg.lowerLegGroup) leg.lowerLegGroup.rotation.z *= 0.9;
+            });
+            dogModel.position.y *= 0.9;
+        }
+
+        // Tail wag (always)
+        if (dogModel.userData.parts && dogModel.userData.parts.tailGroup) {
+            var tailSwing = Math.sin(Date.now() * 0.003) * 0.2;
+            dogModel.userData.parts.tailGroup.rotation.y = tailSwing;
+        }
+    }
+
+    /**
+     * Digging behavior: move to dig site, face it, bob up and down.
+     */
+    function updateSnowCaninonDigging(dog, delta) {
+        var target = dog.userData.digTarget;
+        if (!target) return;
+
+        var terrainY = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+        dog.position.y = terrainY + (dog.userData.groundY || 0.4);
+
+        var dx = target.x - dog.position.x;
+        var dz = target.z - dog.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist > 3) {
+            // Walk to dig site
+            var moveSpeed = dog.userData.speed * 0.5;
+            dog.position.x += (dx / dist) * moveSpeed * delta;
+            dog.position.z += (dz / dist) * moveSpeed * delta;
+            dog.rotation.y = -Math.atan2(dz, dx);
+            dog.userData.currentMoveSpeed = moveSpeed;
+        } else {
+            // At dig site — face the hole and play dig animation
+            dog.rotation.y = -Math.atan2(dz, dx);
+            dog.userData.currentMoveSpeed = 0;
+
+            // Digging animation: bob body up/down, front legs scratch
+            if (!dog.userData._digCycle) dog.userData._digCycle = 0;
+            dog.userData._digCycle += delta * 6;
+
+            var dogModel = dog.children[0];
+            if (dogModel && dogModel.userData && dogModel.userData.legs) {
+                var legs = dogModel.userData.legs;
+                legs.forEach(function(leg) {
+                    if (leg.isFront) {
+                        // Front legs: rapid scratching motion
+                        leg.group.rotation.z = Math.sin(dog.userData._digCycle + (leg.side === 'right' ? Math.PI : 0)) * 0.5;
+                        if (leg.lowerLegGroup) {
+                            leg.lowerLegGroup.rotation.z = Math.abs(Math.sin(dog.userData._digCycle)) * 0.4;
+                        }
+                    }
+                });
+                // Body bobs down when legs dig
+                dogModel.position.y = Math.sin(dog.userData._digCycle * 2) * 0.02 - 0.02;
+            }
+        }
+    }
+
+    /**
+     * Pup behavior: play near den, flee from cats, mature after 3 min.
+     */
+    function updateSnowCaninonPup(pup, pack, delta) {
+        var terrainY = Environment.getTerrainHeight(pup.position.x, pup.position.z);
+        pup.position.y = terrainY + (pup.userData.groundY || 0.2);
+
+        // Check maturity
+        var currentTime = GameState.timeElapsed || 0;
+        if (pup.userData.maturityTime && currentTime >= pup.userData.maturityTime) {
+            growSnowCaninonPup(pup, pack);
+            return;
+        }
+
+        var den = pup.userData.den;
+        if (!den) {
+            // No den — just follow pack
+            pup.userData.lifecycleState = 'following';
+            return;
+        }
+
+        // Check for nearby drongulinat cats (threat detection)
+        var nearestCat = null;
+        var nearestCatDist = 15; // Detection range
+        GameState.enemies.forEach(function(e) {
+            if (e.userData.type === 'drongulinat_cat' && !e.userData.isBaby && e.parent && e.userData.health > 0) {
+                var cdx = e.position.x - pup.position.x;
+                var cdz = e.position.z - pup.position.z;
+                var cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+                if (cdist < nearestCatDist) {
+                    nearestCat = e;
+                    nearestCatDist = cdist;
+                }
+            }
+        });
+
+        if (nearestCat) {
+            // FLEE to den!
+            var ddx = den.entrancePosition.x - pup.position.x;
+            var ddz = den.entrancePosition.z - pup.position.z;
+            var ddist = Math.sqrt(ddx * ddx + ddz * ddz);
+
+            if (ddist < 1.5) {
+                // Reached den — hide inside!
+                pup.visible = false;
+                den.occupants.push(pup.userData.entityId);
+                pup.userData._hiddenInDen = true;
+                pup.userData._hideTimer = 15 + Math.random() * 10; // Stay hidden 15-25 sec
+
+                // Mother defends
+                snowCaninonMotherDefend(pup.userData.mother, nearestCat);
+            } else {
+                // Run toward den
+                var fleeSpeed = pup.userData.speed * 1.5;
+                pup.position.x += (ddx / ddist) * fleeSpeed * delta;
+                pup.position.z += (ddz / ddist) * fleeSpeed * delta;
+                pup.rotation.y = -Math.atan2(ddz, ddx);
+                pup.userData.currentMoveSpeed = fleeSpeed;
+            }
+            return;
+        }
+
+        // If hidden in den, count down then come out
+        if (pup.userData._hiddenInDen) {
+            pup.userData._hideTimer -= delta;
+            if (pup.userData._hideTimer <= 0) {
+                pup.visible = true;
+                pup.userData._hiddenInDen = false;
+                pup.position.set(den.entrancePosition.x, terrainY + 0.2, den.entrancePosition.z);
+                den.occupants = den.occupants.filter(function(id) { return id !== pup.userData.entityId; });
+            }
+            pup.userData.currentMoveSpeed = 0;
+            return;
+        }
+
+        // Normal play behavior: wander near den entrance
+        pup.userData.wanderTime -= delta;
+        if (pup.userData.wanderTime <= 0) {
+            pup.userData.wanderDir.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            pup.userData.wanderTime = 2 + Math.random() * 3;
+        }
+
+        var playSpeed = pup.userData.speed * 0.3;
+        pup.position.x += pup.userData.wanderDir.x * playSpeed * delta;
+        pup.position.z += pup.userData.wanderDir.z * playSpeed * delta;
+        pup.userData.currentMoveSpeed = playSpeed;
+
+        // Stay within 5 units of den entrance
+        var toDenX = den.entrancePosition.x - pup.position.x;
+        var toDenZ = den.entrancePosition.z - pup.position.z;
+        var toDenDist = Math.sqrt(toDenX * toDenX + toDenZ * toDenZ);
+        if (toDenDist > 5) {
+            pup.userData.wanderDir.set(toDenX / toDenDist, 0, toDenZ / toDenDist);
+        }
+
+        if (pup.userData.wanderDir.x !== 0 || pup.userData.wanderDir.z !== 0) {
+            pup.rotation.y = -Math.atan2(pup.userData.wanderDir.z, pup.userData.wanderDir.x);
+        }
+    }
+
+    /**
+     * Mother charges out of den to defend pups from a cat.
+     */
+    function snowCaninonMotherDefend(mother, cat) {
+        if (!mother || !mother.parent || mother.userData.health <= 0) return;
+        if (mother.userData.lifecycleState === 'defending') return; // Already defending
+
+        // Mother exits den
+        mother.visible = true;
+        mother.userData.lifecycleState = 'defending';
+        mother.userData.defendTarget = cat;
+        mother.userData.defendReturnTimer = 8; // Return to den after 8 seconds
+
+        var den = mother.userData.den;
+        if (den) {
+            mother.position.set(den.entrancePosition.x, 0, den.entrancePosition.z);
+            den.occupants = den.occupants.filter(function(id) { return id !== mother.userData.entityId; });
+        }
+
+        console.log('Mother Snow Caninon emerges to defend pups!');
+    }
+
+    /**
+     * Grow a pup into an adult Snow Caninon.
+     */
+    function growSnowCaninonPup(pup, pack) {
+        var isMale = pup.userData.gender === 'male';
+
+        // Get adult data
+        var adultData = ENEMIES.find(function(e) {
+            return e.id === (isMale ? 'snow_caninon_male' : 'snow_caninon_female');
+        });
+        if (!adultData) return;
+
+        // Remove old model
+        while (pup.children.length > 0) {
+            pup.remove(pup.children[0]);
+        }
+
+        // Build adult model with adult colors
+        var colors = {};
+        for (var key in adultData.colors) {
+            var val = adultData.colors[key];
+            colors[key] = typeof val === 'string' ? parseInt(val.replace('#', ''), 16) : val;
+        }
+        var newModel = buildSnowCaninonModel(colors, false, false, false);
+        pup.add(newModel);
+
+        // Update scale and stats to adult
+        pup.scale.set(adultData.size, adultData.size, adultData.size);
+        pup.userData.isBaby = false;
+        pup.userData.speed = adultData.speed;
+        pup.userData.chaseSpeed = adultData.chaseSpeed || 11;
+        pup.userData.damage = adultData.damage;
+        pup.userData.radius = adultData.radius;
+        pup.userData.health = adultData.health;
+        pup.userData.maxHealth = adultData.health;
+        pup.userData.groundY = adultData.groundY;
+        pup.userData.lifecycleState = 'following';
+        pup.userData.leader = pack.leader;
+
+        // Males get mating timer
+        if (isMale) {
+            pup.userData.matingTimer = 120 + Math.random() * 180;
+        } else {
+            pup.userData.canGetPregnant = true;
+            pup.userData.isPregnant = false;
+            pup.userData.gestationTimer = 0;
+            pup.userData.isMother = false;
+            pup.userData.pups = [];
+        }
+
+        console.log('Snow Caninon pup matured into adult ' + pup.userData.gender + '!');
+    }
+
+    // ========================================================================
+    // SNOW CANINON PACK HUNTING
+    // ========================================================================
+    /**
+     * Pack leader finds nearest deer and initiates a chase.
+     * Simpler than wild dog hunts — leader chases, kills, pack eats.
+     */
+    function triggerSnowCaninonHunt(pack) {
+        if (pack.currentHunt) return;
+        if (!pack.leader || !pack.leader.parent) return;
+
+        // Don't hunt if pack is digging or has other priorities
+        var busy = pack.members.some(function(m) {
+            return m.userData.lifecycleState === 'digging_den';
+        });
+        if (busy) return;
+
+        // Find nearest prey within 80 units of leader (deer or oxen)
+        var leader = pack.leader;
+        var nearestPrey = null;
+        var nearestDist = 80;
+
+        GameState.enemies.forEach(function(e) {
+            if ((e.userData.type === 'deericus_iricus' || e.userData.type === 'baluban_oxen') &&
+                e.parent && e.userData.health > 0 && e.visible !== false &&
+                !e.userData.isCarcass && !e.userData.isBaby) {
+                var dx = e.position.x - leader.position.x;
+                var dz = e.position.z - leader.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < nearestDist) {
+                    nearestPrey = e;
+                    nearestDist = dist;
+                }
+            }
+        });
+
+        if (!nearestPrey) return;
+
+        var isOxen = nearestPrey.userData.type === 'baluban_oxen';
+
+        // Start the hunt!
+        pack.currentHunt = {
+            target: nearestPrey,
+            state: isOxen ? 'surrounding' : 'chasing',
+            targetType: isOxen ? 'oxen' : 'deer',
+            carcass: null,
+            eatTimer: 0,
+            nippingTimer: 15 + Math.random() * 15, // 15-30s of nipping before standoff
+            nippingDamageTimer: 0
+        };
+
+        // All non-baby, non-denning members join the hunt
+        var hunters = [];
+        pack.members.forEach(function(m) {
+            if (!m.userData.isBaby && m.userData.lifecycleState === 'following') {
+                m.userData.lifecycleState = 'hunting_chase';
+                hunters.push(m);
+            }
+        });
+
+        // Assign hunt roles for oxen hunt
+        if (isOxen && hunters.length >= 3) {
+            // Leader gets 'behind' (control direction)
+            if (pack.leader && pack.leader.userData.lifecycleState === 'hunting_chase') {
+                pack.leader.userData.huntRole = 'behind';
+            }
+            var roleIndex = 0;
+            var sideRoles = ['left', 'right'];
+            hunters.forEach(function(h) {
+                if (h === pack.leader) return;
+                if (roleIndex < 2) {
+                    h.userData.huntRole = sideRoles[roleIndex];
+                } else {
+                    h.userData.huntRole = 'flanker';
+                }
+                roleIndex++;
+            });
+
+            // Make oxen flee
+            nearestPrey.userData.lifecycleState = 'being_hunted';
+            nearestPrey.userData._huntedByPack = pack;
+            nearestPrey.userData._fleeDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+        } else {
+            // Simple deer hunt
+            nearestPrey.userData.isFleeing = true;
+            nearestPrey.userData.fleeTarget = leader;
+        }
+
+        console.log('Snow Caninon hunt started! Target: ' + (isOxen ? 'BALUBAN OXEN' : 'deer'));
+    }
+
+    /**
+     * Hunt chase state: handles both deer (simple chase) and oxen (surround/nip).
+     */
+    function updateSnowCaninonHuntChase(dog, pack, delta) {
+        var terrainY = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+        dog.position.y = terrainY + (dog.userData.groundY || 0.4);
+
+        if (!pack.currentHunt || !pack.currentHunt.target || !pack.currentHunt.target.parent
+            || pack.currentHunt.target.userData.health <= 0) {
+            endSnowCaninonHunt(pack);
+            return;
+        }
+
+        var target = pack.currentHunt.target;
+        var huntState = pack.currentHunt.state;
+
+        // ---- OXEN HUNT: SURROUNDING / NIPPING / STANDOFF ----
+        if (huntState === 'surrounding' || huntState === 'nipping' || huntState === 'standoff') {
+            updateDogOxenHunt(dog, pack, target, delta);
+            return;
+        }
+
+        // ---- DEER HUNT: SIMPLE CHASE ----
+        if (dog.userData.isLeader) {
+            var dx = target.position.x - dog.position.x;
+            var dz = target.position.z - dog.position.z;
+            var dist = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist > 60) {
+                endSnowCaninonHunt(pack);
+                return;
+            }
+
+            if (dist < 2) {
+                convertToCarcass(target);
+                pack.currentHunt.carcass = target;
+                pack.currentHunt.state = 'eating';
+                pack.currentHunt.eatTimer = 60;
+
+                pack.members.forEach(function(m) {
+                    if (m.userData.lifecycleState === 'hunting_chase') {
+                        m.userData.lifecycleState = 'eating';
+                    }
+                });
+                console.log('Snow Caninon leader caught deer! Pack feasting.');
+                return;
+            }
+
+            var chaseSpeed = dog.userData.chaseSpeed || 11;
+            dog.position.x += (dx / dist) * chaseSpeed * delta;
+            dog.position.z += (dz / dist) * chaseSpeed * delta;
+            dog.rotation.y = -Math.atan2(dz, dx);
+            dog.userData.currentMoveSpeed = chaseSpeed;
+        } else {
+            var lx = pack.leader.position.x - dog.position.x;
+            var lz = pack.leader.position.z - dog.position.z;
+            var ldist = Math.sqrt(lx * lx + lz * lz);
+
+            if (ldist > 2) {
+                var followSpeed = (dog.userData.chaseSpeed || 11) * 0.9;
+                dog.position.x += (lx / ldist) * followSpeed * delta;
+                dog.position.z += (lz / ldist) * followSpeed * delta;
+                dog.rotation.y = -Math.atan2(lz, lx);
+                dog.userData.currentMoveSpeed = followSpeed;
+            } else {
+                dog.userData.currentMoveSpeed = 0;
+            }
+        }
+    }
+
+    /**
+     * Dog positioning during oxen hunt — surround and nip.
+     * Dogs take positions relative to the oxen's direction: left, right, behind.
+     */
+    function updateDogOxenHunt(dog, pack, target, delta) {
+        var chaseSpeed = dog.userData.chaseSpeed || 11;
+        var role = dog.userData.huntRole || 'flanker';
+
+        // ---- STANDOFF: Dogs circle the stopped oxen ----
+        if (pack.currentHunt.state === 'standoff') {
+            // Circle at 4-5 units from oxen
+            if (!dog.userData._circleAngle) dog.userData._circleAngle = Math.random() * Math.PI * 2;
+            dog.userData._circleAngle += delta * 0.5; // Slow circle
+
+            var circleR = 4.5;
+            var cx = target.position.x + Math.cos(dog.userData._circleAngle) * circleR;
+            var cz = target.position.z + Math.sin(dog.userData._circleAngle) * circleR;
+
+            var cdx = cx - dog.position.x;
+            var cdz = cz - dog.position.z;
+            var cDist = Math.sqrt(cdx * cdx + cdz * cdz);
+
+            if (cDist > 0.5) {
+                var circleSpeed = 3;
+                dog.position.x += (cdx / cDist) * circleSpeed * delta;
+                dog.position.z += (cdz / cDist) * circleSpeed * delta;
+                dog.userData.currentMoveSpeed = circleSpeed;
+            } else {
+                dog.userData.currentMoveSpeed = 0.5; // Slow prowl
+            }
+
+            // Face the oxen
+            var ftx = target.position.x - dog.position.x;
+            var ftz = target.position.z - dog.position.z;
+            dog.rotation.y = -Math.atan2(ftz, ftx);
+
+            // Terrain
+            var tY = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+            dog.position.y = tY + (dog.userData.groundY || 0.4);
+            return;
+        }
+
+        // Oxen's forward direction
+        var oxForwardX = Math.cos(-target.rotation.y);
+        var oxForwardZ = -Math.sin(-target.rotation.y);
+
+        // Perpendicular (right side of oxen)
+        var oxRightX = -oxForwardZ;
+        var oxRightZ = oxForwardX;
+
+        // Calculate target position based on role
+        var targetX, targetZ;
+        var offset = 2.5; // How far from oxen to run
+
+        if (role === 'left') {
+            targetX = target.position.x - oxRightX * offset + oxForwardX * 0.5;
+            targetZ = target.position.z - oxRightZ * offset + oxForwardZ * 0.5;
+        } else if (role === 'right') {
+            targetX = target.position.x + oxRightX * offset + oxForwardX * 0.5;
+            targetZ = target.position.z + oxRightZ * offset + oxForwardZ * 0.5;
+        } else if (role === 'behind') {
+            targetX = target.position.x - oxForwardX * offset;
+            targetZ = target.position.z - oxForwardZ * offset;
+        } else {
+            // Flanker — stay near leader
+            targetX = pack.leader.position.x + (Math.random() - 0.5) * 4;
+            targetZ = pack.leader.position.z + (Math.random() - 0.5) * 4;
+        }
+
+        // Move toward target position
+        var dx = targetX - dog.position.x;
+        var dz = targetZ - dog.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist > 1) {
+            dog.position.x += (dx / dist) * chaseSpeed * delta;
+            dog.position.z += (dz / dist) * chaseSpeed * delta;
+            dog.rotation.y = -Math.atan2(dz, dx);
+            dog.userData.currentMoveSpeed = chaseSpeed;
+        } else {
+            // In position — match oxen's speed and direction
+            var oxSpeed = target.userData.currentMoveSpeed || 4;
+            dog.position.x += oxForwardX * oxSpeed * delta;
+            dog.position.z += oxForwardZ * oxSpeed * delta;
+            dog.userData.currentMoveSpeed = oxSpeed;
+
+            // Face the oxen while running alongside
+            var toDeerX = target.position.x - dog.position.x;
+            var toDeerZ = target.position.z - dog.position.z;
+            dog.rotation.y = -Math.atan2(toDeerZ, toDeerX);
+        }
+
+        // ---- NIPPING ----
+        if (pack.currentHunt.state === 'nipping') {
+            // Periodic nip damage
+            if (!dog.userData._nipTimer) dog.userData._nipTimer = 1 + Math.random() * 2;
+            dog.userData._nipTimer -= delta;
+
+            if (dog.userData._nipTimer <= 0) {
+                dog.userData._nipTimer = 2 + Math.random() * 3;
+
+                // Only nip if close to oxen
+                var tox = target.position.x - dog.position.x;
+                var toz = target.position.z - dog.position.z;
+                var toDist = Math.sqrt(tox * tox + toz * toz);
+
+                if (toDist < 4) {
+                    // Nip! Small damage
+                    target.userData.health -= 2;
+
+                    // Head turn animation for nip
+                    var dogModel = dog.children[0];
+                    if (dogModel && dogModel.userData.parts && dogModel.userData.parts.headGroup) {
+                        dogModel.userData.parts.headGroup.rotation.y = (role === 'left' ? 0.4 : role === 'right' ? -0.4 : 0.3);
+                        setTimeout(function() {
+                            if (dogModel.userData.parts && dogModel.userData.parts.headGroup) {
+                                dogModel.userData.parts.headGroup.rotation.y = 0;
+                            }
+                        }, 300);
+                    }
+
+                    // Behind dog: leg bite — slows oxen temporarily
+                    if (role === 'behind' || role === 'flanker') {
+                        if (Math.random() < 0.3) {
+                            target.userData._legBitten = true;
+                            target.userData._legBiteTimer = 2; // 2 seconds slow
+                        }
+                    }
+                }
+            }
+        }
+
+        // Transition: surrounding → nipping after all dogs are roughly in position
+        if (pack.currentHunt.state === 'surrounding') {
+            // Check if enough dogs are near their positions
+            var inPosition = 0;
+            pack.members.forEach(function(m) {
+                if (m.userData.lifecycleState === 'hunting_chase') {
+                    var mtx = target.position.x - m.position.x;
+                    var mtz = target.position.z - m.position.z;
+                    if (Math.sqrt(mtx * mtx + mtz * mtz) < 6) inPosition++;
+                }
+            });
+            if (inPosition >= 2) {
+                pack.currentHunt.state = 'nipping';
+                console.log('Dogs in position! Nipping phase begins.');
+            }
+        }
+    }
+
+    /**
+     * Eating state: gather at carcass location.
+     */
+    function updateSnowCaninonEating(dog, pack, delta) {
+        var terrainY = Environment.getTerrainHeight(dog.position.x, dog.position.z);
+        dog.position.y = terrainY + (dog.userData.groundY || 0.4);
+
+        if (!pack.currentHunt || !pack.currentHunt.carcass) {
+            dog.userData.lifecycleState = 'following';
+            dog.userData.currentMoveSpeed = 0;
+            return;
+        }
+
+        var carcass = pack.currentHunt.carcass;
+        var cx = carcass.position.x - dog.position.x;
+        var cz = carcass.position.z - dog.position.z;
+        var cdist = Math.sqrt(cx * cx + cz * cz);
+
+        if (cdist > 2.5) {
+            // Walk toward carcass
+            var walkSpeed = dog.userData.speed * 0.5;
+            dog.position.x += (cx / cdist) * walkSpeed * delta;
+            dog.position.z += (cz / cdist) * walkSpeed * delta;
+            dog.rotation.y = -Math.atan2(cz, cx);
+            dog.userData.currentMoveSpeed = walkSpeed;
+        } else {
+            // At carcass — face it and stay still (eating animation)
+            dog.rotation.y = -Math.atan2(cz, cx);
+            dog.userData.currentMoveSpeed = 0;
+
+            // Head down eating animation
+            var dogModel = dog.children[0];
+            if (dogModel && dogModel.userData && dogModel.userData.parts && dogModel.userData.parts.neckGroup) {
+                dogModel.userData.parts.neckGroup.rotation.z = 0.3; // Head down
+            }
+        }
+    }
+
+    // ========================================================================
+    // OXEN HUNT — STANDOFF + OUTCOMES
+    // ========================================================================
+
+    /**
+     * Pack-level standoff logic: oxen faces attackers, dogs circle.
+     * After 3-5 seconds of tension, an outcome is determined.
+     */
+    function updateOxenHuntStandoff(pack, delta) {
+        if (!pack.currentHunt || !pack.currentHunt.target) return;
+        var oxen = pack.currentHunt.target;
+
+        // Initialize standoff timer
+        if (!pack.currentHunt.standoffTimer) {
+            pack.currentHunt.standoffTimer = 3 + Math.random() * 2; // 3-5 seconds tension
+            pack.currentHunt.standoffPhase = 'circling';
+
+            // Oxen faces the nearest dog
+            var nearestDog = null;
+            var nearestDist = Infinity;
+            pack.members.forEach(function(m) {
+                if (m.userData.lifecycleState === 'hunting_chase') {
+                    var ddx = m.position.x - oxen.position.x;
+                    var ddz = m.position.z - oxen.position.z;
+                    var dd = Math.sqrt(ddx * ddx + ddz * ddz);
+                    if (dd < nearestDist) {
+                        nearestDist = dd;
+                        nearestDog = m;
+                    }
+                }
+            });
+            if (nearestDog) {
+                var fx = nearestDog.position.x - oxen.position.x;
+                var fz = nearestDog.position.z - oxen.position.z;
+                oxen.rotation.y = -Math.atan2(fz, fx);
+            }
+            console.log('Standoff begins! Dogs circling...');
+        }
+
+        pack.currentHunt.standoffTimer -= delta;
+
+        if (pack.currentHunt.standoffTimer <= 0 && pack.currentHunt.standoffPhase === 'circling') {
+            // Determine outcome!
+            var outcome = determineHuntOutcome(pack, oxen);
+            pack.currentHunt.standoffPhase = 'outcome';
+            pack.currentHunt.outcomeType = outcome;
+            pack.currentHunt.outcomeTimer = 0;
+            console.log('Hunt outcome: ' + outcome);
+        }
+
+        // Play out the outcome over time
+        if (pack.currentHunt.standoffPhase === 'outcome') {
+            pack.currentHunt.outcomeTimer += delta;
+
+            if (pack.currentHunt.outcomeType === 'oxen_wins') {
+                playOutcomeA_OxenWins(pack, oxen, delta);
+            } else if (pack.currentHunt.outcomeType === 'pack_wins_losses') {
+                playOutcomeB_PackWinsWithLosses(pack, oxen, delta);
+            } else if (pack.currentHunt.outcomeType === 'flawless_kill') {
+                playOutcomeC_FlawlessKill(pack, oxen, delta);
+            }
+        }
+    }
+
+    /**
+     * Determine which of the 3 outcomes occurs.
+     * Based on pack size and oxen HP remaining.
+     */
+    function determineHuntOutcome(pack, oxen) {
+        var hunters = pack.members.filter(function(m) {
+            return m.userData.lifecycleState === 'hunting_chase';
+        });
+        var packSize = hunters.length;
+        var hpPercent = oxen.userData.health / (oxen.userData.maxHealth || 60);
+
+        // Base chances:
+        // A (oxen wins): ~40% — more likely with fewer dogs or high HP
+        // B (pack wins with losses): ~50% — most common
+        // C (flawless kill): ~10% — rare, more likely with many dogs + low HP
+        var chanceA = 0.4;
+        var chanceC = 0.1;
+
+        // Pack size modifiers: more dogs = less chance of oxen winning, more flawless
+        if (packSize >= 6) {
+            chanceA -= 0.15;
+            chanceC += 0.15;
+        } else if (packSize >= 4) {
+            chanceA -= 0.05;
+            chanceC += 0.05;
+        } else if (packSize <= 2) {
+            chanceA += 0.2;
+            chanceC -= 0.05;
+        }
+
+        // HP modifiers: low HP oxen = easier kill
+        if (hpPercent < 0.3) {
+            chanceA -= 0.15;
+            chanceC += 0.1;
+        } else if (hpPercent > 0.7) {
+            chanceA += 0.1;
+            chanceC -= 0.05;
+        }
+
+        // Clamp
+        chanceA = Math.max(0.05, Math.min(0.7, chanceA));
+        chanceC = Math.max(0.02, Math.min(0.3, chanceC));
+
+        var roll = Math.random();
+        if (roll < chanceA) return 'oxen_wins';
+        if (roll < chanceA + chanceC) return 'flawless_kill';
+        return 'pack_wins_losses';
+    }
+
+    /**
+     * Outcome A: Oxen wins — headbutts 1-2 dogs (instant kill), survivors flee.
+     */
+    function playOutcomeA_OxenWins(pack, oxen, delta) {
+        var t = pack.currentHunt.outcomeTimer;
+
+        // Phase 1 (0-1.5s): Oxen charges at nearest dog
+        if (t < 1.5) {
+            if (!pack.currentHunt._chargeTarget) {
+                // Pick 1-2 nearest dogs to headbutt
+                var hunters = pack.members.filter(function(m) {
+                    return m.userData.lifecycleState === 'hunting_chase';
+                });
+                hunters.sort(function(a, b) {
+                    var dA = Math.pow(a.position.x - oxen.position.x, 2) + Math.pow(a.position.z - oxen.position.z, 2);
+                    var dB = Math.pow(b.position.x - oxen.position.x, 2) + Math.pow(b.position.z - oxen.position.z, 2);
+                    return dA - dB;
+                });
+                var killCount = Math.min(hunters.length, 1 + (Math.random() < 0.4 ? 1 : 0));
+                pack.currentHunt._chargeTarget = hunters.slice(0, killCount);
+                pack.currentHunt._killed = false;
+
+                // Lower head for charge (headbutt)
+                var oxModel = oxen.children[0] || oxen;
+                if (oxModel.userData && oxModel.userData.parts && oxModel.userData.parts.neckGroup) {
+                    oxModel.userData.parts.neckGroup.rotation.z = 0.5; // Head down for charge
+                }
+            }
+
+            // Charge toward first target
+            var chargeTarget = pack.currentHunt._chargeTarget[0];
+            if (chargeTarget && chargeTarget.parent) {
+                var cx = chargeTarget.position.x - oxen.position.x;
+                var cz = chargeTarget.position.z - oxen.position.z;
+                var cDist = Math.sqrt(cx * cx + cz * cz);
+
+                if (cDist > 1.5) {
+                    var chargeSpeed = 8;
+                    oxen.position.x += (cx / cDist) * chargeSpeed * delta;
+                    oxen.position.z += (cz / cDist) * chargeSpeed * delta;
+                    oxen.rotation.y = -Math.atan2(cz, cx);
+                    oxen.userData.currentMoveSpeed = chargeSpeed;
+                } else if (!pack.currentHunt._killed) {
+                    // HEADBUTT! Kill the targets
+                    pack.currentHunt._chargeTarget.forEach(function(victim) {
+                        if (victim && victim.parent) {
+                            victim.userData.health = 0;
+                            convertToCarcass(victim);
+                            var vidx = pack.members.indexOf(victim);
+                            if (vidx > -1) pack.members.splice(vidx, 1);
+                            console.log('Oxen headbutt KILLS a dog!');
+                        }
+                    });
+                    pack.currentHunt._killed = true;
+
+                    // Reset head
+                    var oxModel2 = oxen.children[0] || oxen;
+                    if (oxModel2.userData && oxModel2.userData.parts && oxModel2.userData.parts.neckGroup) {
+                        oxModel2.userData.parts.neckGroup.rotation.z = 0;
+                    }
+                }
+            }
+        }
+
+        // Phase 2 (1.5-4s): Survivors flee
+        if (t >= 1.5) {
+            pack.members.forEach(function(m) {
+                if (m.userData.lifecycleState === 'hunting_chase') {
+                    // Flee away from oxen
+                    var rx = m.position.x - oxen.position.x;
+                    var rz = m.position.z - oxen.position.z;
+                    var rDist = Math.sqrt(rx * rx + rz * rz);
+                    if (rDist > 0.1) {
+                        var fleeSpeed = 10;
+                        m.position.x += (rx / rDist) * fleeSpeed * delta;
+                        m.position.z += (rz / rDist) * fleeSpeed * delta;
+                        m.rotation.y = -Math.atan2(rz, rx);
+                        m.userData.currentMoveSpeed = fleeSpeed;
+                    }
+
+                    var terrainY = Environment.getTerrainHeight(m.position.x, m.position.z);
+                    m.position.y = terrainY + (m.userData.groundY || 0.4);
+                }
+            });
+
+            // After 4s total, end hunt and return oxen to grazing
+            if (t >= 4) {
+                // Reset oxen
+                oxen.userData.lifecycleState = 'grazing';
+                oxen.userData._huntedByPack = null;
+                oxen.userData._fleeDir = null;
+                oxen.userData._legBitten = false;
+                oxen.userData.currentMoveSpeed = 0;
+
+                endSnowCaninonHunt(pack);
+                console.log('Oxen WINS! Dogs flee.');
+            }
+        }
+    }
+
+    /**
+     * Outcome B: Pack wins with losses — 1 dog dies, leader gets neck bite, pack piles on.
+     */
+    function playOutcomeB_PackWinsWithLosses(pack, oxen, delta) {
+        var t = pack.currentHunt.outcomeTimer;
+
+        // Phase 1 (0-1.5s): Oxen headbutts one dog (kills it)
+        if (t < 1.5) {
+            if (!pack.currentHunt._victimChosen) {
+                var hunters = pack.members.filter(function(m) {
+                    return m.userData.lifecycleState === 'hunting_chase' && m !== pack.leader;
+                });
+                if (hunters.length > 0) {
+                    pack.currentHunt._victim = hunters[Math.floor(Math.random() * hunters.length)];
+                } else {
+                    // No non-leader dogs to sacrifice — skip to kill
+                    pack.currentHunt._victim = null;
+                }
+                pack.currentHunt._victimChosen = true;
+                pack.currentHunt._victimKilled = false;
+
+                // Head down for charge
+                var oxModel = oxen.children[0] || oxen;
+                if (oxModel.userData && oxModel.userData.parts && oxModel.userData.parts.neckGroup) {
+                    oxModel.userData.parts.neckGroup.rotation.z = 0.5;
+                }
+            }
+
+            if (pack.currentHunt._victim && !pack.currentHunt._victimKilled) {
+                var victim = pack.currentHunt._victim;
+                var vx = victim.position.x - oxen.position.x;
+                var vz = victim.position.z - oxen.position.z;
+                var vDist = Math.sqrt(vx * vx + vz * vz);
+
+                if (vDist > 1.5) {
+                    oxen.position.x += (vx / vDist) * 8 * delta;
+                    oxen.position.z += (vz / vDist) * 8 * delta;
+                    oxen.rotation.y = -Math.atan2(vz, vx);
+                    oxen.userData.currentMoveSpeed = 8;
+                } else {
+                    // Headbutt kills victim
+                    victim.userData.health = 0;
+                    convertToCarcass(victim);
+                    var vidx = pack.members.indexOf(victim);
+                    if (vidx > -1) pack.members.splice(vidx, 1);
+                    pack.currentHunt._victimKilled = true;
+                    console.log('Oxen headbutt kills a dog! But the leader lunges...');
+
+                    // Reset head
+                    var oxModel2 = oxen.children[0] || oxen;
+                    if (oxModel2.userData && oxModel2.userData.parts && oxModel2.userData.parts.neckGroup) {
+                        oxModel2.userData.parts.neckGroup.rotation.z = 0;
+                    }
+                }
+            }
+        }
+
+        // Phase 2 (1.5-3s): Leader lunges for neck bite, attaches to oxen
+        if (t >= 1.5 && t < 3) {
+            if (pack.leader && pack.leader.parent && pack.leader.userData.lifecycleState === 'hunting_chase') {
+                // Leader moves to oxen's neck
+                var lx = oxen.position.x - pack.leader.position.x;
+                var lz = oxen.position.z - pack.leader.position.z;
+                var lDist = Math.sqrt(lx * lx + lz * lz);
+
+                if (lDist > 1) {
+                    pack.leader.position.x += (lx / lDist) * 12 * delta;
+                    pack.leader.position.z += (lz / lDist) * 12 * delta;
+                    pack.leader.rotation.y = -Math.atan2(lz, lx);
+                    pack.leader.userData.currentMoveSpeed = 12;
+                } else {
+                    // Attached! Neck bite
+                    if (!pack.currentHunt._leaderAttached) {
+                        pack.currentHunt._leaderAttached = true;
+                        console.log('Pack leader latches onto oxen\'s neck!');
+                    }
+                    // Stay attached — move with oxen
+                    pack.leader.position.x = oxen.position.x + 0.8;
+                    pack.leader.position.z = oxen.position.z;
+                    pack.leader.userData.currentMoveSpeed = 0;
+                }
+            }
+
+            // Other dogs pile on
+            pack.members.forEach(function(m) {
+                if (m !== pack.leader && m.userData.lifecycleState === 'hunting_chase') {
+                    var mx = oxen.position.x - m.position.x;
+                    var mz = oxen.position.z - m.position.z;
+                    var mDist = Math.sqrt(mx * mx + mz * mz);
+                    if (mDist > 2) {
+                        m.position.x += (mx / mDist) * 10 * delta;
+                        m.position.z += (mz / mDist) * 10 * delta;
+                        m.rotation.y = -Math.atan2(mz, mx);
+                        m.userData.currentMoveSpeed = 10;
+                    }
+                }
+            });
+
+            // Oxen HP drains from neck bite + pack biting
+            oxen.userData.health -= 12 * delta;
+        }
+
+        // Phase 3 (3-5s): Oxen falls, becomes carcass, pack feasts
+        if (t >= 3) {
+            if (!pack.currentHunt._oxenDead) {
+                // Oxen dies
+                oxen.userData.health = 0;
+                oxen.userData.lifecycleState = 'dead';
+                oxen.userData._huntedByPack = null;
+
+                // Remove from herd
+                if (GameState.balubanOxenHerds) {
+                    GameState.balubanOxenHerds.forEach(function(herd) {
+                        var oIdx = herd.members.indexOf(oxen);
+                        if (oIdx > -1) herd.members.splice(oIdx, 1);
+                        if (herd.leader === oxen) {
+                            var males = herd.members.filter(function(m) {
+                                return m.userData.gender === 'male' && !m.userData.isBaby;
+                            });
+                            if (males.length > 0) {
+                                herd.leader = males[0];
+                                males[0].userData.isLeader = true;
+                                rebuildOxenModel(males[0], true);
+                            }
+                        }
+                    });
+                }
+
+                convertToCarcass(oxen);
+                pack.currentHunt.carcass = oxen;
+                pack.currentHunt.state = 'eating';
+                pack.currentHunt.eatTimer = 60;
+                pack.currentHunt._oxenDead = true;
+
+                // All hunters eat
+                pack.members.forEach(function(m) {
+                    if (m.userData.lifecycleState === 'hunting_chase') {
+                        m.userData.lifecycleState = 'eating';
+                    }
+                });
+
+                console.log('Oxen falls! Pack feasts on the carcass.');
+            }
+        }
+    }
+
+    /**
+     * Outcome C: Flawless kill — no dog deaths, clean neck bite, fast takedown.
+     */
+    function playOutcomeC_FlawlessKill(pack, oxen, delta) {
+        var t = pack.currentHunt.outcomeTimer;
+
+        // Phase 1 (0-1.5s): Leader gets clean neck bite immediately
+        if (t < 1.5) {
+            if (pack.leader && pack.leader.parent) {
+                var lx = oxen.position.x - pack.leader.position.x;
+                var lz = oxen.position.z - pack.leader.position.z;
+                var lDist = Math.sqrt(lx * lx + lz * lz);
+
+                if (lDist > 1) {
+                    pack.leader.position.x += (lx / lDist) * 14 * delta;
+                    pack.leader.position.z += (lz / lDist) * 14 * delta;
+                    pack.leader.rotation.y = -Math.atan2(lz, lx);
+                    pack.leader.userData.currentMoveSpeed = 14;
+                } else {
+                    if (!pack.currentHunt._leaderAttached) {
+                        pack.currentHunt._leaderAttached = true;
+                        console.log('FLAWLESS! Leader lands a clean neck bite!');
+                    }
+                    pack.leader.position.x = oxen.position.x + 0.8;
+                    pack.leader.position.z = oxen.position.z;
+                }
+            }
+
+            // All other dogs rush in
+            pack.members.forEach(function(m) {
+                if (m !== pack.leader && m.userData.lifecycleState === 'hunting_chase') {
+                    var mx = oxen.position.x - m.position.x;
+                    var mz = oxen.position.z - m.position.z;
+                    var mDist = Math.sqrt(mx * mx + mz * mz);
+                    if (mDist > 1.5) {
+                        m.position.x += (mx / mDist) * 12 * delta;
+                        m.position.z += (mz / mDist) * 12 * delta;
+                        m.rotation.y = -Math.atan2(mz, mx);
+                        m.userData.currentMoveSpeed = 12;
+                    }
+                }
+            });
+
+            // Fast HP drain
+            oxen.userData.health -= 20 * delta;
+        }
+
+        // Phase 2 (1.5s+): Fast takedown → carcass → eat
+        if (t >= 1.5) {
+            if (!pack.currentHunt._oxenDead) {
+                oxen.userData.health = 0;
+                oxen.userData.lifecycleState = 'dead';
+                oxen.userData._huntedByPack = null;
+
+                // Remove from herd
+                if (GameState.balubanOxenHerds) {
+                    GameState.balubanOxenHerds.forEach(function(herd) {
+                        var oIdx = herd.members.indexOf(oxen);
+                        if (oIdx > -1) herd.members.splice(oIdx, 1);
+                        if (herd.leader === oxen) {
+                            var males = herd.members.filter(function(m) {
+                                return m.userData.gender === 'male' && !m.userData.isBaby;
+                            });
+                            if (males.length > 0) {
+                                herd.leader = males[0];
+                                males[0].userData.isLeader = true;
+                                rebuildOxenModel(males[0], true);
+                            }
+                        }
+                    });
+                }
+
+                convertToCarcass(oxen);
+                pack.currentHunt.carcass = oxen;
+                pack.currentHunt.state = 'eating';
+                pack.currentHunt.eatTimer = 60;
+                pack.currentHunt._oxenDead = true;
+
+                pack.members.forEach(function(m) {
+                    if (m.userData.lifecycleState === 'hunting_chase') {
+                        m.userData.lifecycleState = 'eating';
+                    }
+                });
+
+                console.log('FLAWLESS KILL! No dogs lost. Pack feasts.');
+            }
+        }
+    }
+
+    /**
+     * End a snow caninon hunt — reset all members to following.
+     */
+    function endSnowCaninonHunt(pack) {
+        // Check if den has pups — dogs should carry meat back
+        var hasDenPups = pack.den && pack.den.state === 'active' && pack.den.occupants && pack.den.occupants.length > 0;
+
+        pack.members.forEach(function(m) {
+            if (m.userData.lifecycleState === 'hunting_chase' || m.userData.lifecycleState === 'eating') {
+                if (hasDenPups && m.userData.lifecycleState === 'eating' && !m.userData.isBaby) {
+                    // Carry meat back to den!
+                    m.userData.lifecycleState = 'carrying_meat';
+                    m.userData.currentMoveSpeed = 0;
+
+                    // Attach visual meat chunk to head
+                    var dogModel = m.children[0];
+                    if (dogModel && dogModel.userData && dogModel.userData.parts && dogModel.userData.parts.headGroup) {
+                        var meatChunk = new THREE.Mesh(
+                            new THREE.SphereGeometry(0.12, 6, 6),
+                            new THREE.MeshStandardMaterial({ color: 0x8B2500, roughness: 0.8 })
+                        );
+                        meatChunk.position.set(0.15, -0.05, 0); // In front of mouth
+                        meatChunk.name = 'meatChunk';
+                        dogModel.userData.parts.headGroup.add(meatChunk);
+                    }
+                } else {
+                    m.userData.lifecycleState = 'following';
+                    m.userData.currentMoveSpeed = 0;
+                }
+
+                // Reset neck rotation
+                var model = m.children[0];
+                if (model && model.userData && model.userData.parts && model.userData.parts.neckGroup) {
+                    model.userData.parts.neckGroup.rotation.z = 0;
+                }
+            }
+        });
+        pack.currentHunt = null;
+        console.log('Snow Caninon hunt ended.' + (hasDenPups ? ' Dogs carrying meat to den!' : ''));
+    }
+
+    // ========================================================================
+    // SNOW CANINON MATING
+    // ========================================================================
+    /**
+     * Male tries to mate with a female in the same pack.
+     * Conditions: prey abundant (deer within 50 units) and no other pregnant female in pack.
+     */
+    function triggerSnowCaninonMating(pack) {
+        // Check conditions: prey anywhere in biome (deer exist)
+        var hasPrey = false;
+        GameState.enemies.forEach(function(e) {
+            if (e.userData.type === 'deericus_iricus' && e.parent) {
+                hasPrey = true;
+            }
+        });
+        if (!hasPrey) return;
+
+        // Check conditions: no other pregnant female in pack
+        var alreadyPregnant = pack.members.some(function(m) {
+            return m.userData.isPregnant;
+        });
+        if (alreadyPregnant) return;
+
+        // Find eligible female (not pregnant, not mother, not baby)
+        var females = pack.members.filter(function(m) {
+            return m.userData.gender === 'female' && !m.userData.isBaby
+                && !m.userData.isPregnant && !m.userData.isMother;
+        });
+        if (females.length === 0) return;
+
+        // Pick random female
+        var female = females[Math.floor(Math.random() * females.length)];
+
+        // Make her pregnant!
+        female.userData.isPregnant = true;
+        female.userData.gestationTimer = 60; // 1 minute gestation
+
+        // Rebuild model with pregnancy belly
+        var femaleData = ENEMIES.find(function(e) { return e.id === 'snow_caninon_female'; });
+        if (femaleData) {
+            // Remove old model
+            while (female.children.length > 0) {
+                female.remove(female.children[0]);
+            }
+            // Build new model with pregnancy
+            var colors = {};
+            for (var key in femaleData.colors) {
+                var val = femaleData.colors[key];
+                colors[key] = typeof val === 'string' ? parseInt(val.replace('#', ''), 16) : val;
+            }
+            var newModel = buildSnowCaninonModel(colors, false, false, true);
+            female.add(newModel);
+        }
+
+        console.log('Snow Caninon mating! Female is now pregnant (1 min gestation). Female at:', female.position.x.toFixed(1), female.position.z.toFixed(1));
+    }
+
+    // ========================================================================
+    // SNOW CANINON DEN DIGGING + BIRTH (Phase 3)
+    // ========================================================================
+    /**
+     * When a female's gestation is complete, the whole pack digs a den.
+     * After digging (10 seconds), she gives birth to 2 pups.
+     */
+    function initiateSnowCaninonDenDigging(mother, pack) {
+        if (pack.den) return; // Already have a den
+
+        // Pick den location near pack's home
+        var denX = pack.homePosition.x + (Math.random() - 0.5) * 15;
+        var denZ = pack.homePosition.z + (Math.random() - 0.5) * 15;
+
+        // All pack members move to dig site
+        pack.members.forEach(function(dog) {
+            if (!dog.userData.isBaby) {
+                dog.userData.lifecycleState = 'digging_den';
+                dog.userData.digTarget = { x: denX, z: denZ };
+            }
+        });
+
+        // Create den (starts tiny, grows during digging)
+        var den = createSnowCaninonDen(denX, denZ, pack.id, mother.userData.entityId);
+        pack.den = den;
+        pack.digTimer = 10; // 10 seconds of digging
+        pack.diggingMother = mother;
+
+        console.log('Snow Caninon pack digging den at (' + denX.toFixed(1) + ', ' + denZ.toFixed(1) + ')');
+    }
+
+    /**
+     * Create a Snow Caninon den — hole in the ground (like deer burrow but bigger).
+     */
+    function createSnowCaninonDen(x, z, packId, motherId) {
+        var denGroup = new THREE.Group();
+
+        // Snow mound around the entrance
+        var moundGeo = new THREE.CylinderGeometry(3, 3.5, 0.8, 12);
+        var moundMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.9 });
+        var mound = new THREE.Mesh(moundGeo, moundMat);
+        mound.position.y = 0.4;
+        mound.castShadow = true;
+        denGroup.add(mound);
+
+        // Dark entrance hole (bigger than deer burrow)
+        var holeGeo = new THREE.CylinderGeometry(1.0, 0.8, 0.8, 10);
+        var holeMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 1.0 });
+        var hole = new THREE.Mesh(holeGeo, holeMat);
+        hole.position.set(1.5, 0.3, 0);
+        hole.rotation.x = Math.PI / 6;
+        denGroup.add(hole);
+
+        // Dug earth ring
+        var ringGeo = new THREE.TorusGeometry(2.5, 0.25, 6, 16);
+        var ringMat = new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 1.0 });
+        var ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = 0.15;
+        denGroup.add(ring);
+
+        var terrainY = Environment.getTerrainHeight(x, z);
+        denGroup.position.set(x, terrainY + 0.1, z); // Slight elevation so it sits on snow
+        denGroup.scale.set(0.1, 0.1, 0.1); // Starts tiny — grows during digging
+
+        GameState.scene.add(denGroup);
+
+        var denData = {
+            mesh: denGroup,
+            position: { x: x, z: z },
+            entrancePosition: { x: x + 1.5, z: z },
+            id: 'caninon_den_' + Date.now(),
+            packId: packId,
+            motherId: motherId,
+            occupants: [],
+            state: 'building', // building -> active -> removed
+            createdTime: GameState.timeElapsed || 0
+        };
+
+        if (!GameState.snowCaninonDens) GameState.snowCaninonDens = [];
+        GameState.snowCaninonDens.push(denData);
+
+        return denData;
+    }
+
+    /**
+     * Spawn 2 snow caninon pups at den entrance.
+     */
+    function spawnSnowCaninonPups(mother, pack, den) {
+        for (var i = 0; i < 2; i++) {
+            var isMale = Math.random() < 0.5;
+
+            // Pup colors: lighter versions
+            // Male pup = dark grey (like adult female), Female pup = light grey
+            var pupColors = {};
+            if (isMale) {
+                pupColors = {
+                    body: 0x3a3a3a, belly: 0x4a4a4a, chest: 0x333333,
+                    patches: 0x2a2a2a, muzzle: 0x2a2a2a, nose: 0x000000,
+                    eyes: 0xCC8800, eyeGlow: 0x221100, ears: 0x3a3a3a,
+                    earInner: 0x4a3030, legs: 0x2a2a2a, paws: 0x3a3a3a,
+                    tail: 0x3a3a3a, tailTip: 0x4a4a4a
+                };
+            } else {
+                pupColors = {
+                    body: 0x6a6a6a, belly: 0x7a7a7a, chest: 0x5a5a5a,
+                    patches: 0x555555, muzzle: 0x555555, nose: 0x1a1a1a,
+                    eyes: 0xCC8800, eyeGlow: 0x221100, ears: 0x6a6a6a,
+                    earInner: 0x7a5050, legs: 0x555555, paws: 0x6a6a6a,
+                    tail: 0x6a6a6a, tailTip: 0x7a7a7a
+                };
+            }
+
+            var pupModel = buildSnowCaninonModel(pupColors, true, false, false);
+            var pup = new THREE.Group();
+            pup.add(pupModel);
+            // NOTE: Don't scale parent group — buildSnowCaninonModel already uses s=0.5 for babies
+
+            var px = den.entrancePosition.x + (Math.random() - 0.5) * 2;
+            var pz = den.entrancePosition.z + (Math.random() - 0.5) * 2;
+            var terrainY = Environment.getTerrainHeight(px, pz);
+            pup.position.set(px, terrainY + 0.2, pz);
+
+            pup.userData = {
+                id: isMale ? 'snow_caninon_male' : 'snow_caninon_female',
+                type: 'snow_caninon',
+                entityId: 'snowcaninon_pup_' + Date.now() + '_' + Math.random(),
+                gender: isMale ? 'male' : 'female',
+                isLeader: false,
+                isBaby: true,
+                speed: 5,
+                chaseSpeed: 8,
+                damage: 3,
+                radius: 0.3,
+                health: 12,
+                maxHealth: 12,
+                groundY: 0.2,
+                friendly: true,
+                defensive: false,
+                minimapColor: isMale ? '#3a3a3a' : '#6a6a6a',
+                ignoreGravity: true,
+
+                // Pack properties
+                packId: pack.id,
+                isPackAnimal: true,
+
+                // Pup properties
+                mother: mother,
+                den: den,
+                maturityTime: (GameState.timeElapsed || 0) + 180, // 3 min to mature
+
+                // Behavior
+                lifecycleState: 'pup',
+                wanderDir: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
+                wanderTime: 0,
+                walkPhase: Math.random() * Math.PI * 2,
+                currentMoveSpeed: 0
+            };
+
+            GameState.enemies.push(pup);
+            GameState.scene.add(pup);
+            pack.members.push(pup);
+            mother.userData.pups.push(pup);
+
+            console.log('Snow Caninon pup born! (' + (isMale ? 'male - dark grey' : 'female - light grey') + ')');
+        }
+    }
+
+    // ========================================================================
+    // SNOW BALUBAN OXEN — SPAWN + BEHAVIOR (SNOWY MOUNTAINS)
+    // ========================================================================
+    /**
+     * Spawn a herd of Snow Baluban Oxen (musk oxen) in the southern snowy mountains.
+     * @param {number} count - Total herd members (18 = 6M + 12F)
+     * @param {number} herdIndex - Which herd (0 or 1), used for positioning
+     */
+    function spawnBalubanOxenHerd(count, herdIndex) {
+        var maleData = ENEMIES.find(function(e) { return e.id === 'baluban_oxen_male'; });
+        var femaleData = ENEMIES.find(function(e) { return e.id === 'baluban_oxen_female'; });
+        if (!maleData || !femaleData) return;
+
+        // Position: south of snowy biome (positive Z), spread apart
+        var worldSize = SETTINGS.WORLD_SIZE;
+        var herdCenterX = (herdIndex === 0 ? -0.15 : 0.2) * worldSize;
+        var herdCenterZ = 0.3 * worldSize + herdIndex * 30;
+
+        var herdId = 'oxen_herd_' + Date.now() + '_' + herdIndex;
+        var herdMembers = [];
+        var leader = null;
+
+        var numMales = 6;
+        var numFemales = count - numMales; // 12
+
+        // Helper: convert color strings to hex numbers
+        function convColors(data) {
+            var c = {};
+            for (var k in data.colors) {
+                var v = data.colors[k];
+                c[k] = typeof v === 'string' ? parseInt(v.replace('#', ''), 16) : v;
+            }
+            return c;
+        }
+
+        // Spawn males (first = leader)
+        for (var i = 0; i < numMales; i++) {
+            var mx = herdCenterX + (Math.random() - 0.5) * 20;
+            var mz = herdCenterZ + (Math.random() - 0.5) * 20;
+            var isLeader = (i === 0);
+
+            var mcolors = convColors(maleData);
+            var hornScale = isLeader ? 1.5 : maleData.hornSize || 1;
+            var mmodel = buildBalubanOxenModel(mcolors, true, hornScale, false, false);
+            var male = new THREE.Group();
+            male.add(mmodel);
+
+            var msize = maleData.size * (isLeader ? 1.1 : 1);
+            male.scale.set(msize, msize, msize);
+
+            var mterrainY = Environment.getTerrainHeight(mx, mz);
+            male.position.set(mx, mterrainY + maleData.groundY, mz);
+
+            male.userData = {
+                id: isLeader ? 'baluban_oxen_leader' : 'baluban_oxen_male',
+                type: 'baluban_oxen',
+                entityId: 'oxen_' + Date.now() + '_' + Math.random(),
+                gender: 'male',
+                isLeader: isLeader,
+                speed: maleData.speed + Math.random() * (maleData.speedVariation || 0),
+                chaseSpeed: maleData.chaseSpeed || 7,
+                damage: maleData.damage * (isLeader ? 1.1 : 1),
+                radius: maleData.radius,
+                health: maleData.health * (isLeader ? 1.1 : 1),
+                maxHealth: maleData.health * (isLeader ? 1.1 : 1),
+                groundY: maleData.groundY,
+                friendly: true,
+                defensive: true,
+                minimapColor: maleData.minimapColor,
+                ignoreGravity: true,
+
+                // Herd properties
+                herdId: herdId,
+                isHerdAnimal: true,
+                isBaby: false,
+                leader: null, // Set below
+
+                // Mating
+                matingTimer: 60 + Math.random() * 120,
+
+                // Behavior
+                lifecycleState: 'grazing',
+                wanderDir: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
+                wanderTime: 0,
+                walkPhase: Math.random() * Math.PI * 2,
+                currentMoveSpeed: 0,
+                hunger: Math.random() * 30,
+                grazeTimer: 5 + Math.random() * 8
+            };
+
+            GameState.enemies.push(male);
+            GameState.scene.add(male);
+            herdMembers.push(male);
+
+            if (isLeader) {
+                leader = male;
+            }
+        }
+
+        // Spawn females
+        for (var j = 0; j < numFemales; j++) {
+            var fx = herdCenterX + (Math.random() - 0.5) * 20;
+            var fz = herdCenterZ + (Math.random() - 0.5) * 20;
+
+            var fcolors = convColors(femaleData);
+            var fmodel = buildBalubanOxenModel(fcolors, true, femaleData.hornSize || 0.6, false, false);
+            var female = new THREE.Group();
+            female.add(fmodel);
+            female.scale.set(femaleData.size, femaleData.size, femaleData.size);
+
+            var fterrainY = Environment.getTerrainHeight(fx, fz);
+            female.position.set(fx, fterrainY + femaleData.groundY, fz);
+
+            female.userData = {
+                id: 'baluban_oxen_female',
+                type: 'baluban_oxen',
+                entityId: 'oxen_' + Date.now() + '_' + Math.random(),
+                gender: 'female',
+                isLeader: false,
+                speed: femaleData.speed + Math.random() * (femaleData.speedVariation || 0),
+                chaseSpeed: femaleData.chaseSpeed || 7,
+                damage: femaleData.damage,
+                radius: femaleData.radius,
+                health: femaleData.health,
+                maxHealth: femaleData.health,
+                groundY: femaleData.groundY,
+                friendly: true,
+                defensive: true,
+                minimapColor: femaleData.minimapColor,
+                ignoreGravity: true,
+
+                // Herd properties
+                herdId: herdId,
+                isHerdAnimal: true,
+                isBaby: false,
+                leader: null,
+
+                // Female-specific
+                canGetPregnant: true,
+                isPregnant: false,
+                gestationTimer: 0,
+                children: [],
+
+                // Behavior
+                lifecycleState: 'grazing',
+                wanderDir: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
+                wanderTime: 0,
+                walkPhase: Math.random() * Math.PI * 2,
+                currentMoveSpeed: 0,
+                hunger: Math.random() * 30,
+                grazeTimer: 5 + Math.random() * 8
+            };
+
+            GameState.enemies.push(female);
+            GameState.scene.add(female);
+            herdMembers.push(female);
+        }
+
+        // Set leader reference for all
+        if (leader) {
+            herdMembers.forEach(function(m) { m.userData.leader = leader; });
+        }
+
+        // Store herd
+        if (!GameState.balubanOxenHerds) GameState.balubanOxenHerds = [];
+        GameState.balubanOxenHerds.push({
+            id: herdId,
+            leader: leader,
+            members: herdMembers,
+            maxSize: 40,
+            matingTimer: 0
+        });
+
+        console.log('Spawned Baluban Oxen herd: ' + herdMembers.length + ' members (6M + 12F) at (' +
+            herdCenterX.toFixed(0) + ', ' + herdCenterZ.toFixed(0) + ')');
+    }
+
+    // ========================================================================
+    // BALUBAN OXEN BEHAVIOR UPDATE
+    // ========================================================================
+    /**
+     * Update all Baluban Oxen herds each frame.
+     */
+    function updateBalubanOxenBehavior(delta) {
+        if (!GameState.balubanOxenHerds || GameState.balubanOxenHerds.length === 0) return;
+
+        GameState.balubanOxenHerds.forEach(function(herd) {
+            // Remove dead members
+            herd.members = herd.members.filter(function(ox) {
+                return ox.parent && ox.userData.health > 0;
+            });
+            if (herd.members.length === 0) return;
+
+            // Promote new leader if needed
+            if (!herd.leader || !herd.leader.parent || herd.leader.userData.health <= 0) {
+                var newLeader = herd.members.find(function(m) { return m.userData.gender === 'male' && !m.userData.isBaby; });
+                if (!newLeader) newLeader = herd.members.find(function(m) { return !m.userData.isBaby; });
+                if (newLeader) {
+                    herd.leader = newLeader;
+                    newLeader.userData.isLeader = true;
+                    herd.members.forEach(function(m) { m.userData.leader = newLeader; });
+                }
+            }
+
+            // Update each member
+            herd.members.forEach(function(ox) {
+                if (!ox.parent || ox.userData.health <= 0) return;
+
+                var state = ox.userData.lifecycleState;
+
+                // Terrain Y update
+                var terrainY = Environment.getTerrainHeight(ox.position.x, ox.position.z);
+                ox.position.y = terrainY + (ox.userData.groundY || 0.55);
+
+                if (state === 'grazing') {
+                    updateOxenGrazing(ox, herd, delta);
+
+                    // Pregnancy countdown (females)
+                    if (ox.userData.isPregnant) {
+                        ox.userData.gestationTimer -= delta;
+                        if (ox.userData.gestationTimer <= 0) {
+                            // Birth!
+                            ox.userData.isPregnant = false;
+                            rebuildOxenWithBelly(ox, false);
+                            spawnBabyBalubanOxen(ox, herd);
+                        }
+                    }
+                } else if (state === 'baby') {
+                    updateOxenBaby(ox, herd, delta);
+
+                    // Maturity check
+                    var currentTime = GameState.timeElapsed || 0;
+                    if (ox.userData.maturityTime && currentTime >= ox.userData.maturityTime) {
+                        growBabyOxen(ox, herd);
+                    }
+                } else if (state === 'rutting_approach') {
+                    updateOxenRuttingApproach(ox, delta);
+                } else if (state === 'rutting_lock') {
+                    updateOxenRuttingLock(ox, delta);
+                } else if (state === 'seeking_mate') {
+                    updateOxenSeekingMate(ox, delta);
+                } else if (state === 'being_hunted') {
+                    updateOxenBeingHunted(ox, delta);
+                } else if (state === 'standoff') {
+                    // Standoff handled at pack level (Phase 6)
+                    ox.userData.currentMoveSpeed = 0;
+                }
+
+                // Walking animation (all visible oxen)
+                if (ox.visible !== false) {
+                    animateBalubanOxen(ox, delta);
+                }
+            });
+        });
+    }
+
+    /**
+     * Grazing state: leader wanders slowly, others follow within 50 units.
+     * All oxen cycle through: idle wandering → seeking grass → eating → back to idle.
+     */
+    function updateOxenGrazing(ox, herd, delta) {
+        var speed = ox.userData.speed;
+
+        // ---- Hunger system ----
+        if (ox.userData.hunger === undefined) ox.userData.hunger = 30;
+        ox.userData.hunger += delta * 1.5; // Hunger builds over time
+        if (ox.userData.hunger > 100) ox.userData.hunger = 100;
+
+        // ---- Eating state: head down, eating grass ----
+        if (ox.userData._isEating) {
+            ox.userData.currentMoveSpeed = 0;
+            ox.userData.grazeTimer -= delta;
+
+            // Eat from grass tuft periodically
+            if (ox.userData.currentGrass && ox.userData.currentGrass.userData.size > 0) {
+                ox.userData._eatTick = (ox.userData._eatTick || 0) + delta;
+                if (ox.userData._eatTick >= 0.5) {
+                    ox.userData._eatTick = 0;
+                    Environment.eatGrassTuft(ox.userData.currentGrass, ox);
+                }
+            }
+
+            // Head-down animation (smooth)
+            var oxModel = ox.children[0];
+            if (oxModel && oxModel.userData.parts && oxModel.userData.parts.neckGroup) {
+                var neckTarget = 0.6; // tilt down
+                oxModel.userData.parts.neckGroup.rotation.z += (neckTarget - oxModel.userData.parts.neckGroup.rotation.z) * 0.05;
+            }
+
+            // Done eating?
+            if (ox.userData.grazeTimer <= 0 || ox.userData.hunger < 15 ||
+                !ox.userData.currentGrass || ox.userData.currentGrass.userData.size <= 0) {
+                ox.userData._isEating = false;
+                ox.userData.currentGrass = null;
+                ox.userData.grazeTimer = 8 + Math.random() * 10;
+            }
+            return;
+        }
+
+        // ---- Seeking grass state ----
+        if (ox.userData._seekingGrass) {
+            var grass = ox.userData._targetGrass;
+            if (!grass || grass.userData.size < 0.3) {
+                ox.userData._seekingGrass = false;
+                ox.userData._targetGrass = null;
+                return;
+            }
+
+            var gdx = grass.position.x - ox.position.x;
+            var gdz = grass.position.z - ox.position.z;
+            var gDist = Math.sqrt(gdx * gdx + gdz * gdz);
+
+            if (gDist < 1.5) {
+                // Arrived at grass — start eating
+                ox.userData._seekingGrass = false;
+                ox.userData._isEating = true;
+                ox.userData.currentGrass = grass;
+                ox.userData.grazeTimer = 5 + Math.random() * 8;
+                ox.userData._eatTick = 0;
+            } else {
+                // Walk toward grass (but not too far from leader)
+                var walkSpeed = speed * 0.4;
+                ox.position.x += (gdx / gDist) * walkSpeed * delta;
+                ox.position.z += (gdz / gDist) * walkSpeed * delta;
+                ox.rotation.y = -Math.atan2(gdz, gdx);
+                ox.userData.currentMoveSpeed = walkSpeed;
+
+                // If grass is >60 from leader, give up
+                if (ox.userData.leader && ox.userData.leader.parent) {
+                    var lx = ox.userData.leader.position.x - grass.position.x;
+                    var lz = ox.userData.leader.position.z - grass.position.z;
+                    if (lx * lx + lz * lz > 60 * 60) {
+                        ox.userData._seekingGrass = false;
+                        ox.userData._targetGrass = null;
+                    }
+                }
+            }
+            return;
+        }
+
+        // ---- Hungry? Seek grass ----
+        if (ox.userData.hunger > 60) {
+            var nearestGrass = findNearestGrassTuft(ox);
+            if (nearestGrass) {
+                ox.userData._seekingGrass = true;
+                ox.userData._targetGrass = nearestGrass;
+                return;
+            }
+        }
+
+        // ---- Normal wandering / following ----
+        // Raise head back up (smooth)
+        var oxModel2 = ox.children[0];
+        if (oxModel2 && oxModel2.userData.parts && oxModel2.userData.parts.neckGroup) {
+            oxModel2.userData.parts.neckGroup.rotation.z *= 0.95; // Smoothly return to neutral
+        }
+
+        if (ox.userData.isLeader) {
+            // Leader: wander slowly
+            ox.userData.wanderTime -= delta;
+            if (ox.userData.wanderTime <= 0) {
+                ox.userData.wanderDir.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                ox.userData.wanderTime = 10 + Math.random() * 15;
+            }
+
+            var moveSpeed = speed * 0.3;
+            ox.position.x += ox.userData.wanderDir.x * moveSpeed * delta;
+            ox.position.z += ox.userData.wanderDir.z * moveSpeed * delta;
+            ox.userData.currentMoveSpeed = moveSpeed;
+
+            // Stay in the southern half of the biome
+            var worldSize = SETTINGS.WORLD_SIZE;
+            var halfWorld = worldSize / 2;
+            if (ox.position.x < -halfWorld + 20 || ox.position.x > halfWorld - 20 ||
+                ox.position.z < 0 || ox.position.z > halfWorld - 20) {
+                ox.userData.wanderDir.set(-ox.position.x * 0.01, 0, (0.3 * worldSize - ox.position.z) * 0.01).normalize();
+                ox.userData.wanderTime = 5;
+            }
+        } else {
+            // Non-leaders: stay within 50 units of leader
+            var leader = ox.userData.leader;
+            if (!leader || !leader.parent) {
+                ox.userData.currentMoveSpeed = 0;
+                return;
+            }
+
+            var ldx = leader.position.x - ox.position.x;
+            var ldz = leader.position.z - ox.position.z;
+            var lDist = Math.sqrt(ldx * ldx + ldz * ldz);
+
+            if (lDist > 50) {
+                var sprintSpeed = speed * 1.5;
+                ox.position.x += (ldx / lDist) * sprintSpeed * delta;
+                ox.position.z += (ldz / lDist) * sprintSpeed * delta;
+                ox.userData.currentMoveSpeed = sprintSpeed;
+            } else if (lDist > 25) {
+                ox.position.x += (ldx / lDist) * speed * 0.5 * delta;
+                ox.position.z += (ldz / lDist) * speed * 0.5 * delta;
+                ox.userData.currentMoveSpeed = speed * 0.5;
+            } else {
+                ox.userData.wanderTime -= delta;
+                if (ox.userData.wanderTime <= 0) {
+                    ox.userData.wanderDir.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    ox.userData.wanderTime = 5 + Math.random() * 10;
+                }
+                var wanderSpeed = speed * 0.2;
+                ox.position.x += ox.userData.wanderDir.x * wanderSpeed * delta;
+                ox.position.z += ox.userData.wanderDir.z * wanderSpeed * delta;
+                ox.userData.currentMoveSpeed = wanderSpeed;
+            }
+        }
+
+        // Face movement direction
+        if (ox.userData.currentMoveSpeed > 0.3) {
+            var targetRot = -Math.atan2(ox.userData.wanderDir.z, ox.userData.wanderDir.x);
+            ox.rotation.y += (targetRot - ox.rotation.y) * 0.05;
+        }
+    }
+
+    /**
+     * Baby oxen follow their mother closely.
+     */
+    function updateOxenBaby(baby, herd, delta) {
+        var mother = baby.userData.mother;
+        if (!mother || !mother.parent || mother.userData.health <= 0) {
+            // Orphan — follow leader instead
+            baby.userData.lifecycleState = 'grazing';
+            return;
+        }
+
+        var mdx = mother.position.x - baby.position.x;
+        var mdz = mother.position.z - baby.position.z;
+        var mDist = Math.sqrt(mdx * mdx + mdz * mdz);
+
+        if (mDist > 4) {
+            // Catch up to mother
+            var catchSpeed = baby.userData.speed * 1.2;
+            baby.position.x += (mdx / mDist) * catchSpeed * delta;
+            baby.position.z += (mdz / mDist) * catchSpeed * delta;
+            baby.userData.currentMoveSpeed = catchSpeed;
+        } else if (mDist > 2) {
+            // Walk toward mother
+            baby.position.x += (mdx / mDist) * baby.userData.speed * 0.5 * delta;
+            baby.position.z += (mdz / mDist) * baby.userData.speed * 0.5 * delta;
+            baby.userData.currentMoveSpeed = baby.userData.speed * 0.5;
+        } else {
+            // Close — idle near mother
+            baby.userData.currentMoveSpeed = 0;
+        }
+
+        // Face direction of movement
+        if (baby.userData.currentMoveSpeed > 0.2) {
+            baby.rotation.y = -Math.atan2(mdz, mdx);
+        }
+    }
+
+    /**
+     * Being hunted: oxen flees from the pack, takes nip damage, kicks back on leg bites.
+     * Transitions to 'standoff' when the pack's nipping timer expires or HP is low.
+     */
+    function updateOxenBeingHunted(ox, delta) {
+        var pack = ox.userData._huntedByPack;
+        if (!pack || !pack.currentHunt || !pack.currentHunt.target) {
+            // Hunt ended — return to grazing
+            ox.userData.lifecycleState = 'grazing';
+            ox.userData._huntedByPack = null;
+            ox.userData._fleeDir = null;
+            ox.userData._legBitten = false;
+            return;
+        }
+
+        // Determine flee direction — away from the 'behind' dog
+        var behindDog = null;
+        pack.members.forEach(function(m) {
+            if (m.userData.huntRole === 'behind' && m.userData.lifecycleState === 'hunting_chase') {
+                behindDog = m;
+            }
+        });
+
+        if (behindDog) {
+            // Flee away from behind dog
+            var fx = ox.position.x - behindDog.position.x;
+            var fz = ox.position.z - behindDog.position.z;
+            var fDist = Math.sqrt(fx * fx + fz * fz);
+            if (fDist > 0.1) {
+                ox.userData._fleeDir = { x: fx / fDist, z: fz / fDist };
+            }
+        }
+
+        // Apply speed — normal or leg-bitten slow
+        var baseSpeed = ox.userData.speed || 4;
+        var moveSpeed = baseSpeed * 1.4; // Panicked sprint
+
+        // Leg bite slowdown
+        if (ox.userData._legBitten) {
+            moveSpeed = baseSpeed * 0.3; // Dramatic slow when bitten
+            ox.userData._legBiteTimer -= delta;
+
+            // Kick-back animation — rear legs kick outward
+            var oxModel = ox.children[0] || ox;
+            if (oxModel.userData && oxModel.userData.legs) {
+                oxModel.userData.legs.forEach(function(leg) {
+                    if (!leg.isFront) {
+                        leg.group.rotation.z = -0.5; // Kick backward
+                    }
+                });
+            }
+
+            if (ox.userData._legBiteTimer <= 0) {
+                ox.userData._legBitten = false;
+                // Reset leg rotation
+                var resetModel = ox.children[0] || ox;
+                if (resetModel.userData && resetModel.userData.legs) {
+                    resetModel.userData.legs.forEach(function(leg) {
+                        if (!leg.isFront) {
+                            leg.group.rotation.z = 0;
+                        }
+                    });
+                }
+            }
+        }
+
+        ox.userData.currentMoveSpeed = moveSpeed;
+
+        // Move in flee direction
+        var fleeDir = ox.userData._fleeDir;
+        if (fleeDir) {
+            ox.position.x += fleeDir.x * moveSpeed * delta;
+            ox.position.z += fleeDir.z * moveSpeed * delta;
+            ox.rotation.y = -Math.atan2(fleeDir.z, fleeDir.x);
+        }
+
+        // Terrain height
+        var terrainY = Environment.getTerrainHeight(ox.position.x, ox.position.z);
+        ox.position.y = terrainY + (ox.userData.groundY || 0.55);
+
+        // Keep within world bounds
+        var half = (window.WORLD_SIZE || 200) / 2;
+        ox.position.x = Math.max(-half + 5, Math.min(half - 5, ox.position.x));
+        ox.position.z = Math.max(-half + 5, Math.min(half - 5, ox.position.z));
+
+        // Nipping timer countdown (pack level — checked once per frame via the first hunted oxen)
+        if (pack.currentHunt.state === 'nipping') {
+            pack.currentHunt.nippingTimer -= delta;
+
+            var hpPercent = ox.userData.health / (ox.userData.maxHealth || 60);
+            if (pack.currentHunt.nippingTimer <= 0 || hpPercent < 0.5) {
+                // Transition to standoff
+                pack.currentHunt.state = 'standoff';
+                ox.userData.lifecycleState = 'standoff';
+                ox.userData.currentMoveSpeed = 0;
+                console.log('Oxen enters STANDOFF! HP: ' + ox.userData.health + '/' + (ox.userData.maxHealth || 60));
+            }
+        }
+    }
+
+    /**
+     * Walking animation for Baluban Oxen — heavy, lumbering gait.
+     */
+    function animateBalubanOxen(ox, delta) {
+        var oxModel = ox;
+        if (!ox.userData.legs && ox.children.length > 0) oxModel = ox.children[0];
+        if (!oxModel.userData || !oxModel.userData.legs) return;
+
+        var legs = oxModel.userData.legs;
+        var moveSpeed = ox.userData.currentMoveSpeed || 0;
+
+        if (!ox.userData._walkCycle) ox.userData._walkCycle = 0;
+
+        if (moveSpeed > 0.3) {
+            // Walking — slow, heavy gait
+            ox.userData._walkCycle += delta * moveSpeed * 2.0;
+            var cycle = ox.userData._walkCycle;
+
+            legs.forEach(function(leg) {
+                var phase = leg.isFront ? 0 : Math.PI;
+                var sidePhase = leg.side === 'right' ? Math.PI : 0;
+                var legCycle = cycle + phase + sidePhase;
+
+                // Forward/backward swing on Z axis (faces +X)
+                leg.group.rotation.z = Math.sin(legCycle) * 0.2; // Smaller swing for heavy animal
+                if (leg.lowerLegGroup) {
+                    leg.lowerLegGroup.rotation.z = Math.max(0, Math.sin(legCycle + 0.5)) * 0.15;
+                }
+            });
+
+            // Heavy body bob
+            oxModel.position.y = Math.sin(ox.userData._walkCycle * 2) * 0.01;
+        } else {
+            // Idle — return to neutral
+            legs.forEach(function(leg) {
+                leg.group.rotation.z *= 0.9;
+                if (leg.lowerLegGroup) leg.lowerLegGroup.rotation.z *= 0.9;
+            });
+            oxModel.position.y *= 0.9;
+        }
+
+        // Tail gentle sway
+        if (oxModel.userData.parts && oxModel.userData.parts.tailGroup) {
+            oxModel.userData.parts.tailGroup.rotation.y = Math.sin(Date.now() * 0.002) * 0.15;
+        }
+    }
+
+    // ========================================================================
+    // BALUBAN OXEN MATING + RUTTING (Phase 3)
+    // ========================================================================
+
+    /**
+     * Trigger mating season for all oxen herds.
+     * Males compete for females through horn-locking ruts.
+     */
+    function triggerBalubanOxenMating() {
+        if (!GameState.balubanOxenHerds) return;
+
+        GameState.balubanOxenHerds.forEach(function(herd) {
+            if (herd.members.length < 3) return;
+
+            // Initialize female ownership — leader gets more
+            initializeOxenFemaleOwnership(herd);
+
+            // Find challenger (male with fewest females)
+            var males = herd.members.filter(function(m) {
+                return m.userData.gender === 'male' && !m.userData.isBaby &&
+                    m.userData.lifecycleState === 'grazing';
+            });
+            if (males.length < 2) return;
+
+            // Count females per male
+            males.forEach(function(m) {
+                m.userData._femaleCount = 0;
+            });
+            herd.members.forEach(function(f) {
+                if (f.userData.owner) f.userData.owner.userData._femaleCount =
+                    (f.userData.owner.userData._femaleCount || 0) + 1;
+            });
+
+            // Sort: males with fewest females are most eager
+            males.sort(function(a, b) { return (a.userData._femaleCount || 0) - (b.userData._femaleCount || 0); });
+
+            var challenger = males[0];
+            if (!challenger || challenger.userData.isLeader) return; // Leader won't challenge himself
+
+            // Find a female to fight over (preferably from another male)
+            var targetFemale = herd.members.find(function(f) {
+                return f.userData.gender === 'female' && !f.userData.isBaby &&
+                    !f.userData.isPregnant && f.userData.owner &&
+                    f.userData.owner !== challenger;
+            });
+            if (!targetFemale) return;
+
+            var defender = targetFemale.userData.owner;
+            if (!defender || !defender.parent || defender.userData.isBaby) return;
+
+            // Start the rut!
+            challenger.userData.lifecycleState = 'rutting_approach';
+            challenger.userData.ruttingRival = defender;
+            challenger.userData.ruttingFemale = targetFemale;
+            challenger.userData.isChallenger = true;
+
+            defender.userData.lifecycleState = 'rutting_approach';
+            defender.userData.ruttingRival = challenger;
+            defender.userData.ruttingFemale = targetFemale;
+            defender.userData.isChallenger = false;
+
+            console.log('Baluban Oxen rutting! Challenger vs ' + (defender.userData.isLeader ? 'Leader' : 'Male'));
+        });
+    }
+
+    /**
+     * Distribute females among males for breeding ownership.
+     */
+    function initializeOxenFemaleOwnership(herd) {
+        var males = herd.members.filter(function(m) {
+            return m.userData.gender === 'male' && !m.userData.isBaby;
+        });
+        var females = herd.members.filter(function(f) {
+            return f.userData.gender === 'female' && !f.userData.isBaby;
+        });
+        if (males.length === 0) return;
+
+        // Leader gets ~50% of females
+        var leader = herd.leader;
+        var leaderShare = Math.ceil(females.length * 0.5);
+        var otherMales = males.filter(function(m) { return m !== leader; });
+
+        females.forEach(function(f, idx) {
+            if (idx < leaderShare) {
+                f.userData.owner = leader;
+            } else if (otherMales.length > 0) {
+                f.userData.owner = otherMales[(idx - leaderShare) % otherMales.length];
+            }
+        });
+    }
+
+    /**
+     * Rutting approach: two males walk toward each other.
+     */
+    function updateOxenRuttingApproach(ox, delta) {
+        var rival = ox.userData.ruttingRival;
+        if (!rival || !rival.parent || rival.userData.health <= 0) {
+            ox.userData.lifecycleState = 'grazing';
+            ox.userData.ruttingRival = null;
+            return;
+        }
+
+        var dx = rival.position.x - ox.position.x;
+        var dz = rival.position.z - ox.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        ox.rotation.y = -Math.atan2(dz, dx);
+        ox.userData.currentMoveSpeed = ox.userData.speed * 0.6;
+
+        if (dist > 3) {
+            ox.position.x += (dx / dist) * ox.userData.speed * 0.6 * delta;
+            ox.position.z += (dz / dist) * ox.userData.speed * 0.6 * delta;
+        } else {
+            // Close enough — lock horns!
+            ox.userData.lifecycleState = 'rutting_lock';
+            ox.userData.ruttingTimer = 10 + Math.random() * 5;
+            ox.userData.ruttingPushPhase = 0;
+
+            if (rival.userData.lifecycleState === 'rutting_approach') {
+                rival.userData.lifecycleState = 'rutting_lock';
+                rival.userData.ruttingTimer = ox.userData.ruttingTimer;
+                rival.userData.ruttingPushPhase = 0;
+            }
+        }
+    }
+
+    /**
+     * Rutting lock: horns locked, pushing back and forth.
+     * Only the challenger processes the logic to avoid double-counting.
+     */
+    function updateOxenRuttingLock(ox, delta) {
+        if (!ox.userData.isChallenger) {
+            ox.userData.currentMoveSpeed = 0;
+            return; // Defender waits for challenger logic
+        }
+
+        var rival = ox.userData.ruttingRival;
+        if (!rival || !rival.parent) {
+            ox.userData.lifecycleState = 'grazing';
+            return;
+        }
+
+        ox.userData.ruttingTimer -= delta;
+        ox.userData.ruttingPushPhase += delta * 3;
+
+        // Push animation
+        var pushAmount = Math.sin(ox.userData.ruttingPushPhase) * 0.3;
+        var dx = rival.position.x - ox.position.x;
+        var dz = rival.position.z - ox.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 0.1) dist = 0.1;
+
+        var pushDirX = dx / dist;
+        var pushDirZ = dz / dist;
+
+        ox.position.x += pushDirX * pushAmount * delta * 2;
+        ox.position.z += pushDirZ * pushAmount * delta * 2;
+        rival.position.x -= pushDirX * pushAmount * delta * 2;
+        rival.position.z -= pushDirZ * pushAmount * delta * 2;
+
+        // Face each other
+        ox.rotation.y = -Math.atan2(dz, dx);
+        rival.rotation.y = -Math.atan2(-dz, -dx);
+
+        ox.userData.currentMoveSpeed = 0;
+        rival.userData.currentMoveSpeed = 0;
+
+        // Head strain animation
+        var oxModel = ox.children[0];
+        var rivalModel = rival.children[0];
+        if (oxModel && oxModel.userData.parts && oxModel.userData.parts.neckGroup) {
+            oxModel.userData.parts.neckGroup.rotation.z = 0.4 + pushAmount * 0.3;
+            oxModel.position.y = Math.abs(Math.sin(ox.userData.ruttingPushPhase * 2)) * 0.05;
+        }
+        if (rivalModel && rivalModel.userData.parts && rivalModel.userData.parts.neckGroup) {
+            rivalModel.userData.parts.neckGroup.rotation.z = 0.4 - pushAmount * 0.3;
+            rivalModel.position.y = Math.abs(Math.sin(ox.userData.ruttingPushPhase * 2 + Math.PI)) * 0.05;
+        }
+
+        // Battle resolved?
+        if (ox.userData.ruttingTimer <= 0) {
+            // Winner: challenger has 50% chance vs regular, 40% vs leader
+            var winChance = rival.userData.isLeader ? 0.4 : 0.5;
+            var winner = Math.random() < winChance ? ox : rival;
+            var loser = winner === ox ? rival : ox;
+
+            // Find the herd
+            var herd = GameState.balubanOxenHerds.find(function(h) {
+                return h.members.indexOf(ox) > -1;
+            });
+            if (herd) handleOxenRuttingOutcome(winner, loser, herd, ox.userData.ruttingFemale);
+
+            // Reset both
+            [ox, rival].forEach(function(m) {
+                m.userData.lifecycleState = 'grazing';
+                m.userData.ruttingRival = null;
+                m.userData.ruttingFemale = null;
+                m.userData.ruttingTimer = 0;
+                m.userData.ruttingPushPhase = 0;
+                m.userData.isChallenger = false;
+                // Reset neck position
+                var mdl = m.children[0];
+                if (mdl && mdl.userData.parts && mdl.userData.parts.neckGroup) {
+                    mdl.userData.parts.neckGroup.rotation.z = 0;
+                }
+                mdl.position.y = 0;
+            });
+        }
+    }
+
+    /**
+     * Handle the result of an oxen rut.
+     */
+    function handleOxenRuttingOutcome(winner, loser, herd, contestedFemale) {
+        // Transfer loser's females to winner
+        herd.members.forEach(function(f) {
+            if (f.userData.owner === loser) {
+                f.userData.owner = winner;
+            }
+        });
+
+        // Leadership change?
+        if (loser.userData.isLeader) {
+            loser.userData.isLeader = false;
+            winner.userData.isLeader = true;
+            herd.leader = winner;
+            herd.members.forEach(function(m) { m.userData.leader = winner; });
+
+            // Rebuild horns: loser gets normal, winner gets big
+            rebuildOxenModel(loser, false);
+            rebuildOxenModel(winner, true);
+
+            console.log('Oxen leadership change! New leader established.');
+        }
+
+        // Contested female mates with winner
+        if (contestedFemale && contestedFemale.parent && !contestedFemale.userData.isPregnant &&
+            contestedFemale.userData.canGetPregnant) {
+            contestedFemale.userData.owner = winner;
+            contestedFemale.userData.lifecycleState = 'seeking_mate';
+            contestedFemale.userData.targetMate = winner;
+        }
+
+        console.log('Rut resolved! Winner: ' + (winner.userData.isLeader ? 'Leader' : 'Male'));
+    }
+
+    /**
+     * Rebuild an oxen's model (for horn scale change on leadership change).
+     */
+    function rebuildOxenModel(ox, isLeader) {
+        var dataId = ox.userData.gender === 'male' ? 'baluban_oxen_male' : 'baluban_oxen_female';
+        var data = ENEMIES.find(function(e) { return e.id === dataId; });
+        if (!data) return;
+
+        while (ox.children.length > 0) ox.remove(ox.children[0]);
+
+        var colors = {};
+        for (var k in data.colors) {
+            var v = data.colors[k];
+            colors[k] = typeof v === 'string' ? parseInt(v.replace('#', ''), 16) : v;
+        }
+
+        var hornScale = isLeader ? 1.5 : (data.hornSize || 1);
+        var newModel = buildBalubanOxenModel(colors, true, hornScale, false, ox.userData.isPregnant || false);
+        ox.add(newModel);
+
+        var size = data.size * (isLeader ? 1.1 : 1);
+        ox.scale.set(size, size, size);
+    }
+
+    /**
+     * Seeking mate: female walks toward the winner male.
+     */
+    function updateOxenSeekingMate(ox, delta) {
+        var target = ox.userData.targetMate;
+        if (!target || !target.parent) {
+            ox.userData.lifecycleState = 'grazing';
+            return;
+        }
+
+        var dx = target.position.x - ox.position.x;
+        var dz = target.position.z - ox.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist < 2) {
+            // Mating happens!
+            ox.userData.isPregnant = true;
+            ox.userData.gestationTimer = 420; // 7 minutes
+            ox.userData.lastMate = target;
+            ox.userData.lifecycleState = 'grazing';
+            ox.userData.targetMate = null;
+
+            // Rebuild model with pregnancy belly
+            rebuildOxenWithBelly(ox, true);
+
+            console.log('Oxen mating! Female pregnant (7 min gestation)');
+        } else {
+            ox.position.x += (dx / dist) * ox.userData.speed * 0.7 * delta;
+            ox.position.z += (dz / dist) * ox.userData.speed * 0.7 * delta;
+            ox.rotation.y = -Math.atan2(dz, dx);
+            ox.userData.currentMoveSpeed = ox.userData.speed * 0.7;
+        }
+    }
+
+    /**
+     * Rebuild oxen model to show/hide pregnancy belly.
+     */
+    function rebuildOxenWithBelly(ox, showBelly) {
+        var data = ENEMIES.find(function(e) { return e.id === 'baluban_oxen_female'; });
+        if (!data) return;
+
+        while (ox.children.length > 0) ox.remove(ox.children[0]);
+
+        var colors = {};
+        for (var k in data.colors) {
+            var v = data.colors[k];
+            colors[k] = typeof v === 'string' ? parseInt(v.replace('#', ''), 16) : v;
+        }
+
+        var newModel = buildBalubanOxenModel(colors, true, data.hornSize || 0.6, false, showBelly);
+        ox.add(newModel);
+    }
+
+    /**
+     * Spawn a baby oxen (calf).
+     */
+    function spawnBabyBalubanOxen(mother, herd) {
+        var isMale = Math.random() < 0.5;
+
+        // Baby colors: male = mud brown, female = potato
+        var babyColors;
+        if (isMale) {
+            babyColors = {
+                body: 0x8B6914, belly: 0x9B7924, chest: 0x7B5904,
+                shoulder: 0x6B4904, rump: 0x8B6914, muzzle: 0x5A3A0A,
+                nose: 0x1A1A1A, eyes: 0x1A1A1A, ears: 0x7B5904,
+                earInner: 0x9A6A3A, legs: 0x6B4904, hooves: 0x1A1A1A,
+                horns: 0x3D2817, tail: 0x6B4904, skirt: 0x5A3A0A
+            };
+        } else {
+            babyColors = {
+                body: 0xC4A76C, belly: 0xD4B77C, chest: 0xB4975C,
+                shoulder: 0xA48750, rump: 0xC4A76C, muzzle: 0x8A6740,
+                nose: 0x1A1A1A, eyes: 0x1A1A1A, ears: 0xB4975C,
+                earInner: 0xC4A76C, legs: 0xA48750, hooves: 0x1A1A1A,
+                horns: 0x3D2817, tail: 0xA48750, skirt: 0x8A6740
+            };
+        }
+
+        var babyModel = buildBalubanOxenModel(babyColors, false, 0, true, false);
+        var baby = new THREE.Group();
+        baby.add(babyModel);
+        // Don't scale parent — builder already handles baby size with s=0.5
+
+        var bx = mother.position.x + (Math.random() - 0.5) * 3;
+        var bz = mother.position.z + (Math.random() - 0.5) * 3;
+        var terrainY = Environment.getTerrainHeight(bx, bz);
+        baby.position.set(bx, terrainY + 0.25, bz);
+
+        // Track father for lineage
+        var father = mother.userData.lastMate;
+        var fatherIsLeader = (father && father.userData.isLeader);
+
+        baby.userData = {
+            id: isMale ? 'baluban_oxen_male' : 'baluban_oxen_female',
+            type: 'baluban_oxen',
+            entityId: 'oxen_baby_' + Date.now() + '_' + Math.random(),
+            gender: isMale ? 'male' : 'female',
+            isLeader: false,
+            speed: 3,
+            chaseSpeed: 5,
+            damage: 3,
+            radius: 0.4,
+            health: 15,
+            maxHealth: 15,
+            groundY: 0.25,
+            friendly: true,
+            defensive: false,
+            minimapColor: isMale ? '#8B6914' : '#C4A76C',
+            ignoreGravity: true,
+
+            herdId: herd.id,
+            isHerdAnimal: true,
+            isBaby: true,
+            mother: mother,
+            leader: herd.leader,
+            fatherWasLeader: fatherIsLeader,
+
+            lifecycleState: 'baby',
+            maturityTime: (GameState.timeElapsed || 0) + 360, // 6 min to mature
+            wanderDir: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
+            wanderTime: 0,
+            walkPhase: Math.random() * Math.PI * 2,
+            currentMoveSpeed: 0,
+            hunger: 0
+        };
+
+        GameState.enemies.push(baby);
+        GameState.scene.add(baby);
+        herd.members.push(baby);
+        if (!mother.userData.children) mother.userData.children = [];
+        mother.userData.children.push(baby);
+
+        console.log('Oxen calf born! (' + (isMale ? 'male - mud brown' : 'female - potato') +
+            (fatherIsLeader ? ' - LEADER\'S CHILD' : '') + ')');
+    }
+
+    // ========================================================================
+    // BALUBAN OXEN MATURITY + HERD SPLITTING (Phase 4)
+    // ========================================================================
+
+    /**
+     * Grow a baby oxen to adult.
+     */
+    function growBabyOxen(baby, herd) {
+        var isMale = baby.userData.gender === 'male';
+
+        // Get adult data
+        var dataId = isMale ? 'baluban_oxen_male' : 'baluban_oxen_female';
+        var data = ENEMIES.find(function(e) { return e.id === dataId; });
+        if (!data) return;
+
+        // Remove old model
+        while (baby.children.length > 0) baby.remove(baby.children[0]);
+
+        // Build adult model
+        var colors = {};
+        for (var k in data.colors) {
+            var v = data.colors[k];
+            colors[k] = typeof v === 'string' ? parseInt(v.replace('#', ''), 16) : v;
+        }
+
+        var hornScale = data.hornSize || (isMale ? 1 : 0.6);
+        var newModel = buildBalubanOxenModel(colors, true, hornScale, false, false);
+        baby.add(newModel);
+        baby.scale.set(data.size, data.size, data.size);
+
+        // Update stats
+        baby.userData.id = dataId;
+        baby.userData.isBaby = false;
+        baby.userData.health = data.health;
+        baby.userData.maxHealth = data.health;
+        baby.userData.speed = data.speed + Math.random() * (data.speedVariation || 0);
+        baby.userData.chaseSpeed = data.chaseSpeed || 7;
+        baby.userData.damage = data.damage;
+        baby.userData.radius = data.radius;
+        baby.userData.groundY = data.groundY;
+        baby.userData.minimapColor = data.minimapColor;
+        baby.userData.defensive = true;
+        baby.userData.lifecycleState = 'grazing';
+
+        if (isMale) {
+            baby.userData.matingTimer = 60 + Math.random() * 120;
+        } else {
+            baby.userData.canGetPregnant = true;
+            baby.userData.isPregnant = false;
+            baby.userData.gestationTimer = 0;
+            baby.userData.children = [];
+        }
+
+        console.log('Oxen calf matured to ' + (isMale ? 'male' : 'female') + '!');
+
+        // Leader's son splits to form new herd
+        if (isMale && baby.userData.fatherWasLeader) {
+            createNewOxenHerdFromSon(baby, herd);
+        }
+    }
+
+    /**
+     * Leader's son takes 1 male + 2 females to form a new herd.
+     */
+    function createNewOxenHerdFromSon(son, oldHerd) {
+        // Need at least 1 other non-leader male and 2 non-pregnant females
+        var availableMales = oldHerd.members.filter(function(m) {
+            return m !== son && m.userData.gender === 'male' && !m.userData.isBaby &&
+                !m.userData.isLeader && m.userData.lifecycleState === 'grazing';
+        });
+        var availableFemales = oldHerd.members.filter(function(f) {
+            return f.userData.gender === 'female' && !f.userData.isBaby &&
+                !f.userData.isPregnant && f.userData.lifecycleState === 'grazing';
+        });
+
+        if (availableMales.length < 1 || availableFemales.length < 2) {
+            console.log('Not enough members for herd split — son stays.');
+            return;
+        }
+
+        // Pick 1 male and 2 females
+        var takenMale = availableMales[Math.floor(Math.random() * availableMales.length)];
+        var takenFemales = [];
+        var shuffled = availableFemales.sort(function() { return Math.random() - 0.5; });
+        takenFemales.push(shuffled[0], shuffled[1]);
+
+        // Remove from old herd
+        var toMove = [son, takenMale].concat(takenFemales);
+        toMove.forEach(function(m) {
+            var idx = oldHerd.members.indexOf(m);
+            if (idx > -1) oldHerd.members.splice(idx, 1);
+        });
+
+        // Son becomes leader of new herd
+        son.userData.isLeader = true;
+        son.userData.id = 'baluban_oxen_leader';
+        rebuildOxenModel(son, true); // 1.5x horns
+
+        // Position new herd nearby but separate
+        var newX = son.position.x + (Math.random() - 0.5) * 60;
+        var newZ = Math.max(20, son.position.z + (Math.random() - 0.5) * 40);
+
+        toMove.forEach(function(m) {
+            var tx = newX + (Math.random() - 0.5) * 15;
+            var tz = newZ + (Math.random() - 0.5) * 15;
+            var ty = Environment.getTerrainHeight(tx, tz);
+            m.position.set(tx, ty + (m.userData.groundY || 0.55), tz);
+            m.userData.leader = son;
+        });
+
+        // Create new herd
+        var newHerdId = 'oxen_herd_' + Date.now();
+        toMove.forEach(function(m) { m.userData.herdId = newHerdId; });
+
+        GameState.balubanOxenHerds.push({
+            id: newHerdId,
+            leader: son,
+            members: toMove,
+            maxSize: 40,
+            matingTimer: 0
+        });
+
+        console.log('New oxen herd formed! Leader\'s son took 1 male + 2 females. Now ' +
+            GameState.balubanOxenHerds.length + ' herds.');
+    }
+
+    // ========================================================================
     // SPAWN DEERICUS IRICUS HERD (SNOWY MOUNTAINS BIOME)
     // ========================================================================
     /**
@@ -4023,7 +7740,7 @@ window.Enemies = (function() {
         const currentState = baby.userData.state;
 
         // Remove baby
-        Game.scene.remove(baby);
+        GameState.scene.remove(baby);
         const idx = GameState.enemies.indexOf(baby);
         if (idx > -1) GameState.enemies.splice(idx, 1);
 
@@ -10818,8 +14535,8 @@ window.Enemies = (function() {
                             cat.userData.hungerTimer = 120 + Math.random() * 60;
                         }
                     }
-                    // Stay still while eating
-                    animateDrongulinatCat(cat, delta);
+                    // Stay still while eating — idle animation (speed 0)
+                    animateDrongulinatCat(cat, delta, 0);
                     return;
                 }
 
@@ -10840,11 +14557,12 @@ window.Enemies = (function() {
                             nearbyCarcass.userData.carcassEater = cat;
                         } else {
                             // Walk toward carcass
-                            cat.position.x += (dx / distToCarcass) * cat.userData.speed * delta;
-                            cat.position.z += (dz / distToCarcass) * cat.userData.speed * delta;
+                            var walkSpeed = cat.userData.speed;
+                            cat.position.x += (dx / distToCarcass) * walkSpeed * delta;
+                            cat.position.z += (dz / distToCarcass) * walkSpeed * delta;
                             cat.rotation.y = -Math.atan2(dz, dx);
                             cat.userData.isMoving = true;
-                            animateDrongulinatCat(cat, delta);
+                            animateDrongulinatCat(cat, delta, walkSpeed);
                         }
                         return;
                     }
@@ -10894,23 +14612,98 @@ window.Enemies = (function() {
 
             // --- Default: wander around ---
             wanderDrongulinat(cat, delta);
-            animateDrongulinatCat(cat, delta);
+            var wanderSpeed = (cat.userData.speed || 3) * 0.3;
+            animateDrongulinatCat(cat, delta, wanderSpeed);
         });
     }
 
     /**
-     * Simple walking animation for drongulinat cats (bob + leg movement).
+     * Walking animation for drongulinat cats.
+     * At low speeds: gentle walk (legs only, no spine gallop).
+     * At high speeds: full cheetah gallop via shared dronglous animation.
+     * @param {number} moveSpeed - Actual movement speed (0 = idle)
      */
-    function animateDrongulinatCat(cat, delta) {
-        var time = GameState.clock.elapsedTime;
+    function animateDrongulinatCat(cat, delta, moveSpeed) {
         var terrainY = Environment.getTerrainHeight(cat.position.x, cat.position.z);
         var baseY = terrainY + (cat.userData.groundY || 0.3);
+        cat.position.y = baseY;
 
-        // Walking bob
-        if (cat.userData.isMoving) {
-            cat.position.y = baseY + Math.abs(Math.sin(time * 12)) * 0.05;
+        // At high speeds (hunting/chasing), use the full gallop animation
+        if (moveSpeed >= 6) {
+            var animSpeed = 2 + (moveSpeed / 10) * 6;
+            animateDronglousCat(cat, delta, true, animSpeed);
+            return;
+        }
+
+        // At low speeds or idle, do a simple walk with just legs — no spine gallop.
+        // Find the inner model with parts/legs
+        var catModel = cat;
+        if (!cat.userData.parts && cat.children.length > 0) {
+            catModel = cat.children[0];
+        }
+        if (!catModel.userData || !catModel.userData.parts || !catModel.userData.legs) {
+            return;
+        }
+
+        var parts = catModel.userData.parts;
+        var legs = catModel.userData.legs;
+        var anim = catModel.userData.animState;
+
+        if (moveSpeed > 0) {
+            // Gentle walk cycle — slow, natural stride
+            anim.runCycle += delta * moveSpeed * 3;  // Slow cycle: speed 2.4 → 7.2/s
+            var cycle = anim.runCycle;
+
+            // Legs: alternating walk pattern (diagonal pairs like a real cat)
+            // Model faces +X, legs hang along -Y, so forward/back swing = rotation.z
+            legs.forEach(function(leg) {
+                // Diagonal pairing: front-left + back-right move together
+                var phase = leg.isFront ? 0 : Math.PI;
+                var sidePhase = leg.side === 'right' ? Math.PI : 0;
+                var legCycle = cycle + phase + sidePhase;
+
+                // Gentle leg swing (forward/backward)
+                var swing = Math.sin(legCycle) * 0.35;
+                leg.upperLegGroup.rotation.z = swing;
+
+                // Subtle knee bend when lifting
+                var knee = Math.max(0, Math.sin(legCycle + 0.5)) * 0.3;
+                leg.kneeGroup.rotation.z = knee;
+
+                // Lower leg follows
+                leg.lowerLegGroup.rotation.z = Math.sin(legCycle + 1) * 0.15;
+                leg.ankleGroup.rotation.z = -Math.sin(legCycle + 1.5) * 0.1;
+                leg.pawGroup.rotation.z = 0;
+
+                // Decay any leftover X rotation from gallop
+                leg.upperLegGroup.rotation.x *= 0.85;
+                leg.kneeGroup.rotation.x *= 0.85;
+                leg.lowerLegGroup.rotation.x *= 0.85;
+                leg.ankleGroup.rotation.x *= 0.85;
+                leg.pawGroup.rotation.x *= 0.85;
+            });
+
+            // Very subtle body bob — no spine bending
+            parts.frontSpine.rotation.x *= 0.9;
+            parts.midSpine.rotation.x *= 0.9;
+            parts.rearSpine.rotation.x *= 0.9;
+            parts.frontSpine.position.y *= 0.9;
+            parts.midSpine.position.y *= 0.9;
+            parts.rearSpine.position.y *= 0.9;
+
+            // Gentle head bob
+            parts.headGroup.rotation.x = Math.sin(cycle * 2) * 0.03;
+
+            // Gentle tail swish
+            if (parts.tailSegments) {
+                parts.tailSegments.forEach(function(seg, i) {
+                    seg.rotation.x = Math.sin(cycle * 0.8 + i * 0.4) * 0.08;
+                    seg.rotation.z = 0.15 + Math.sin(cycle * 0.5 + i * 0.3) * 0.06;
+                });
+            }
         } else {
-            cat.position.y = baseY;
+            // Idle — use the dronglous idle animation (gentle breathing)
+            animateDronglousCat(cat, delta, false, 0);
         }
     }
 
@@ -11019,9 +14812,9 @@ window.Enemies = (function() {
             male.rotation.y += diff * 0.15;
         }
 
-        // Animate running
-        var terrainY = Environment.getTerrainHeight(male.position.x, male.position.z);
-        male.position.y = terrainY + (male.userData.groundY || 0.3) + Math.abs(Math.sin(GameState.clock.elapsedTime * 14)) * 0.08;
+        // Animate — running toward female, or idle if arrived
+        var mateSpeed = (dist < 2) ? 0 : (male.userData.speed || 8);
+        animateDrongulinatCat(male, delta, mateSpeed);
     }
 
     /**
@@ -11149,9 +14942,8 @@ window.Enemies = (function() {
         while (diff < -Math.PI) diff += Math.PI * 2;
         cat.rotation.y += diff * 0.2;
 
-        // Animate running (faster bob)
-        var terrainY = Environment.getTerrainHeight(cat.position.x, cat.position.z);
-        cat.position.y = terrainY + (cat.userData.groundY || 0.3) + Math.abs(Math.sin(GameState.clock.elapsedTime * 16)) * 0.1;
+        // Full gallop animation while chasing prey
+        animateDrongulinatCat(cat, delta, 10);
 
         // Catch the deer!
         if (dist < 1.5) {
@@ -11212,9 +15004,8 @@ window.Enemies = (function() {
         while (diff < -Math.PI) diff += Math.PI * 2;
         cat.rotation.y += diff * 0.2;
 
-        // Animate running
-        var terrainY = Environment.getTerrainHeight(cat.position.x, cat.position.z);
-        cat.position.y = terrainY + (cat.userData.groundY || 0.3) + Math.abs(Math.sin(GameState.clock.elapsedTime * 16)) * 0.1;
+        // Full gallop animation while chasing player
+        animateDrongulinatCat(cat, delta, 10);
 
         // Deal damage on contact
         if (dist < 1.5) {
@@ -11257,6 +15048,23 @@ window.Enemies = (function() {
             GameState.antelopeHerds.forEach(function(herd) {
                 var aIdx = herd.members.indexOf(enemy);
                 if (aIdx > -1) herd.members.splice(aIdx, 1);
+            });
+        }
+
+        // Remove from baluban oxen herds if applicable
+        if (GameState.balubanOxenHerds) {
+            GameState.balubanOxenHerds.forEach(function(herd) {
+                var oIdx = herd.members.indexOf(enemy);
+                if (oIdx > -1) herd.members.splice(oIdx, 1);
+                if (herd.leader === enemy) {
+                    var males = herd.members.filter(function(m) {
+                        return m.userData.gender === 'male' && !m.userData.isBaby;
+                    });
+                    if (males.length > 0) {
+                        herd.leader = males[0];
+                        males[0].userData.isLeader = true;
+                    }
+                }
             });
         }
 
@@ -11544,6 +15352,16 @@ window.Enemies = (function() {
         // Drongulinat Cat functions
         spawnDrongulinatCats: spawnDrongulinatCats,
         updateDrongulinatCats: updateDrongulinatCats,
+
+        // Snow Caninon Lartus functions
+        spawnSnowCaninonPack: spawnSnowCaninonPack,
+        updateSnowCaninonBehavior: updateSnowCaninonBehavior,
+        triggerSnowCaninonHunt: triggerSnowCaninonHunt,
+
+        // Baluban Oxen functions
+        spawnBalubanOxenHerd: spawnBalubanOxenHerd,
+        updateBalubanOxenBehavior: updateBalubanOxenBehavior,
+        triggerBalubanOxenMating: triggerBalubanOxenMating,
 
         // Player combat
         damageEnemy: damageEnemy,

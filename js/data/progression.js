@@ -86,11 +86,11 @@ window.PROGRESSION = {
     // LOCKED MESSAGES - What villagers say when you're not high enough level
     // ========================================================================
     lockedMessages: {
-        "Granny Trotter": "Oh dearie, I don't know you well enough yet... Come back when you've explored a bit more!",
-        "Rosie": "Sorry, little one! I only trade with experienced foragers. Keep collecting!",
-        "Bruno": "*CLANG* Not ready for my tools yet! Prove yourself first.",
-        "Patches": "Psst! My special goods are for serious adventurers only...",
-        "Elder Hamsworth": "You are too young for egg trading, little one. Show me what you can do first!"
+        "Granny Trotter": "Oh dearie, I don't know you well enough yet... Come back when you've explored a bit more, Pedro!",
+        "Rosie": "Sorry Pedro! I only trade with experienced foragers. Keep collecting!",
+        "Bruno": "*CLANG* Not ready for my tools yet, Pedro! Prove yourself first.",
+        "Patches": "Psst! My special goods are for serious adventurers only, Pedro...",
+        "Elder Hamsworth": "You are too young for egg trading, Pedro. Show me what you can do first!"
     }
 
 };

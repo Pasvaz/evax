@@ -1149,6 +1149,14 @@ window.Environment = (function() {
             GameState.snowParticles = null;
         }
 
+        // Clear ocean water
+        if (GameState.oceanWater) {
+            GameState.scene.remove(GameState.oceanWater);
+            GameState.oceanWater = null;
+            GameState.oceanShoreZ = null;
+            GameState.oceanDeepZ = null;
+        }
+
         // Reset scene background and fog to defaults
         GameState.scene.background = new THREE.Color(0x87ceeb);  // Default sky blue
         GameState.scene.fog = null;
@@ -1181,6 +1189,9 @@ window.Environment = (function() {
         } else if (biomeData.id === 'snowy_mountains') {
             // Snowy mountains - empty for now except rocks
             createSnowyMountainElements(biomeData);
+        } else if (biomeData.id === 'coastal') {
+            // Coastal biome - birch forest, ocean, beach
+            createCoastalElements(biomeData);
         } else {
             // Savannah has scattered trees and rocks
             createSavannahElements(biomeData);
@@ -1290,16 +1301,71 @@ window.Environment = (function() {
                 } else {
                     vertices[i + 2] += Math.random() * 0.3; // Flatter terrain for savannah
                 }
+            }
+            // Coastal biome - split ground: forest north, sand middle, ocean south
+            else if (biomeData.waterFeature === 'ocean') {
+                var forestEndZ = biomeData.forestEndZ || 0;
+                var sandEndZ = biomeData.sandEndZ || 200;
+                // geometry Y maps to world -Z after rotation
+                // geoY > 0 = north (forest), geoY < 0 = south
+                var worldZ = -z; // z here is geometry Y
+
+                if (worldZ < forestEndZ) {
+                    // Forest area - normal terrain variation
+                    vertices[i + 2] += Math.random() * 0.4;
+                } else if (worldZ < sandEndZ) {
+                    // Sand area - flat
+                    vertices[i + 2] = Math.random() * 0.05;
+                } else {
+                    // Ocean floor - depression
+                    vertices[i + 2] = -0.5;
+                }
             } else {
                 vertices[i + 2] += Math.random() * 0.5;
             }
         }
+
+        // For coastal biome, add vertex colors for split ground
+        var isCoastal = biomeData.waterFeature === 'ocean';
+        if (isCoastal) {
+            var colors = [];
+            var forestColor = new THREE.Color(biomeData.groundColor);   // 0x4a5a3a
+            var sandColor = new THREE.Color(biomeData.sandColor || 0xd2b48c);
+            var oceanFloorColor = new THREE.Color(0x3a5a4a);
+            var cForestEndZ = biomeData.forestEndZ || 0;
+            var cSandEndZ = biomeData.sandEndZ || 200;
+
+            for (var ci = 0; ci < vertices.length; ci += 3) {
+                var geoY = vertices[ci + 1];
+                var wZ = -geoY; // world Z
+                var col;
+                if (wZ < cForestEndZ - 20) {
+                    col = forestColor;
+                } else if (wZ < cForestEndZ + 20) {
+                    // Blend zone between forest and sand
+                    var blend = (wZ - (cForestEndZ - 20)) / 40;
+                    col = forestColor.clone().lerp(sandColor, Math.max(0, Math.min(1, blend)));
+                } else if (wZ < cSandEndZ - 10) {
+                    col = sandColor;
+                } else if (wZ < cSandEndZ + 10) {
+                    // Blend zone between sand and ocean
+                    var blend2 = (wZ - (cSandEndZ - 10)) / 20;
+                    col = sandColor.clone().lerp(oceanFloorColor, Math.max(0, Math.min(1, blend2)));
+                } else {
+                    col = oceanFloorColor;
+                }
+                colors.push(col.r, col.g, col.b);
+            }
+            groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        }
+
         groundGeo.computeVertexNormals();
 
         const groundMat = new THREE.MeshStandardMaterial({
-            color: biomeData.groundColor,
+            color: isCoastal ? 0xffffff : biomeData.groundColor,
             roughness: 1,
-            metalness: 0
+            metalness: 0,
+            vertexColors: isCoastal
         });
 
         const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -1316,11 +1382,15 @@ window.Environment = (function() {
 
         for (let i = 0; i < 500; i++) {
             const grass = createGrassPatchWithMaterial(grassMat);
-            grass.position.set(
-                (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5,
-                0.1,
-                (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5
-            );
+            var gx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+            var gz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
+
+            // For coastal biome, only spawn grass in the forest area (north)
+            if (isCoastal) {
+                gz = -Math.abs(gz);
+            }
+
+            grass.position.set(gx, 0.1, gz);
             GameState.scene.add(grass);
             trackObject(grass);
         }
@@ -1511,6 +1581,319 @@ window.Environment = (function() {
         const skullX = 35 + Math.cos(hutBackAngle) * 4.2;  // Right at the wall edge
         const skullZ = 35 + Math.sin(hutBackAngle) * 4.2;
         createSkullDigSpot(skullX, skullZ);
+    }
+
+    // ========================================================================
+    // COASTAL BIOME ELEMENTS
+    // ========================================================================
+
+    /**
+     * Create coastal biome elements: birch trees, ocean, beach decorations.
+     */
+    function createCoastalElements(biomeData) {
+        var numTrees = biomeData.birchTrees || 70;
+        var worldSize = CONFIG.WORLD_SIZE;
+
+        // Seaspray birch trees - only in the north half (negative Z = north)
+        for (var i = 0; i < numTrees; i++) {
+            var tx, tz;
+            do {
+                tx = (Math.random() - 0.5) * worldSize * 1.3;
+                tz = -Math.random() * worldSize * 0.6; // Only north half
+            } while (Math.sqrt(tx * tx + tz * tz) < 10); // Avoid spawn center
+
+            var tree = createSeasprayBirchTree(tx, tz);
+            GameState.trees.push(tree);
+            GameState.scene.add(tree);
+            trackObject(tree);
+        }
+
+        // Create ocean water
+        if (biomeData.hasOcean) {
+            createOceanWater(biomeData);
+        }
+
+        // Create beach decorations
+        if (biomeData.hasBeach) {
+            createBeachDecorations(biomeData);
+        }
+
+        console.log('Created coastal biome with ' + numTrees + ' birch trees');
+    }
+
+    /**
+     * Create a seaspray birch tree — white bark, dark bands, green sphere foliage.
+     */
+    function createSeasprayBirchTree(x, z) {
+        var tree = new THREE.Group();
+
+        // Thin white/silver birch trunk
+        var trunkHeight = 7 + Math.random() * 4;
+        var trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, trunkHeight, 8);
+        var trunkMat = new THREE.MeshStandardMaterial({
+            color: 0xe8ddd0,  // White/silver birch bark
+            roughness: 0.7,
+            metalness: 0.05
+        });
+        var trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = trunkHeight / 2;
+        trunk.castShadow = true;
+        tree.add(trunk);
+
+        // Dark horizontal bands (birch bark markings)
+        var bandMat = new THREE.MeshStandardMaterial({
+            color: 0x3a3a3a,
+            roughness: 0.9
+        });
+        for (var b = 0; b < 4; b++) {
+            var bandGeo = new THREE.CylinderGeometry(0.27, 0.27, 0.1, 8);
+            var band = new THREE.Mesh(bandGeo, bandMat);
+            band.position.y = 1.5 + b * (trunkHeight / 5);
+            tree.add(band);
+        }
+
+        // Green leaf clusters (2-3 spheres at the top)
+        var leafColors = [0x3a7a3a, 0x4a8a4a, 0x2a6a2a];
+        var numClusters = 2 + Math.floor(Math.random() * 2);
+        for (var li = 0; li < numClusters; li++) {
+            var leafGeo = new THREE.SphereGeometry(1.8 + Math.random() * 0.8, 8, 6);
+            var leafMat = new THREE.MeshStandardMaterial({
+                color: leafColors[li % leafColors.length],
+                roughness: 0.8
+            });
+            var leaf = new THREE.Mesh(leafGeo, leafMat);
+            leaf.position.set(
+                (Math.random() - 0.5) * 1.5,
+                trunkHeight - 1 + li * 1.2,
+                (Math.random() - 0.5) * 1.5
+            );
+            leaf.castShadow = true;
+            tree.add(leaf);
+        }
+
+        tree.position.set(x, 0, z);
+        tree.userData.radius = 1.0;
+        tree.userData.type = 'tree';
+        tree.userData.health = 9;
+        tree.userData.maxHealth = 9;
+        tree.userData.biome = 'coastal';
+        tree.userData.treeType = 'birch';
+        return tree;
+    }
+
+    /**
+     * Create the ocean water plane for the coastal biome.
+     */
+    function createOceanWater(biomeData) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var sandEndZ = biomeData.sandEndZ || 200;
+        var southBorder = worldSize * 0.75;
+
+        // Ocean plane covers from sand end to south border
+        var oceanWidth = worldSize * 1.6;
+        var oceanDepth = southBorder - sandEndZ + 50; // extend a bit past border
+        var segW = 80;
+        var segD = 60;
+
+        var geometry = new THREE.PlaneGeometry(oceanWidth, oceanDepth, segW, segD);
+        geometry.rotateX(-Math.PI / 2);
+
+        // Position: centered on X, starts at sandEndZ going south
+        var oceanCenterZ = sandEndZ + oceanDepth / 2;
+
+        var material = new THREE.MeshStandardMaterial({
+            color: 0x5a7a6a,
+            transparent: true,
+            opacity: 0.75,
+            metalness: 0.4,
+            roughness: 0.3,
+            emissive: 0x1a2a2a,
+            emissiveIntensity: 0.2,
+            side: THREE.DoubleSide
+        });
+
+        var ocean = new THREE.Mesh(geometry, material);
+        ocean.position.set(0, -0.1, oceanCenterZ);
+        ocean.receiveShadow = true;
+
+        // Store original vertex positions for wave animation
+        var posAttr = geometry.attributes.position;
+        var originalY = new Float32Array(posAttr.count);
+        for (var i = 0; i < posAttr.count; i++) {
+            originalY[i] = posAttr.getY(i);
+        }
+        ocean.userData.originalY = originalY;
+        ocean.userData.waveTime = 0;
+
+        GameState.scene.add(ocean);
+        trackObject(ocean);
+        GameState.oceanWater = ocean;
+
+        // Store boundary values for player detection
+        GameState.oceanShoreZ = sandEndZ - 5;     // Where shallow water starts (a few units into sand)
+        GameState.oceanDeepZ = sandEndZ + 30;      // Past this = too deep, blocked
+
+        console.log('Created ocean water: shore at Z=' + GameState.oceanShoreZ + ', deep at Z=' + GameState.oceanDeepZ);
+    }
+
+    /**
+     * Check if a position is in the shallow ocean (wadeable).
+     */
+    function isInShallowOcean(x, z) {
+        if (!GameState.oceanWater) return false;
+        return z > GameState.oceanShoreZ && z <= GameState.oceanDeepZ;
+    }
+
+    /**
+     * Check if a position is in deep ocean (blocked).
+     */
+    function isInDeepOcean(x, z) {
+        if (!GameState.oceanWater) return false;
+        return z > GameState.oceanDeepZ;
+    }
+
+    /**
+     * Update ocean wave animation. Called from game.js animate loop.
+     */
+    function updateOceanWaves(delta) {
+        if (!GameState.oceanWater) return;
+
+        var ocean = GameState.oceanWater;
+        ocean.userData.waveTime += delta;
+        var t = ocean.userData.waveTime;
+
+        var geometry = ocean.geometry;
+        var posAttr = geometry.attributes.position;
+        var originalY = ocean.userData.originalY;
+
+        for (var i = 0; i < posAttr.count; i++) {
+            var x = posAttr.getX(i);
+            var z = posAttr.getZ(i);
+
+            // Combine 3 sine waves for choppy look
+            var wave1 = Math.sin(x * 0.15 + t * 2.0) * 0.3;
+            var wave2 = Math.sin(z * 0.2 + t * 1.5) * 0.25;
+            var wave3 = Math.sin((x + z) * 0.1 + t * 3.0) * 0.15;
+
+            posAttr.setY(i, originalY[i] + wave1 + wave2 + wave3);
+        }
+
+        posAttr.needsUpdate = true;
+        geometry.computeVertexNormals();
+    }
+
+    /**
+     * Create beach decorations: rocks, driftwood, shells, seaweed.
+     */
+    function createBeachDecorations(biomeData) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var sandStartZ = biomeData.forestEndZ || 0;
+        var sandEndZ = biomeData.sandEndZ || 200;
+
+        // --- 35 ROCKS scattered on sand ---
+        for (var i = 0; i < 35; i++) {
+            var radius = 0.4 + Math.random() * 0.8;
+            var rockGeo = new THREE.DodecahedronGeometry(radius, 1);
+            // Slightly squash rocks to look natural
+            rockGeo.scale(1, 0.5 + Math.random() * 0.4, 1);
+            var greyShade = 0.45 + Math.random() * 0.2;
+            var rockMat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(greyShade, greyShade, greyShade * 0.95),
+                roughness: 0.9,
+                metalness: 0.05
+            });
+            var rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(
+                (Math.random() - 0.5) * worldSize * 1.3,
+                radius * 0.2,
+                sandStartZ + Math.random() * (sandEndZ - sandStartZ)
+            );
+            rock.rotation.y = Math.random() * Math.PI * 2;
+            rock.castShadow = true;
+            GameState.scene.add(rock);
+            trackObject(rock);
+        }
+
+        // --- 18 DRIFTWOOD LOGS ---
+        for (var i = 0; i < 18; i++) {
+            var logLength = 1.5 + Math.random() * 2.5;
+            var logRadius = 0.08 + Math.random() * 0.1;
+            var logGeo = new THREE.CylinderGeometry(logRadius, logRadius * 1.2, logLength, 6);
+            var logMat = new THREE.MeshStandardMaterial({
+                color: 0x8b7355,
+                roughness: 0.95,
+                metalness: 0
+            });
+            var log = new THREE.Mesh(logGeo, logMat);
+            log.position.set(
+                (Math.random() - 0.5) * worldSize * 1.3,
+                logRadius,
+                sandStartZ + Math.random() * (sandEndZ - sandStartZ)
+            );
+            // Lay on side with random rotation
+            log.rotation.z = Math.PI / 2;
+            log.rotation.y = Math.random() * Math.PI;
+            log.castShadow = true;
+            GameState.scene.add(log);
+            trackObject(log);
+        }
+
+        // --- 28 SHELLS ---
+        for (var i = 0; i < 28; i++) {
+            var shellSize = 0.15 + Math.random() * 0.2;
+            var shellGeo = new THREE.SphereGeometry(shellSize, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+            var shellColors = [0xfff0e0, 0xffe4c4, 0xffdab9, 0xf5deb3, 0xeee8dc];
+            var shellMat = new THREE.MeshStandardMaterial({
+                color: shellColors[Math.floor(Math.random() * shellColors.length)],
+                roughness: 0.4,
+                metalness: 0.1
+            });
+            var shell = new THREE.Mesh(shellGeo, shellMat);
+            shell.position.set(
+                (Math.random() - 0.5) * worldSize * 1.3,
+                0.02,
+                sandStartZ + Math.random() * (sandEndZ - sandStartZ)
+            );
+            shell.rotation.y = Math.random() * Math.PI * 2;
+            GameState.scene.add(shell);
+            trackObject(shell);
+        }
+
+        // --- 12 SEAWEED PATCHES near the waterline ---
+        for (var i = 0; i < 12; i++) {
+            var patchGroup = new THREE.Group();
+            var bladeCount = 4 + Math.floor(Math.random() * 4);
+            for (var b = 0; b < bladeCount; b++) {
+                var bladeHeight = 0.5 + Math.random() * 0.8;
+                var bladeGeo = new THREE.PlaneGeometry(0.15, bladeHeight);
+                var bladeShade = 0x2a5a2a + Math.floor(Math.random() * 0x101010);
+                var bladeMat = new THREE.MeshStandardMaterial({
+                    color: bladeShade,
+                    roughness: 0.8,
+                    side: THREE.DoubleSide
+                });
+                var blade = new THREE.Mesh(bladeGeo, bladeMat);
+                blade.position.set(
+                    (Math.random() - 0.5) * 0.8,
+                    bladeHeight / 2,
+                    (Math.random() - 0.5) * 0.8
+                );
+                blade.rotation.y = Math.random() * Math.PI;
+                // Slight lean for natural look
+                blade.rotation.x = (Math.random() - 0.5) * 0.3;
+                patchGroup.add(blade);
+            }
+            // Place near the waterline (south end of sand)
+            patchGroup.position.set(
+                (Math.random() - 0.5) * worldSize * 1.0,
+                0,
+                sandEndZ - 10 + Math.random() * 15
+            );
+            GameState.scene.add(patchGroup);
+            trackObject(patchGroup);
+        }
+
+        console.log('Created beach decorations: 35 rocks, 18 driftwood, 28 shells, 12 seaweed patches');
     }
 
     /**
@@ -1707,8 +2090,24 @@ window.Environment = (function() {
             }
         }
 
+        // --- URONAL SEAL TOOTH embedded in west wall ---
+        var alreadyHasSeal = GameState.artifacts && GameState.artifacts.includes('uronal_seal_tooth');
+        var alreadyGaveSeal = GameState.artifactsGiven && GameState.artifactsGiven.includes('uronal_seal_tooth');
+        if (!alreadyHasSeal && !alreadyGaveSeal) {
+            var sealTooth = Items.createArtifact('uronal_seal_tooth');
+            if (sealTooth) {
+                sealTooth.position.set(x - 11, 2.5, z);  // West wall, platform height
+                GameState.scene.add(sealTooth);
+                Items.trackArtifact(sealTooth);
+            }
+        }
+
         GameState.scene.add(templeGroup);
         trackObject(templeGroup);
+
+        // Store temple position so player.js can check collision
+        GameState.templePosition = { x: x, z: z };
+
         console.log('Snow Temple created at (' + x + ', ' + z + ')');
     }
 
@@ -2129,8 +2528,8 @@ window.Environment = (function() {
         tree.position.set(x, 0, z);
         tree.userData.radius = 1.5;
         tree.userData.type = 'tree';
-        tree.userData.health = 10;
-        tree.userData.maxHealth = 10;
+        tree.userData.health = 7;
+        tree.userData.maxHealth = 7;
         tree.userData.biome = 'savannah';
         tree.userData.treeType = 'acacia';  // Mark as acacia for Dronglous Cats
         return tree;
@@ -2173,19 +2572,31 @@ window.Environment = (function() {
     // TREE CHOPPING SYSTEM
     // ========================================================================
     /**
-     * Damage a tree with the wood axe.
-     * Each hit gives 1 thous pine wood.
-     * After 10 hits (health reaches 0), tree falls and respawns after 2 minutes.
+     * Damage a tree with an axe.
+     * Reads stats from TOOL_STATS — damage, wood per chop, wood type.
+     * When the tree dies: bonus drops (cinnamon from acacia), falls over,
+     * stays 5 minutes, then fades and a new tree spawns in the biome.
+     *
+     * @param {THREE.Group} tree - The tree to damage
+     * @param {string} axeId - The axe ID (e.g. 'wood_axe', 'barbanit_axe')
      */
-    function damageTree(tree) {
+    function damageTree(tree, axeId) {
         if (!tree || !tree.userData || tree.userData.type !== 'tree') return;
         if (tree.userData.falling) return; // Already falling, don't chop again
 
-        // Take 1 damage
-        tree.userData.health -= 1;
+        // Look up axe stats from the data table
+        var axeStats = TOOL_STATS.axes[axeId];
+        if (!axeStats) return; // Safety check
 
-        // Give 1 thous pine wood
-        GameState.resourceCounts.thous_pine_wood += 1;
+        // What wood type does this tree give?
+        var treeBiome = tree.userData.biome;
+        var woodType = TOOL_STATS.treeWoodType[treeBiome] || 'thous_pine_wood';
+
+        // Deal damage based on axe power
+        tree.userData.health -= axeStats.damage;
+
+        // Give wood based on axe yield
+        GameState.resourceCounts[woodType] += axeStats.woodPerChop;
         Game.playSound('collect');
         UI.updateUI();
 
@@ -2207,6 +2618,13 @@ window.Environment = (function() {
         if (tree.userData.health <= 0) {
             tree.userData.falling = true;
 
+            // Bonus drops when tree falls (e.g. cinnamon from acacia)
+            var bonusDrop = TOOL_STATS.bonusDrops[treeBiome];
+            if (bonusDrop) {
+                GameState.resourceCounts[bonusDrop.resource] += bonusDrop.amount;
+                UI.updateUI();
+            }
+
             // Fall animation — rotate 90 degrees over 1 second
             var fallStart = Date.now();
             var fallDuration = 1000; // 1 second
@@ -2226,32 +2644,39 @@ window.Environment = (function() {
                 if (progress < 1) {
                     requestAnimationFrame(animateFall);
                 } else {
-                    // Tree has fallen — remove after 2 minutes and spawn a new one
+                    // Tree has fallen — remove after 5 minutes and spawn a new one
                     setTimeout(function() {
                         // Remove fallen tree
                         GameState.scene.remove(tree);
                         var idx = GameState.trees.indexOf(tree);
                         if (idx > -1) GameState.trees.splice(idx, 1);
 
-                        // Spawn a new tree at a random position
-                        var newX, newZ;
+                        // Spawn a new tree at a random position in the same biome
+                        var newX, newZ, newTree;
                         if (tree.userData.biome === 'arboreal') {
                             do {
                                 newX = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
                                 newZ = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
                             } while (Math.sqrt(newX * newX + newZ * newZ) < 15 || isInVillage(newX, newZ) || isInRiver(newX, newZ));
-                            var newTree = createTree(newX, newZ);
+                            newTree = createTree(newX, newZ);
+                        } else if (tree.userData.biome === 'coastal') {
+                            // Birch trees only spawn in the north half (forest area)
+                            do {
+                                newX = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.3;
+                                newZ = -Math.random() * CONFIG.WORLD_SIZE * 0.6;
+                            } while (Math.sqrt(newX * newX + newZ * newZ) < 10);
+                            newTree = createSeasprayBirchTree(newX, newZ);
                         } else {
                             do {
                                 newX = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
                                 newZ = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 1.5;
                             } while (Math.sqrt(newX * newX + newZ * newZ) < 15 || isInWateringHole(newX, newZ));
-                            var newTree = createSavannahTree(newX, newZ);
+                            newTree = createSavannahTree(newX, newZ);
                         }
                         GameState.trees.push(newTree);
                         GameState.scene.add(newTree);
                         trackObject(newTree);
-                    }, 120000); // 2 minutes
+                    }, 300000); // 5 minutes
                 }
             }
 
@@ -2282,6 +2707,10 @@ window.Environment = (function() {
         eatGrassTuft: eatGrassTuft,
         updateGrassTufts: updateGrassTufts,
         // Tree chopping
-        damageTree: damageTree
+        damageTree: damageTree,
+        // Coastal ocean
+        isInShallowOcean: isInShallowOcean,
+        isInDeepOcean: isInDeepOcean,
+        updateOceanWaves: updateOceanWaves
     };
 })();

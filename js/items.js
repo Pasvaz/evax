@@ -310,7 +310,10 @@ window.Items = (function() {
             do {
                 rx = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
                 rz = (Math.random() - 0.5) * CONFIG.WORLD_SIZE;
-            } while (Math.sqrt(rx * rx + rz * rz) < 10);
+                // In coastal biome, don't spawn in the ocean (south of sand end)
+                var biome = getBiomeData(GameState.currentBiome);
+                var inOcean = biome && biome.waterFeature === 'ocean' && rz > (biome.sandEndZ || 200);
+            } while (Math.sqrt(rx * rx + rz * rz) < 10 || inOcean);
         }
 
         resource.position.set(rx, 0, rz);
@@ -464,14 +467,14 @@ window.Items = (function() {
             const recipeDiv = document.createElement('div');
             recipeDiv.className = 'craft-recipe';
 
-            const canCraft =
-                GameState.resourceCounts.berries >= (recipe.cost.berries || 0) &&
-                GameState.resourceCounts.nuts >= (recipe.cost.nuts || 0) &&
-                GameState.resourceCounts.mushrooms >= (recipe.cost.mushrooms || 0) &&
-                GameState.resourceCounts.seaweed >= (recipe.cost.seaweed || 0) &&
-                GameState.resourceCounts.arsenic_mushrooms >= (recipe.cost.arsenic_mushrooms || 0) &&
-                GameState.resourceCounts.thous_pine_wood >= (recipe.cost.thous_pine_wood || 0) &&
-                GameState.resourceCounts.glass >= (recipe.cost.glass || 0);
+            // Generic affordability check — works for ALL resource types!
+            let canCraft = true;
+            for (const resource in recipe.cost) {
+                if (recipe.cost[resource] > 0 && (GameState.resourceCounts[resource] || 0) < recipe.cost[resource]) {
+                    canCraft = false;
+                    break;
+                }
+            }
 
             if (!canCraft) {
                 recipeDiv.classList.add('disabled');
@@ -490,74 +493,36 @@ window.Items = (function() {
             const costDiv = document.createElement('div');
             costDiv.className = 'craft-recipe-cost';
 
-            if (recipe.cost.berries > 0) {
-                const berryCost = document.createElement('div');
-                berryCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.berries < recipe.cost.berries) {
-                    berryCost.classList.add('insufficient');
-                }
-                berryCost.innerHTML = `<span>🫐</span><span>${recipe.cost.berries}</span>`;
-                costDiv.appendChild(berryCost);
-            }
+            // Generic cost display — emoji lookup table for all resources
+            const resourceIcons = {
+                berries: '🫐',
+                nuts: '🥜',
+                mushrooms: '🍄',
+                seaweed: '🌿',
+                eggs: '🥚',
+                thous_pine_wood: '🪵',
+                glass: '🔮',
+                manglecacia_wood: '🪵',
+                seaspray_birch_wood: '🪵',
+                cinnamon: '🌾'
+            };
 
-            if (recipe.cost.nuts > 0) {
-                const nutCost = document.createElement('div');
-                nutCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.nuts < recipe.cost.nuts) {
-                    nutCost.classList.add('insufficient');
+            for (const resource in recipe.cost) {
+                if (recipe.cost[resource] > 0) {
+                    const costEl = document.createElement('div');
+                    costEl.className = 'craft-cost-item';
+                    if ((GameState.resourceCounts[resource] || 0) < recipe.cost[resource]) {
+                        costEl.classList.add('insufficient');
+                    }
+                    // Special case: arsenic mushrooms use SVG icon
+                    if (resource === 'arsenic_mushrooms') {
+                        costEl.innerHTML = `<span class="arsenic-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="10" rx="9" ry="6" fill="#1a1a1a"/><rect x="10" y="14" width="4" height="7" rx="1" fill="#2a2a2a"/><circle cx="7" cy="9" r="1.5" fill="#ff6600"/><circle cx="12" cy="7" r="1.5" fill="#ff6600"/><circle cx="17" cy="9" r="1.5" fill="#ff6600"/><circle cx="9" cy="12" r="1.2" fill="#ff6600"/><circle cx="15" cy="12" r="1.2" fill="#ff6600"/></svg></span><span>${recipe.cost[resource]}</span>`;
+                    } else {
+                        const icon = resourceIcons[resource] || '❓';
+                        costEl.innerHTML = `<span>${icon}</span><span>${recipe.cost[resource]}</span>`;
+                    }
+                    costDiv.appendChild(costEl);
                 }
-                nutCost.innerHTML = `<span>🥜</span><span>${recipe.cost.nuts}</span>`;
-                costDiv.appendChild(nutCost);
-            }
-
-            if (recipe.cost.mushrooms > 0) {
-                const mushroomCost = document.createElement('div');
-                mushroomCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.mushrooms < recipe.cost.mushrooms) {
-                    mushroomCost.classList.add('insufficient');
-                }
-                mushroomCost.innerHTML = `<span>🍄</span><span>${recipe.cost.mushrooms}</span>`;
-                costDiv.appendChild(mushroomCost);
-            }
-
-            if (recipe.cost.seaweed > 0) {
-                const seaweedCost = document.createElement('div');
-                seaweedCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.seaweed < recipe.cost.seaweed) {
-                    seaweedCost.classList.add('insufficient');
-                }
-                seaweedCost.innerHTML = `<span>🌿</span><span>${recipe.cost.seaweed}</span>`;
-                costDiv.appendChild(seaweedCost);
-            }
-
-            if (recipe.cost.arsenic_mushrooms > 0) {
-                const arsenicCost = document.createElement('div');
-                arsenicCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.arsenic_mushrooms < recipe.cost.arsenic_mushrooms) {
-                    arsenicCost.classList.add('insufficient');
-                }
-                arsenicCost.innerHTML = `<span class="arsenic-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="10" rx="9" ry="6" fill="#1a1a1a"/><rect x="10" y="14" width="4" height="7" rx="1" fill="#2a2a2a"/><circle cx="7" cy="9" r="1.5" fill="#ff6600"/><circle cx="12" cy="7" r="1.5" fill="#ff6600"/><circle cx="17" cy="9" r="1.5" fill="#ff6600"/><circle cx="9" cy="12" r="1.2" fill="#ff6600"/><circle cx="15" cy="12" r="1.2" fill="#ff6600"/></svg></span><span>${recipe.cost.arsenic_mushrooms}</span>`;
-                costDiv.appendChild(arsenicCost);
-            }
-
-            if (recipe.cost.thous_pine_wood > 0) {
-                const woodCost = document.createElement('div');
-                woodCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.thous_pine_wood < recipe.cost.thous_pine_wood) {
-                    woodCost.classList.add('insufficient');
-                }
-                woodCost.innerHTML = `<span>🪵</span><span>${recipe.cost.thous_pine_wood}</span>`;
-                costDiv.appendChild(woodCost);
-            }
-
-            if (recipe.cost.glass > 0) {
-                const glassCost = document.createElement('div');
-                glassCost.className = 'craft-cost-item';
-                if (GameState.resourceCounts.glass < recipe.cost.glass) {
-                    glassCost.classList.add('insufficient');
-                }
-                glassCost.innerHTML = `<span>🔮</span><span>${recipe.cost.glass}</span>`;
-                costDiv.appendChild(glassCost);
             }
 
             recipeDiv.appendChild(costDiv);
@@ -578,23 +543,19 @@ window.Items = (function() {
      * Items go into inventory - use them from there!
      */
     function craftItem(recipe) {
-        if (GameState.resourceCounts.berries < (recipe.cost.berries || 0) ||
-            GameState.resourceCounts.nuts < (recipe.cost.nuts || 0) ||
-            GameState.resourceCounts.mushrooms < (recipe.cost.mushrooms || 0) ||
-            GameState.resourceCounts.seaweed < (recipe.cost.seaweed || 0) ||
-            GameState.resourceCounts.arsenic_mushrooms < (recipe.cost.arsenic_mushrooms || 0) ||
-            GameState.resourceCounts.thous_pine_wood < (recipe.cost.thous_pine_wood || 0) ||
-            GameState.resourceCounts.glass < (recipe.cost.glass || 0)) {
-            return;
+        // Generic affordability check — works for ALL resource types
+        for (const resource in recipe.cost) {
+            if ((GameState.resourceCounts[resource] || 0) < (recipe.cost[resource] || 0)) {
+                return;
+            }
         }
 
-        GameState.resourceCounts.berries -= (recipe.cost.berries || 0);
-        GameState.resourceCounts.nuts -= (recipe.cost.nuts || 0);
-        GameState.resourceCounts.mushrooms -= (recipe.cost.mushrooms || 0);
-        GameState.resourceCounts.seaweed -= (recipe.cost.seaweed || 0);
-        GameState.resourceCounts.arsenic_mushrooms -= (recipe.cost.arsenic_mushrooms || 0);
-        GameState.resourceCounts.thous_pine_wood -= (recipe.cost.thous_pine_wood || 0);
-        GameState.resourceCounts.glass -= (recipe.cost.glass || 0);
+        // Generic resource deduction — works for ALL resource types
+        for (const resource in recipe.cost) {
+            if (recipe.cost[resource]) {
+                GameState.resourceCounts[resource] -= recipe.cost[resource];
+            }
+        }
 
         // Add to inventory instead of using immediately
         recipe.craft();
@@ -629,6 +590,7 @@ window.Items = (function() {
             common: 0x888888,
             uncommon: 0x44aa99,
             rare: 0x7777ff,
+            epic: 0xaa44ff,
             legendary: 0xffaa00
         };
         const color = rarityColors[artifactData.rarity] || 0x888888;

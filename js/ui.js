@@ -74,6 +74,19 @@ window.UI = (function() {
             ctx.fill();
         }
 
+        // Draw coastal features (sand strip + ocean)
+        if (biomeData.waterFeature === 'ocean') {
+            const offset = CONFIG.WORLD_SIZE * 0.7;
+            // Sand strip
+            const sandStartY = (biomeData.forestEndZ + offset) * scale;
+            const sandEndY = (biomeData.sandEndZ + offset) * scale;
+            ctx.fillStyle = '#c2a060';
+            ctx.fillRect(0, sandStartY, size, sandEndY - sandStartY);
+            // Ocean
+            ctx.fillStyle = '#4a6a5a';
+            ctx.fillRect(0, sandEndY, size, size - sandEndY);
+        }
+
         ctx.fillStyle = '#0a2a0a';
         GameState.trees.forEach(tree => {
             const tx = (tree.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
@@ -171,6 +184,9 @@ window.UI = (function() {
         document.getElementById('arsenic-mushrooms-count').textContent = GameState.resourceCounts.arsenic_mushrooms;
         document.getElementById('thous-pine-wood-count').textContent = GameState.resourceCounts.thous_pine_wood;
         document.getElementById('glass-count').textContent = GameState.resourceCounts.glass;
+        document.getElementById('manglecacia-wood-count').textContent = GameState.resourceCounts.manglecacia_wood;
+        document.getElementById('seaspray-birch-wood-count').textContent = GameState.resourceCounts.seaspray_birch_wood;
+        document.getElementById('cinnamon-count').textContent = GameState.resourceCounts.cinnamon;
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
 
         // Update hunger bar
@@ -575,7 +591,12 @@ window.UI = (function() {
 
     var hotbarIcons = {
         wood_sword: '🗡️',
+        manglecacia_sword: '🗡️',
+        seaspray_birch_sword: '🗡️',
         wood_axe: '🪓',
+        barbanit_axe: '🪓',
+        manglecacia_axe: '🪓',
+        seaspray_birch_axe: '🪓',
         arsen_bomb: '💣'
     };
 

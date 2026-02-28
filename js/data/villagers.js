@@ -138,11 +138,12 @@ window.VILLAGERS = [
             nodes: {
                 // The first node - player sees this when talking
                 'greeting': {
-                    text: "Welcome, young traveler! Our village has stood here for generations. Badgers,weasels and other wild animals dont come too close.",
+                    text: "Welcome, Pedro! Our village has stood here for generations. Badgers, weasels and other wild animals don't come too close.",
                     choices: [
                         { text: "Tell me about the village.", nextNode: 'village_history' },
                         { text: "What dangers are out there?", nextNode: 'dangers' },
                         { text: "Trade eggs.", nextNode: 'egg_trade_offer' },
+                        { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }  // null = end conversation
                     ]
                 },
@@ -188,7 +189,7 @@ window.VILLAGERS = [
                 },
 
                 'farewell': {
-                    text: "Visit us anytime. You are always welcome here, young one.",
+                    text: "Visit us anytime, Pedro. You are always welcome here.",
                     choices: [
                         { text: "Goodbye.", nextNode: null }
                     ]
@@ -220,6 +221,49 @@ window.VILLAGERS = [
                     choices: [
                         { text: "I'll be back.", nextNode: 'greeting' }
                     ]
+                },
+
+                'cookie_quest': {
+                    text: "*Elder Hamsworth's eyes widen* Pedro... you've been asking around the village about the cookie recipe. I wondered when you'd finally come to me.",
+                    choices: [
+                        { text: "You know about it?!", nextNode: 'cookie_reveal_1' },
+                        { text: "Everyone pointed me to you.", nextNode: 'cookie_reveal_1' }
+                    ]
+                },
+
+                'cookie_reveal_1': {
+                    text: "Know about it? My dear boy... I'm the one who WROTE it. The World's Best Cookie Recipe. It was my life's work. I spent forty years perfecting it — travelling to distant lands, collecting rare ingredients, testing thousands of combinations.",
+                    choices: [
+                        { text: "YOU wrote it?!", nextNode: 'cookie_reveal_2' }
+                    ]
+                },
+
+                'cookie_reveal_2': {
+                    text: "When it was finally perfect, I wrote it on a single page and locked it in a chest. But word got out. Creatures from every biome wanted it. So I hid it — scattered the clues across the lands where no one would think to look. And then... YOU arrived.",
+                    choices: [
+                        { text: "Me? What do you mean?", nextNode: 'cookie_reveal_3' }
+                    ]
+                },
+
+                'cookie_reveal_3': {
+                    text: "Don't you remember, Pedro? You came to this forest searching for the recipe. You'd heard rumours of the World's Best Cookie and travelled from far away to find it. But you got lost in the wilderness, stumbled into our village half-starved, and... well, you've been here ever since. You forgot WHY you came!",
+                    choices: [
+                        { text: "I... I remember now!", nextNode: 'cookie_reveal_4' }
+                    ]
+                },
+
+                'cookie_reveal_4': {
+                    text: "You've proven yourself, Pedro. You've helped every villager, explored dangerous lands, and survived things that would make most peccaries faint. You've EARNED this recipe. Here it is — the World's Best Cookie:\n\n- 2 cups flour\n- 1 cup fresh butter\n- 1 cup sugar\n- 2 eggs (NOT goose eggs!)\n- 1 teaspoon of REAL cinnamon\n- A pinch of sea salt from the coast\n- And the secret ingredient... a single moonberry, found only in lands yet undiscovered.\n\nThe recipe is incomplete. There are ingredients out there, in biomes you haven't explored yet. Your journey isn't over, Pedro — it's just beginning!",
+                    choices: [
+                        { text: "The coast... the moonberry... I have to keep exploring!", nextNode: 'cookie_final', effect: { type: 'quest_clue', clue: 'elder_hamsworth' } }
+                    ]
+                },
+
+                'cookie_final': {
+                    text: "That's the spirit! The sea salt can be found at the coast — if you can find a way there. And the moonberry... who knows what other lands await? Go, Pedro. Bake that cookie. And when you do... save one for an old pig, will you?",
+                    choices: [
+                        { text: "I will, Elder Hamsworth. Thank you!", nextNode: null }
+                    ]
                 }
             }
         }
@@ -243,10 +287,11 @@ window.VILLAGERS = [
             start: 'greeting',
             nodes: {
                 'greeting': {
-                    text: "Oink oink! Welcome to my farm! I grow the finest vegetables!",
+                    text: "Oink oink! Welcome to my farm, Pedro! I grow the finest vegetables!",
                     choices: [
                         { text: "Tell me about your farm.", nextNode: 'farm_info' },
                         { text: "Can we trade?", nextNode: 'trade_offer' },
+                        { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }
                     ]
                 },
@@ -291,6 +336,21 @@ window.VILLAGERS = [
                     choices: [
                         { text: "I'll be back.", nextNode: null }
                     ]
+                },
+
+                'cookie_quest': {
+                    text: "Cookies?! Oh Pedro, you're still on about that recipe! Well, any good cookie needs fresh butter and eggs — and I mean GOOD eggs, not those goose ones. But the real secret is a special spice. I don't have it, but Bruno the blacksmith travels all over. He might know where to find it!",
+                    choices: [
+                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'quest_clue', clue: 'rosie' } },
+                        { text: "Back to other things.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'cookie_noted': {
+                    text: "Tell you what, Pedro — when you figure out that recipe, bring me a cookie and I'll trade you something special!",
+                    choices: [
+                        { text: "Deal!", nextNode: null }
+                    ]
                 }
             }
         }
@@ -314,11 +374,12 @@ window.VILLAGERS = [
             start: 'greeting',
             nodes: {
                 'greeting': {
-                    text: "*CLANG CLANG* Oh! Didn't see you there, little one. Welcome to the forge!",
+                    text: "*CLANG CLANG* Oh! Didn't see you there, Pedro! Welcome to the forge!",
                     choices: [
                         { text: "What are you making?", nextNode: 'forge_info' },
                         { text: "Buy weapons", nextNode: 'buy_weapons' },
                         { text: "Buy materials", nextNode: 'buy_materials' },
+                        { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }
                     ]
                 },
@@ -333,7 +394,7 @@ window.VILLAGERS = [
                 },
 
                 'buy_weapons': {
-                    text: "Ah, looking to defend yourself? I've got a sturdy wood sword and a sharp wood axe. 30 coins each!",
+                    text: "Looking to defend yourself, Pedro? I've got swords, axes AND a special Barbanit Axe that can chop savannah and coastal trees!",
                     choices: [
                         {
                             text: "Buy Wood Sword (30 coins)",
@@ -347,7 +408,21 @@ window.VILLAGERS = [
                             effect: { type: 'trade', cost: { coins: 30 }, reward: { item: 'wood_axe' } },
                             failNode: 'buy_fail'
                         },
+                        {
+                            text: "Buy Barbanit Axe (50 coins)",
+                            nextNode: 'barbanit_success',
+                            effect: { type: 'trade', cost: { coins: 50 }, reward: { item: 'barbanit_axe' } },
+                            failNode: 'buy_fail'
+                        },
                         { text: "Not now.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'barbanit_success': {
+                    text: "A Barbanit Axe! This beauty can chop acacia trees in the savannah and birch trees at the coast. You'll get manglecacia wood and seaspray birch wood — perfect for crafting even better tools!",
+                    choices: [
+                        { text: "Buy another weapon", nextNode: 'buy_weapons' },
+                        { text: "Thanks Bruno!", nextNode: null }
                     ]
                 },
 
@@ -406,6 +481,21 @@ window.VILLAGERS = [
                     choices: [
                         { text: "Thanks for the tip!", nextNode: null }
                     ]
+                },
+
+                'cookie_quest': {
+                    text: "*stops hammering* Cookie recipe?! Ha! Pedro, you remind me of my grandmother. She baked the most incredible cookies — cinnamon was her secret. Real cinnamon, not the cheap stuff. She said the best cinnamon came from a merchant who traded with explorers from distant lands. Patches might know more — that sneaky merchant knows everyone!",
+                    choices: [
+                        { text: "Thanks Bruno! I'll ask Patches.", nextNode: 'cookie_noted', effect: { type: 'quest_clue', clue: 'bruno' } },
+                        { text: "Back to other things.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'cookie_noted': {
+                    text: "And Pedro? If that recipe calls for any special tools — a mixing bowl, a baking tray — you come to me. I'll forge them!",
+                    choices: [
+                        { text: "You're the best, Bruno!", nextNode: null }
+                    ]
                 }
             }
         }
@@ -429,7 +519,7 @@ window.VILLAGERS = [
             start: 'greeting',
             nodes: {
                 'greeting': {
-                    text: "Psst! Hey there! Looking to trade?",
+                    text: "Psst! Hey Pedro! Looking to trade?",
                     choices: [
                         {
                             text: "Open Shop",
@@ -438,6 +528,7 @@ window.VILLAGERS = [
                             effect: { type: 'open_shop' }
                         },
                         { text: "What do you have?", nextNode: 'trade_info' },
+                        { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }
                     ]
                 },
@@ -506,6 +597,21 @@ window.VILLAGERS = [
                     choices: [
                         { text: "I'll return.", nextNode: null }
                     ]
+                },
+
+                'cookie_quest': {
+                    text: "*leans in close* The cookie recipe? THE cookie recipe? Pedro, my friend, that's not just any recipe. That's the legendary World's Best Cookie — said to be so delicious that whoever eats one can never be sad again! I've heard whispers about it for years. Only one pig in this whole village is old enough to know the truth... Elder Hamsworth. He keeps the ancient secrets.",
+                    choices: [
+                        { text: "Elder Hamsworth knows?!", nextNode: 'cookie_noted', effect: { type: 'quest_clue', clue: 'patches' } },
+                        { text: "Back to other things.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'cookie_noted': {
+                    text: "But be warned — the Elder doesn't share secrets easily. You'll need to earn his respect first. And Pedro... if you DO get that recipe... I'll pay TOP coin for the first batch. Deal?",
+                    choices: [
+                        { text: "Deal, Patches!", nextNode: null }
+                    ]
                 }
             }
         }
@@ -529,10 +635,11 @@ window.VILLAGERS = [
             start: 'greeting',
             nodes: {
                 'greeting': {
-                    text: "Oh dearie, you look tired! How can I help you?",
+                    text: "Oh Pedro dearie, you look tired! How can I help you?",
                     choices: [
                         { text: "Tell me about healing.", nextNode: 'health_advice' },
                         { text: "Can you heal me?", nextNode: 'healing_offer' },
+                        { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }
                     ]
                 },
@@ -578,6 +685,21 @@ window.VILLAGERS = [
                     text: "You're already in perfect health, dearie! No need for healing.",
                     choices: [
                         { text: "Thanks anyway!", nextNode: null }
+                    ]
+                },
+
+                'cookie_quest': {
+                    text: "A cookie recipe? Oh Pedro, you sweet thing! I used to bake the most wonderful cookies when I was younger. You need flour and sugar as a base — that much I remember. But the BEST recipe? The one everyone talks about? I think Farmer Rosie knows about the fresh ingredients you'd need. She grows all sorts of things!",
+                    choices: [
+                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'quest_clue', clue: 'granny_trotter' } },
+                        { text: "Back to other things.", nextNode: 'greeting' }
+                    ]
+                },
+
+                'cookie_noted': {
+                    text: "Good luck, dearie! And Pedro... when you find that recipe, you better bake me a batch!",
+                    choices: [
+                        { text: "I promise!", nextNode: null }
                     ]
                 }
             }

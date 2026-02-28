@@ -184,6 +184,36 @@ The Snow Temple where you found this... the Great Mages of Andurat built it to h
 
 This is a missing piece of the puzzle. With the skull AND the tooth, we now have evidence of the full evolutionary tree. Extraordinary work, young explorer!"`,
         reward: { coins: 200, score: 400 }
+    },
+
+    // ========================================================================
+    // COASTAL ARTIFACTS
+    // ========================================================================
+    {
+        id: 'uronal_seal_tooth',
+        name: 'Uronal Seal Tooth',
+        icon: '🦭',
+        rarity: 'epic',
+        spawnType: 'fixed',  // Always embedded in the Snow Temple west wall
+        biome: 'snowy_mountains',
+        description: 'A massive curved tooth from an ancient seal. Ice crystals still cling to its surface.',
+        lore: `"ASTONISHING! This is a tooth from an Uronal Seal — a creature we thought was pure myth!
+
+*Ningle nearly drops the tooth in his excitement, catching it at the last moment*
+
+The Uronal Seal was an ancient marine mammal that once lived in the frozen mountain lakes! Can you imagine — seals, living at the top of the world? The Great Mages of Andurat carved stories about them on the temple walls.
+
+But here's the fascinating part: as the mountains grew colder over thousands of years, the lakes froze solid. The seals couldn't survive in pure ice. So they migrated! They traveled DOWN from the peaks, through the arboreal forests, heading south...
+
+Professor Snoutsworth found scratches on rocks in the arboreal biome that she couldn't explain. 'Something large dragged itself over these stones,' she wrote. 'Something with flippers, not paws.' She was right! It was the Uronal Seals, making their great migration!
+
+They kept going south, past the forests, until they reached... the coast. Open water. The sea! That's where they settled — a whole new world at the edge of our land.
+
+If seals traveled from the mountains to the coast, then there must BE a coast! South of the arboreal forest, beyond where any peccary has explored. This tooth is proof that there's an entire coastline waiting to be discovered!
+
+The Mages embedded this tooth in the temple wall as a sacred waystone. They believed it would guide future explorers to the coast. And now... it can guide YOU."`,
+        reward: { coins: 300, score: 600 },
+        unlocksBiome: 'coastal'
     }
 ];
 

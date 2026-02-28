@@ -373,13 +373,21 @@ window.BESTIARY = [
     {
         id: 'drongulinat_cat',
         name: 'Drongulinat Cat',
+        type: 'Apex Predator',
         icon: '🐱',
-        biome: 'snowy_mountains',
-        variants: {
-            male: { name: 'Male', color: '#C0C8D0', size: 'Large (1.1x)' },
-            female: { name: 'Female', color: '#F0F0F0', size: 'Medium (0.95x)' },
-            baby_male: { name: 'Kitten (Male)', color: '#8B3A62', size: 'Small (0.5x)' },
-            baby_female: { name: 'Kitten (Female)', color: '#7A9A4A', size: 'Small (0.45x)' }
+        biome: 'Snowy Mountains',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' },
+            { id: 'baby_male', name: 'Kitten (Male)', gender: 'male', isBaby: true },
+            { id: 'baby_female', name: 'Kitten (Female)', gender: 'female', isBaby: true }
+        ],
+        animations: ['idle', 'walk', 'run'],
+        stats: {
+            health: '25 (male) / 20 (female)',
+            speed: 'Fast',
+            damage: '15 (male) / 12 (female)',
+            diet: 'Carnivore'
         },
         description: 'The Drongulinat Cat is a powerful snow predator and a living descendant of the ancient Felis Dronglaticus. Unlike its savannah cousin the Dronglous Cat (a tree-dwelling ambush hunter), the Drongulinat evolved for life in the frozen mountains. Its most striking adaptation is its massive, oversized paws — natural snowshoes that let it walk on deep snow without sinking. Males have a grey-white coat that blends with rocky outcrops, while females are pure white like fresh snow. Both share the signature golden eyes of the Dronglaticus lineage.',
         behavior: 'Drongulinat Cats are apex predators of the snowy mountains. They hunt Deericus Iricus in dramatic chases across the snow, though the deer are often fast enough to escape. When a cat does catch its prey, it performs a violent takedown — throwing the deer around before delivering a killing bite. Despite their ferocity as hunters, Drongulinat Cats are not aggressive toward peccaries unless provoked. Attack one, however, and it will retaliate with terrifying speed and power.',
@@ -388,13 +396,75 @@ window.BESTIARY = [
         special: {
             predator: true,
             huntsPrey: 'Deericus Iricus',
-            snowAdaptation: 'Oversized paws act as natural snowshoes',
-            colorDimorphism: 'Males grey-white, females pure white',
-            babyColors: 'Males reddish-purple (#8B3A62), females pumpkin-seed green (#7A9A4A)',
-            goldenEyes: 'Inherited from Felis Dronglaticus ancestor',
-            matingBehavior: 'Males seek out females, 5 minute pregnancy, 3 kittens per litter',
-            evolutionaryRelative: 'Dronglous Cat (savannah cousin)',
-            combatBehavior: 'Only attacks if provoked by player'
+            babyColors: 'Males reddish-purple (#8B3A62), females pumpkin-seed green (#7A9A4A)'
+        }
+    },
+
+    // ========================================================================
+    // SNOW CANINON LARTUS (Pack Dog)
+    // ========================================================================
+    {
+        id: 'snow_caninon',
+        name: 'Snow Caninons Lartus',
+        type: 'Pack Predator',
+        icon: '🐕',
+        biome: 'Snowy Mountains',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' },
+            { id: 'leader', name: 'Pack Leader', gender: 'male' },
+            { id: 'baby_male', name: 'Pup (Male)', gender: 'male', isBaby: true },
+            { id: 'baby_female', name: 'Pup (Female)', gender: 'female', isBaby: true }
+        ],
+        animations: ['idle', 'walk', 'run', 'dig'],
+        stats: {
+            health: '40 (male) / 35 (female) / 50 (leader)',
+            speed: 'Fast',
+            damage: '22 (male) / 18 (female) / 27 (leader)',
+            diet: 'Carnivore'
+        },
+        description: 'The Snow Caninons Lartus is a powerful pack dog with the general morphology of an XL bully — wide chest, muscular build, short snout, and massive paws adapted for walking on snow. Males are jet black while females are dark grey. The pack leader is 10% larger than regular males. Pups are lighter versions of their parents: male pups are dark grey and female pups are light grey, darkening to adult colours as they mature.',
+        behavior: 'Snow Caninons live in packs of 4, always led by a dominant male. The pack roams the snowy mountains together, staying close to their leader. When prey is abundant, males will choose a mate and the female becomes pregnant for 3 minutes. When it is time to give birth, the ENTIRE pack cooperates to dig a den — a large hole in the ground where the mother and pups will shelter. After birth, pups play outside the den but will flee inside if a Drongulinat Cat approaches. The mother will charge out to defend her pups, but sometimes she is too late and a cat drags a pup away. The pack hunts Deericus Iricus together — the leader chases and kills the prey, then drops it for the whole pack to feast.',
+        habitat: 'Found in the Snowy Mountains biome. Packs establish territories spread across the snow fields, with dens dug near their home territory.',
+        tips: 'Snow Caninons are friendly to the peccary UNLESS you enter their den — the mother will attack to protect her pups! Watch a pack hunt deer for a spectacular chase. If you see the whole pack digging, a den is being built and pups will arrive soon. Drongulinat Cats and Snow Caninons are natural enemies — cats hunt the pups while mothers fight back fiercely.',
+        special: {
+            predator: true,
+            packAnimal: true,
+            huntsPrey: 'Deericus Iricus',
+            naturalEnemy: 'Drongulinat Cat',
+            pupColors: 'Males dark grey (#3a3a3a), females light grey (#6a6a6a)'
+        }
+    },
+    {
+        id: 'baluban_oxen',
+        name: 'Snow Baluban Oxen',
+        type: 'Herd Herbivore',
+        icon: '🐂',
+        biome: 'Snowy Mountains',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' },
+            { id: 'leader', name: 'Herd Leader', gender: 'male' },
+            { id: 'baby_male', name: 'Calf (Male)', gender: 'male', isBaby: true },
+            { id: 'baby_female', name: 'Calf (Female)', gender: 'female', isBaby: true }
+        ],
+        animations: ['idle', 'walk', 'graze', 'rut'],
+        stats: {
+            health: '60 (male) / 50 (female) / 66 (leader)',
+            speed: 'Slow',
+            damage: '25 (male) / 15 (female) / 28 (leader)',
+            diet: 'Herbivore'
+        },
+        description: 'The Snow Baluban Oxen is a massive beast built upon the body of a musk ox, making it the largest animal in the game. Males are blue-grey (#6B7B8B) while females are jet black (#1A1A1A). Both genders have curved musk ox horns, but male horns are significantly larger with a thick boss plate. The herd leader is 10% larger with enormous horns. They have a distinctive shaggy fur "skirt" that hangs below their body. Calves are slimmer with proportionally longer legs — male calves are mud brown (#8B6914) while female calves are potato coloured (#C4A76C).',
+        behavior: 'Baluban Oxen live in enormous herds of 18 individuals (6 males, 12 females) led by a dominant male. Every 10 minutes, mating season arrives and males rut — two males approach each other and lock horns in a dramatic pushing contest. The winner claims the contested female. Pregnant females carry for 7 minutes before giving birth to a single calf. Calves mature after 6 minutes. If the herd leader has a male calf, when it matures, the young bull takes 1 male and 2 females to form a brand new herd!',
+        habitat: 'Found in the southern regions of the Snowy Mountains biome, where they graze on the same grass tufts as deer. They prefer open snow fields away from the more dangerous predators of the north.',
+        tips: 'Watch out for the dramatic hunts! Snow Caninon dog packs will try to hunt these massive beasts using coordinated tactics — surrounding, nipping, and leg-biting. During the standoff, the oxen may headbutt and kill attacking dogs, or the pack may overwhelm the oxen with a neck bite. A flawless kill by the dogs is extremely rare!',
+        special: {
+            herbivore: true,
+            herdAnimal: true,
+            grazesOn: 'Grass tufts',
+            huntedBy: 'Snow Caninons Lartus',
+            calfColors: 'Males mud brown (#8B6914), females potato (#C4A76C)'
         }
     }
 ];

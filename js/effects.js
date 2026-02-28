@@ -146,6 +146,18 @@ window.Effects = (function() {
                 return executeItem(effect);
 
             // ----------------------------------------------------------------
+            // QUEST CLUE - Track a story clue the player discovered
+            // ----------------------------------------------------------------
+            case 'quest_clue':
+                if (!GameState.questClues) GameState.questClues = [];
+                if (!GameState.questClues.includes(effect.clue)) {
+                    GameState.questClues.push(effect.clue);
+                    Game.playSound('collect');
+                    console.log('Quest clue discovered: ' + effect.clue);
+                }
+                return true;
+
+            // ----------------------------------------------------------------
             // UNKNOWN - Log warning but don't break
             // ----------------------------------------------------------------
             default:
@@ -174,26 +186,20 @@ window.Effects = (function() {
             return false;
         }
 
-        // Take the resources
+        // Take the resources (generic loop — works for ALL resource types!)
         if (effect.cost) {
             if (effect.cost.coins) {
                 GameState.pigCoins -= effect.cost.coins;
             }
-            if (effect.cost.berries) {
-                GameState.resourceCounts.berries -= effect.cost.berries;
-            }
-            if (effect.cost.nuts) {
-                GameState.resourceCounts.nuts -= effect.cost.nuts;
-            }
-            if (effect.cost.mushrooms) {
-                GameState.resourceCounts.mushrooms -= effect.cost.mushrooms;
-            }
-            if (effect.cost.eggs) {
-                GameState.resourceCounts.eggs -= effect.cost.eggs;
+            // Deduct any resource type automatically
+            for (var resource in GameState.resourceCounts) {
+                if (effect.cost[resource]) {
+                    GameState.resourceCounts[resource] -= effect.cost[resource];
+                }
             }
         }
 
-        // Give the rewards
+        // Give the rewards (generic loop for resources!)
         if (effect.reward) {
             if (effect.reward.health) {
                 GameState.health = Math.min(100, GameState.health + effect.reward.health);
@@ -204,12 +210,11 @@ window.Effects = (function() {
             if (effect.reward.score) {
                 GameState.score += effect.reward.score;
             }
-            // Resource rewards
-            if (effect.reward.glass) {
-                GameState.resourceCounts.glass += effect.reward.glass;
-            }
-            if (effect.reward.thous_pine_wood) {
-                GameState.resourceCounts.thous_pine_wood += effect.reward.thous_pine_wood;
+            // Generic resource rewards — works for ALL resource types
+            for (var resource in GameState.resourceCounts) {
+                if (effect.reward[resource]) {
+                    GameState.resourceCounts[resource] += effect.reward[resource];
+                }
             }
             // Item reward (e.g. buying a sword from a shop)
             if (effect.reward.item) {
@@ -288,28 +293,33 @@ window.Effects = (function() {
 
             case 'wood_sword':
             case 'wood_axe':
+            case 'barbanit_axe':
+            case 'manglecacia_axe':
+            case 'seaspray_birch_axe':
+            case 'manglecacia_sword':
+            case 'seaspray_birch_sword':
             case 'arsen_bomb':
                 // These go into inventory as equippable items
+                // Look up name/description from TOOL_STATS if available
                 var existing = GameState.inventoryItems.find(function(item) {
                     return item.id === effect.item;
                 });
                 if (existing) {
                     existing.count++;
                 } else {
-                    var itemNames = {
-                        wood_sword: 'Wood Sword',
-                        wood_axe: 'Wood Axe',
-                        arsen_bomb: 'Arsen Bomb'
-                    };
-                    var itemDescs = {
-                        wood_sword: 'A sturdy wooden sword. Equip from hotbar to fight!',
-                        wood_axe: 'A sharp wooden axe. Equip from hotbar to chop trees!',
-                        arsen_bomb: 'A toxic bomb. Equip from hotbar, click to throw!'
-                    };
+                    // Try to get info from TOOL_STATS first, fall back to hardcoded
+                    var toolInfo = TOOL_STATS.axes[effect.item] || TOOL_STATS.swords[effect.item];
+                    var itemName = toolInfo ? toolInfo.name : effect.item;
+                    var itemDesc = toolInfo ? toolInfo.description : '';
+                    // Special case for arsen bomb (not in TOOL_STATS)
+                    if (effect.item === 'arsen_bomb') {
+                        itemName = 'Arsen Bomb';
+                        itemDesc = 'A toxic bomb. Equip from hotbar, click to throw!';
+                    }
                     GameState.inventoryItems.push({
                         id: effect.item,
-                        name: itemNames[effect.item],
-                        description: itemDescs[effect.item],
+                        name: itemName,
+                        description: itemDesc,
                         effect: effect,
                         count: 1
                     });
@@ -347,21 +357,13 @@ window.Effects = (function() {
             return false;
         }
 
-        // Check each resource type
-        if (cost.berries && GameState.resourceCounts.berries < cost.berries) {
-            return false;
-        }
-        if (cost.nuts && GameState.resourceCounts.nuts < cost.nuts) {
-            return false;
-        }
-        if (cost.mushrooms && GameState.resourceCounts.mushrooms < cost.mushrooms) {
-            return false;
-        }
-        if (cost.eggs && GameState.resourceCounts.eggs < cost.eggs) {
-            return false;
-        }
-        if (cost.seaweed && GameState.resourceCounts.seaweed < cost.seaweed) {
-            return false;
+        // Generic resource check — works for ALL resource types!
+        // This loops through every resource the player can have and checks
+        // if the cost requires more than they have.
+        for (var resource in GameState.resourceCounts) {
+            if (cost[resource] && GameState.resourceCounts[resource] < cost[resource]) {
+                return false;
+            }
         }
 
         return true;

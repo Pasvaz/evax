@@ -71,7 +71,7 @@ window.GameState = {
     squatTimer: 0,
 
     score: 0,
-    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0 },
+    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0 },
     pigCoins: 0,
     timeElapsed: 0,
 
@@ -370,7 +370,7 @@ window.Game = (function() {
         if (testingMode) {
             // Testing mode - infinite resources and coins
             GameState.pigCoins = 99999;
-            GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999 };
+            GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
             GameState.hasSaddle = true;  // Give saddle for riding gazella
             // Give all artifacts
             GameState.artifacts = ARTIFACTS.map(a => a.id);
@@ -384,6 +384,8 @@ window.Game = (function() {
         GameState.hunger = 100;
         GameState.thirst = 100;
         GameState.dehydrationTimer = 0;
+        if (!GameState.questClues) GameState.questClues = [];
+        if (!GameState.artifactsGiven) GameState.artifactsGiven = [];
         UI.updateUI();
 
         GameState.gameRunning = true;
@@ -427,7 +429,7 @@ window.Game = (function() {
         GameState.dehydrationTimer = 0;
         GameState.score = 0;
         GameState.resourceCounts = Object.assign(
-            { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0 },
+            { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0 },
             CONFIG.STARTING_RESOURCES || {}
         );
         GameState.pigCoins = CONFIG.STARTING_COINS || 0;
@@ -663,8 +665,11 @@ window.Game = (function() {
         }
 
         // Check if this biome requires an artifact to enter
+        // Player can enter if they HAVE the artifact OR have already GIVEN it to a scientist
         if (targetData.requiresArtifact) {
-            if (!GameState.artifacts || !GameState.artifacts.includes(targetData.requiresArtifact)) {
+            const hasIt = GameState.artifacts && GameState.artifacts.includes(targetData.requiresArtifact);
+            const gaveIt = GameState.artifactsGiven && GameState.artifactsGiven.includes(targetData.requiresArtifact);
+            if (!hasIt && !gaveIt) {
                 const artifactData = window.getArtifactData(targetData.requiresArtifact);
                 const artifactName = artifactData ? artifactData.name : 'a special artifact';
                 showBlockedMessage('You need the ' + artifactName + ' to enter ' + targetData.displayName + '!');
@@ -788,6 +793,20 @@ window.Game = (function() {
                 GameState.drongulinatCatMatingTimer = 0;
             }
 
+            // Spawn Snow Caninon packs in snowy mountains biome
+            if (targetData.spawnSnowCaninons && targetData.snowCaninonPacks > 0) {
+                for (let i = 0; i < targetData.snowCaninonPacks; i++) {
+                    Enemies.spawnSnowCaninonPack(i);
+                }
+            }
+
+            // Spawn Baluban Oxen herds in snowy mountains biome
+            if (targetData.spawnBalubanOxen && targetData.balubanOxenHerds > 0) {
+                for (let i = 0; i < targetData.balubanOxenHerds; i++) {
+                    Enemies.spawnBalubanOxenHerd(18, i);
+                }
+            }
+
             // Spawn initial resources
             for (let i = 0; i < 10; i++) {
                 Items.spawnResource();
@@ -892,6 +911,25 @@ window.Game = (function() {
         }
         GameState.deerMatingTimer = 0;
 
+        // Clear snow caninon packs and dens
+        GameState.snowCaninonPacks = [];
+        if (GameState.snowCaninonDens) {
+            GameState.snowCaninonDens.forEach(d => GameState.scene.remove(d.mesh));
+            GameState.snowCaninonDens = [];
+        }
+
+        // Clear baluban oxen herds
+        GameState.balubanOxenHerds = [];
+
+        // Clear ocean water references
+        GameState.oceanWater = null;
+        GameState.oceanShoreZ = null;
+        GameState.oceanDeepZ = null;
+
+        // Clear temple position and reset ground level
+        GameState.templePosition = null;
+        GameState.groundLevel = 0;
+
         // Remove villagers
         GameState.villagers.forEach(v => GameState.scene.remove(v));
         GameState.villagers = [];
@@ -967,7 +1005,7 @@ window.Game = (function() {
 
             // Testing mode - keep resources infinite
             if (GameState.isTestingMode) {
-                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999 };
+                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
                 GameState.pigCoins = 99999;
                 GameState.hunger = 100;
                 GameState.thirst = 100;
@@ -1087,6 +1125,27 @@ window.Game = (function() {
 
             // Drongulinat Cat update - snowy mountain predators
             Enemies.updateDrongulinatCats(delta);
+
+            // Snow Caninon update - pack dogs
+            Enemies.updateSnowCaninonBehavior(delta);
+
+            // Baluban Oxen update - musk ox herds
+            Enemies.updateBalubanOxenBehavior(delta);
+
+            // Baluban Oxen mating timer - every 10 minutes (600 seconds)
+            if (!GameState.balubanOxenMatingTimer) GameState.balubanOxenMatingTimer = 0;
+            if (GameState.balubanOxenHerds && GameState.balubanOxenHerds.length > 0) {
+                GameState.balubanOxenMatingTimer += delta;
+                if (GameState.balubanOxenMatingTimer >= 600) {
+                    GameState.balubanOxenMatingTimer = 0;
+                    Enemies.triggerBalubanOxenMating();
+                }
+            }
+
+            // Ocean wave animation (coastal biome)
+            if (GameState.currentBiome === 'coastal') {
+                Environment.updateOceanWaves(delta);
+            }
 
             // Update carcasses - decomposition, color changes, sinking
             Enemies.updateCarcasses(delta);
@@ -1330,6 +1389,33 @@ window.Game = (function() {
                 if (typeof Enemies !== 'undefined' && Enemies.triggerDronglousCatHunt) {
                     Enemies.triggerDronglousCatHunt();
                     console.log('Dronglous Cat hunt triggered!');
+                }
+            });
+            document.getElementById('trigger-snow-caninon-hunt-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerSnowCaninonHunt && GameState.snowCaninonPacks) {
+                    GameState.snowCaninonPacks.forEach(pack => {
+                        if (!pack.currentHunt) {
+                            Enemies.triggerSnowCaninonHunt(pack);
+                        }
+                    });
+                    console.log('Snow Caninon hunt triggered!');
+                }
+            });
+            document.getElementById('trigger-oxen-mating-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerBalubanOxenMating) {
+                    Enemies.triggerBalubanOxenMating();
+                    console.log('Baluban Oxen mating triggered!');
+                }
+            });
+            document.getElementById('trigger-dog-hunt-oxen-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerSnowCaninonHunt && GameState.snowCaninonPacks) {
+                    // Force dogs to hunt oxen specifically
+                    GameState.snowCaninonPacks.forEach(pack => {
+                        if (!pack.currentHunt) {
+                            Enemies.triggerSnowCaninonHunt(pack);
+                        }
+                    });
+                    console.log('Dog Hunt Oxen triggered!');
                 }
             });
             document.getElementById('spawn-test-cat-btn').addEventListener('click', () => {
@@ -1764,6 +1850,7 @@ window.Game = (function() {
 
     /**
      * Handle click events for combat — sword, axe, bomb.
+     * Uses TOOL_STATS to look up damage/behavior instead of hardcoding.
      */
     function onCombatClick(event) {
         if (!GameState.gameRunning) return;
@@ -1777,8 +1864,10 @@ window.Game = (function() {
 
         const itemId = hotbarItem.id;
 
-        // Only handle combat items
-        if (itemId !== 'wood_sword' && itemId !== 'wood_axe' && itemId !== 'arsen_bomb') return;
+        // Check if this is a known tool type using TOOL_STATS
+        var isAxe = TOOL_STATS.axes[itemId] !== undefined;
+        var isSword = TOOL_STATS.swords[itemId] !== undefined;
+        if (!isAxe && !isSword && itemId !== 'arsen_bomb') return;
 
         // Raycast from mouse position
         const mouse = new THREE.Vector2();
@@ -1788,8 +1877,9 @@ window.Game = (function() {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, GameState.camera);
 
-        if (itemId === 'wood_sword') {
-            // SWORD: raycast against enemies
+        if (isSword) {
+            // SWORD: raycast against enemies, damage from TOOL_STATS
+            var swordStats = TOOL_STATS.swords[itemId];
             const intersects = raycaster.intersectObjects(GameState.enemies, true);
             if (intersects.length > 0) {
                 // Walk up to the root enemy group
@@ -1801,8 +1891,8 @@ window.Game = (function() {
                 if (obj.userData && obj.userData.type) {
                     const distance = GameState.peccary.position.distanceTo(obj.position);
                     if (distance <= 15) {
-                        // Hit! Deal 2 damage
-                        Enemies.damageEnemy(obj, 2);
+                        // Hit! Damage comes from the sword's stats
+                        Enemies.damageEnemy(obj, swordStats.damage);
                         Game.playSound('hurt');
                     } else {
                         showBlockedMessage('Too far away to hit!');
@@ -1810,8 +1900,9 @@ window.Game = (function() {
                 }
             }
         }
-        if (itemId === 'wood_axe') {
-            // AXE: raycast against trees
+        if (isAxe) {
+            // AXE: raycast against trees, check compatibility, pass axeId
+            var axeStats = TOOL_STATS.axes[itemId];
             const intersects = raycaster.intersectObjects(GameState.trees, true);
             if (intersects.length > 0) {
                 // Walk up to the root tree group
@@ -1821,10 +1912,16 @@ window.Game = (function() {
                 }
 
                 if (obj.userData && obj.userData.type === 'tree') {
+                    // Check if this axe can chop this tree type
+                    var treeBiome = obj.userData.biome;
+                    if (axeStats.canChop.indexOf(treeBiome) === -1) {
+                        showBlockedMessage("This axe can't chop this tree!");
+                        return;
+                    }
                     const distance = GameState.peccary.position.distanceTo(obj.position);
                     if (distance <= 15) {
-                        // Chop! Deal 1 damage to tree, get 1 wood
-                        Environment.damageTree(obj);
+                        // Chop! Pass the axeId so damageTree knows the stats
+                        Environment.damageTree(obj, itemId);
                     } else {
                         showBlockedMessage('Too far away to chop!');
                     }

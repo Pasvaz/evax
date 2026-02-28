@@ -13,6 +13,12 @@
 window.Inventory = (function() {
     'use strict';
 
+    // Drag-and-drop state
+    var dragItem = null;         // The item being dragged
+    var dragGhost = null;        // Ghost DOM element following cursor
+    var dragSourceSlot = null;   // The inventory slot element being dragged from
+    var isDragging = false;      // Whether a drag is in progress
+
     // Bestiary model viewer state
     let bestiaryScene = null;
     let bestiaryCamera = null;
@@ -76,6 +82,9 @@ window.Inventory = (function() {
         screen.classList.add('hidden');
         GameState.isInventoryOpen = false;
 
+        // Cancel any in-progress drag
+        cleanupDrag();
+
         // Clean up bestiary viewer
         cleanupBestiaryViewer();
     }
@@ -94,6 +103,7 @@ window.Inventory = (function() {
         document.getElementById('inventory-panel').classList.toggle('active', tabId === 'inventory');
         document.getElementById('artifacts-panel').classList.toggle('active', tabId === 'artifacts');
         document.getElementById('bestiary-panel').classList.toggle('active', tabId === 'bestiary');
+        document.getElementById('quest-panel').classList.toggle('active', tabId === 'quest');
         document.getElementById('bestiary-detail').classList.remove('active');
 
         // Refresh content
@@ -101,6 +111,8 @@ window.Inventory = (function() {
             refreshInventory();
         } else if (tabId === 'artifacts') {
             refreshArtifacts();
+        } else if (tabId === 'quest') {
+            refreshQuestLog();
         } else {
             showBestiaryGrid();
         }
@@ -112,7 +124,7 @@ window.Inventory = (function() {
      * @returns {string} - The emoji icon
      */
     // Items that can be equipped to the hotbar
-    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'arsen_bomb'];
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'arsen_bomb'];
 
     function isEquippable(itemId) {
         return EQUIPPABLE_ITEMS.includes(itemId);
@@ -128,6 +140,11 @@ window.Inventory = (function() {
             gazella_saddle: '🪑',
             wood_sword: '🗡️',
             wood_axe: '🪓',
+            barbanit_axe: '🪓',
+            manglecacia_axe: '🪓',
+            seaspray_birch_axe: '🪓',
+            manglecacia_sword: '🗡️',
+            seaspray_birch_sword: '🗡️',
             arsen_bomb: '💣'
         };
         return icons[itemId] || '📦';
@@ -168,8 +185,47 @@ window.Inventory = (function() {
                     ${item.count > 1 ? `<span class="inventory-slot-count">${item.count}</span>` : ''}
                 `;
                 if (isEquippable(item.id)) {
-                    slot.title = `${item.description}\n\nClick to equip to hotbar!`;
-                    slot.addEventListener('click', () => equipToHotbar(item));
+                    slot.title = `${item.description}\n\nDrag to a hotbar slot, or click to equip!`;
+
+                    // Mousedown: detect click vs drag
+                    slot.addEventListener('mousedown', function(e) {
+                        if (e.button !== 0) return; // Left click only
+                        e.stopPropagation(); // Prevent camera orbit
+
+                        var startX = e.clientX;
+                        var startY = e.clientY;
+                        var dragStarted = false;
+                        var thisSlot = slot;
+                        var thisItem = item;
+
+                        function onMouseMove(moveEvent) {
+                            var dx = moveEvent.clientX - startX;
+                            var dy = moveEvent.clientY - startY;
+
+                            // Start drag after 5px movement
+                            if (!dragStarted && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                                dragStarted = true;
+                                startDrag(thisItem, thisSlot, moveEvent);
+                            }
+                            if (dragStarted) {
+                                moveDrag(moveEvent);
+                            }
+                        }
+
+                        function onMouseUp(upEvent) {
+                            if (dragStarted) {
+                                endDrag(upEvent);
+                            } else {
+                                // Was a click — equip to selected slot (old behavior)
+                                equipToHotbar(thisItem);
+                            }
+                            window.removeEventListener('mousemove', onMouseMove);
+                            window.removeEventListener('mouseup', onMouseUp);
+                        }
+
+                        window.addEventListener('mousemove', onMouseMove);
+                        window.addEventListener('mouseup', onMouseUp);
+                    });
                 } else {
                     slot.title = `${item.description}\n\nClick to use!`;
                     slot.addEventListener('click', () => useItem(item));
@@ -242,14 +298,107 @@ window.Inventory = (function() {
         }
     }
 
+    // ========================================================================
+    // DRAG AND DROP — Drag items from inventory to hotbar slots
+    // ========================================================================
+
+    /**
+     * Start dragging an item from inventory.
+     * Creates a ghost element and highlights hotbar slots.
+     */
+    function startDrag(item, slotElement, event) {
+        if (!isEquippable(item.id)) return;
+
+        isDragging = true;
+        dragItem = item;
+        dragSourceSlot = slotElement;
+
+        // Dim the source slot
+        slotElement.classList.add('dragging');
+
+        // Create ghost element that follows cursor
+        dragGhost = document.createElement('div');
+        dragGhost.className = 'drag-ghost';
+        dragGhost.textContent = getItemIcon(item.id);
+        document.body.appendChild(dragGhost);
+        dragGhost.style.left = event.clientX + 'px';
+        dragGhost.style.top = event.clientY + 'px';
+
+        // Highlight all hotbar slots as valid drop targets
+        document.querySelectorAll('.hotbar-slot').forEach(function(slot) {
+            slot.classList.add('drag-over');
+        });
+
+        event.preventDefault();
+    }
+
+    /**
+     * Move the ghost element to follow the cursor.
+     */
+    function moveDrag(event) {
+        if (!isDragging || !dragGhost) return;
+        dragGhost.style.left = event.clientX + 'px';
+        dragGhost.style.top = event.clientY + 'px';
+    }
+
+    /**
+     * End a drag — check if cursor is over a hotbar slot and equip there.
+     */
+    function endDrag(event) {
+        if (!isDragging) return;
+
+        var targetSlotIndex = getHotbarSlotAtPosition(event.clientX, event.clientY);
+
+        if (targetSlotIndex !== null && dragItem) {
+            equipToHotbar(dragItem, targetSlotIndex);
+        }
+        // If dropped outside hotbar, item stays in inventory
+
+        cleanupDrag();
+    }
+
+    /**
+     * Find which hotbar slot (0-8) the mouse is over, using bounding rects.
+     * Returns null if the mouse isn't over any hotbar slot.
+     */
+    function getHotbarSlotAtPosition(x, y) {
+        var slots = document.querySelectorAll('.hotbar-slot');
+        for (var i = 0; i < slots.length; i++) {
+            var rect = slots[i].getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                return parseInt(slots[i].dataset.slot);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Clean up all drag state — remove ghost, highlights, reset variables.
+     */
+    function cleanupDrag() {
+        if (dragGhost && dragGhost.parentNode) {
+            dragGhost.parentNode.removeChild(dragGhost);
+        }
+        if (dragSourceSlot) {
+            dragSourceSlot.classList.remove('dragging');
+        }
+        document.querySelectorAll('.hotbar-slot').forEach(function(slot) {
+            slot.classList.remove('drag-over');
+        });
+        dragItem = null;
+        dragGhost = null;
+        dragSourceSlot = null;
+        isDragging = false;
+    }
+
     /**
      * Equip an item to the currently selected hotbar slot.
      * Moves item from inventory to hotbar.
      */
-    function equipToHotbar(item) {
+    function equipToHotbar(item, targetSlot) {
         if (!item || item.count <= 0) return;
 
-        const slot = GameState.selectedHotbarSlot;
+        const slot = (targetSlot !== undefined) ? targetSlot : GameState.selectedHotbarSlot;
 
         // If something is already in this slot, put it back in inventory
         const existing = GameState.hotbarSlots[slot];
@@ -543,8 +692,20 @@ window.Inventory = (function() {
                             model = modelBuilder(enemyData.colors, isPregnant);
                             break;
                         }
-                        case 'dronglous_cat': {
+                        case 'dronglous_cat':
+                        case 'drongulinat_cat': {
                             model = modelBuilder(enemyData.colors, isBaby);
+                            break;
+                        }
+                        case 'snow_caninon': {
+                            const isLeader = variant.id === 'leader';
+                            model = modelBuilder(enemyData.colors, isBaby, isLeader, isPregnant);
+                            break;
+                        }
+                        case 'baluban_oxen': {
+                            const hasHorns = enemyData.hasHorns !== false;
+                            const hornScale = variant.id === 'leader' ? 1.5 : (enemyData.hornSize || 1);
+                            model = modelBuilder(enemyData.colors, hasHorns, hornScale, isBaby, isPregnant);
                             break;
                         }
                         case 'deericus_iricus': {
@@ -563,7 +724,7 @@ window.Inventory = (function() {
                         // Scale babies to be smaller — but only for builders
                         // that DON'T handle baby size internally
                         // Builders with internal baby scaling: saltas_gazella, dronglous_cat, deericus_iricus
-                        const builderHandlesBabySize = ['saltas_gazella', 'dronglous_cat', 'deericus_iricus'];
+                        const builderHandlesBabySize = ['saltas_gazella', 'dronglous_cat', 'drongulinat_cat', 'deericus_iricus', 'snow_caninon', 'baluban_oxen'];
                         if (isBaby && !builderHandlesBabySize.includes(animal.id)) {
                             model.scale.set(0.5, 0.5, 0.5);
                         }
@@ -625,7 +786,7 @@ window.Inventory = (function() {
         }
 
         // Animals with gender suffixes in their IDs
-        const genderedAnimals = ['leopard_toad', 'grass_viper', 'antelope', 'wild_dog', 'saltas_gazella', 'dronglous_cat'];
+        const genderedAnimals = ['leopard_toad', 'grass_viper', 'antelope', 'wild_dog', 'saltas_gazella', 'dronglous_cat', 'drongulinat_cat', 'snow_caninon', 'baluban_oxen'];
 
         if (genderedAnimals.includes(animalId)) {
             // For babies, use the parent gender's colors (or male if unspecified)
@@ -1043,6 +1204,126 @@ window.Inventory = (function() {
         return GameState.artifacts && GameState.artifacts.includes(artifactId);
     }
 
+    /**
+     * Refresh the quest log panel showing Pedro's cookie recipe quest.
+     */
+    function refreshQuestLog() {
+        var container = document.getElementById('quest-log');
+        if (!container) return;
+
+        var clues = GameState.questClues || [];
+        var clueCount = clues.length;
+
+        // The chain of clues in order
+        var questSteps = [
+            {
+                id: 'granny_trotter',
+                name: 'Granny Trotter',
+                requiredScore: 25,
+                clueText: '"You need flour and sugar as a base. Ask Farmer Rosie about the fresh ingredients!"',
+                ingredient: 'Flour & Sugar'
+            },
+            {
+                id: 'rosie',
+                name: 'Farmer Rosie',
+                requiredScore: 50,
+                clueText: '"Any good cookie needs fresh butter and eggs! But the secret spice... ask Bruno."',
+                ingredient: 'Fresh Butter & Eggs'
+            },
+            {
+                id: 'bruno',
+                name: 'Bruno the Blacksmith',
+                requiredScore: 100,
+                clueText: '"Cinnamon was my grandmother\'s secret. Real cinnamon! Patches the merchant might know more."',
+                ingredient: 'Real Cinnamon'
+            },
+            {
+                id: 'patches',
+                name: 'Patches the Merchant',
+                requiredScore: 200,
+                clueText: '"The legendary World\'s Best Cookie... only Elder Hamsworth knows the full truth."',
+                ingredient: null
+            },
+            {
+                id: 'elder_hamsworth',
+                name: 'Elder Hamsworth',
+                requiredScore: 500,
+                clueText: '"The recipe is revealed! But it needs sea salt from the coast and a moonberry from lands yet undiscovered..."',
+                ingredient: 'Sea Salt & Moonberry'
+            }
+        ];
+
+        var html = '<div class="quest-title">The World\'s Best Cookie</div>';
+        html += '<div class="quest-subtitle">Pedro got lost searching for the legendary cookie recipe. Talk to the villagers to piece it together!</div>';
+
+        // Show each step
+        for (var i = 0; i < questSteps.length; i++) {
+            var step = questSteps[i];
+            var found = clues.includes(step.id);
+            var scoreMet = GameState.score >= step.requiredScore || GameState.isTestingMode;
+            var locked = !scoreMet && !found;
+
+            var clueClass = found ? 'quest-clue discovered' : (locked ? 'quest-clue locked' : 'quest-clue');
+            var statusClass, statusText;
+            if (found) {
+                statusClass = 'quest-clue-status found';
+                statusText = 'Discovered';
+            } else if (locked) {
+                statusClass = 'quest-clue-status locked-status';
+                statusText = 'Need ' + step.requiredScore + ' score';
+            } else {
+                statusClass = 'quest-clue-status not-found';
+                statusText = 'Not yet asked';
+            }
+
+            html += '<div class="' + clueClass + '">';
+            html += '<div class="quest-clue-header">';
+            html += '<span class="quest-clue-name">' + (i + 1) + '. ' + step.name + '</span>';
+            html += '<span class="' + statusClass + '">' + statusText + '</span>';
+            html += '</div>';
+            if (found) {
+                html += '<div class="quest-clue-text">' + step.clueText + '</div>';
+            } else if (!locked) {
+                html += '<div class="quest-clue-text" style="color:#888;">Ask about the cookie recipe...</div>';
+            } else {
+                html += '<div class="quest-clue-text" style="color:#555;">???</div>';
+            }
+            html += '</div>';
+        }
+
+        // Ingredient checklist
+        html += '<div class="quest-ingredient-list">';
+        html += '<h3>Recipe Ingredients (' + getFoundIngredientCount(clues) + '/6)</h3>';
+        var ingredients = [
+            { name: 'Flour', clue: 'granny_trotter' },
+            { name: 'Sugar', clue: 'granny_trotter' },
+            { name: 'Fresh Butter', clue: 'rosie' },
+            { name: 'Eggs (not goose!)', clue: 'rosie' },
+            { name: 'Real Cinnamon', clue: 'bruno' },
+            { name: 'Sea Salt from the Coast', clue: 'elder_hamsworth' },
+            { name: 'Moonberry (undiscovered lands)', clue: 'elder_hamsworth' }
+        ];
+        for (var j = 0; j < ingredients.length; j++) {
+            var ing = ingredients[j];
+            var ingFound = clues.includes(ing.clue);
+            html += '<div class="quest-ingredient ' + (ingFound ? 'found' : '') + '">';
+            html += (ingFound ? '[ x ] ' : '[ _ ] ') + (ingFound ? ing.name : '???');
+            html += '</div>';
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function getFoundIngredientCount(clues) {
+        var count = 0;
+        if (clues.includes('granny_trotter')) count += 2; // flour + sugar
+        if (clues.includes('rosie')) count += 2; // butter + eggs
+        if (clues.includes('bruno')) count += 1; // cinnamon
+        if (clues.includes('elder_hamsworth')) count += 2; // sea salt + moonberry
+        return count;
+    }
+
     // Public API
     return {
         init: init,
@@ -1051,6 +1332,7 @@ window.Inventory = (function() {
         close: close,
         refreshInventory: refreshInventory,
         refreshArtifacts: refreshArtifacts,
+        refreshQuestLog: refreshQuestLog,
         addArtifact: addArtifact,
         removeArtifact: removeArtifact,
         hasArtifact: hasArtifact,

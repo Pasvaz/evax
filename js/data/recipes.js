@@ -248,6 +248,86 @@ window.RECIPES = [
             type: 'item',
             item: 'arsen_bomb'
         }
+    },
+
+    // ========================================================================
+    // RECIPE 10: Manglecacia Sword
+    // ========================================================================
+    // A strong sword made from savannah acacia wood!
+    {
+        id: 'manglecacia_sword',
+        name: 'Manglecacia Sword',
+        description: 'A strong sword that deals 5 damage! (Select from hotbar)',
+        requiredScore: 200,
+
+        cost: {
+            manglecacia_wood: 10
+        },
+
+        effect: {
+            type: 'item',
+            item: 'manglecacia_sword'
+        }
+    },
+
+    // ========================================================================
+    // RECIPE 11: Manglecacia Axe
+    // ========================================================================
+    // A powerful axe that can chop ANY tree!
+    {
+        id: 'manglecacia_axe',
+        name: 'Manglecacia Axe',
+        description: 'A powerful axe that chops any tree! 5 hits, 3 wood per chop. (Select from hotbar)',
+        requiredScore: 200,
+
+        cost: {
+            manglecacia_wood: 10
+        },
+
+        effect: {
+            type: 'item',
+            item: 'manglecacia_axe'
+        }
+    },
+
+    // ========================================================================
+    // RECIPE 12: Seaspray Birch Sword
+    // ========================================================================
+    // The mightiest sword from coastal birch wood!
+    {
+        id: 'seaspray_birch_sword',
+        name: 'Seaspray Birch Sword',
+        description: 'A mighty sword that deals 8 damage! (Select from hotbar)',
+        requiredScore: 300,
+
+        cost: {
+            seaspray_birch_wood: 10
+        },
+
+        effect: {
+            type: 'item',
+            item: 'seaspray_birch_sword'
+        }
+    },
+
+    // ========================================================================
+    // RECIPE 13: Seaspray Birch Axe
+    // ========================================================================
+    // The ULTIMATE axe — chops any tree in just 3 hits!
+    {
+        id: 'seaspray_birch_axe',
+        name: 'Seaspray Birch Axe',
+        description: 'The ultimate axe! Chops any tree in 3 hits, 7 wood per chop! (Select from hotbar)',
+        requiredScore: 300,
+
+        cost: {
+            seaspray_birch_wood: 10
+        },
+
+        effect: {
+            type: 'item',
+            item: 'seaspray_birch_axe'
+        }
     }
 
 ];
