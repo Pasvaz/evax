@@ -406,7 +406,7 @@ window.Game = (function() {
         }, CONFIG.RESOURCE_SPAWN_RATE));
 
         setTimeout(() => {
-            if (GameState.gameRunning) {
+            if (GameState.gameRunning && GameState.currentBiome === 'arboreal') {
                 Enemies.spawnEnemy();
                 Enemies.spawnEnemy();
             }
@@ -727,120 +727,98 @@ window.Game = (function() {
             // Update biome label
             document.getElementById('biome-label').textContent = targetData.displayName;
 
-            // Spawn biome-specific content
-            if (targetData.spawnGeese && targetData.geese > 0) {
-                Enemies.spawnGeese(targetData.geese);
-            }
-
-            // Spawn leopard toads in savannah biome
-            if (targetData.spawnToads && targetData.toads > 0) {
-                Enemies.spawnToads(targetData.toads);
-                // Reset toad mating timer for the new biome
-                GameState.toadMatingTimer = 0;
-            }
-
-            // Spawn grass viper weasels in savannah biome
-            if (targetData.spawnGrassVipers && targetData.grassVipers > 0) {
-                Enemies.spawnGrassVipers(targetData.grassVipers);
-                // Reset grass viper mating timer
-                GameState.grassViperMatingTimer = 0;
-            }
-
-            // Spawn antelope herd in savannah biome
-            if (targetData.spawnAntelope && targetData.antelope > 0) {
-                Enemies.spawnAntelopeHerd(targetData.antelope);
-                // Reset antelope mating timer
-                GameState.antelopeMatingTimer = 0;
-            }
-
-            // Spawn wild dog pack in savannah biome
-            if (targetData.spawnWildDogs && targetData.wildDogs > 0) {
-                Enemies.spawnWildDogPack(targetData.wildDogs);
-                // Reset wild dog timers
-                GameState.wildDogMatingTimer = 0;
-                GameState.wildDogHuntTimer = 0;
-            }
-
-            // Spawn Saltas Gazella herd in savannah biome
-            if (targetData.spawnSaltasGazella && targetData.saltasGazella > 0) {
-                Enemies.spawnSaltasGazellaHerd(targetData.saltasGazella);
-                // Reset gazella mating timer
-                GameState.saltasGazellaMatingTimer = 0;
-            }
-
-            // Spawn Dronglous Cats in savannah biome (live in acacia trees)
-            if (targetData.spawnDronglousCats && targetData.dronglousCats > 0) {
-                Enemies.spawnDronglousCats(targetData.dronglousCats);
-                // Reset dronglous cat mating timer
-                GameState.dronglousCatMatingTimer = 0;
-            }
-
-            // Spawn Deericus Iricus herds in snowy mountains biome
-            if (targetData.spawnDeer && targetData.deer > 0) {
-                const herdsToSpawn = targetData.deer; // 2 herds
-                for (let i = 0; i < herdsToSpawn; i++) {
-                    const herdSize = 2 + Math.floor(Math.random() * 7); // 2-8 members
-                    Enemies.spawnDeericusIricusHerd(herdSize);
-                }
-                // Reset deer mating timer
-                GameState.deerMatingTimer = 0;
-            }
-
-            // Spawn Drongulinat Cats in snowy mountains biome
-            if (targetData.spawnDrongulinatCats && targetData.drongulinatCats > 0) {
-                Enemies.spawnDrongulinatCats(targetData.drongulinatCats);
-                // Reset mating timer
-                GameState.drongulinatCatMatingTimer = 0;
-            }
-
-            // Spawn Snow Caninon packs in snowy mountains biome
-            if (targetData.spawnSnowCaninons && targetData.snowCaninonPacks > 0) {
-                for (let i = 0; i < targetData.snowCaninonPacks; i++) {
-                    Enemies.spawnSnowCaninonPack(i);
-                }
-            }
-
-            // Spawn Baluban Oxen herds in snowy mountains biome
-            if (targetData.spawnBalubanOxen && targetData.balubanOxenHerds > 0) {
-                for (let i = 0; i < targetData.balubanOxenHerds; i++) {
-                    Enemies.spawnBalubanOxenHerd(18, i);
-                }
-            }
-
-            // Spawn initial resources
-            for (let i = 0; i < 10; i++) {
-                Items.spawnResource();
-            }
-
-            // Spawn artifacts (small chance for each type)
-            // Random artifacts - 30% chance to spawn 1-2
-            if (Math.random() < 0.3) {
-                Items.spawnArtifact('random');
-                if (Math.random() < 0.3) Items.spawnArtifact('random');
-            }
-            // Hidden artifacts - 20% chance to spawn 1
-            if (Math.random() < 0.2) {
-                Items.spawnArtifact('hidden');
-            }
-
-            // Restart spawn intervals only for biomes that have enemies
-            // For now, only arboreal biome has enemies
-            if (targetBiome === 'arboreal') {
-                GameState.spawnIntervals.push(setInterval(() => {
-                    if (GameState.gameRunning) Enemies.spawnEnemy();
-                }, CONFIG.ENEMY_SPAWN_RATE));
-            }
-
-            // Always restart resource spawning
-            GameState.spawnIntervals.push(setInterval(() => {
-                if (GameState.gameRunning) Items.spawnResource();
-            }, CONFIG.RESOURCE_SPAWN_RATE));
+            // Spawn all biome-specific content (animals, resources, intervals)
+            spawnBiomeContent(targetBiome);
 
             // Hide transition message
             transitionEl.style.display = 'none';
             GameState.isTransitioning = false;
 
         }, 3000);
+    }
+
+    /**
+     * Spawn all biome-specific content (animals, resources, artifacts, intervals).
+     * Used by both biome transition and save/load restore.
+     * @param {string} biomeId - The biome to populate
+     */
+    function spawnBiomeContent(biomeId) {
+        var targetData = getBiomeData(biomeId);
+
+        // Spawn biome-specific animals
+        if (targetData.spawnGeese && targetData.geese > 0) {
+            Enemies.spawnGeese(targetData.geese);
+        }
+        if (targetData.spawnToads && targetData.toads > 0) {
+            Enemies.spawnToads(targetData.toads);
+            GameState.toadMatingTimer = 0;
+        }
+        if (targetData.spawnGrassVipers && targetData.grassVipers > 0) {
+            Enemies.spawnGrassVipers(targetData.grassVipers);
+            GameState.grassViperMatingTimer = 0;
+        }
+        if (targetData.spawnAntelope && targetData.antelope > 0) {
+            Enemies.spawnAntelopeHerd(targetData.antelope);
+            GameState.antelopeMatingTimer = 0;
+        }
+        if (targetData.spawnWildDogs && targetData.wildDogs > 0) {
+            Enemies.spawnWildDogPack(targetData.wildDogs);
+            GameState.wildDogMatingTimer = 0;
+            GameState.wildDogHuntTimer = 0;
+        }
+        if (targetData.spawnSaltasGazella && targetData.saltasGazella > 0) {
+            Enemies.spawnSaltasGazellaHerd(targetData.saltasGazella);
+            GameState.saltasGazellaMatingTimer = 0;
+        }
+        if (targetData.spawnDronglousCats && targetData.dronglousCats > 0) {
+            Enemies.spawnDronglousCats(targetData.dronglousCats);
+            GameState.dronglousCatMatingTimer = 0;
+        }
+        if (targetData.spawnDeer && targetData.deer > 0) {
+            for (let i = 0; i < targetData.deer; i++) {
+                const herdSize = 2 + Math.floor(Math.random() * 7);
+                Enemies.spawnDeericusIricusHerd(herdSize);
+            }
+            GameState.deerMatingTimer = 0;
+        }
+        if (targetData.spawnDrongulinatCats && targetData.drongulinatCats > 0) {
+            Enemies.spawnDrongulinatCats(targetData.drongulinatCats);
+            GameState.drongulinatCatMatingTimer = 0;
+        }
+        if (targetData.spawnSnowCaninons && targetData.snowCaninonPacks > 0) {
+            for (let i = 0; i < targetData.snowCaninonPacks; i++) {
+                Enemies.spawnSnowCaninonPack(i);
+            }
+        }
+        if (targetData.spawnBalubanOxen && targetData.balubanOxenHerds > 0) {
+            for (let i = 0; i < targetData.balubanOxenHerds; i++) {
+                Enemies.spawnBalubanOxenHerd(18, i);
+            }
+        }
+
+        // Spawn initial resources
+        for (let i = 0; i < 10; i++) {
+            Items.spawnResource();
+        }
+
+        // Spawn artifacts (small chance for each type)
+        if (Math.random() < 0.3) {
+            Items.spawnArtifact('random');
+            if (Math.random() < 0.3) Items.spawnArtifact('random');
+        }
+        if (Math.random() < 0.2) {
+            Items.spawnArtifact('hidden');
+        }
+
+        // Restart spawn intervals
+        if (biomeId === 'arboreal') {
+            GameState.spawnIntervals.push(setInterval(() => {
+                if (GameState.gameRunning) Enemies.spawnEnemy();
+            }, CONFIG.ENEMY_SPAWN_RATE));
+        }
+        GameState.spawnIntervals.push(setInterval(() => {
+            if (GameState.gameRunning) Items.spawnResource();
+        }, CONFIG.RESOURCE_SPAWN_RATE));
     }
 
     /**
@@ -1209,6 +1187,12 @@ window.Game = (function() {
                 GameState.keys[e.key.toLowerCase()] = true;
                 if (e.key === ' ') e.preventDefault();
 
+                // Escape — also closes saves modal
+                if (e.key === 'Escape' && !document.getElementById('saves-modal').classList.contains('hidden')) {
+                    closeSavesModal();
+                    return;
+                }
+
                 if (e.key.toLowerCase() === 'e') {
                     // Handle interactions based on context
                     if (GameState.isInsideHut) {
@@ -1294,9 +1278,52 @@ window.Game = (function() {
             });
 
             // Start screen buttons
-            document.getElementById('explore-btn').addEventListener('click', () => startGame(false));
-            document.getElementById('testing-btn').addEventListener('click', showPasswordPopup);
+            document.getElementById('new-game-btn').addEventListener('click', () => startGame(false));
             document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+            // Continue button — loads most recent save
+            document.getElementById('continue-btn').addEventListener('click', () => {
+                var recent = SaveSystem.getMostRecentSave();
+                if (recent) {
+                    startGame(false);  // Boot the game engine
+                    var result = SaveSystem.restoreSaveData(recent);
+                    if (result.warnings.length > 0) {
+                        console.warn('Load warnings:', result.warnings);
+                        SaveSystem.showSaveNotification('Loaded (with warnings)');
+                    } else {
+                        SaveSystem.showSaveNotification('Game Loaded!');
+                    }
+                }
+            });
+
+            // Load Game button — opens saves modal in load mode
+            document.getElementById('load-game-btn').addEventListener('click', () => {
+                openSavesModal('load');
+            });
+
+            // Show Continue/Load buttons if saves exist
+            var existingSaves = SaveSystem.getAllSaves();
+            if (existingSaves.length > 0) {
+                document.getElementById('continue-btn').style.display = '';
+                document.getElementById('load-game-btn').style.display = '';
+            }
+
+            // Save button in HUD
+            document.getElementById('save-btn').addEventListener('click', () => {
+                if (GameState.gameRunning) {
+                    openSavesModal('save');
+                }
+            });
+
+            // Saves modal close button
+            document.getElementById('saves-close-btn').addEventListener('click', closeSavesModal);
+            document.getElementById('saves-new-slot-btn').addEventListener('click', () => {
+                var name = prompt('Name your save:', '');
+                if (name === null) return;  // Cancelled
+                SaveSystem.saveGame(null, name || null);
+                SaveSystem.showSaveNotification('Game Saved!');
+                renderSavesList('save');  // Refresh the list
+            });
 
             // Password popup buttons
             document.getElementById('password-submit').addEventListener('click', checkPassword);
@@ -2165,6 +2192,187 @@ window.Game = (function() {
         }
     }
 
+    // ========================================================================
+    // SAVES MODAL
+    // ========================================================================
+
+    /**
+     * Open the saves modal in 'save' or 'load' mode.
+     * @param {string} mode - 'save' or 'load'
+     */
+    function openSavesModal(mode) {
+        var modal = document.getElementById('saves-modal');
+        var title = document.getElementById('saves-modal-title');
+        var newSlotBtn = document.getElementById('saves-new-slot-btn');
+
+        modal.classList.remove('hidden');
+        modal.dataset.mode = mode;
+
+        if (mode === 'save') {
+            title.textContent = 'Save Game';
+            newSlotBtn.style.display = '';
+        } else {
+            title.textContent = 'Load Game';
+            newSlotBtn.style.display = 'none';
+        }
+
+        renderSavesList(mode);
+    }
+
+    /**
+     * Close the saves modal.
+     */
+    function closeSavesModal() {
+        document.getElementById('saves-modal').classList.add('hidden');
+    }
+
+    /**
+     * Render the saves list inside the modal.
+     * @param {string} mode - 'save' or 'load'
+     */
+    function renderSavesList(mode) {
+        var container = document.getElementById('saves-list');
+        var saves = SaveSystem.getAllSaves();
+
+        container.innerHTML = '';
+
+        if (saves.length === 0) {
+            container.innerHTML = '<div class="saves-empty">No saved games yet.</div>';
+            return;
+        }
+
+        saves.forEach(function(save, index) {
+            var slot = document.createElement('div');
+            slot.className = 'save-slot';
+
+            var date = new Date(save.timestamp);
+            var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+            var dateStr = pad(date.getDate()) + '/' + pad(date.getMonth() + 1) + '/' + date.getFullYear() +
+                          ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+
+            var biomeNames = {
+                arboreal: 'Arboreal',
+                savannah: 'Savannah',
+                snowy_mountains: 'Snowy Mountains',
+                coastal: 'Coastal'
+            };
+
+            slot.innerHTML =
+                '<div class="save-slot-info">' +
+                    '<div class="save-slot-name">' + (save.name || 'Unnamed Save') + '</div>' +
+                    '<div class="save-slot-details">' +
+                        'Score: ' + (save.score || 0) +
+                        ' | ' + (biomeNames[save.currentBiome] || save.currentBiome) +
+                        ' | ' + dateStr +
+                    '</div>' +
+                '</div>' +
+                '<div class="save-slot-actions">' +
+                    (mode === 'save' ?
+                        '<button class="overwrite-btn" data-index="' + index + '">Overwrite</button>' :
+                        '<button class="load-btn" data-index="' + index + '">Load</button>'
+                    ) +
+                    '<button class="export-btn" data-index="' + index + '" title="Export JSON">{ }</button>' +
+                    '<button class="delete-btn" data-index="' + index + '" title="Delete">X</button>' +
+                '</div>';
+
+            container.appendChild(slot);
+        });
+
+        // Wire up buttons
+        container.querySelectorAll('.overwrite-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.index);
+                var existingName = saves[idx] ? saves[idx].name : null;
+                SaveSystem.saveGame(idx, existingName);
+                SaveSystem.showSaveNotification('Game Saved!');
+                renderSavesList(mode);
+            });
+        });
+
+        container.querySelectorAll('.load-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.index);
+                closeSavesModal();
+
+                // If game isn't running yet, boot it first
+                if (!GameState.gameRunning) {
+                    startGame(false);
+                }
+
+                var result = SaveSystem.loadGame(idx);
+                if (result.success) {
+                    if (result.warnings.length > 0) {
+                        console.warn('Load warnings:', result.warnings);
+                        SaveSystem.showSaveNotification('Loaded (with warnings)');
+                    } else {
+                        SaveSystem.showSaveNotification('Game Loaded!');
+                    }
+                } else {
+                    SaveSystem.showSaveNotification('Load Failed!');
+                }
+            });
+        });
+
+        container.querySelectorAll('.export-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.index);
+                var json = SaveSystem.exportSave(idx);
+                if (json) {
+                    // Copy to clipboard and trigger download
+                    var blob = new Blob([json], { type: 'application/json' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'evax-save-' + idx + '.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    SaveSystem.showSaveNotification('Save exported!');
+                }
+            });
+        });
+
+        container.querySelectorAll('.delete-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.index);
+                if (confirm('Delete this save?')) {
+                    SaveSystem.deleteSave(idx);
+                    renderSavesList(mode);
+                }
+            });
+        });
+    }
+
+    // ========================================================================
+    // CONSOLE TESTING MODE - Game.test()
+    // ========================================================================
+    /**
+     * Enter testing mode from the console.
+     * Usage: Game.test() — activates testing mode with the password.
+     */
+    function enableTestingMode() {
+        if (!GameState.gameRunning) {
+            // If on start screen, start in testing mode directly
+            startGame(true);
+            console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
+            return;
+        }
+
+        // Already in a game — toggle testing mode on
+        GameState.isTestingMode = true;
+        GameState.pigCoins = 99999;
+        GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
+        GameState.hasSaddle = true;
+        GameState.artifacts = ARTIFACTS.map(a => a.id);
+        document.getElementById('testing-indicator').classList.remove('hidden');
+        UI.updateUI();
+        console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
+        console.log('Press T to open testing menu');
+    }
+
     // Public API
     return {
         init: init,
@@ -2182,6 +2390,10 @@ window.Game = (function() {
         teleportToBiome: teleportToBiome,
         updateBecomeAnimal: updateBecomeAnimal,
         stopBecomeAnimal: stopBecomeAnimal,
-        showBlockedMessage: showBlockedMessage
+        showBlockedMessage: showBlockedMessage,
+        openSavesModal: openSavesModal,
+        closeSavesModal: closeSavesModal,
+        spawnBiomeContent: spawnBiomeContent,
+        test: enableTestingMode
     };
 })();
