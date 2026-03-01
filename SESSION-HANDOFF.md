@@ -79,6 +79,19 @@ Added body separation logic in `updateEnemies()` (around line 11723) to prevent 
 - When loading a save into a non-arboreal biome, this would fire and spawn wrong enemies
 - Fixed by adding `&& GameState.currentBiome === 'arboreal'` check to the callback
 
+### 10. Deferred Terrain Initialization (`game.js`)
+
+- **Before**: `Game.init()` called `Environment.createGround()` + `Environment.createForest()` at page load, always building arboreal terrain — even when the player would load a savannah save
+- **After**: `Game.init()` only sets up scene, camera, renderer, lighting, player mesh, UI, and event listeners. **No terrain is built at page load.**
+- Terrain is now built at the moment we know the biome:
+  - **New Game**: `Environment.rebuildForBiome('arboreal')` + `spawnBiomeContent('arboreal')`
+  - **Continue/Load**: `restoreSaveData()` already calls `rebuildForBiome(targetBiome)` internally
+  - **Game.test()** (from console, before game starts): `rebuildForBiome('arboreal')` + `spawnBiomeContent('arboreal')`
+  - **Restart (death)**: always rebuilds arboreal via `rebuildForBiome('arboreal')`
+- Every path now goes through `rebuildForBiome(biomeId)` — no special-case for arboreal
+- `startGame()` is now a pure engine boot: UI visibility, audio init, testing flags, `gameRunning = true`
+- Password popup HTML, CSS, and JS completely removed
+
 ---
 
 ## Files Changed
@@ -86,9 +99,9 @@ Added body separation logic in `updateEnemies()` (around line 11723) to prevent 
 | File | Change |
 |------|--------|
 | `js/save.js` | **NEW** — entire save/load engine |
-| `js/game.js` | Start screen wiring, save modal functions, `spawnBiomeContent()`, `Game.test()`/`Game.test(false)` with snapshot, setTimeout fix |
+| `js/game.js` | Start screen wiring, save modal functions, `spawnBiomeContent()`, `Game.test()`/`Game.test(false)` with snapshot, setTimeout fix, deferred terrain init, password popup removed |
 | `js/enemies.js` | Enemy/player and enemy/enemy separation in `updateEnemies()` |
-| `index.html` | Start screen buttons, saves modal HTML, save notification toast, save button in HUD, player panel layout, saves modal CSS, save button CSS |
+| `index.html` | Start screen buttons, saves modal HTML, save notification toast, save button in HUD, player panel layout, saves modal CSS, save button CSS, password popup removed |
 
 ---
 
@@ -111,8 +124,10 @@ js/environment.js
 - **Overwrite doesn't prompt for name** — keeps the existing save name
 - **New Save prompts for name** — via browser `prompt()`, empty = auto-generated name (level + date)
 - **Biome mismatch on load** — player spawns in village with a warning (not an error)
-- **Testing mode from start screen** — starts game directly in test mode, no snapshot (nothing to restore)
-- **Password popup HTML still exists** but is no longer wired to any button
+- **Testing mode via console** — `Game.test()` from console before game starts acts like New Game + test mode (no snapshot since there's nothing to restore). `Game.test()` mid-game takes a snapshot; `Game.test(false)` restores it.
+- **Password popup removed** — HTML, CSS, and JS functions all deleted
+- **No terrain at page load** — `Game.init()` no longer builds any terrain. The start screen shows over an empty canvas (the DOM overlay covers it). Terrain is built only when we know the biome.
+- **Separation damage: stale distance** — the damage check uses the `distance` variable calculated BEFORE separation pushes the enemy away. This means an enemy that got pushed out of range still deals damage that frame. This is intentional for now — recalculating after push would make combat milder (enemies get one bite then bounce off). This is a **game design decision** for the kid to make. See `TEACHING-NOTES.md` "Separation vs Damage" section. My suggestion is to increase the damage and apply a bite and push mechanics.
 
 ---
 

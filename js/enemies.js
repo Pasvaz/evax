@@ -11735,12 +11735,12 @@ window.Enemies = (function() {
                 var other = GameState.enemies[j];
                 var dx = other.position.x - enemy.position.x;
                 var dz = other.position.z - enemy.position.z;
-                var dist2 = Math.sqrt(dx * dx + dz * dz);
+                var enemyDist = Math.sqrt(dx * dx + dz * dz);
                 var minDist = enemy.userData.radius + other.userData.radius;
-                if (dist2 < minDist && dist2 > 0.01) {
-                    var overlapAmt = minDist - dist2;
-                    var nx = dx / dist2;
-                    var nz = dz / dist2;
+                if (enemyDist < minDist && enemyDist > 0.01) {
+                    var overlapAmt = minDist - enemyDist;
+                    var nx = dx / enemyDist;
+                    var nz = dz / enemyDist;
                     var halfPush = overlapAmt * 0.25;
                     enemy.position.x -= nx * halfPush;
                     enemy.position.z -= nz * halfPush;

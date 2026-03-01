@@ -353,6 +353,7 @@ window.Game = (function() {
     /**
      * Start the game.
      * @param {boolean} testingMode - Whether to start in testing mode
+     * Content spawning is handled separately by spawnBiomeContent() or restoreSaveData().
      */
     function startGame(testingMode = false) {
         document.getElementById('start-screen').classList.add('hidden');
@@ -389,28 +390,6 @@ window.Game = (function() {
         UI.updateUI();
 
         GameState.gameRunning = true;
-
-        for (let i = 0; i < 10; i++) {
-            Items.spawnResource();
-        }
-
-        // Spawn geese on riverbank (friendly guardians)
-        Enemies.spawnGeese(5);
-
-        GameState.spawnIntervals.push(setInterval(() => {
-            if (GameState.gameRunning) Enemies.spawnEnemy();
-        }, CONFIG.ENEMY_SPAWN_RATE));
-
-        GameState.spawnIntervals.push(setInterval(() => {
-            if (GameState.gameRunning) Items.spawnResource();
-        }, CONFIG.RESOURCE_SPAWN_RATE));
-
-        setTimeout(() => {
-            if (GameState.gameRunning && GameState.currentBiome === 'arboreal') {
-                Enemies.spawnEnemy();
-                Enemies.spawnEnemy();
-            }
-        }, 3000);
     }
 
     /**
@@ -459,13 +438,6 @@ window.Game = (function() {
         GameState.isSquatting = false;
         GameState.drinkingTime = 0;
 
-        // Reset biome to arboreal if in a different biome
-        if (GameState.currentBiome !== 'arboreal') {
-            GameState.currentBiome = 'arboreal';
-            Environment.rebuildForBiome('arboreal');
-            document.getElementById('biome-label').textContent = 'Arboreal Biome';
-        }
-
         if (GameState.isCraftMenuOpen) {
             GameState.isCraftMenuOpen = false;
             document.getElementById('craft-menu').classList.add('hidden');
@@ -475,22 +447,8 @@ window.Game = (function() {
             UI.closeShop();
         }
 
-        GameState.enemies.forEach(e => GameState.scene.remove(e));
-        GameState.resources.forEach(r => GameState.scene.remove(r));
-        GameState.nests.forEach(n => {
-            GameState.scene.remove(n.mesh);
-            if (n.egg && n.egg.mesh) GameState.scene.remove(n.egg.mesh);
-        });
-        GameState.enemies = [];
-        GameState.resources = [];
-        GameState.nests = [];
-        GameState.chasingGeese = [];
-
-        // Remove all carcasses
-        if (GameState.carcasses) {
-            GameState.carcasses.forEach(c => GameState.scene.remove(c));
-            GameState.carcasses = [];
-        }
+        // Clear all biome content (enemies, resources, nests, intervals)
+        clearBiomeContent();
 
         // Respawn player in the village (safe zone)
         GameState.peccary.position.set(
@@ -499,6 +457,11 @@ window.Game = (function() {
             CONFIG.VILLAGE_CENTER.z
         );
         GameState.peccary.rotation.y = 0;
+
+        // Always rebuild arboreal terrain (init doesn't build terrain)
+        GameState.currentBiome = 'arboreal';
+        Environment.rebuildForBiome('arboreal');
+        document.getElementById('biome-label').textContent = BIOMES.arboreal.displayName;
 
         document.getElementById('game-over-screen').classList.add('hidden');
         document.getElementById('ui-overlay').classList.remove('hidden');
@@ -510,27 +473,8 @@ window.Game = (function() {
         UI.updateUI();
         GameState.gameRunning = true;
 
-        for (let i = 0; i < 10; i++) {
-            Items.spawnResource();
-        }
-
-        // Spawn geese on riverbank (friendly guardians)
-        Enemies.spawnGeese(5);
-
-        GameState.spawnIntervals.push(setInterval(() => {
-            if (GameState.gameRunning) Enemies.spawnEnemy();
-        }, CONFIG.ENEMY_SPAWN_RATE));
-
-        GameState.spawnIntervals.push(setInterval(() => {
-            if (GameState.gameRunning) Items.spawnResource();
-        }, CONFIG.RESOURCE_SPAWN_RATE));
-
-        setTimeout(() => {
-            if (GameState.gameRunning) {
-                Enemies.spawnEnemy();
-                Enemies.spawnEnemy();
-            }
-        }, 3000);
+        // Spawn arboreal content (same as any other biome)
+        spawnBiomeContent('arboreal');
     }
 
     /**
@@ -815,6 +759,14 @@ window.Game = (function() {
             GameState.spawnIntervals.push(setInterval(() => {
                 if (GameState.gameRunning) Enemies.spawnEnemy();
             }, CONFIG.ENEMY_SPAWN_RATE));
+
+            // Delayed initial enemy spawn
+            setTimeout(() => {
+                if (GameState.gameRunning && GameState.currentBiome === 'arboreal') {
+                    Enemies.spawnEnemy();
+                    Enemies.spawnEnemy();
+                }
+            }, 3000);
         }
         GameState.spawnIntervals.push(setInterval(() => {
             if (GameState.gameRunning) Items.spawnResource();
@@ -1171,10 +1123,9 @@ window.Game = (function() {
 
             GameState.clock = new THREE.Clock();
 
-            // Create game world
+            // Set up scene essentials (lighting + player) — terrain is deferred
+            // until we know the biome (New Game, Continue, Load, or Test)
             Environment.setupLighting();
-            Environment.createGround();
-            Environment.createForest();
             Player.createPeccary();
             UI.setupMinimap();
             Inventory.init();
@@ -1278,14 +1229,20 @@ window.Game = (function() {
             });
 
             // Start screen buttons
-            document.getElementById('new-game-btn').addEventListener('click', () => startGame(false));
+            document.getElementById('new-game-btn').addEventListener('click', () => {
+                startGame(false);
+                GameState.currentBiome = 'arboreal';
+                Environment.rebuildForBiome('arboreal');
+                document.getElementById('biome-label').textContent = BIOMES.arboreal.displayName;
+                spawnBiomeContent('arboreal');
+            });
             document.getElementById('restart-btn').addEventListener('click', restartGame);
 
             // Continue button — loads most recent save
             document.getElementById('continue-btn').addEventListener('click', () => {
                 var recent = SaveSystem.getMostRecentSave();
                 if (recent) {
-                    startGame(false);  // Boot the game engine
+                    startGame(false);
                     var result = SaveSystem.restoreSaveData(recent);
                     if (result.warnings.length > 0) {
                         console.warn('Load warnings:', result.warnings);
@@ -1323,14 +1280,6 @@ window.Game = (function() {
                 SaveSystem.saveGame(null, name || null);
                 SaveSystem.showSaveNotification('Game Saved!');
                 renderSavesList('save');  // Refresh the list
-            });
-
-            // Password popup buttons
-            document.getElementById('password-submit').addEventListener('click', checkPassword);
-            document.getElementById('password-cancel').addEventListener('click', hidePasswordPopup);
-            document.getElementById('password-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') checkPassword();
-                if (e.key === 'Escape') hidePasswordPopup();
             });
 
             // Testing menu biome buttons
@@ -1555,40 +1504,6 @@ window.Game = (function() {
     // ========================================================================
     // TESTING MODE FUNCTIONS
     // ========================================================================
-
-    /**
-     * Show the password popup for testing mode.
-     */
-    function showPasswordPopup() {
-        document.getElementById('password-popup').classList.remove('hidden');
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-error').classList.add('hidden');
-        document.getElementById('password-input').focus();
-    }
-
-    /**
-     * Hide the password popup.
-     */
-    function hidePasswordPopup() {
-        document.getElementById('password-popup').classList.add('hidden');
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-error').classList.add('hidden');
-    }
-
-    /**
-     * Check the entered password and start testing mode if correct.
-     */
-    function checkPassword() {
-        const input = document.getElementById('password-input').value;
-        if (input === 'claude123') {
-            hidePasswordPopup();
-            startGame(true);  // Start in testing mode
-        } else {
-            document.getElementById('password-error').classList.remove('hidden');
-            document.getElementById('password-input').value = '';
-            document.getElementById('password-input').focus();
-        }
-    }
 
     /**
      * Toggle the testing menu (T key).
@@ -2359,6 +2274,10 @@ window.Game = (function() {
     function enableTestingMode() {
         if (!GameState.gameRunning) {
             startGame(true);
+            GameState.currentBiome = 'arboreal';
+            Environment.rebuildForBiome('arboreal');
+            document.getElementById('biome-label').textContent = BIOMES.arboreal.displayName;
+            spawnBiomeContent('arboreal');
             console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
             return;
         }
@@ -2421,9 +2340,6 @@ window.Game = (function() {
         gameOver: gameOver,
         transitionToBiome: transitionToBiome,
         clearBiomeContent: clearBiomeContent,
-        showPasswordPopup: showPasswordPopup,
-        hidePasswordPopup: hidePasswordPopup,
-        checkPassword: checkPassword,
         toggleTestingMenu: toggleTestingMenu,
         teleportToBiome: teleportToBiome,
         updateBecomeAnimal: updateBecomeAnimal,
