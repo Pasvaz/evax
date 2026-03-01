@@ -11720,8 +11720,37 @@ window.Enemies = (function() {
                 }
             }
 
-            // Collision with player - only for hostile enemies
-            if (!enemy.userData.friendly && distance < enemy.userData.radius + GameState.peccary.userData.radius) {
+            // --- Separation: push enemy away from player ---
+            var separationRadius = enemy.userData.radius + GameState.peccary.userData.radius;
+            if (distance < separationRadius && distance > 0.01) {
+                var overlap = separationRadius - distance;
+                var pushX = (enemy.position.x - GameState.peccary.position.x) / distance;
+                var pushZ = (enemy.position.z - GameState.peccary.position.z) / distance;
+                enemy.position.x += pushX * overlap * 0.5;
+                enemy.position.z += pushZ * overlap * 0.5;
+            }
+
+            // --- Separation: push enemies away from each other ---
+            for (var j = i + 1; j < GameState.enemies.length; j++) {
+                var other = GameState.enemies[j];
+                var dx = other.position.x - enemy.position.x;
+                var dz = other.position.z - enemy.position.z;
+                var dist2 = Math.sqrt(dx * dx + dz * dz);
+                var minDist = enemy.userData.radius + other.userData.radius;
+                if (dist2 < minDist && dist2 > 0.01) {
+                    var overlapAmt = minDist - dist2;
+                    var nx = dx / dist2;
+                    var nz = dz / dist2;
+                    var halfPush = overlapAmt * 0.25;
+                    enemy.position.x -= nx * halfPush;
+                    enemy.position.z -= nz * halfPush;
+                    other.position.x += nx * halfPush;
+                    other.position.z += nz * halfPush;
+                }
+            }
+
+            // Collision with player - only for hostile enemies (damage)
+            if (!enemy.userData.friendly && distance < separationRadius) {
                 Game.takeDamage(enemy.userData.damage * delta, enemy.userData.type);
             }
 
