@@ -2347,21 +2347,33 @@ window.Game = (function() {
     }
 
     // ========================================================================
-    // CONSOLE TESTING MODE - Game.test()
+    // CONSOLE TESTING MODE - Game.test() / Game.test(false)
     // ========================================================================
-    /**
-     * Enter testing mode from the console.
-     * Usage: Game.test() — activates testing mode with the password.
-     */
+    var testSnapshot = null;
+
+    function toggleTestMode(enable) {
+        if (enable === false) return disableTestingMode();
+        return enableTestingMode();
+    }
+
     function enableTestingMode() {
         if (!GameState.gameRunning) {
-            // If on start screen, start in testing mode directly
             startGame(true);
             console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
             return;
         }
 
-        // Already in a game — toggle testing mode on
+        // Snapshot current values before testing overwrites them
+        testSnapshot = {
+            health: GameState.health,
+            hunger: GameState.hunger,
+            thirst: GameState.thirst,
+            pigCoins: GameState.pigCoins,
+            resourceCounts: Object.assign({}, GameState.resourceCounts),
+            hasSaddle: GameState.hasSaddle,
+            artifacts: (GameState.artifacts || []).slice()
+        };
+
         GameState.isTestingMode = true;
         GameState.pigCoins = 99999;
         GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
@@ -2370,7 +2382,33 @@ window.Game = (function() {
         document.getElementById('testing-indicator').classList.remove('hidden');
         UI.updateUI();
         console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
-        console.log('Press T to open testing menu');
+        console.log('Press T to open testing menu. Type Game.play() to exit.');
+    }
+
+    function disableTestingMode() {
+        if (!GameState.isTestingMode) {
+            console.log('Not in testing mode.');
+            return;
+        }
+
+        GameState.isTestingMode = false;
+        GameState.isTestingMenuOpen = false;
+        document.getElementById('testing-indicator').classList.add('hidden');
+        document.getElementById('testing-menu').classList.add('hidden');
+
+        if (testSnapshot) {
+            GameState.health = testSnapshot.health;
+            GameState.hunger = testSnapshot.hunger;
+            GameState.thirst = testSnapshot.thirst;
+            GameState.pigCoins = testSnapshot.pigCoins;
+            GameState.resourceCounts = testSnapshot.resourceCounts;
+            GameState.hasSaddle = testSnapshot.hasSaddle;
+            GameState.artifacts = testSnapshot.artifacts;
+            testSnapshot = null;
+        }
+
+        UI.updateUI();
+        console.log('%c TESTING MODE OFF — stats restored ', 'background: #44aa44; color: white; font-size: 16px; padding: 4px;');
     }
 
     // Public API
@@ -2394,6 +2432,6 @@ window.Game = (function() {
         openSavesModal: openSavesModal,
         closeSavesModal: closeSavesModal,
         spawnBiomeContent: spawnBiomeContent,
-        test: enableTestingMode
+        test: toggleTestMode
     };
 })();
