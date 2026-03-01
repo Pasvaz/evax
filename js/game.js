@@ -1138,9 +1138,13 @@ window.Game = (function() {
                 GameState.keys[e.key.toLowerCase()] = true;
                 if (e.key === ' ') e.preventDefault();
 
-                // Escape — also closes saves modal
+                // Escape — close overlays
                 if (e.key === 'Escape' && !document.getElementById('saves-modal').classList.contains('hidden')) {
                     closeSavesModal();
+                    return;
+                }
+                if (e.key === 'Escape' && WorldMap.isOpen()) {
+                    WorldMap.close();
                     return;
                 }
 
@@ -1187,6 +1191,13 @@ window.Game = (function() {
                 if (e.key.toLowerCase() === 't') {
                     if (GameState.isTestingMode && GameState.gameRunning && !GameState.isDialogOpen && !GameState.isInsideHut) {
                         toggleTestingMenu();
+                    }
+                }
+
+                // M key - World Map
+                if (e.key.toLowerCase() === 'm') {
+                    if (GameState.gameRunning && !GameState.isDialogOpen && !GameState.isShopOpen && !GameState.isInventoryOpen && !GameState.isCraftMenuOpen && !GameState.isInsideHut) {
+                        WorldMap.toggle();
                     }
                 }
 

@@ -99,9 +99,10 @@ Added body separation logic in `updateEnemies()` (around line 11723) to prevent 
 | File | Change |
 |------|--------|
 | `js/save.js` | **NEW** — entire save/load engine |
-| `js/game.js` | Start screen wiring, save modal functions, `spawnBiomeContent()`, `Game.test()`/`Game.test(false)` with snapshot, setTimeout fix, deferred terrain init, password popup removed |
+| `js/game.js` | Start screen wiring, save modal functions, `spawnBiomeContent()`, `Game.test()`/`Game.test(false)` with snapshot, setTimeout fix, deferred terrain init, password popup removed, M key map toggle |
 | `js/enemies.js` | Enemy/player and enemy/enemy separation in `updateEnemies()` |
-| `index.html` | Start screen buttons, saves modal HTML, save notification toast, save button in HUD, player panel layout, saves modal CSS, save button CSS, password popup removed |
+| `js/map.js` | **NEW** — hand-drawn SVG world map with biome regions, landmarks, player icon, locked overlays |
+| `index.html` | Start screen buttons, saves modal HTML, save notification toast, save button in HUD, player panel layout, saves modal CSS, save button CSS, password popup removed, world map container + CSS |
 
 ---
 
@@ -129,8 +130,22 @@ js/environment.js
 - **No terrain at page load** — `Game.init()` no longer builds any terrain. The start screen shows over an empty canvas (the DOM overlay covers it). Terrain is built only when we know the biome.
 - **Separation damage: stale distance** — the damage check uses the `distance` variable calculated BEFORE separation pushes the enemy away. This means an enemy that got pushed out of range still deals damage that frame. This is intentional for now — recalculating after push would make combat milder (enemies get one bite then bounce off). This is a **game design decision** for the kid to make. See `TEACHING-NOTES.md` "Separation vs Damage" section. My suggestion is to increase the damage and apply a bite and push mechanics.
 
+### 11. World Map (`js/map.js` — NEW FILE)
+
+Full-screen SVG world map with hand-drawn parchment style:
+- **M key** to toggle open/close, **Escape** or click backdrop to close
+- **4 biome regions**: Arboreal (center), Savannah (top), Snowy Mountains (top-right), Coastal (bottom)
+- **Hand-drawn landmarks**: trees, acacia trees, birch trees, village huts, river, watering hole, research hut, snow temple, mountain peaks, ocean waves, shells, snowflakes
+- **Peccary icon** showing player's current position (mapped from world coords to SVG)
+- **Locked biomes**: foggy overlay with padlock + requirement text ("Score 500", "Skull Required", "Seal Tooth Required")
+- **Lock state updates** dynamically based on score, artifacts, and testing mode
+- **Parchment styling**: noise texture, double-line border, compass rose, Georgia serif font, sepia colors
+- **Legend** in bottom-left showing map icons
+- Dashed connection lines between biomes
+
 ---
 
 ## What's NOT Done Yet
 
+- **Map: player movement while map is open** — player can still walk with WASD while viewing the map. If annoying, add a movement block when `WorldMap.isOpen()`.
 - See `TECH_FEATS.md` and `ROADMAP.md` for other pending items.

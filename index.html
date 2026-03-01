@@ -1405,6 +1405,31 @@
             filter: brightness(1.8);
         }
         /* ========================================= */
+        /* WORLD MAP                                */
+        /* ========================================= */
+        #world-map-container {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 250;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            pointer-events: auto;
+        }
+        #world-map-container.hidden {
+            display: none;
+        }
+        .world-map-svg {
+            width: min(90vw, 900px);
+            height: auto;
+            filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
+            border-radius: 12px;
+        }
+        .map-fog {
+            transition: opacity 0.4s;
+        }
+        /* ========================================= */
         /* TESTING MODE STYLES                      */
         /* ========================================= */
         #start-buttons {
@@ -1653,6 +1678,8 @@
     <!-- Save notification toast -->
     <div id="save-notification" class="hidden"></div>
 
+    <!-- World Map overlay -->
+    <div id="world-map-container" class="hidden"></div>
 
     <!-- Testing mode indicator -->
     <div id="testing-indicator" class="hidden">TESTING MODE</div>
@@ -2018,6 +2045,7 @@
     <script src="js/ui.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/research-hut.js"></script>
+    <script src="js/map.js"></script>
 
     <!-- Initialize Game -->
     <script>
