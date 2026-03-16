@@ -1340,6 +1340,378 @@ window.ENEMIES = [
     //     }
     // }
 
+    // =====================================================================
+    // URONIN SEALS — Colony marine mammals on ocean islands
+    // Descended from the extinct Uronal Seal
+    // =====================================================================
+
+    {
+        id: 'uronin_seal_male',
+        type: 'uronin_seal',
+        category: 'herbivore',
+        speed: 2,
+        speedVariation: 0.5,
+        damage: 12,
+        radius: 1.0,
+        size: 1.2,
+        health: 40,
+        spawnWeight: 0,
+        minimapColor: '#708090',
+        groundY: 0.2,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        isHerdAnimal: true,
+        immuneToWater: true,
+        colors: {
+            body: "#808080",
+            belly: "#A0A0A0",
+            patches: "#6688AA",
+            flippers: "#606060",
+            face: "#909090",
+            nose: "#2A2A2A",
+            whiskers: "#CCCCCC",
+            eyes: "#1A1A1A",
+            mouth: "#3A3A3A"
+        }
+    },
+    {
+        id: 'uronin_seal_female',
+        type: 'uronin_seal',
+        category: 'herbivore',
+        speed: 2,
+        speedVariation: 0.5,
+        damage: 8,
+        radius: 0.85,
+        size: 1.0,
+        health: 35,
+        spawnWeight: 0,
+        minimapColor: '#B0B0B0',
+        groundY: 0.18,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        isHerdAnimal: true,
+        immuneToWater: true,
+        canGetPregnant: true,
+        colors: {
+            body: "#B0B0B0",
+            belly: "#C8C8C8",
+            patches: "#E0E0E0",
+            flippers: "#909090",
+            face: "#B8B8B8",
+            nose: "#3A3A3A",
+            whiskers: "#DDDDDD",
+            eyes: "#1A1A1A",
+            mouth: "#4A4A4A"
+        }
+    },
+    {
+        id: 'uronin_seal_baby_male',
+        type: 'uronin_seal',
+        category: 'herbivore',
+        speed: 1.5,
+        speedVariation: 0.3,
+        damage: 1,
+        radius: 0.4,
+        size: 0.5,
+        health: 15,
+        spawnWeight: 0,
+        minimapColor: '#FFFFFF',
+        groundY: 0.1,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        isHerdAnimal: true,
+        immuneToWater: true,
+        colors: {
+            body: "#F0F0F0",
+            belly: "#FFFFFF",
+            patches: "#F5F5F5",
+            flippers: "#E0E0E0",
+            face: "#F0F0F0",
+            nose: "#2A2A2A",
+            whiskers: "#FFFFFF",
+            eyes: "#000000",
+            eyeSize: 1.5,
+            mouth: "#3A3A3A"
+        }
+    },
+    {
+        id: 'uronin_seal_baby_female',
+        type: 'uronin_seal',
+        category: 'herbivore',
+        speed: 1.5,
+        speedVariation: 0.3,
+        damage: 1,
+        radius: 0.35,
+        size: 0.45,
+        health: 13,
+        spawnWeight: 0,
+        minimapColor: '#1A1A1A',
+        groundY: 0.09,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        isHerdAnimal: true,
+        immuneToWater: true,
+        colors: {
+            body: "#1A1A1A",
+            belly: "#2A2A2A",
+            patches: "#222222",
+            flippers: "#111111",
+            face: "#1A1A1A",
+            nose: "#0A0A0A",
+            whiskers: "#444444",
+            eyes: "#000000",
+            eyeSize: 1.5,
+            mouth: "#111111"
+        }
+    },
+
+    // =====================================================================
+    // SLITTED SARDINES — Shoaling fish in the coastal ocean
+    // Males have a distinctive blue slit along their back
+    // =====================================================================
+
+    {
+        id: 'slitted_sardine_male',
+        type: 'slitted_sardine',
+        category: 'fish',
+        speed: 2,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.3,
+        size: 0.2,
+        health: 1,
+        spawnWeight: 0,
+        minimapColor: '#C0C0C0',
+        groundY: -0.5,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        immuneToWater: true,
+        isFish: true,
+        colors: {
+            body: "#C0C0C0",
+            slit: "#4466AA",
+            tail: "#A0A0A0",
+            eyes: "#1A1A1A",
+            fins: "#B0B0B0"
+        }
+    },
+    {
+        id: 'slitted_sardine_female',
+        type: 'slitted_sardine',
+        category: 'fish',
+        speed: 2,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.3,
+        size: 0.2,
+        health: 1,
+        spawnWeight: 0,
+        minimapColor: '#C0C0C0',
+        groundY: -0.5,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        immuneToWater: true,
+        isFish: true,
+        colors: {
+            body: "#C0C0C0",
+            slit: "#C0C0C0",
+            tail: "#A0A0A0",
+            eyes: "#1A1A1A",
+            fins: "#B0B0B0"
+        }
+    },
+
+    // =====================================================================
+    // ORCLETONS — Large solitary fish
+    // Males are blue, females are orange
+    // =====================================================================
+
+    {
+        id: 'orcleton_male',
+        type: 'orcleton',
+        category: 'fish',
+        speed: 1.5,
+        speedVariation: 0.3,
+        damage: 0,
+        radius: 0.5,
+        size: 0.6,
+        health: 3,
+        spawnWeight: 0,
+        minimapColor: '#3355AA',
+        groundY: -1.0,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        immuneToWater: true,
+        isFish: true,
+        colors: {
+            body: "#3355AA",
+            tail: "#224488",
+            fins: "#4466BB",
+            eyes: "#1A1A1A",
+            belly: "#5577CC"
+        }
+    },
+    {
+        id: 'orcleton_female',
+        type: 'orcleton',
+        category: 'fish',
+        speed: 1.5,
+        speedVariation: 0.3,
+        damage: 0,
+        radius: 0.5,
+        size: 0.6,
+        health: 3,
+        spawnWeight: 0,
+        minimapColor: '#DD7733',
+        groundY: -1.0,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        immuneToWater: true,
+        isFish: true,
+        colors: {
+            body: "#DD7733",
+            tail: "#BB5522",
+            fins: "#EE8844",
+            eyes: "#1A1A1A",
+            belly: "#FFAA66"
+        }
+    },
+
+    // =====================================================================
+    // BAKKA SEALS — Solitary territorial marine mammals
+    // Males are beige, females are grey, babies are burgundy/maroon
+    // =====================================================================
+
+    {
+        id: 'bakka_seal_male',
+        type: 'bakka_seal',
+        category: 'carnivore',
+        speed: 3,
+        speedVariation: 0.5,
+        chaseSpeed: 4,
+        damage: 10,
+        radius: 0.85,
+        size: 0.9,
+        health: 25,
+        spawnWeight: 0,
+        minimapColor: '#D2B48C',
+        groundY: -0.3,
+        friendly: false,
+        biome: 'coastal',
+        gender: 'male',
+        immuneToWater: true,
+        colors: {
+            body: "#D2B48C",
+            belly: "#E8D5B0",
+            flippers: "#C0A07A",
+            face: "#D8C098",
+            nose: "#2A2A2A",
+            whiskers: "#F0E0C0",
+            eyes: "#1A1A1A",
+            mouth: "#3A3A3A"
+        }
+    },
+    {
+        id: 'bakka_seal_female',
+        type: 'bakka_seal',
+        category: 'carnivore',
+        speed: 3,
+        speedVariation: 0.5,
+        chaseSpeed: 4,
+        damage: 8,
+        radius: 0.75,
+        size: 0.8,
+        health: 20,
+        spawnWeight: 0,
+        minimapColor: '#808080',
+        groundY: -0.3,
+        friendly: false,
+        biome: 'coastal',
+        gender: 'female',
+        immuneToWater: true,
+        canGetPregnant: true,
+        colors: {
+            body: "#808080",
+            belly: "#9A9A9A",
+            flippers: "#6A6A6A",
+            face: "#888888",
+            nose: "#2A2A2A",
+            whiskers: "#BBBBBB",
+            eyes: "#1A1A1A",
+            mouth: "#3A3A3A"
+        }
+    },
+    {
+        id: 'bakka_seal_baby_male',
+        type: 'bakka_seal',
+        category: 'carnivore',
+        speed: 2,
+        speedVariation: 0.3,
+        damage: 1,
+        radius: 0.35,
+        size: 0.4,
+        health: 8,
+        spawnWeight: 0,
+        minimapColor: '#800020',
+        groundY: -0.3,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        immuneToWater: true,
+        colors: {
+            body: "#800020",
+            belly: "#992233",
+            flippers: "#660018",
+            face: "#880022",
+            nose: "#1A1A1A",
+            whiskers: "#AA4455",
+            eyes: "#000000",
+            eyeSize: 1.5,
+            mouth: "#2A2A2A"
+        }
+    },
+    {
+        id: 'bakka_seal_baby_female',
+        type: 'bakka_seal',
+        category: 'carnivore',
+        speed: 2,
+        speedVariation: 0.3,
+        damage: 1,
+        radius: 0.3,
+        size: 0.35,
+        health: 7,
+        spawnWeight: 0,
+        minimapColor: '#800000',
+        groundY: -0.3,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        immuneToWater: true,
+        colors: {
+            body: "#800000",
+            belly: "#992222",
+            flippers: "#660000",
+            face: "#880000",
+            nose: "#1A1A1A",
+            whiskers: "#AA3333",
+            eyes: "#000000",
+            eyeSize: 1.5,
+            mouth: "#2A2A2A"
+        }
+    }
+
 ];
 
 

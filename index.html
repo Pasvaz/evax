@@ -139,6 +139,44 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
+        #oxygen-panel {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #oxygen-panel .stat-label {
+            margin-bottom: 5px;
+            color: #60c0ff;
+        }
+        #oxygen-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2060a0;
+        }
+        #oxygen-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #2080cc, #60c0ff);
+            transition: width 0.3s;
+        }
+        #oxygen-bar.drowning {
+            background: linear-gradient(to right, #cc2222, #ff4444);
+            animation: pulse-oxygen 0.5s infinite;
+        }
+        @keyframes pulse-oxygen {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
         #controls-info {
             position: fixed;
             bottom: 20px;
@@ -286,23 +324,62 @@
             padding: 0 20px;
             color: #c0d8b8;
         }
-        #resource-icons {
-            display: flex;
-            gap: 15px;
+        .resource-bar-wrapper {
+            position: relative;
+            pointer-events: auto;
         }
-        .resource-icon {
+        #resource-bar-collapsed {
+            display: flex;
+            gap: 12px;
+        }
+        .resource-bar-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            font-size: 18px;
         }
-        .resource-icon span {
-            font-size: 20px;
+        .resource-bar-item .res-count {
+            font-size: 16px;
+            font-weight: bold;
         }
-        .arsenic-icon {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            vertical-align: middle;
+        #resource-bar-expanded {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 320px;
+            background: rgba(20, 18, 15, 0.95);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+            padding: 10px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            z-index: 150;
+            margin-top: 4px;
+        }
+        .resource-bar-wrapper:hover #resource-bar-expanded {
+            display: grid;
+        }
+        .resource-expanded-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .resource-expanded-item .res-name {
+            font-size: 11px;
+            opacity: 0.8;
+            white-space: nowrap;
+        }
+        .resource-expanded-item .res-count {
+            font-weight: bold;
+            margin-left: auto;
+        }
+        .resource-expanded-item.empty-resource {
+            opacity: 0.4;
         }
         #minimap {
             position: fixed;
@@ -959,6 +1036,25 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
+        .pin-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.4;
+            padding: 2px;
+            line-height: 1;
+            z-index: 2;
+        }
+        .pin-btn:hover, .pin-btn.pinned {
+            opacity: 1;
+        }
+        .resource-item {
+            border-color: #5a7a5a;
+        }
         .inventory-empty-msg {
             text-align: center;
             color: #666;
@@ -1331,6 +1427,146 @@
             }
         }
         /* ========================================= */
+        /* ========================================= */
+        /* SKINS SCREEN                              */
+        /* ========================================= */
+        #skins-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1a3d1a 0%, #0d260d 40%, #1a2a10 70%, #0a1a0a 100%);
+            z-index: 210;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+        .skins-layout {
+            display: flex;
+            gap: 40px;
+            width: 90%;
+            max-width: 900px;
+            height: 70vh;
+            align-items: stretch;
+        }
+        #skins-preview {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            border: 2px solid #4a7a3a;
+            overflow: hidden;
+        }
+        #skins-preview-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #skins-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .skin-card {
+            background: rgba(40, 55, 35, 0.9);
+            border: 2px solid #4a7a3a;
+            border-radius: 12px;
+            padding: 15px 18px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s, opacity 0.2s;
+            color: #d4e8c4;
+        }
+        .skin-card:hover {
+            border-color: #88cc88;
+            transform: scale(1.02);
+        }
+        .skin-card.selected {
+            border-color: #88cc88;
+            box-shadow: 0 0 15px rgba(136, 204, 136, 0.4);
+        }
+        .skin-card.locked {
+            opacity: 0.6;
+        }
+        .skin-card.locked:hover {
+            opacity: 0.8;
+        }
+        .skin-card-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #88cc88;
+            margin-bottom: 4px;
+        }
+        .skin-card-desc {
+            font-size: 13px;
+            color: #aaccaa;
+            margin-bottom: 6px;
+        }
+        .skin-card-status {
+            font-size: 12px;
+            color: #cc8844;
+        }
+        .skin-card.selected .skin-card-status {
+            color: #88cc88;
+        }
+        #skin-cheat-box {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 215;
+        }
+        #skin-cheat-input {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #4a7a3a;
+            border-radius: 8px;
+            color: #d4e8c4;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            width: 200px;
+            outline: none;
+        }
+        #skin-cheat-input:focus {
+            border-color: #88cc88;
+        }
+        #skin-cheat-input.shake {
+            animation: cheatShake 0.4s ease;
+        }
+        @keyframes cheatShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-4px); }
+        }
+        #skins-back-btn {
+            margin-top: 20px;
+        }
+
+        /* Screen fade overlay for transitions — NOT using .hidden because it has !important display:none */
+        #screen-fade {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #screen-fade.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ========================================= */
         /* SAVE / LOAD STYLES                       */
         /* ========================================= */
         #saves-modal {
@@ -1474,9 +1710,20 @@
             pointer-events: auto;
             filter: brightness(1.3);
         }
-        #save-btn:hover {
+        #save-btn:hover, #skins-ingame-btn:hover {
             transform: scale(1.3);
             filter: brightness(1.8);
+        }
+        #skins-ingame-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            padding: 0 0 0 8px;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            vertical-align: middle;
+            pointer-events: auto;
+            filter: brightness(1.3);
         }
         /* ========================================= */
         /* WORLD MAP                                */
@@ -1731,6 +1978,9 @@
                     <button class="game-btn-img" id="new-game-btn"><img src="img/btn-new.png" alt="New Game"></button>
                     <button class="game-btn-img" id="continue-btn" style="display:none;"><img src="img/btn-continue.png" alt="Continue"></button>
                     <button class="game-btn-img" id="load-game-btn" style="display:none;"><img src="img/btn-load.png" alt="Load Game"></button>
+                    <!-- Skins button hidden until start screen gets proper image button asset
+                    <button class="game-btn" id="skins-btn">Skins</button>
+                    -->
                 </div>
             </div>
             <div class="bottom-overlay">
@@ -1742,6 +1992,24 @@
             Collect food, craft tools, and uncover ancient artifacts!
         </p>
     </div>
+
+    <!-- Skins screen -->
+    <div id="skins-screen" class="hidden">
+        <div class="skins-layout">
+            <div id="skins-preview">
+                <canvas id="skins-preview-canvas"></canvas>
+            </div>
+            <div id="skins-list"></div>
+        </div>
+        <div id="skin-cheat-box" class="hidden">
+            <input type="text" id="skin-cheat-input" placeholder="Enter secret code..." autocomplete="off">
+            <button class="game-btn" id="skin-cheat-submit">Try</button>
+        </div>
+        <button class="game-btn secondary" id="skins-back-btn">Back</button>
+    </div>
+
+    <!-- Fade overlay for screen transitions (no .hidden — controlled by opacity) -->
+    <div id="screen-fade"></div>
 
     <!-- Save/Load modal -->
     <div id="saves-modal" class="hidden">
@@ -1778,6 +2046,7 @@
                     <button class="testing-biome-btn" data-biome="arboreal">Arboreal Forest</button>
                     <button class="testing-biome-btn" data-biome="savannah">New World Savannah</button>
                     <button class="testing-biome-btn" data-biome="snowy_mountains">🏔️ Snowy Mountains</button>
+                    <button class="testing-biome-btn" data-biome="coastal">🏖️ Coastal</button>
                 </div>
             </div>
 
@@ -1880,6 +2149,25 @@
                             <button class="spawn-btn" data-spawn="baluban_oxen_baby_female">Oxen Calf (F)</button>
                         </div>
                     </div>
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="coastal-animals">Coastal</h4>
+                        <div class="spawn-category-content hidden" id="spawn-coastal-animals">
+                            <button class="spawn-btn" data-spawn="uronin_seal_male">Seal (Male)</button>
+                            <button class="spawn-btn" data-spawn="uronin_seal_female">Seal (Female)</button>
+                            <button class="spawn-btn" data-spawn="uronin_seal_baby_male">Seal Pup (M)</button>
+                            <button class="spawn-btn" data-spawn="uronin_seal_baby_female">Seal Pup (F)</button>
+                            <button class="testing-action-btn" id="trigger-seal-mating-btn">Seal Mating</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_male">Bakka Seal (M)</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_female">Bakka Seal (F)</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_baby_male">Bakka Pup (M)</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_baby_female">Bakka Pup (F)</button>
+                            <button class="testing-action-btn" id="trigger-bakka-seal-mating-btn">Bakka Seal Mating</button>
+                            <button class="spawn-btn" data-spawn="slitted_sardine_male">Sardine (M)</button>
+                            <button class="spawn-btn" data-spawn="slitted_sardine_female">Sardine (F)</button>
+                            <button class="spawn-btn" data-spawn="orcleton_male">Orcleton (M)</button>
+                            <button class="spawn-btn" data-spawn="orcleton_female">Orcleton (F)</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1907,6 +2195,13 @@
         </div>
     </div>
 
+    <div id="oxygen-panel" class="hidden">
+        <div class="stat-label">🫧 Oxygen</div>
+        <div id="oxygen-bar-container">
+            <div id="oxygen-bar"></div>
+        </div>
+    </div>
+
     <div id="ui-overlay" class="hidden">
         <div id="stats-panel">
             <div class="stat-box">
@@ -1927,20 +2222,13 @@
                     </div>
                 </div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box resource-bar-wrapper">
                 <div class="stat-label">Resources</div>
-                <div id="resource-icons">
-                    <div class="resource-icon"><span>🫐</span><span id="berries-count">0</span></div>
-                    <div class="resource-icon"><span>🥜</span><span id="nuts-count">0</span></div>
-                    <div class="resource-icon"><span>🍄</span><span id="mushrooms-count">0</span></div>
-                    <div class="resource-icon"><span>🌿</span><span id="seaweed-count">0</span></div>
-                    <div class="resource-icon"><span>🥚</span><span id="eggs-count">0</span></div>
-                    <div class="resource-icon"><span class="arsenic-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="10" rx="9" ry="6" fill="#1a1a1a"/><rect x="10" y="14" width="4" height="7" rx="1" fill="#2a2a2a"/><circle cx="7" cy="9" r="1.5" fill="#ff6600"/><circle cx="12" cy="7" r="1.5" fill="#ff6600"/><circle cx="17" cy="9" r="1.5" fill="#ff6600"/><circle cx="9" cy="12" r="1.2" fill="#ff6600"/><circle cx="15" cy="12" r="1.2" fill="#ff6600"/></svg></span><span id="arsenic-mushrooms-count">0</span></div>
-                    <div class="resource-icon"><span>🪵</span><span id="thous-pine-wood-count">0</span></div>
-                    <div class="resource-icon"><span>🔮</span><span id="glass-count">0</span></div>
-                    <div class="resource-icon"><span>🪵</span><span id="manglecacia-wood-count">0</span></div>
-                    <div class="resource-icon"><span>🪵</span><span id="seaspray-birch-wood-count">0</span></div>
-                    <div class="resource-icon"><span>🌾</span><span id="cinnamon-count">0</span></div>
+                <div id="resource-bar-collapsed">
+                    <!-- JS fills up to 6 slots dynamically -->
+                </div>
+                <div id="resource-bar-expanded">
+                    <!-- JS fills ALL non-zero resources here, shown on hover -->
                 </div>
             </div>
             <div class="stat-box">
@@ -1949,7 +2237,7 @@
             </div>
             <div class="stat-box">
                 <div class="stat-label">Time Survived</div>
-                <div class="stat-value"><span id="time-display">0:00</span> <button id="save-btn" title="Save Game">💾</button></div>
+                <div class="stat-value"><span id="time-display">0:00</span> <button id="save-btn" title="Save Game">💾</button> <button id="skins-ingame-btn" title="Change Skin">🎨</button></div>
             </div>
         </div>
     </div>
@@ -1993,15 +2281,15 @@
 
     <!-- Hotbar (Minecraft-style item slots) -->
     <div id="hotbar">
-        <div class="hotbar-slot selected" data-slot="0"><span class="hotbar-key">1</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="1"><span class="hotbar-key">2</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="2"><span class="hotbar-key">3</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="3"><span class="hotbar-key">4</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="4"><span class="hotbar-key">5</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="5"><span class="hotbar-key">6</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="6"><span class="hotbar-key">7</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="7"><span class="hotbar-key">8</span><span class="hotbar-icon"></span></div>
-        <div class="hotbar-slot" data-slot="8"><span class="hotbar-key">9</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot selected" data-slot="0"><span class="hotbar-key">,</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="1"><span class="hotbar-key">.</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="2"><span class="hotbar-key">/</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="3"><span class="hotbar-key">;</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="4"><span class="hotbar-key">'</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="5"><span class="hotbar-key">[</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="6"><span class="hotbar-key">]</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="7"><span class="hotbar-key">-</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="8"><span class="hotbar-key">=</span><span class="hotbar-icon"></span></div>
     </div>
 
     <!-- Dialog box for villager conversations -->
@@ -2108,6 +2396,7 @@
     <script src="js/data/artifacts.js"></script>
     <script src="js/data/progression.js"></script>
     <script src="js/data/tools.js"></script>
+    <script src="js/data/skins.js"></script>
 
     <!-- ================================================================== -->
     <!-- LOGIC FILES - Game behavior (load after data!) -->

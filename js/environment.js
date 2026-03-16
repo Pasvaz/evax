@@ -1157,6 +1157,9 @@ window.Environment = (function() {
             GameState.oceanDeepZ = null;
         }
 
+        // Clear ocean islands
+        GameState.oceanIslands = [];
+
         // Reset scene background and fog to defaults
         GameState.scene.background = new THREE.Color(0x87ceeb);  // Default sky blue
         GameState.scene.fog = null;
@@ -1618,6 +1621,11 @@ window.Environment = (function() {
             createBeachDecorations(biomeData);
         }
 
+        // Create ocean islands
+        if (biomeData.islands) {
+            createOceanIslands(biomeData);
+        }
+
         console.log('Created coastal biome with ' + numTrees + ' birch trees');
     }
 
@@ -1746,10 +1754,67 @@ window.Environment = (function() {
 
     /**
      * Check if a position is in deep ocean (blocked).
+     * Returns false near islands — their shallow zone counts as safe water.
      */
     function isInDeepOcean(x, z) {
         if (!GameState.oceanWater) return false;
-        return z > GameState.oceanDeepZ;
+        if (z <= GameState.oceanDeepZ) return false;
+        // Not deep ocean if near an island
+        if (isNearIsland(x, z)) return false;
+        return true;
+    }
+
+    /**
+     * Check if a position is near any ocean island (within its shallow zone).
+     * Returns the island object if nearby, or null.
+     */
+    function isNearIsland(x, z) {
+        if (!GameState.oceanIslands) return null;
+        for (var i = 0; i < GameState.oceanIslands.length; i++) {
+            var island = GameState.oceanIslands[i];
+            var dx = x - island.x;
+            var dz = z - island.z;
+            var dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist <= island.shallowRadius) {
+                return island;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check if a position is on an island's solid ground.
+     * Returns the island object if on solid ground, or null.
+     */
+    function isOnIsland(x, z) {
+        if (!GameState.oceanIslands) return null;
+        for (var i = 0; i < GameState.oceanIslands.length; i++) {
+            var island = GameState.oceanIslands[i];
+            var dx = x - island.x;
+            var dz = z - island.z;
+            var dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist <= island.radius) {
+                return island;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the ground height on an island at position (x, z).
+     * Smooth cosine falloff — highest at center, 0 at edge.
+     */
+    function getIslandGroundHeight(x, z, island) {
+        var dx = x - island.x;
+        var dz = z - island.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist >= island.radius) return 0;
+
+        // Smooth cosine curve: 1 at center, 0 at edge
+        var t = dist / island.radius;
+        var heightFactor = 0.5 * (1 + Math.cos(t * Math.PI));
+        return island.height * heightFactor;
     }
 
     /**
@@ -2684,6 +2749,267 @@ window.Environment = (function() {
         }
     }
 
+    // ========================================================================
+    // OCEAN ISLANDS
+    // ========================================================================
+
+    /**
+     * Create all ocean islands for the coastal biome.
+     */
+    function createOceanIslands(biomeData) {
+        if (!biomeData.islands) return;
+        var shallowExtra = biomeData.shallowZoneRadius || 10;
+        GameState.oceanIslands = [];
+
+        biomeData.islands.forEach(function(def) {
+            var island = buildIsland(def);
+            island.position.set(def.x, 0, def.z);
+            GameState.scene.add(island);
+            trackObject(island);
+
+            GameState.oceanIslands.push({
+                mesh: island,
+                x: def.x,
+                z: def.z,
+                radius: def.radius,
+                shallowRadius: def.radius + shallowExtra,
+                height: def.height,
+                style: def.style
+            });
+        });
+
+        console.log('Created ' + biomeData.islands.length + ' ocean islands');
+    }
+
+    /**
+     * Build an island mesh based on its style.
+     */
+    function buildIsland(def) {
+        switch (def.style) {
+            case 'rocky_green':  return buildRockyGreenIsland(def);
+            case 'sandy_grassy': return buildSandyGrassyIsland(def);
+            default:             return buildSandyIsland(def);
+        }
+    }
+
+    /**
+     * Sandy beach island — flat disc that sits mostly below the walking surface.
+     * Pedro walks at the cosine-curve height, so the mesh must stay BELOW that.
+     */
+    function buildSandyIsland(def) {
+        var group = new THREE.Group();
+        var r = def.radius;
+        var h = def.height;
+
+        // Underwater foundation — big cylinder hidden below water
+        var foundGeo = new THREE.CylinderGeometry(r * 1.1, r * 1.3, 3, 16);
+        var sandMat = new THREE.MeshStandardMaterial({
+            color: 0xd2b48c, roughness: 0.9, metalness: 0.05
+        });
+        var foundation = new THREE.Mesh(foundGeo, sandMat);
+        foundation.position.y = -1.5; // Mostly underwater
+        group.add(foundation);
+
+        // Visible surface — a very flat cone that peaks at h * 0.6 (below walking height)
+        var surfGeo = new THREE.ConeGeometry(r, h * 0.6, 16);
+        var surface = new THREE.Mesh(surfGeo, sandMat);
+        surface.position.y = h * 0.3; // Peak at h * 0.6
+        surface.castShadow = true;
+        surface.receiveShadow = true;
+        group.add(surface);
+
+        // A few small rocks sitting on the surface
+        for (var i = 0; i < 2 + Math.floor(Math.random() * 3); i++) {
+            var rockR = 0.3 + Math.random() * 0.5;
+            var rockGeo = new THREE.DodecahedronGeometry(rockR, 1);
+            rockGeo.scale(1, 0.6, 1);
+            var rockMat = new THREE.MeshStandardMaterial({
+                color: 0x888888, roughness: 0.9
+            });
+            var rock = new THREE.Mesh(rockGeo, rockMat);
+            var angle = Math.random() * Math.PI * 2;
+            var dist = Math.random() * r * 0.4;
+            var rockY = getIslandGroundHeight(
+                Math.cos(angle) * dist, Math.sin(angle) * dist,
+                { x: 0, z: 0, radius: r, height: h }
+            );
+            rock.position.set(Math.cos(angle) * dist, rockY, Math.sin(angle) * dist);
+            group.add(rock);
+        }
+
+        group.userData.type = 'island';
+        group.userData.radius = r;
+        return group;
+    }
+
+    /**
+     * Rocky green island — grey rock base with green vegetation on top.
+     * Mesh stays below the walking surface so Pedro walks on top.
+     */
+    function buildRockyGreenIsland(def) {
+        var group = new THREE.Group();
+        var r = def.radius;
+        var h = def.height;
+
+        // Underwater foundation
+        var foundGeo = new THREE.CylinderGeometry(r * 0.9, r * 1.2, 3, 12);
+        var rockMat = new THREE.MeshStandardMaterial({
+            color: 0x6a6a6a, roughness: 0.95, metalness: 0.1
+        });
+        var foundation = new THREE.Mesh(foundGeo, rockMat);
+        foundation.position.y = -1.5;
+        group.add(foundation);
+
+        // Rocky surface — flat cone peaking below walking height
+        var surfGeo = new THREE.ConeGeometry(r * 0.9, h * 0.6, 12);
+        var surface = new THREE.Mesh(surfGeo, rockMat);
+        surface.position.y = h * 0.3;
+        surface.castShadow = true;
+        surface.receiveShadow = true;
+        group.add(surface);
+
+        // Green vegetation cap — very flat, sits just below the peak
+        var topGeo = new THREE.ConeGeometry(r * 0.6, h * 0.3, 16);
+        var greenMat = new THREE.MeshStandardMaterial({
+            color: 0x3d6b3d, roughness: 0.8
+        });
+        var top = new THREE.Mesh(topGeo, greenMat);
+        top.position.y = h * 0.5;
+        group.add(top);
+
+        // Boulders sitting on the surface
+        for (var i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+            var boulderR = 0.5 + Math.random() * 0.6;
+            var boulderGeo = new THREE.DodecahedronGeometry(boulderR, 1);
+            boulderGeo.scale(1, 0.5, 1);
+            var boulder = new THREE.Mesh(boulderGeo, rockMat);
+            var angle = Math.random() * Math.PI * 2;
+            var dist = r * 0.4;
+            var boulderY = getIslandGroundHeight(
+                Math.cos(angle) * dist, Math.sin(angle) * dist,
+                { x: 0, z: 0, radius: r, height: h }
+            );
+            boulder.position.set(Math.cos(angle) * dist, boulderY, Math.sin(angle) * dist);
+            group.add(boulder);
+        }
+
+        group.userData.type = 'island';
+        group.userData.radius = r;
+        return group;
+    }
+
+    /**
+     * Sandy island with a grassy hill in the center.
+     * Mesh stays below the walking surface so Pedro walks on top.
+     */
+    function buildSandyGrassyIsland(def) {
+        var group = new THREE.Group();
+        var r = def.radius;
+        var h = def.height;
+
+        // Underwater foundation
+        var foundGeo = new THREE.CylinderGeometry(r * 1.05, r * 1.3, 3, 16);
+        var sandMat = new THREE.MeshStandardMaterial({
+            color: 0xd2b48c, roughness: 0.9, metalness: 0.05
+        });
+        var foundation = new THREE.Mesh(foundGeo, sandMat);
+        foundation.position.y = -1.5;
+        group.add(foundation);
+
+        // Sandy surface — flat cone for the outer ring
+        var surfGeo = new THREE.ConeGeometry(r, h * 0.5, 16);
+        var surface = new THREE.Mesh(surfGeo, sandMat);
+        surface.position.y = h * 0.25;
+        surface.castShadow = true;
+        surface.receiveShadow = true;
+        group.add(surface);
+
+        // Green grassy hill in the center — smaller cone on top
+        var hillGeo = new THREE.ConeGeometry(r * 0.45, h * 0.4, 16);
+        var greenMat = new THREE.MeshStandardMaterial({
+            color: 0x4a8a4a, roughness: 0.8
+        });
+        var hill = new THREE.Mesh(hillGeo, greenMat);
+        hill.position.y = h * 0.5;
+        group.add(hill);
+
+        group.userData.type = 'island';
+        group.userData.radius = r;
+        return group;
+    }
+
+    // ========================================================================
+    // RAFT / BOAT SYSTEM
+    // ========================================================================
+    /**
+     * Create a 3D raft model.
+     * Made of seaspray birch logs tied together — a flat platform with a small mast.
+     *
+     * @param {boolean} isBlueprint - If true, renders as transparent blue ghost
+     * @returns {THREE.Group} - The raft mesh group
+     */
+    function createRaftModel(isBlueprint) {
+        var raft = new THREE.Group();
+
+        // Colors
+        var logColor = isBlueprint ? 0x4488ff : 0x8b6f47;  // Blue ghost or wood brown
+        var mastColor = isBlueprint ? 0x4488ff : 0x6b5234;
+        var opacity = isBlueprint ? 0.4 : 1.0;
+
+        var logMat = new THREE.MeshStandardMaterial({
+            color: logColor,
+            transparent: isBlueprint,
+            opacity: opacity,
+            roughness: 0.8
+        });
+
+        var mastMat = new THREE.MeshStandardMaterial({
+            color: mastColor,
+            transparent: isBlueprint,
+            opacity: opacity,
+            roughness: 0.7
+        });
+
+        // 5 horizontal log planks — each is a cylinder laid sideways
+        for (var i = 0; i < 5; i++) {
+            var logGeo = new THREE.CylinderGeometry(0.25, 0.25, 4, 8);
+            var log = new THREE.Mesh(logGeo, logMat);
+            log.rotation.z = Math.PI / 2; // Lay sideways
+            log.position.set(0, 0, -1.2 + i * 0.6); // Spread front to back
+            raft.add(log);
+        }
+
+        // 2 cross-beams to hold logs together
+        for (var j = 0; j < 2; j++) {
+            var beamGeo = new THREE.CylinderGeometry(0.15, 0.15, 3, 6);
+            var beam = new THREE.Mesh(beamGeo, logMat);
+            beam.rotation.x = Math.PI / 2; // Lay perpendicular
+            beam.position.set(-1.0 + j * 2.0, 0.2, 0);
+            raft.add(beam);
+        }
+
+        // Small mast post in center
+        var mastGeo = new THREE.CylinderGeometry(0.1, 0.12, 3, 6);
+        var mast = new THREE.Mesh(mastGeo, mastMat);
+        mast.position.set(0, 1.5, 0); // Sticks up from center
+        raft.add(mast);
+
+        // Simple flag/sail at the top of the mast
+        var sailGeo = new THREE.PlaneGeometry(1.0, 0.8);
+        var sailMat = new THREE.MeshStandardMaterial({
+            color: isBlueprint ? 0x4488ff : 0xddc9a3,
+            transparent: isBlueprint,
+            opacity: isBlueprint ? 0.3 : 0.9,
+            side: THREE.DoubleSide
+        });
+        var sail = new THREE.Mesh(sailGeo, sailMat);
+        sail.position.set(0.5, 2.5, 0);
+        raft.add(sail);
+
+        raft.userData.type = 'raft';
+        return raft;
+    }
+
     // Public API
     return {
         setupLighting: setupLighting,
@@ -2711,6 +3037,12 @@ window.Environment = (function() {
         // Coastal ocean
         isInShallowOcean: isInShallowOcean,
         isInDeepOcean: isInDeepOcean,
-        updateOceanWaves: updateOceanWaves
+        updateOceanWaves: updateOceanWaves,
+        // Ocean islands
+        isNearIsland: isNearIsland,
+        isOnIsland: isOnIsland,
+        getIslandGroundHeight: getIslandGroundHeight,
+        // Raft system
+        createRaftModel: createRaftModel
     };
 })();

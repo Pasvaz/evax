@@ -91,6 +91,12 @@ window.TOOL_STATS = {
             description: 'A mighty sword made from seaspray birch wood! Does 8 damage.',
             icon: '🗡️',
             damage: 8
+        },
+        fishing_spear: {
+            name: 'Fishing Spear',
+            description: 'A spear for catching fish. Equip from hotbar, click on fish to spear them!',
+            icon: '🔱',
+            damage: 3
         }
     },
 

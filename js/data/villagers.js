@@ -339,9 +339,9 @@ window.VILLAGERS = [
                 },
 
                 'cookie_quest': {
-                    text: "Cookies?! Oh Pedro, you're still on about that recipe! Well, any good cookie needs fresh butter and eggs — and I mean GOOD eggs, not those goose ones. But the real secret is a special spice. I don't have it, but Bruno the blacksmith travels all over. He might know where to find it!",
+                    text: "Cookies?! Oh Pedro, you're still on about that recipe! Well, any good cookie needs fresh butter and eggs — and I mean GOOD eggs, not those goose ones. Here, take some of mine! But the real secret is a special spice. I don't have it, but Bruno the blacksmith travels all over. He might know where to find it!",
                     choices: [
-                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'quest_clue', clue: 'rosie' } },
+                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { butter: 2, eggs: 3 }, clue: 'rosie' } },
                         { text: "Back to other things.", nextNode: 'greeting' }
                     ]
                 },
@@ -379,6 +379,7 @@ window.VILLAGERS = [
                         { text: "What are you making?", nextNode: 'forge_info' },
                         { text: "Buy weapons", nextNode: 'buy_weapons' },
                         { text: "Buy materials", nextNode: 'buy_materials' },
+                        { text: "Buy diving gear", nextNode: 'buy_diving' },
                         { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }
                     ]
@@ -458,6 +459,26 @@ window.VILLAGERS = [
                     choices: [
                         { text: "Buy more glass", nextNode: 'buy_materials' },
                         { text: "Thanks!", nextNode: null }
+                    ]
+                },
+
+                'buy_diving': {
+                    text: "Ah, looking to explore the deep ocean? I've been working on a special diving mask — forged glass lens, leather straps, sealed with tree sap. Not cheap though — 400 coins!",
+                    choices: [
+                        {
+                            text: "Buy Diving Mask (400 coins)",
+                            nextNode: 'diving_success',
+                            effect: { type: 'trade', cost: { coins: 400 }, reward: { item: 'diving_mask' } },
+                            failNode: 'buy_fail'
+                        },
+                        { text: "Too expensive!", nextNode: 'greeting' }
+                    ]
+                },
+
+                'diving_success': {
+                    text: "Here you go! Equip it from your hotbar, then walk into the deep ocean. You'll be able to swim underwater! But watch your oxygen — come up for air before it runs out!",
+                    choices: [
+                        { text: "Thanks Bruno!", nextNode: null }
                     ]
                 },
 
@@ -689,9 +710,9 @@ window.VILLAGERS = [
                 },
 
                 'cookie_quest': {
-                    text: "A cookie recipe? Oh Pedro, you sweet thing! I used to bake the most wonderful cookies when I was younger. You need flour and sugar as a base — that much I remember. But the BEST recipe? The one everyone talks about? I think Farmer Rosie knows about the fresh ingredients you'd need. She grows all sorts of things!",
+                    text: "A cookie recipe? Oh Pedro, you sweet thing! I used to bake the most wonderful cookies when I was younger. You need flour and sugar as a base — that much I remember. Here, take some from my pantry! But the BEST recipe? The one everyone talks about? I think Farmer Rosie knows about the fresh ingredients you'd need. She grows all sorts of things!",
                     choices: [
-                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'quest_clue', clue: 'granny_trotter' } },
+                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { flour: 3, sugar: 3 }, clue: 'granny_trotter' } },
                         { text: "Back to other things.", nextNode: 'greeting' }
                     ]
                 },

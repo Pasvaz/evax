@@ -6,6 +6,78 @@
 window.UI = (function() {
     'use strict';
 
+    // ========================================================================
+    // RESOURCE METADATA REGISTRY
+    // ========================================================================
+    // Single source of truth for resource display info.
+    // Tier 1 = survival consumables (always prioritized in top bar)
+    // Tier 2 = crafting/quest materials (shown if space allows)
+    var RESOURCE_META = {
+        berries:             { icon: '🫐',  name: 'Berries',             tier: 1 },
+        nuts:                { icon: '🥜',  name: 'Nuts',                tier: 1 },
+        mushrooms:           { icon: '🍄',  name: 'Mushrooms',           tier: 1 },
+        seaweed:             { icon: '🌿',  name: 'Seaweed',             tier: 1 },
+        eggs:                { icon: '🥚',  name: 'Eggs',                tier: 1 },
+        arsenic_mushrooms:   { icon: '☠️',  name: 'Arsenic Mushrooms',   tier: 2 },
+        thous_pine_wood:     { icon: '🪵',  name: 'Thous Pine Wood',     tier: 2 },
+        glass:               { icon: '🔮',  name: 'Glass',               tier: 2 },
+        manglecacia_wood:    { icon: '🪵',  name: 'Manglecacia Wood',    tier: 2 },
+        seaspray_birch_wood: { icon: '🪵',  name: 'Seaspray Birch Wood', tier: 2 },
+        cinnamon:            { icon: '🌾',  name: 'Cinnamon',            tier: 2 },
+        bakka_seal_tooth:    { icon: '🦷',  name: 'Bakka Seal Tooth',    tier: 2 },
+        flour:               { icon: '🌾',  name: 'Flour',               tier: 2 },
+        sugar:               { icon: '🍬',  name: 'Sugar',               tier: 2 },
+        butter:              { icon: '🧈',  name: 'Butter',              tier: 2 }
+    };
+
+    // ========================================================================
+    // VISIBLE RESOURCES SELECTOR
+    // ========================================================================
+    /**
+     * Returns up to 6 resource keys to show in the collapsed top bar.
+     * Priority: pinned > tier 1 (non-zero) > tier 2 (non-zero, by recency)
+     * Console-callable: UI.getVisibleResources()
+     */
+    function getVisibleResources() {
+        var MAX_SLOTS = 6;
+        var pinned = GameState.pinnedResources || [];
+        var result = [];
+
+        // 1. Pinned resources always show (even if count is 0)
+        for (var i = 0; i < pinned.length && result.length < MAX_SLOTS; i++) {
+            result.push(pinned[i]);
+        }
+
+        // 2. Tier 1 survival resources (always show, even at 0)
+        var keys = Object.keys(RESOURCE_META);
+        for (var i = 0; i < keys.length && result.length < MAX_SLOTS; i++) {
+            var key = keys[i];
+            if (RESOURCE_META[key].tier === 1 &&
+                result.indexOf(key) === -1) {
+                result.push(key);
+            }
+        }
+
+        // 3. Tier 2 non-zero, sorted by most recently changed
+        var tier2 = [];
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            if (RESOURCE_META[key].tier === 2 &&
+                GameState.resourceCounts[key] > 0 &&
+                result.indexOf(key) === -1) {
+                tier2.push(key);
+            }
+        }
+        tier2.sort(function(a, b) {
+            return (GameState.resourceLastChanged[b] || 0) - (GameState.resourceLastChanged[a] || 0);
+        });
+        for (var i = 0; i < tier2.length && result.length < MAX_SLOTS; i++) {
+            result.push(tier2[i]);
+        }
+
+        return result;
+    }
+
     /**
      * Setup the minimap canvas.
      */
@@ -85,6 +157,19 @@ window.UI = (function() {
             // Ocean
             ctx.fillStyle = '#4a6a5a';
             ctx.fillRect(0, sandEndY, size, size - sandEndY);
+
+            // Draw ocean islands
+            if (GameState.oceanIslands && GameState.oceanIslands.length > 0) {
+                GameState.oceanIslands.forEach(function(island) {
+                    var ix = (island.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+                    var iy = (island.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+                    var ir = island.radius * scale;
+                    ctx.fillStyle = island.style === 'rocky_green' ? '#6a8a6a' : '#c2a060';
+                    ctx.beginPath();
+                    ctx.arc(ix, iy, Math.max(ir, 2), 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
         }
 
         ctx.fillStyle = '#0a2a0a';
@@ -176,17 +261,45 @@ window.UI = (function() {
     function updateUI() {
         document.getElementById('health-bar').style.width = Math.max(0, GameState.health) + '%';
         document.getElementById('score-display').textContent = GameState.score;
-        document.getElementById('berries-count').textContent = GameState.resourceCounts.berries;
-        document.getElementById('nuts-count').textContent = GameState.resourceCounts.nuts;
-        document.getElementById('mushrooms-count').textContent = GameState.resourceCounts.mushrooms;
-        document.getElementById('seaweed-count').textContent = GameState.resourceCounts.seaweed;
-        document.getElementById('eggs-count').textContent = GameState.resourceCounts.eggs;
-        document.getElementById('arsenic-mushrooms-count').textContent = GameState.resourceCounts.arsenic_mushrooms;
-        document.getElementById('thous-pine-wood-count').textContent = GameState.resourceCounts.thous_pine_wood;
-        document.getElementById('glass-count').textContent = GameState.resourceCounts.glass;
-        document.getElementById('manglecacia-wood-count').textContent = GameState.resourceCounts.manglecacia_wood;
-        document.getElementById('seaspray-birch-wood-count').textContent = GameState.resourceCounts.seaspray_birch_wood;
-        document.getElementById('cinnamon-count').textContent = GameState.resourceCounts.cinnamon;
+
+        // --- Recency tracking: detect resource changes by comparing to last frame ---
+        var keys = Object.keys(RESOURCE_META);
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            var current = GameState.resourceCounts[key] || 0;
+            var last = GameState.lastResourceCounts[key];
+            if (last !== undefined && current !== last) {
+                GameState.resourceLastChanged[key] = GameState.timeElapsed;
+            }
+            GameState.lastResourceCounts[key] = current;
+        }
+
+        // --- Collapsed resource bar (max 6) ---
+        var collapsedBar = document.getElementById('resource-bar-collapsed');
+        var visible = getVisibleResources();
+        collapsedBar.innerHTML = '';
+        for (var i = 0; i < visible.length; i++) {
+            var meta = RESOURCE_META[visible[i]];
+            var div = document.createElement('div');
+            div.className = 'resource-bar-item';
+            div.innerHTML = '<span>' + meta.icon + '</span><span class="res-count">' + (GameState.resourceCounts[visible[i]] || 0) + '</span>';
+            collapsedBar.appendChild(div);
+        }
+
+        // --- Expanded resource panel (all non-zero + pinned, shown on hover) ---
+        var expandedPanel = document.getElementById('resource-bar-expanded');
+        var pinned = GameState.pinnedResources || [];
+        expandedPanel.innerHTML = '';
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            var count = GameState.resourceCounts[key] || 0;
+            var meta = RESOURCE_META[key];
+            var div = document.createElement('div');
+            div.className = 'resource-expanded-item' + (count === 0 ? ' empty-resource' : '');
+            div.innerHTML = '<span>' + meta.icon + '</span><span class="res-name">' + meta.name + '</span><span class="res-count">' + count + '</span>';
+            expandedPanel.appendChild(div);
+        }
+
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
 
         // Update hunger bar
@@ -207,6 +320,21 @@ window.UI = (function() {
             thirstBar.classList.add('dehydrated');
         } else {
             thirstBar.classList.remove('dehydrated');
+        }
+
+        // Update oxygen bar (only visible when underwater)
+        var oxygenPanel = document.getElementById('oxygen-panel');
+        if (GameState.isUnderwater) {
+            oxygenPanel.classList.remove('hidden');
+            var oxygenBar = document.getElementById('oxygen-bar');
+            oxygenBar.style.width = Math.max(0, GameState.oxygenLevel) + '%';
+            if (GameState.oxygenLevel <= 20) {
+                oxygenBar.classList.add('drowning');
+            } else {
+                oxygenBar.classList.remove('drowning');
+            }
+        } else {
+            oxygenPanel.classList.add('hidden');
         }
 
         const minutes = Math.floor(GameState.timeElapsed / 60);
@@ -597,6 +725,7 @@ window.UI = (function() {
         barbanit_axe: '🪓',
         manglecacia_axe: '🪓',
         seaspray_birch_axe: '🪓',
+        basic_rook_boat: '🚣',
         arsen_bomb: '💣'
     };
 
@@ -660,6 +789,8 @@ window.UI = (function() {
         checkProgressionUnlocks: checkProgressionUnlocks,
         showUnlockNotification: showUnlockNotification,
         updateHotbar: updateHotbar,
-        getSelectedHotbarItem: getSelectedHotbarItem
+        getSelectedHotbarItem: getSelectedHotbarItem,
+        getVisibleResources: getVisibleResources,
+        RESOURCE_META: RESOURCE_META
     };
 })();

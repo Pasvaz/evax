@@ -218,6 +218,33 @@ window.BIOMES = {
         forestEndZ: 0,
         sandEndZ: 200,
 
+        // Ocean islands — each has a shallow zone for raft dismount + walking
+        islands: [
+            // Small islands (radius 8-10)
+            { x: -200, z: 320, radius: 9,  style: 'sandy',        height: 1.5 },
+            { x:  350, z: 400, radius: 8,  style: 'rocky_green',  height: 2.5 },
+            { x: -450, z: 550, radius: 10, style: 'sandy',        height: 1.2 },
+            // Medium islands (radius 15-20)
+            { x:  100, z: 450, radius: 18, style: 'sandy_grassy', height: 3.0 },
+            { x: -300, z: 600, radius: 15, style: 'rocky_green',  height: 3.5 },
+            { x:  500, z: 350, radius: 16, style: 'sandy_grassy', height: 2.8 },
+            { x:   50, z: 620, radius: 20, style: 'sandy',        height: 1.8 }
+        ],
+        shallowZoneRadius: 10,
+
+        // Uronin Seal colonies on medium/large islands
+        spawnSeals: true,
+        sealColonyIslands: [3, 4, 5],
+
+        // Bakka seals — solitary, territorial
+        spawnBakkaSeals: true,
+        bakkaSeals: 8,
+
+        // Fish in the ocean
+        spawnFish: true,
+        sardineShoals: 3,
+        orcletons: 5,
+
         // Requirements
         requiresArtifact: 'uronal_seal_tooth'
     }

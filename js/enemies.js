@@ -3441,6 +3441,379 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // URONIN SEAL MODEL BUILDER
+    // ========================================================================
+    // Large chunky marine mammal. Males: grey + blue-grey patches.
+    // Females: lighter grey + white patches. Baby males: white. Baby females: black.
+    // Built facing +X as per convention.
+
+    function buildUroninSealModel(colors, isBaby) {
+        const model = new THREE.Group();
+        model.userData.parts = {};
+
+        // Colors are already converted to numbers by createEnemy
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.7 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.7 });
+        var patchMat = new THREE.MeshStandardMaterial({ color: colors.patches, roughness: 0.6 });
+        var flipperMat = new THREE.MeshStandardMaterial({ color: colors.flippers, roughness: 0.7 });
+        var faceMat = new THREE.MeshStandardMaterial({ color: colors.face, roughness: 0.6 });
+        var noseMat = new THREE.MeshStandardMaterial({ color: colors.nose, roughness: 0.5 });
+        var whiskerMat = new THREE.MeshStandardMaterial({ color: colors.whiskers, roughness: 0.5 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.3, emissive: colors.eyes, emissiveIntensity: 0.2 });
+
+        // --- BODY: Large chunky elongated ellipsoid ---
+        var bodyGeo = new THREE.SphereGeometry(0.5, 16, 12);
+        var body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.scale.set(2.0, 0.7, 1.0);
+        body.position.set(0, 0, 0);
+        body.castShadow = true;
+        model.add(body);
+        model.userData.parts.body = body;
+
+        // --- BELLY: Lighter underside ---
+        var bellyGeo = new THREE.SphereGeometry(0.45, 14, 10);
+        var belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.scale.set(1.8, 0.5, 0.85);
+        belly.position.set(0, -0.12, 0);
+        model.add(belly);
+
+        // --- PATCHES: 3 flattened spheres on body ---
+        for (var p = 0; p < 3; p++) {
+            var patchGeo = new THREE.SphereGeometry(0.12, 8, 6);
+            var patch = new THREE.Mesh(patchGeo, patchMat);
+            patch.scale.set(1.5, 0.3, 1.2);
+            var patchX = -0.2 + p * 0.3;
+            var patchZ = (p % 2 === 0) ? 0.3 : -0.3;
+            patch.position.set(patchX, 0.15, patchZ);
+            model.add(patch);
+        }
+
+        // --- HEAD: Rounded sphere at +X end ---
+        var headGeo = new THREE.SphereGeometry(0.3, 14, 10);
+        var head = new THREE.Mesh(headGeo, faceMat);
+        head.scale.set(1.1, 0.9, 1.0);
+        head.position.set(0.85, 0.12, 0);
+        head.castShadow = true;
+        model.add(head);
+        model.userData.parts.head = head;
+
+        // --- NOSE: Small dark sphere ---
+        var noseGeo = new THREE.SphereGeometry(0.07, 8, 6);
+        var nose = new THREE.Mesh(noseGeo, noseMat);
+        nose.position.set(1.12, 0.08, 0);
+        model.add(nose);
+
+        // --- EYES: Babies get bigger adorable eyes ---
+        var eyeRadius = isBaby ? 0.07 : 0.045;
+        // Left eye
+        var leftEyeGeo = new THREE.SphereGeometry(eyeRadius, 8, 6);
+        var leftEye = new THREE.Mesh(leftEyeGeo, eyeMat);
+        leftEye.position.set(0.98, 0.22, 0.14);
+        model.add(leftEye);
+        // Right eye
+        var rightEyeGeo = new THREE.SphereGeometry(eyeRadius, 8, 6);
+        var rightEye = new THREE.Mesh(rightEyeGeo, eyeMat);
+        rightEye.position.set(0.98, 0.22, -0.14);
+        model.add(rightEye);
+
+        // Baby eyes get a white sclera ring behind for "adorable" look
+        if (isBaby) {
+            var scleraMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.3 });
+            var slGeo = new THREE.SphereGeometry(eyeRadius * 1.4, 8, 6);
+            var scleraL = new THREE.Mesh(slGeo, scleraMat);
+            scleraL.position.set(0.97, 0.22, 0.14);
+            model.add(scleraL);
+            var scleraR = new THREE.Mesh(slGeo, scleraMat);
+            scleraR.position.set(0.97, 0.22, -0.14);
+            model.add(scleraR);
+        }
+
+        // --- WHISKERS: 3 per side, thin cylinders ---
+        for (var side = -1; side <= 1; side += 2) {
+            for (var w = 0; w < 3; w++) {
+                var whiskerGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.18, 4);
+                var whisker = new THREE.Mesh(whiskerGeo, whiskerMat);
+                var wAngle = (w - 1) * 0.3; // -0.3, 0, 0.3 spread
+                whisker.rotation.z = Math.PI / 2 + wAngle;
+                whisker.rotation.x = side * 0.2;
+                whisker.position.set(1.05, 0.1 + w * 0.02, side * (0.12 + w * 0.02));
+                model.add(whisker);
+            }
+        }
+
+        // --- FRONT FLIPPERS: Flat box shapes at sides ---
+        var frontFlippers = [];
+        for (var fs = -1; fs <= 1; fs += 2) {
+            var ffGeo = new THREE.BoxGeometry(0.4, 0.05, 0.22);
+            var ff = new THREE.Mesh(ffGeo, flipperMat);
+            ff.position.set(0.3, -0.18, fs * 0.42);
+            ff.rotation.x = fs * 0.3; // Angled outward
+            ff.rotation.z = fs * -0.15;
+            ff.castShadow = true;
+            model.add(ff);
+            frontFlippers.push(ff);
+        }
+        model.userData.parts.frontFlippers = frontFlippers;
+
+        // --- REAR FLIPPERS: Cone shapes at back ---
+        var rearFlippers = [];
+        for (var rs = -1; rs <= 1; rs += 2) {
+            var rfGeo = new THREE.ConeGeometry(0.12, 0.35, 6);
+            var rf = new THREE.Mesh(rfGeo, flipperMat);
+            rf.scale.set(1, 1, 0.4); // Flatten
+            rf.position.set(-0.85, -0.08, rs * 0.18);
+            rf.rotation.z = -Math.PI / 2; // Point backward (-X)
+            rf.rotation.y = rs * 0.2;
+            model.add(rf);
+            rearFlippers.push(rf);
+        }
+        model.userData.parts.rearFlippers = rearFlippers;
+
+        // --- TAIL NUB ---
+        var tailGeo = new THREE.SphereGeometry(0.08, 6, 4);
+        var tail = new THREE.Mesh(tailGeo, bodyMat);
+        tail.scale.set(1.2, 0.6, 0.8);
+        tail.position.set(-0.95, 0.02, 0);
+        model.add(tail);
+
+        return model;
+    }
+
+    // ========================================================================
+    // FISH MODEL BUILDERS
+    // ========================================================================
+
+    /**
+     * Build a slitted sardine — small silver fish with a blue dorsal slit (males).
+     */
+    function buildSlittedSardineModel(colors, isBaby) {
+        var model = new THREE.Group();
+        model.userData.parts = {};
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.4, metalness: 0.3 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.4, metalness: 0.3 });
+        var slitMat = new THREE.MeshStandardMaterial({ color: colors.slit, roughness: 0.3, metalness: 0.2 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.3 });
+
+        // Body — small elongated ellipsoid
+        var bodyGeo = new THREE.SphereGeometry(0.3, 8, 6);
+        var body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.scale.set(2.5, 0.6, 0.8);
+        model.add(body);
+        model.userData.parts.body = body;
+
+        // Dorsal slit — thin colored line on top (males only — slit color differs from body)
+        var slitGeo = new THREE.BoxGeometry(0.5, 0.02, 0.01);
+        var slit = new THREE.Mesh(slitGeo, slitMat);
+        slit.position.set(0.05, 0.17, 0);
+        model.add(slit);
+
+        // Tail fin — flattened cone at -X
+        var tailGeo = new THREE.ConeGeometry(0.1, 0.25, 4);
+        var tail = new THREE.Mesh(tailGeo, tailMat);
+        tail.scale.set(0.3, 1, 1);
+        tail.rotation.z = Math.PI / 2;
+        tail.position.set(-0.7, 0, 0);
+        model.add(tail);
+        model.userData.parts.tail = tail;
+
+        // Eyes — tiny spheres
+        var eyeGeo = new THREE.SphereGeometry(0.025, 6, 4);
+        var leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(0.55, 0.05, 0.1);
+        model.add(leftEye);
+        var rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.55, 0.05, -0.1);
+        model.add(rightEye);
+
+        return model;
+    }
+
+    /**
+     * Build an orcleton — large solitary fish with dorsal fin.
+     * Males are blue, females are orange.
+     */
+    function buildOrcletonModel(colors, isBaby) {
+        var model = new THREE.Group();
+        model.userData.parts = {};
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.4, metalness: 0.2 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.4 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.4 });
+        var finMat = new THREE.MeshStandardMaterial({ color: colors.fins, roughness: 0.3 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.3 });
+
+        // Body — larger rounded fish shape
+        var bodyGeo = new THREE.SphereGeometry(0.4, 10, 8);
+        var body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.scale.set(2.0, 1.0, 0.8);
+        body.castShadow = true;
+        model.add(body);
+        model.userData.parts.body = body;
+
+        // Belly — lighter underside
+        var bellyGeo = new THREE.SphereGeometry(0.35, 8, 6);
+        var belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.scale.set(1.8, 0.6, 0.7);
+        belly.position.set(0, -0.12, 0);
+        model.add(belly);
+
+        // Dorsal fin — triangle on top
+        var dorsalGeo = new THREE.ConeGeometry(0.08, 0.25, 4);
+        var dorsal = new THREE.Mesh(dorsalGeo, finMat);
+        dorsal.position.set(0, 0.38, 0);
+        model.add(dorsal);
+        model.userData.parts.dorsalFin = dorsal;
+
+        // Tail fin — larger flattened cone at -X
+        var tailGeo = new THREE.ConeGeometry(0.15, 0.35, 4);
+        var tail = new THREE.Mesh(tailGeo, tailMat);
+        tail.scale.set(0.3, 1, 1);
+        tail.rotation.z = Math.PI / 2;
+        tail.position.set(-0.75, 0, 0);
+        model.add(tail);
+        model.userData.parts.tail = tail;
+
+        // Side fins — small flat triangles
+        for (var side = -1; side <= 1; side += 2) {
+            var sfGeo = new THREE.ConeGeometry(0.06, 0.15, 3);
+            var sf = new THREE.Mesh(sfGeo, finMat);
+            sf.scale.set(0.3, 1, 1);
+            sf.rotation.z = side * 0.5;
+            sf.position.set(0.2, -0.1, side * 0.28);
+            model.add(sf);
+        }
+
+        // Eyes — slightly bigger than sardine
+        var eyeGeo = new THREE.SphereGeometry(0.04, 6, 4);
+        var leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(0.6, 0.1, 0.15);
+        model.add(leftEye);
+        var rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.6, 0.1, -0.15);
+        model.add(rightEye);
+
+        return model;
+    }
+
+    /**
+     * Build a bakka seal — slimmer than uronin, solid color, no patches.
+     * Males beige, females grey, baby males burgundy, baby females maroon.
+     */
+    function buildBakkaSealModel(colors, isBaby) {
+        var model = new THREE.Group();
+        model.userData.parts = {};
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.7 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.7 });
+        var flipperMat = new THREE.MeshStandardMaterial({ color: colors.flippers, roughness: 0.7 });
+        var faceMat = new THREE.MeshStandardMaterial({ color: colors.face, roughness: 0.6 });
+        var noseMat = new THREE.MeshStandardMaterial({ color: colors.nose, roughness: 0.5 });
+        var whiskerMat = new THREE.MeshStandardMaterial({ color: colors.whiskers, roughness: 0.5 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.3, emissive: colors.eyes, emissiveIntensity: 0.2 });
+
+        // Body — slimmer than uronin seal
+        var bodyGeo = new THREE.SphereGeometry(0.45, 14, 10);
+        var body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.scale.set(1.8, 0.55, 0.8);
+        body.castShadow = true;
+        model.add(body);
+        model.userData.parts.body = body;
+
+        // Belly
+        var bellyGeo = new THREE.SphereGeometry(0.4, 12, 8);
+        var belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.scale.set(1.6, 0.4, 0.7);
+        belly.position.set(0, -0.1, 0);
+        model.add(belly);
+
+        // Head — slightly smaller than uronin
+        var headGeo = new THREE.SphereGeometry(0.25, 12, 8);
+        var head = new THREE.Mesh(headGeo, faceMat);
+        head.scale.set(1.0, 0.85, 0.9);
+        head.position.set(0.72, 0.1, 0);
+        head.castShadow = true;
+        model.add(head);
+        model.userData.parts.head = head;
+
+        // Nose
+        var noseGeo = new THREE.SphereGeometry(0.06, 8, 6);
+        var nose = new THREE.Mesh(noseGeo, noseMat);
+        nose.position.set(0.95, 0.06, 0);
+        model.add(nose);
+
+        // Eyes — babies get bigger adorable eyes
+        var eyeRadius = isBaby ? 0.065 : 0.04;
+        var leftEye = new THREE.Mesh(new THREE.SphereGeometry(eyeRadius, 8, 6), eyeMat);
+        leftEye.position.set(0.82, 0.18, 0.12);
+        model.add(leftEye);
+        var rightEye = new THREE.Mesh(new THREE.SphereGeometry(eyeRadius, 8, 6), eyeMat);
+        rightEye.position.set(0.82, 0.18, -0.12);
+        model.add(rightEye);
+
+        // Baby sclera
+        if (isBaby) {
+            var scleraMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.3 });
+            var slGeo = new THREE.SphereGeometry(eyeRadius * 1.4, 8, 6);
+            var scleraL = new THREE.Mesh(slGeo, scleraMat);
+            scleraL.position.set(0.81, 0.18, 0.12);
+            model.add(scleraL);
+            var scleraR = new THREE.Mesh(slGeo, scleraMat);
+            scleraR.position.set(0.81, 0.18, -0.12);
+            model.add(scleraR);
+        }
+
+        // Whiskers — 3 per side
+        for (var side = -1; side <= 1; side += 2) {
+            for (var w = 0; w < 3; w++) {
+                var whiskerGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.15, 4);
+                var whisker = new THREE.Mesh(whiskerGeo, whiskerMat);
+                whisker.rotation.z = Math.PI / 2 + (w - 1) * 0.3;
+                whisker.rotation.x = side * 0.2;
+                whisker.position.set(0.88, 0.08 + w * 0.02, side * (0.1 + w * 0.02));
+                model.add(whisker);
+            }
+        }
+
+        // Front flippers — thinner/more streamlined than uronin
+        var frontFlippers = [];
+        for (var fs = -1; fs <= 1; fs += 2) {
+            var ffGeo = new THREE.BoxGeometry(0.35, 0.04, 0.18);
+            var ff = new THREE.Mesh(ffGeo, flipperMat);
+            ff.position.set(0.25, -0.14, fs * 0.35);
+            ff.rotation.x = fs * 0.3;
+            ff.rotation.z = fs * -0.15;
+            ff.castShadow = true;
+            model.add(ff);
+            frontFlippers.push(ff);
+        }
+        model.userData.parts.frontFlippers = frontFlippers;
+
+        // Rear flippers
+        var rearFlippers = [];
+        for (var rs = -1; rs <= 1; rs += 2) {
+            var rfGeo = new THREE.ConeGeometry(0.1, 0.3, 6);
+            var rf = new THREE.Mesh(rfGeo, flipperMat);
+            rf.scale.set(1, 1, 0.4);
+            rf.position.set(-0.72, -0.06, rs * 0.15);
+            rf.rotation.z = -Math.PI / 2;
+            rf.rotation.y = rs * 0.2;
+            model.add(rf);
+            rearFlippers.push(rf);
+        }
+        model.userData.parts.rearFlippers = rearFlippers;
+
+        // Tail nub
+        var tailGeo = new THREE.SphereGeometry(0.06, 6, 4);
+        var tail = new THREE.Mesh(tailGeo, bodyMat);
+        tail.scale.set(1.2, 0.6, 0.8);
+        tail.position.set(-0.78, 0.02, 0);
+        model.add(tail);
+
+        return model;
+    }
+
+    // ========================================================================
     // MODEL BUILDERS REGISTRY
     // ========================================================================
     // Maps animal type names to their builder functions.
@@ -3461,7 +3834,11 @@ window.Enemies = (function() {
         drongulinat_cat: buildDrongulinatCatModel,
         snow_caninon: buildSnowCaninonModel,
         baluban_oxen: buildBalubanOxenModel,
-        deericus_iricus: buildDeericusIricusModel
+        deericus_iricus: buildDeericusIricusModel,
+        uronin_seal: buildUroninSealModel,
+        slitted_sardine: buildSlittedSardineModel,
+        orcleton: buildOrcletonModel,
+        bakka_seal: buildBakkaSealModel
     };
 
     // ========================================================================
@@ -3717,6 +4094,27 @@ window.Enemies = (function() {
             } else if (animalType === 'baluban_oxen') {
                 enemy.userData.lifecycleState = 'grazing';
                 enemy.userData.ignoreGravity = true;
+            } else if (animalType === 'uronin_seal') {
+                enemy.userData.lifecycleState = 'resting';
+                enemy.userData.ignoreGravity = true;
+                enemy.userData.colonyId = null;
+                enemy.userData.homeIslandIndex = -1;
+                enemy.userData.sizeRoll = 1.0;
+                enemy.userData.stateTimer = 0;
+            } else if (animalType === 'bakka_seal') {
+                enemy.userData.lifecycleState = 'swimming';
+                enemy.userData.ignoreGravity = true;
+                enemy.userData.stateTimer = 0;
+                enemy.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
+                enemy.userData.warningTimer = 0;
+            } else if (animalType === 'slitted_sardine' || animalType === 'orcleton') {
+                enemy.userData.lifecycleState = 'swimming';
+                enemy.userData.ignoreGravity = true;
+                enemy.userData.isFish = true;
+                enemy.userData.stateTimer = 0;
+                enemy.userData.swimDepth = -0.5 - Math.random() * 1.5;
+                enemy.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
+                enemy.position.y = enemy.userData.swimDepth;
             }
 
             GameState.enemies.push(enemy);
@@ -8465,6 +8863,1487 @@ window.Enemies = (function() {
         nest.ownerId = null;
 
         console.log('Baby goose hatched at nest', nest.id);
+    }
+
+    // ========================================================================
+    // FISH SYSTEM — Sardines and Orcletons
+    // ========================================================================
+    // Sardines swim in shoals of 20, orcletons are large solitary fish.
+    // Both are hunted by uronin and bakka seals.
+
+    /**
+     * Spawn a shoal of 20 sardines at a random ocean position.
+     */
+    function spawnSardineShoal() {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var oceanDeepZ = GameState.oceanDeepZ || 230;
+
+        // Pick random shoal center in the ocean
+        var cx = (Math.random() - 0.5) * worldSize * 1.2;
+        var cz = oceanDeepZ + 30 + Math.random() * 300;
+
+        var shoalId = 'shoal_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        var shoalCenter = { x: cx, z: cz };
+
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'slitted_sardine_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'slitted_sardine_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < 20; i++) {
+            var data = i < 10 ? maleData : femaleData;
+            var angle = Math.random() * Math.PI * 2;
+            var dist = Math.random() * 5;
+            var fx = cx + Math.cos(angle) * dist;
+            var fz = cz + Math.sin(angle) * dist;
+            var swimDepth = -0.3 - Math.random() * 1.5;
+
+            var fish = createEnemy(data, fx, fz);
+            if (!fish) continue;
+            fish.position.y = swimDepth;
+            fish.userData.isFish = true;
+            fish.userData.ignoreGravity = true;
+            fish.userData.lifecycleState = 'swimming';
+            fish.userData.shoalId = shoalId;
+            fish.userData.shoalCenter = shoalCenter;
+            fish.userData.swimDepth = swimDepth;
+            fish.userData.swimDir = { x: Math.cos(angle), z: Math.sin(angle) };
+            fish.userData.stateTimer = Math.random() * 5;
+
+            GameState.enemies.push(fish);
+            GameState.scene.add(fish);
+        }
+
+        console.log('Spawned sardine shoal at', cx.toFixed(0), cz.toFixed(0));
+    }
+
+    /**
+     * Spawn a single orcleton at a random ocean position.
+     */
+    function spawnOrcleton() {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var oceanDeepZ = GameState.oceanDeepZ || 230;
+
+        var fx = (Math.random() - 0.5) * worldSize * 1.2;
+        var fz = oceanDeepZ + 40 + Math.random() * 350;
+        var swimDepth = -0.5 - Math.random() * 2.5;
+
+        // Random gender
+        var isMale = Math.random() < 0.5;
+        var data = window.ENEMIES.find(function(e) {
+            return e.id === (isMale ? 'orcleton_male' : 'orcleton_female');
+        });
+        if (!data) return;
+
+        var fish = createEnemy(data, fx, fz);
+        if (!fish) return;
+        fish.position.y = swimDepth;
+        fish.userData.isFish = true;
+        fish.userData.ignoreGravity = true;
+        fish.userData.lifecycleState = 'swimming';
+        fish.userData.swimDepth = swimDepth;
+        fish.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
+        fish.userData.stateTimer = Math.random() * 8;
+        fish.userData.dirChangeTime = 5 + Math.random() * 5;
+        fish.userData.eggsLaid = 0;
+
+        GameState.enemies.push(fish);
+        GameState.scene.add(fish);
+    }
+
+    /**
+     * Update fish behavior — sardines school, orcletons cruise solo.
+     */
+    function updateFishBehavior(fish, delta) {
+        if (!fish || !fish.parent) return;
+        if (fish.userData.lifecycleState !== 'swimming') return;
+
+        var speed = fish.userData.speed || 2;
+        var dir = fish.userData.swimDir;
+        if (!dir) return;
+
+        fish.userData.stateTimer += delta;
+
+        // --- SARDINE SCHOOLING ---
+        if (fish.userData.type === 'slitted_sardine') {
+            var center = fish.userData.shoalCenter;
+            if (center) {
+                // Steer toward shoal center (boids cohesion)
+                var dx = center.x - fish.position.x;
+                var dz = center.z - fish.position.z;
+                var distToCenter = Math.sqrt(dx * dx + dz * dz);
+
+                if (distToCenter > 8) {
+                    // Strong pull back to shoal
+                    dir.x += (dx / distToCenter) * 0.05;
+                    dir.z += (dz / distToCenter) * 0.05;
+                } else if (distToCenter > 3) {
+                    // Gentle pull
+                    dir.x += (dx / distToCenter) * 0.01;
+                    dir.z += (dz / distToCenter) * 0.01;
+                }
+
+                // Slight random variation every few seconds
+                if (fish.userData.stateTimer > 3 + Math.random() * 4) {
+                    dir.x += (Math.random() - 0.5) * 0.3;
+                    dir.z += (Math.random() - 0.5) * 0.3;
+                    fish.userData.stateTimer = 0;
+                }
+            }
+        }
+
+        // --- ORCLETON SOLO CRUISE ---
+        if (fish.userData.type === 'orcleton') {
+            fish.userData.dirChangeTime -= delta;
+            if (fish.userData.dirChangeTime <= 0) {
+                // New random direction
+                var newAngle = Math.random() * Math.PI * 2;
+                dir.x = Math.cos(newAngle);
+                dir.z = Math.sin(newAngle);
+                fish.userData.dirChangeTime = 5 + Math.random() * 5;
+            }
+        }
+
+        // Normalize direction
+        var len = Math.sqrt(dir.x * dir.x + dir.z * dir.z);
+        if (len > 0) { dir.x /= len; dir.z /= len; }
+
+        // Move
+        fish.position.x += dir.x * speed * delta;
+        fish.position.z += dir.z * speed * delta;
+
+        // Keep at swim depth with gentle bobbing
+        fish.position.y = fish.userData.swimDepth + Math.sin(fish.userData.stateTimer * 2) * 0.05;
+
+        // Face movement direction
+        fish.rotation.y = -Math.atan2(dir.z, dir.x);
+
+        // Tail oscillation animation
+        var parts = fish.children[0] ? fish.children[0].userData.parts : null;
+        if (parts && parts.tail) {
+            parts.tail.rotation.y = Math.sin(fish.userData.stateTimer * 8) * 0.3;
+        }
+
+        // Keep within ocean bounds
+        var worldSize = CONFIG.WORLD_SIZE;
+        var bound = worldSize * 0.7;
+        var oceanDeepZ = GameState.oceanDeepZ || 230;
+        if (fish.position.x > bound || fish.position.x < -bound) {
+            dir.x = -dir.x;
+            fish.position.x = Math.max(-bound, Math.min(bound, fish.position.x));
+        }
+        if (fish.position.z < oceanDeepZ + 10) {
+            dir.z = Math.abs(dir.z);
+        }
+        if (fish.position.z > oceanDeepZ + 500) {
+            dir.z = -Math.abs(dir.z);
+        }
+    }
+
+    // ========================================================================
+    // SEAL HUNTING FISH — shared helper for both seal types
+    // ========================================================================
+
+    /**
+     * Find the nearest fish to a seal within range.
+     * @param {THREE.Group} seal - The hunting seal
+     * @param {string} preferredType - Optional preferred fish type (e.g. 'orcleton')
+     * @param {number} maxRange - Max search distance
+     * @returns {THREE.Group|null}
+     */
+    function findNearestFish(seal, preferredType, maxRange) {
+        var closest = null;
+        var closestDist = maxRange;
+
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            var e = GameState.enemies[i];
+            if (!e.userData.isFish || !e.parent) continue;
+            if (e.userData.health <= 0) continue;
+
+            var dx = e.position.x - seal.position.x;
+            var dz = e.position.z - seal.position.z;
+            var dist = Math.sqrt(dx * dx + dz * dz);
+
+            // Prefer the specified type
+            if (preferredType && e.userData.type === preferredType) {
+                dist *= 0.5; // Weight preferred type closer
+            }
+
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = e;
+            }
+        }
+        return closest;
+    }
+
+    /**
+     * Generic hunt-fish state handler for any seal.
+     * Dives toward target fish, catches it (removes from scene), returns to surface.
+     * @returns {boolean} true if hunt is complete (seal should transition to next state)
+     */
+    function updateSealHuntingFish(seal, delta) {
+        var target = seal.userData.huntTarget;
+        if (!target || !target.parent || target.userData.health <= 0) {
+            // Target gone — abort hunt
+            return true;
+        }
+
+        var parts = seal.children[0] ? seal.children[0].userData.parts : null;
+
+        var dx = target.position.x - seal.position.x;
+        var dy = target.position.y - seal.position.y;
+        var dz = target.position.z - seal.position.z;
+        var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        // Dive toward target
+        var huntSpeed = 5;
+        if (dist > 1.5) {
+            seal.position.x += (dx / dist) * huntSpeed * delta;
+            seal.position.y += (dy / dist) * huntSpeed * delta;
+            seal.position.z += (dz / dist) * huntSpeed * delta;
+            seal.rotation.y = -Math.atan2(dz, dx);
+
+            // Diving tilt
+            seal.rotation.x = Math.atan2(-dy, Math.sqrt(dx * dx + dz * dz)) * 0.5;
+
+            // Fast flippers
+            if (parts && parts.frontFlippers) {
+                for (var f = 0; f < parts.frontFlippers.length; f++) {
+                    parts.frontFlippers[f].rotation.z = Math.sin(seal.userData.stateTimer * 8 + f * Math.PI) * 0.5;
+                }
+            }
+        } else {
+            // Caught the fish!
+            GameState.scene.remove(target);
+            var idx = GameState.enemies.indexOf(target);
+            if (idx !== -1) GameState.enemies.splice(idx, 1);
+            seal.userData.huntTarget = null;
+
+            // Return to surface
+            seal.userData.returningFromHunt = true;
+        }
+
+        // Returning to surface after catching fish
+        if (seal.userData.returningFromHunt) {
+            seal.position.y += 2 * delta; // Rise
+            seal.rotation.x *= 0.9; // Level out
+            if (seal.position.y >= -0.3) {
+                seal.position.y = -0.3;
+                seal.rotation.x = 0;
+                seal.userData.returningFromHunt = false;
+                return true; // Hunt complete
+            }
+        }
+
+        return false;
+    }
+
+    // ========================================================================
+    // URONIN SEAL COLONY SYSTEM
+    // ========================================================================
+    // Colony marine mammals that live on ocean islands. Features:
+    // - Colonies on medium/large islands with a leader (largest male)
+    // - Mating seasons, leader challenges, pup raising on separate islands
+    // ========================================================================
+
+    /**
+     * Spawn a colony of uronin seals on a specific island.
+     * @param {number} islandIndex - Index into GameState.oceanIslands
+     */
+    function spawnUroninSealColony(islandIndex) {
+        var island = GameState.oceanIslands[islandIndex];
+        if (!island) { console.warn('No island at index', islandIndex); return; }
+
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'uronin_seal_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'uronin_seal_female'; });
+        if (!maleData || !femaleData) { console.warn('Seal data not found'); return; }
+
+        var colonyId = 'seal_colony_' + islandIndex;
+        var colonyMembers = [];
+        var largestMale = null;
+        var largestSize = 0;
+
+        // Spawn 2 males
+        for (var m = 0; m < 2; m++) {
+            var angle = Math.random() * Math.PI * 2;
+            var dist = Math.random() * island.radius * 0.5;
+            var sx = island.x + Math.cos(angle) * dist;
+            var sz = island.z + Math.sin(angle) * dist;
+            var sy = Environment.getIslandGroundHeight(sx, sz, island) + maleData.groundY;
+
+            var male = createEnemy(maleData, sx, sz);
+            male.position.y = sy;
+            male.userData.colonyId = colonyId;
+            male.userData.homeIslandIndex = islandIndex;
+            male.userData.lifecycleState = 'resting';
+            male.userData.ignoreGravity = true;
+            male.userData.gender = 'male';
+            male.userData.sizeRoll = 1.0 + Math.random() * 0.3;
+            male.userData.isLeader = false;
+            male.userData.fightTimer = 0;
+            male.userData.stateTimer = 0;
+            male.userData.targetSeal = null;
+            male.userData.mateTarget = null;
+
+            // Scale by sizeRoll for visual variety
+            male.scale.multiplyScalar(male.userData.sizeRoll);
+
+            if (male.userData.sizeRoll > largestSize) {
+                largestSize = male.userData.sizeRoll;
+                largestMale = male;
+            }
+
+            GameState.enemies.push(male);
+            GameState.scene.add(male);
+            colonyMembers.push(male);
+        }
+
+        // Spawn 3 females
+        for (var f = 0; f < 3; f++) {
+            var angle = Math.random() * Math.PI * 2;
+            var dist = Math.random() * island.radius * 0.5;
+            var fx = island.x + Math.cos(angle) * dist;
+            var fz = island.z + Math.sin(angle) * dist;
+            var fy = Environment.getIslandGroundHeight(fx, fz, island) + femaleData.groundY;
+
+            var female = createEnemy(femaleData, fx, fz);
+            female.position.y = fy;
+            female.userData.colonyId = colonyId;
+            female.userData.homeIslandIndex = islandIndex;
+            female.userData.lifecycleState = 'resting';
+            female.userData.ignoreGravity = true;
+            female.userData.gender = 'female';
+            female.userData.sizeRoll = 1.0;
+            female.userData.isPregnant = false;
+            female.userData.gestationTimer = 0;
+            female.userData.pup = null;
+            female.userData.stateTimer = 0;
+            female.userData.targetSeal = null;
+            female.userData.raisingIslandIndex = null;
+
+            GameState.enemies.push(female);
+            GameState.scene.add(female);
+            colonyMembers.push(female);
+        }
+
+        // Assign leader
+        if (largestMale) {
+            largestMale.userData.isLeader = true;
+            largestMale.scale.multiplyScalar(1.1);
+        }
+
+        // Track colony
+        GameState.sealColonies.push({
+            colonyId: colonyId,
+            islandIndex: islandIndex,
+            island: island,
+            members: colonyMembers,
+            leader: largestMale
+        });
+
+        console.log('Spawned seal colony on island ' + islandIndex + ' (' + colonyMembers.length + ' seals, leader size: ' + largestSize.toFixed(2) + ')');
+    }
+
+    /**
+     * Pick a random island that is NOT the given index.
+     */
+    function pickDifferentIsland(currentIndex) {
+        var options = [];
+        for (var i = 0; i < GameState.oceanIslands.length; i++) {
+            if (i !== currentIndex) options.push(i);
+        }
+        if (options.length === 0) return currentIndex;
+        return options[Math.floor(Math.random() * options.length)];
+    }
+
+    /**
+     * Spawn a seal pup next to its mother.
+     */
+    function spawnSealPup(mother) {
+        // Population cap
+        var sealCount = 0;
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            if (GameState.enemies[i].userData.type === 'uronin_seal') sealCount++;
+        }
+        if (sealCount >= 20) return;
+
+        // Random gender for pup
+        var isMale = Math.random() < 0.5;
+        var pupId = isMale ? 'uronin_seal_baby_male' : 'uronin_seal_baby_female';
+        var pupData = window.ENEMIES.find(function(e) { return e.id === pupId; });
+        if (!pupData) return;
+
+        var pup = createEnemy(pupData, mother.position.x + 0.5, mother.position.z);
+        pup.position.y = mother.position.y;
+        pup.userData.colonyId = mother.userData.colonyId;
+        pup.userData.homeIslandIndex = mother.userData.homeIslandIndex;
+        pup.userData.lifecycleState = 'following_mother';
+        pup.userData.ignoreGravity = true;
+        pup.userData.gender = isMale ? 'male' : 'female';
+        pup.userData.motherId = mother.userData.id;
+        pup.userData.growthTimer = 0;
+        pup.userData.stateTimer = 0;
+
+        GameState.enemies.push(pup);
+        GameState.scene.add(pup);
+        mother.userData.pup = pup;
+
+        console.log('Seal pup born! Gender: ' + pup.userData.gender);
+    }
+
+    /**
+     * Mature a pup into an adult seal.
+     */
+    function matureSealPup(pup) {
+        if (!pup) return;
+
+        // Determine adult type based on gender
+        var adultId = pup.userData.gender === 'male' ? 'uronin_seal_male' : 'uronin_seal_female';
+        var adultData = window.ENEMIES.find(function(e) { return e.id === adultId; });
+        if (!adultData) return;
+
+        // Create adult at pup's position
+        var adult = createEnemy(adultData, pup.position.x, pup.position.z);
+        adult.position.y = pup.position.y;
+        adult.userData.colonyId = pup.userData.colonyId;
+        adult.userData.homeIslandIndex = pup.userData.homeIslandIndex;
+        adult.userData.lifecycleState = 'resting';
+        adult.userData.ignoreGravity = true;
+        adult.userData.gender = pup.userData.gender;
+        adult.userData.sizeRoll = 1.0 + Math.random() * 0.2;
+        adult.userData.isLeader = false;
+        adult.userData.stateTimer = 0;
+        adult.userData.fightTimer = 0;
+        if (pup.userData.gender === 'female') {
+            adult.userData.isPregnant = false;
+            adult.userData.gestationTimer = 0;
+            adult.userData.pup = null;
+            adult.userData.canGetPregnant = true;
+        }
+
+        adult.scale.multiplyScalar(adult.userData.sizeRoll);
+
+        GameState.enemies.push(adult);
+        GameState.scene.add(adult);
+
+        // Add to colony
+        for (var c = 0; c < GameState.sealColonies.length; c++) {
+            if (GameState.sealColonies[c].colonyId === pup.userData.colonyId) {
+                GameState.sealColonies[c].members.push(adult);
+                break;
+            }
+        }
+
+        // Remove pup
+        GameState.scene.remove(pup);
+        var idx = GameState.enemies.indexOf(pup);
+        if (idx !== -1) GameState.enemies.splice(idx, 1);
+
+        console.log('Seal pup matured into adult ' + pup.userData.gender);
+        return adult;
+    }
+
+    /**
+     * Trigger mating season for all seal colonies.
+     */
+    function triggerSealMating() {
+        if (!GameState.sealColonies || GameState.sealColonies.length === 0) return;
+
+        console.log('Uronin Seal mating season!');
+
+        for (var c = 0; c < GameState.sealColonies.length; c++) {
+            var colony = GameState.sealColonies[c];
+
+            // Find living members on home island
+            var males = [];
+            var females = [];
+            for (var m = 0; m < colony.members.length; m++) {
+                var seal = colony.members[m];
+                if (!seal || !seal.parent) continue; // Dead or removed
+                if (seal.userData.lifecycleState !== 'resting' && seal.userData.lifecycleState !== 'waddling') continue;
+                if (seal.userData.isBaby) continue;
+                if (seal.userData.gender === 'male') males.push(seal);
+                else if (seal.userData.gender === 'female' && !seal.userData.isPregnant) females.push(seal);
+            }
+
+            if (females.length === 0 || males.length === 0) continue;
+
+            // All seals bark first
+            colony.members.forEach(function(seal) {
+                if (seal && seal.parent && !seal.userData.isBaby) {
+                    seal.userData.previousState = seal.userData.lifecycleState;
+                    seal.userData.lifecycleState = 'barking';
+                    seal.userData.stateTimer = 0;
+                }
+            });
+
+            // Leader mates with first available female (after bark)
+            var leader = colony.leader;
+            if (leader && leader.parent && females.length > 0) {
+                leader.userData.mateTarget = females[0];
+                leader.userData.afterBarkState = 'seeking_mate';
+            }
+
+            // Non-leader males: 40% chance to sneak-mate, 20% chance to challenge
+            for (var mi = 0; mi < males.length; mi++) {
+                var male = males[mi];
+                if (male.userData.isLeader) continue;
+
+                var roll = Math.random();
+                if (roll < 0.2 && leader && leader.parent) {
+                    // Challenge the leader!
+                    male.userData.targetSeal = leader;
+                    male.userData.afterBarkState = 'challenging';
+                } else if (roll < 0.6 && females.length > 1) {
+                    // Sneak-mate with a different female
+                    var targetFemale = females[Math.min(mi + 1, females.length - 1)];
+                    male.userData.mateTarget = targetFemale;
+                    male.userData.afterBarkState = 'seeking_mate';
+                } else {
+                    male.userData.afterBarkState = 'resting';
+                }
+            }
+        }
+    }
+
+    /**
+     * Main behavior update for uronin seals. Called every frame.
+     */
+    function updateUroninSealBehavior(seal, delta) {
+        if (!seal || !seal.parent) return;
+        if (seal.userData.type !== 'uronin_seal') return;
+
+        var state = seal.userData.lifecycleState;
+        var island = GameState.oceanIslands[seal.userData.homeIslandIndex];
+
+        // Pregnancy timer (runs regardless of state)
+        if (seal.userData.isPregnant) {
+            seal.userData.gestationTimer += delta;
+            if (seal.userData.gestationTimer >= 90) {
+                // Give birth!
+                spawnSealPup(seal);
+                seal.userData.isPregnant = false;
+                seal.userData.gestationTimer = 0;
+                if (seal.userData.pup) {
+                    seal.userData.raisingIslandIndex = pickDifferentIsland(seal.userData.homeIslandIndex);
+                    seal.userData.lifecycleState = 'swimming_to_raise';
+                    seal.userData.stateTimer = 0;
+                }
+                return;
+            }
+        }
+
+        seal.userData.stateTimer += delta;
+
+        switch (state) {
+
+        case 'resting':
+            // Lie on island, breathing animation
+            if (island) {
+                var groundY = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, island);
+                seal.position.y = groundY + (seal.userData.groundY || 0.2);
+            }
+            // Breathing: gentle body scale oscillation
+            if (seal.userData.parts && seal.userData.parts.body) {
+                seal.userData.parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
+            }
+            // Randomly start waddling or hunting fish
+            if (seal.userData.stateTimer > 5 + Math.random() * 10) {
+                // 30% chance to hunt fish instead of waddle
+                if (Math.random() < 0.3) {
+                    var prey = findNearestFish(seal, 'orcleton', 50); // Prefer orcletons
+                    if (prey) {
+                        seal.userData.huntTarget = prey;
+                        seal.userData.lifecycleState = 'hunting_fish';
+                        seal.userData.stateTimer = 0;
+                        seal.userData.returningFromHunt = false;
+                        seal.userData.preHuntState = 'resting';
+                        break;
+                    }
+                }
+                seal.userData.lifecycleState = 'waddling';
+                seal.userData.stateTimer = 0;
+                var wAngle = Math.random() * Math.PI * 2;
+                seal.userData.waddleDir = { x: Math.cos(wAngle), z: Math.sin(wAngle) };
+            }
+            break;
+
+        case 'waddling':
+            // Slow movement on island surface
+            if (island && seal.userData.waddleDir) {
+                var wSpeed = 1.0;
+                seal.position.x += seal.userData.waddleDir.x * wSpeed * delta;
+                seal.position.z += seal.userData.waddleDir.z * wSpeed * delta;
+
+                // Stay on island
+                var dx = seal.position.x - island.x;
+                var dz = seal.position.z - island.z;
+                var distFromCenter = Math.sqrt(dx * dx + dz * dz);
+                if (distFromCenter > island.radius * 0.65) {
+                    // Turn back toward center
+                    seal.userData.waddleDir.x = -dx / distFromCenter;
+                    seal.userData.waddleDir.z = -dz / distFromCenter;
+                }
+
+                // Update Y to island surface
+                var groundY = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, island);
+                seal.position.y = groundY + (seal.userData.groundY || 0.2);
+
+                // Face movement direction
+                seal.rotation.y = -Math.atan2(seal.userData.waddleDir.z, seal.userData.waddleDir.x);
+
+                // Side-to-side waddle animation
+                seal.rotation.z = Math.sin(seal.userData.stateTimer * 4) * 0.12;
+
+                // Flipper animation
+                if (seal.userData.parts && seal.userData.parts.frontFlippers) {
+                    seal.userData.parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 4) * 0.2;
+                    seal.userData.parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 4) * 0.2;
+                }
+            }
+            // Return to resting after 3-5 seconds
+            if (seal.userData.stateTimer > 3 + Math.random() * 2) {
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                seal.rotation.z = 0;
+            }
+            break;
+
+        case 'barking':
+            // Head tilts up, territorial call
+            if (seal.userData.parts && seal.userData.parts.head) {
+                seal.userData.parts.head.rotation.z = -0.3 + Math.sin(seal.userData.stateTimer * 6) * 0.1;
+            }
+            // After 2 seconds, transition to next state
+            if (seal.userData.stateTimer >= 2) {
+                if (seal.userData.parts && seal.userData.parts.head) {
+                    seal.userData.parts.head.rotation.z = 0;
+                }
+                seal.userData.lifecycleState = seal.userData.afterBarkState || 'resting';
+                seal.userData.stateTimer = 0;
+            }
+            break;
+
+        case 'seeking_mate':
+            // Male waddles toward target female
+            var target = seal.userData.mateTarget;
+            if (!target || !target.parent) {
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                break;
+            }
+            var toX = target.position.x - seal.position.x;
+            var toZ = target.position.z - seal.position.z;
+            var toDist = Math.sqrt(toX * toX + toZ * toZ);
+
+            if (toDist < 1.5) {
+                // Close enough — start mating
+                seal.userData.lifecycleState = 'mating';
+                seal.userData.stateTimer = 0;
+                target.userData.lifecycleState = 'mating';
+                target.userData.stateTimer = 0;
+                target.userData.mateTarget = seal;
+            } else {
+                // Waddle toward target
+                var dirX = toX / toDist;
+                var dirZ = toZ / toDist;
+                seal.position.x += dirX * 1.5 * delta;
+                seal.position.z += dirZ * 1.5 * delta;
+                seal.rotation.y = -Math.atan2(dirZ, dirX);
+                seal.rotation.z = Math.sin(seal.userData.stateTimer * 4) * 0.12;
+
+                if (island) {
+                    var gy = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, island);
+                    seal.position.y = gy + (seal.userData.groundY || 0.2);
+                }
+            }
+            break;
+
+        case 'mating':
+            // Stay near partner for 5 seconds
+            if (seal.userData.stateTimer >= 5) {
+                // Mating complete
+                if (seal.userData.gender === 'female' && !seal.userData.isPregnant) {
+                    seal.userData.isPregnant = true;
+                    seal.userData.gestationTimer = 0;
+                    console.log('Female seal is pregnant!');
+                } else if (seal.userData.gender === 'male' && seal.userData.mateTarget) {
+                    // Make the female pregnant
+                    var fem = seal.userData.mateTarget;
+                    if (fem && fem.parent && !fem.userData.isPregnant && fem.userData.gender === 'female') {
+                        fem.userData.isPregnant = true;
+                        fem.userData.gestationTimer = 0;
+                        console.log('Female seal is pregnant!');
+                    }
+                }
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                seal.userData.mateTarget = null;
+                // Also return the partner to resting
+                if (seal.userData.mateTarget && seal.userData.mateTarget.parent) {
+                    seal.userData.mateTarget.userData.lifecycleState = 'resting';
+                    seal.userData.mateTarget.userData.stateTimer = 0;
+                }
+            }
+            break;
+
+        case 'challenging':
+            // Non-leader male approaches leader
+            var leader = seal.userData.targetSeal;
+            if (!leader || !leader.parent) {
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                break;
+            }
+            var clx = leader.position.x - seal.position.x;
+            var clz = leader.position.z - seal.position.z;
+            var clDist = Math.sqrt(clx * clx + clz * clz);
+
+            if (clDist < 2) {
+                // Close enough — start fighting
+                seal.userData.lifecycleState = 'fighting';
+                seal.userData.stateTimer = 0;
+                leader.userData.lifecycleState = 'fighting';
+                leader.userData.stateTimer = 0;
+                leader.userData.targetSeal = seal;
+            } else {
+                var cdx = clx / clDist;
+                var cdz = clz / clDist;
+                seal.position.x += cdx * 1.5 * delta;
+                seal.position.z += cdz * 1.5 * delta;
+                seal.rotation.y = -Math.atan2(cdz, cdx);
+                seal.rotation.z = Math.sin(seal.userData.stateTimer * 4) * 0.12;
+
+                if (island) {
+                    var gy = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, island);
+                    seal.position.y = gy + (seal.userData.groundY || 0.2);
+                }
+            }
+            break;
+
+        case 'fighting':
+            // Two males lunge at each other
+            var opponent = seal.userData.targetSeal;
+            if (!opponent || !opponent.parent) {
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                seal.rotation.z = 0;
+                break;
+            }
+            // Face opponent
+            var fx = opponent.position.x - seal.position.x;
+            var fz = opponent.position.z - seal.position.z;
+            seal.rotation.y = -Math.atan2(fz, fx);
+
+            // Lunge animation — forward and back
+            var lungePhase = Math.sin(seal.userData.stateTimer * 3);
+            var lungeDist = Math.sqrt(fx * fx + fz * fz);
+            if (lungeDist > 0.5) {
+                seal.position.x += (fx / lungeDist) * lungePhase * 0.5 * delta;
+                seal.position.z += (fz / lungeDist) * lungePhase * 0.5 * delta;
+            }
+            seal.rotation.z = lungePhase * 0.15;
+
+            // Fight ends after 6 seconds
+            if (seal.userData.stateTimer >= 6) {
+                var challengerWins = Math.random() < 0.3; // 30% chance
+
+                if (challengerWins && !seal.userData.isLeader) {
+                    // Challenger wins! Swap leadership
+                    console.log('Challenger won! New colony leader!');
+                    opponent.userData.isLeader = false;
+                    opponent.scale.divideScalar(1.1);
+                    seal.userData.isLeader = true;
+                    seal.scale.multiplyScalar(1.1);
+
+                    // Update colony leader reference
+                    for (var ci = 0; ci < GameState.sealColonies.length; ci++) {
+                        if (GameState.sealColonies[ci].colonyId === seal.userData.colonyId) {
+                            GameState.sealColonies[ci].leader = seal;
+                            break;
+                        }
+                    }
+                } else {
+                    console.log('Leader defended position!');
+                }
+
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                seal.userData.targetSeal = null;
+                seal.rotation.z = 0;
+                opponent.userData.lifecycleState = 'resting';
+                opponent.userData.stateTimer = 0;
+                opponent.userData.targetSeal = null;
+                opponent.rotation.z = 0;
+            }
+            break;
+
+        case 'swimming_to_raise':
+            // Mother swims to a different island to raise her pup
+            var targetIsland = GameState.oceanIslands[seal.userData.raisingIslandIndex];
+            if (!targetIsland) { seal.userData.lifecycleState = 'resting'; break; }
+
+            seal.position.y = -0.3; // Partially submerged
+            var stx = targetIsland.x - seal.position.x;
+            var stz = targetIsland.z - seal.position.z;
+            var stDist = Math.sqrt(stx * stx + stz * stz);
+
+            if (stDist < targetIsland.radius) {
+                // Arrived at raising island
+                seal.userData.lifecycleState = 'raising_pup';
+                seal.userData.stateTimer = 0;
+                seal.position.y = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, targetIsland) + (seal.userData.groundY || 0.2);
+                seal.rotation.z = 0;
+                // Move pup to island too
+                if (seal.userData.pup && seal.userData.pup.parent) {
+                    seal.userData.pup.position.set(seal.position.x + 0.5, seal.position.y, seal.position.z);
+                    seal.userData.pup.userData.lifecycleState = 'following_mother';
+                }
+            } else {
+                // Swim toward target
+                var sdx = stx / stDist;
+                var sdz = stz / stDist;
+                seal.position.x += sdx * 4.5 * delta;
+                seal.position.z += sdz * 4.5 * delta;
+                seal.rotation.y = -Math.atan2(sdz, sdx);
+                // Swimming undulation
+                seal.rotation.z = Math.sin(seal.userData.stateTimer * 3) * 0.15;
+                // Flipper animation
+                if (seal.userData.parts && seal.userData.parts.frontFlippers) {
+                    seal.userData.parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                    seal.userData.parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                }
+                // Move pup along too
+                if (seal.userData.pup && seal.userData.pup.parent) {
+                    seal.userData.pup.position.set(seal.position.x - 0.5, -0.3, seal.position.z + 0.3);
+                    seal.userData.pup.rotation.y = seal.rotation.y;
+                    seal.userData.pup.rotation.z = Math.sin(seal.userData.stateTimer * 3 + 0.5) * 0.1;
+                }
+            }
+            break;
+
+        case 'raising_pup':
+            // Mother rests on new island while pup grows
+            var raisingIsland = GameState.oceanIslands[seal.userData.raisingIslandIndex];
+            if (raisingIsland) {
+                var gy = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, raisingIsland);
+                seal.position.y = gy + (seal.userData.groundY || 0.2);
+            }
+            // Breathing animation
+            if (seal.userData.parts && seal.userData.parts.body) {
+                seal.userData.parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
+            }
+
+            // Pup growth: 2 minutes (120 seconds)
+            var pup = seal.userData.pup;
+            if (pup && pup.parent) {
+                pup.userData.growthTimer = (pup.userData.growthTimer || 0) + delta;
+
+                // Pup stays near mother
+                var momDx = seal.position.x - pup.position.x;
+                var momDz = seal.position.z - pup.position.z;
+                var momDist = Math.sqrt(momDx * momDx + momDz * momDz);
+                if (momDist > 1.5) {
+                    pup.position.x += (momDx / momDist) * 1.0 * delta;
+                    pup.position.z += (momDz / momDist) * 1.0 * delta;
+                }
+                if (raisingIsland) {
+                    pup.position.y = Environment.getIslandGroundHeight(pup.position.x, pup.position.z, raisingIsland) + (pup.userData.groundY || 0.1);
+                }
+
+                // Pup gradually grows
+                var growthProgress = Math.min(pup.userData.growthTimer / 120, 1);
+                var pupScale = 0.5 + growthProgress * 0.5;
+                pup.scale.set(pupScale, pupScale, pupScale);
+
+                // Pup matures at 120 seconds
+                if (pup.userData.growthTimer >= 120) {
+                    var matureAdult = matureSealPup(pup);
+                    seal.userData.pup = null;
+                    seal.userData.matureOffspring = matureAdult;
+                    seal.userData.lifecycleState = 'swimming_home';
+                    seal.userData.stateTimer = 0;
+                }
+            } else {
+                // Pup lost — go home
+                seal.userData.lifecycleState = 'swimming_home';
+                seal.userData.stateTimer = 0;
+            }
+            break;
+
+        case 'swimming_home':
+            // Mother (+ mature offspring) swim back to home colony
+            if (!island) { seal.userData.lifecycleState = 'resting'; break; }
+
+            seal.position.y = -0.3;
+            var hx = island.x - seal.position.x;
+            var hz = island.z - seal.position.z;
+            var hDist = Math.sqrt(hx * hx + hz * hz);
+
+            if (hDist < island.radius) {
+                // Arrived home!
+                seal.userData.lifecycleState = 'resting';
+                seal.userData.stateTimer = 0;
+                seal.position.y = Environment.getIslandGroundHeight(seal.position.x, seal.position.z, island) + (seal.userData.groundY || 0.2);
+                seal.rotation.z = 0;
+
+                // Move offspring to home island too
+                if (seal.userData.matureOffspring && seal.userData.matureOffspring.parent) {
+                    var offspring = seal.userData.matureOffspring;
+                    offspring.position.set(seal.position.x + 1, seal.position.y, seal.position.z);
+                    offspring.userData.homeIslandIndex = seal.userData.homeIslandIndex;
+                    offspring.userData.lifecycleState = 'resting';
+                    offspring.userData.stateTimer = 0;
+                    seal.userData.matureOffspring = null;
+                }
+                console.log('Mother seal returned home with offspring!');
+            } else {
+                // Swim home
+                var hdx = hx / hDist;
+                var hdz = hz / hDist;
+                seal.position.x += hdx * 4.5 * delta;
+                seal.position.z += hdz * 4.5 * delta;
+                seal.rotation.y = -Math.atan2(hdz, hdx);
+                seal.rotation.z = Math.sin(seal.userData.stateTimer * 3) * 0.15;
+
+                if (seal.userData.parts && seal.userData.parts.frontFlippers) {
+                    seal.userData.parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                    seal.userData.parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                }
+
+                // Offspring follows
+                if (seal.userData.matureOffspring && seal.userData.matureOffspring.parent) {
+                    var off = seal.userData.matureOffspring;
+                    off.position.set(seal.position.x - 1, -0.3, seal.position.z + 0.5);
+                    off.rotation.y = seal.rotation.y;
+                    off.userData.ignoreGravity = true;
+                }
+            }
+            break;
+
+        case 'following_mother':
+            // Pup follows mother (handled in raising_pup state)
+            // Just do breathing animation
+            if (seal.userData.parts && seal.userData.parts.body) {
+                seal.userData.parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 2) * 0.02;
+            }
+            break;
+
+        case 'hunting_fish':
+            seal.userData.stateTimer += delta;
+            if (updateSealHuntingFish(seal, delta)) {
+                // Hunt complete — return to previous state
+                seal.userData.lifecycleState = seal.userData.preHuntState || 'resting';
+                seal.userData.stateTimer = 0;
+            }
+            break;
+
+        default:
+            seal.userData.lifecycleState = 'resting';
+            seal.userData.stateTimer = 0;
+            break;
+        }
+    }
+
+    // ========================================================================
+    // BAKKA SEAL SYSTEM — Solitary territorial marine mammals
+    // ========================================================================
+    // Swim alone in the ocean, territorial toward Pedro, hunt fish.
+    // Males fight for mates, produce 4 babies per mating.
+
+    /**
+     * Spawn bakka seals scattered in the ocean.
+     */
+    function spawnBakkaSeals(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var oceanDeepZ = GameState.oceanDeepZ || 230;
+
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'bakka_seal_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'bakka_seal_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < count; i++) {
+            var data = i % 2 === 0 ? maleData : femaleData;
+            var sx = (Math.random() - 0.5) * worldSize * 1.0;
+            var sz = oceanDeepZ + 30 + Math.random() * 300;
+
+            var seal = createEnemy(data, sx, sz);
+            if (!seal) continue;
+            seal.position.y = -0.3;
+            seal.userData.ignoreGravity = true;
+            seal.userData.lifecycleState = 'swimming';
+            seal.userData.stateTimer = 0;
+            seal.userData.warningTimer = 0;
+            seal.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
+            seal.userData.dirChangeTime = 5 + Math.random() * 5;
+            seal.userData.gender = data.gender;
+            seal.userData.isPregnant = false;
+            seal.userData.gestationTimer = 0;
+            seal.userData.beingCourtedBy = null;
+
+            GameState.enemies.push(seal);
+            GameState.scene.add(seal);
+        }
+
+        console.log('Spawned ' + count + ' bakka seals in the ocean');
+    }
+
+    /**
+     * Update bakka seal behavior — swimming, territorial warning, attacking.
+     */
+    function updateBakkaSealBehavior(seal, delta) {
+        if (!seal || !seal.parent) return;
+        if (seal.userData.type !== 'bakka_seal') return;
+
+        var state = seal.userData.lifecycleState;
+        seal.userData.stateTimer += delta;
+        var parts = seal.children[0] ? seal.children[0].userData.parts : null;
+
+        // Flipper animation helper
+        function animateFlippers(speed) {
+            if (!parts || !parts.frontFlippers) return;
+            var t = seal.userData.stateTimer;
+            for (var f = 0; f < parts.frontFlippers.length; f++) {
+                parts.frontFlippers[f].rotation.z = Math.sin(t * speed + f * Math.PI) * 0.4;
+            }
+        }
+
+        // Breathing animation helper
+        function breathe() {
+            if (parts && parts.body) {
+                parts.body.scale.y = 0.55 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
+            }
+        }
+
+        // Distance to player
+        var dx = GameState.peccary.position.x - seal.position.x;
+        var dz = GameState.peccary.position.z - seal.position.z;
+        var distToPlayer = Math.sqrt(dx * dx + dz * dz);
+
+        switch (state) {
+
+        case 'swimming':
+            // Cruise through the ocean
+            seal.position.y = -0.3;
+            var dir = seal.userData.swimDir;
+
+            // Random direction change
+            seal.userData.dirChangeTime -= delta;
+            if (seal.userData.dirChangeTime <= 0) {
+                var newAngle = Math.random() * Math.PI * 2;
+                dir.x = Math.cos(newAngle);
+                dir.z = Math.sin(newAngle);
+                seal.userData.dirChangeTime = 5 + Math.random() * 5;
+            }
+
+            // Move
+            seal.position.x += dir.x * 3 * delta;
+            seal.position.z += dir.z * 3 * delta;
+
+            // Face direction
+            seal.rotation.y = -Math.atan2(dir.z, dir.x);
+
+            // Body undulation
+            seal.rotation.z = Math.sin(seal.userData.stateTimer * 3) * 0.1;
+            animateFlippers(4);
+            breathe();
+
+            // Keep in ocean bounds
+            var worldSize = CONFIG.WORLD_SIZE;
+            var bound = worldSize * 0.7;
+            var oceanDeepZ = GameState.oceanDeepZ || 230;
+            if (seal.position.x > bound || seal.position.x < -bound) dir.x = -dir.x;
+            if (seal.position.z < oceanDeepZ + 10) dir.z = Math.abs(dir.z);
+            if (seal.position.z > oceanDeepZ + 500) dir.z = -Math.abs(dir.z);
+
+            // Hunt fish periodically (every 20-40 seconds)
+            seal.userData.huntCooldown = (seal.userData.huntCooldown || 20 + Math.random() * 20) - delta;
+            if (seal.userData.huntCooldown <= 0 && !seal.userData.isBaby) {
+                seal.userData.huntCooldown = 20 + Math.random() * 20;
+                var prey = findNearestFish(seal, 'slitted_sardine', 40);
+                if (prey) {
+                    seal.userData.huntTarget = prey;
+                    seal.userData.lifecycleState = 'hunting_fish';
+                    seal.userData.stateTimer = 0;
+                    seal.userData.returningFromHunt = false;
+                    seal.userData.preHuntState = 'swimming';
+                    break;
+                }
+            }
+
+            // Territorial check — warn if Pedro is close (and not a baby)
+            if (!seal.userData.isBaby && distToPlayer < 12 && !GameState.isInBoat) {
+                seal.userData.lifecycleState = 'warning';
+                seal.userData.warningTimer = 0;
+            }
+
+            // Gestation check for pregnant females
+            if (seal.userData.isPregnant) {
+                seal.userData.gestationTimer += delta;
+                if (seal.userData.gestationTimer >= 120) {
+                    seal.userData.isPregnant = false;
+                    seal.userData.gestationTimer = 0;
+                    spawnBakkaSealPups(seal);
+                }
+            }
+            break;
+
+        case 'warning':
+            // Face Pedro, raise head, growl
+            seal.rotation.y = -Math.atan2(dz, dx);
+            if (parts && parts.head) {
+                parts.head.rotation.x = -0.3; // Head raised
+            }
+            seal.position.y = -0.2; // Rise slightly
+            breathe();
+
+            seal.userData.warningTimer += delta;
+
+            // Player backed off
+            if (distToPlayer > 15) {
+                seal.userData.lifecycleState = 'swimming';
+                if (parts && parts.head) parts.head.rotation.x = 0;
+                break;
+            }
+
+            // Player too close or warning expired — attack!
+            if (distToPlayer < 8 || seal.userData.warningTimer > 3) {
+                seal.userData.lifecycleState = 'attacking';
+                if (parts && parts.head) parts.head.rotation.x = 0;
+            }
+            break;
+
+        case 'attacking':
+            // Chase Pedro
+            var chaseSpeed = seal.userData.chaseSpeed || 4;
+            var len = Math.sqrt(dx * dx + dz * dz);
+            if (len > 0.5) {
+                seal.position.x += (dx / len) * chaseSpeed * delta;
+                seal.position.z += (dz / len) * chaseSpeed * delta;
+            }
+            seal.rotation.y = -Math.atan2(dz, dx);
+            seal.position.y = -0.2;
+            animateFlippers(8); // Fast flipper movement
+
+            // Body lunge animation
+            seal.rotation.z = Math.sin(seal.userData.stateTimer * 5) * 0.15;
+
+            // Deal damage on contact
+            if (distToPlayer < seal.userData.radius + 1) {
+                if (!seal.userData.lastAttackTime || seal.userData.stateTimer - seal.userData.lastAttackTime > 1) {
+                    GameState.health -= seal.userData.damage;
+                    seal.userData.lastAttackTime = seal.userData.stateTimer;
+                    UI.updateUI();
+                }
+            }
+
+            // Disengage if player is far away
+            if (distToPlayer > 25) {
+                seal.userData.lifecycleState = 'swimming';
+                seal.userData.dirChangeTime = 0; // Pick new direction immediately
+            }
+            break;
+
+        case 'fleeing':
+            // Swim away from Pedro fast
+            var fx = -dx;
+            var fz = -dz;
+            var flen = Math.sqrt(fx * fx + fz * fz);
+            if (flen > 0) {
+                seal.position.x += (fx / flen) * 5 * delta;
+                seal.position.z += (fz / flen) * 5 * delta;
+            }
+            seal.rotation.y = -Math.atan2(fz, fx);
+            seal.position.y = -0.3;
+            animateFlippers(6);
+
+            if (seal.userData.stateTimer > 10 || distToPlayer > 40) {
+                seal.userData.lifecycleState = 'swimming';
+                seal.userData.stateTimer = 0;
+            }
+            break;
+
+        case 'seeking_mate':
+            // Male swims toward target female
+            var target = seal.userData.mateTarget;
+            if (!target || !target.parent) {
+                seal.userData.lifecycleState = 'swimming';
+                break;
+            }
+
+            var mtdx = target.position.x - seal.position.x;
+            var mtdz = target.position.z - seal.position.z;
+            var mtDist = Math.sqrt(mtdx * mtdx + mtdz * mtdz);
+
+            seal.position.y = -0.3;
+            if (mtDist > 2) {
+                seal.position.x += (mtdx / mtDist) * 4 * delta;
+                seal.position.z += (mtdz / mtDist) * 4 * delta;
+                seal.rotation.y = -Math.atan2(mtdz, mtdx);
+                animateFlippers(5);
+            } else {
+                // Arrived — check for rival
+                if (target.userData.beingCourtedBy && target.userData.beingCourtedBy !== seal) {
+                    // Another male is already courting — fight!
+                    seal.userData.targetSeal = target.userData.beingCourtedBy;
+                    seal.userData.lifecycleState = 'rival_fight';
+                    seal.userData.stateTimer = 0;
+                } else {
+                    target.userData.beingCourtedBy = seal;
+                    seal.userData.lifecycleState = 'mating';
+                    target.userData.lifecycleState = 'mating';
+                    target.userData.mateTarget = seal;
+                    seal.userData.stateTimer = 0;
+                }
+            }
+            break;
+
+        case 'mating':
+            // Circle partner for 5 seconds
+            var partner = seal.userData.mateTarget;
+            if (partner && partner.parent) {
+                var circleAngle = seal.userData.stateTimer * 1.5;
+                seal.position.x = partner.position.x + Math.cos(circleAngle) * 1.5;
+                seal.position.z = partner.position.z + Math.sin(circleAngle) * 1.5;
+                seal.rotation.y = -Math.atan2(partner.position.z - seal.position.z, partner.position.x - seal.position.x);
+            }
+            seal.position.y = -0.3;
+            breathe();
+
+            if (seal.userData.stateTimer > 5) {
+                // Mating complete
+                if (partner && partner.parent && seal.userData.gender === 'male') {
+                    partner.userData.isPregnant = true;
+                    partner.userData.gestationTimer = 0;
+                    partner.userData.beingCourtedBy = null;
+                }
+                seal.userData.mateTarget = null;
+                seal.userData.lifecycleState = 'swimming';
+                seal.userData.stateTimer = 0;
+                if (partner) {
+                    partner.userData.mateTarget = null;
+                    partner.userData.lifecycleState = 'swimming';
+                    partner.userData.stateTimer = 0;
+                }
+            }
+            break;
+
+        case 'rival_fight':
+            // Two males fighting over a female
+            var rival = seal.userData.targetSeal;
+            if (!rival || !rival.parent) {
+                seal.userData.lifecycleState = 'swimming';
+                break;
+            }
+
+            var rdx = rival.position.x - seal.position.x;
+            var rdz = rival.position.z - seal.position.z;
+            var rDist = Math.sqrt(rdx * rdx + rdz * rdz);
+
+            seal.rotation.y = -Math.atan2(rdz, rdx);
+            seal.position.y = -0.2;
+
+            // Lunge animation
+            if (rDist > 1.5) {
+                seal.position.x += (rdx / rDist) * 3 * delta;
+                seal.position.z += (rdz / rDist) * 3 * delta;
+            } else {
+                // Both lunge back and forth
+                seal.position.x += Math.sin(seal.userData.stateTimer * 4) * 0.5 * delta;
+                seal.rotation.z = Math.sin(seal.userData.stateTimer * 6) * 0.2;
+            }
+            animateFlippers(6);
+
+            // Fight outcome after 8 seconds — loser swims away
+            if (seal.userData.stateTimer > 8) {
+                var loser = Math.random() < 0.5 ? seal : rival;
+                var winner = loser === seal ? rival : seal;
+
+                loser.userData.lifecycleState = 'swimming';
+                loser.userData.targetSeal = null;
+                loser.userData.mateTarget = null;
+                loser.userData.stateTimer = 0;
+                loser.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
+
+                // Winner takes the female
+                var female = winner.userData.mateTarget;
+                if (female && female.parent) {
+                    female.userData.beingCourtedBy = winner;
+                    winner.userData.lifecycleState = 'mating';
+                    female.userData.lifecycleState = 'mating';
+                    female.userData.mateTarget = winner;
+                    winner.userData.stateTimer = 0;
+                } else {
+                    winner.userData.lifecycleState = 'swimming';
+                    winner.userData.stateTimer = 0;
+                }
+            }
+
+            // Long fight (>15 sec) — one dies
+            if (seal.userData.stateTimer > 15) {
+                convertToCarcass(seal);
+                rival.userData.lifecycleState = 'swimming';
+                rival.userData.targetSeal = null;
+                rival.userData.stateTimer = 0;
+            }
+            break;
+
+        case 'following_mother':
+            // Baby follows mother
+            var mother = seal.userData.motherRef;
+            if (!mother || !mother.parent) {
+                seal.userData.lifecycleState = 'swimming';
+                break;
+            }
+
+            var mdx = mother.position.x - seal.position.x;
+            var mdz = mother.position.z - seal.position.z;
+            var mDist = Math.sqrt(mdx * mdx + mdz * mdz);
+
+            if (mDist > 2) {
+                seal.position.x += (mdx / mDist) * 3 * delta;
+                seal.position.z += (mdz / mDist) * 3 * delta;
+                seal.rotation.y = -Math.atan2(mdz, mdx);
+                animateFlippers(4);
+            }
+            seal.position.y = -0.3;
+            breathe();
+
+            // Mature after 3 minutes
+            seal.userData.maturationTimer = (seal.userData.maturationTimer || 0) + delta;
+            if (seal.userData.maturationTimer >= 180) {
+                matureBakkaSealPup(seal);
+            }
+            break;
+
+        case 'hunting_fish':
+            seal.userData.stateTimer += delta;
+            if (updateSealHuntingFish(seal, delta)) {
+                // Hunt complete — return to swimming
+                seal.userData.lifecycleState = seal.userData.preHuntState || 'swimming';
+                seal.userData.stateTimer = 0;
+            }
+            break;
+
+        default:
+            seal.userData.lifecycleState = 'swimming';
+            break;
+        }
+    }
+
+    /**
+     * Spawn 4 bakka seal pups (2 male, 2 female) near the mother.
+     */
+    function spawnBakkaSealPups(mother) {
+        // Population cap
+        var sealCount = 0;
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            if (GameState.enemies[i].userData.type === 'bakka_seal') sealCount++;
+        }
+        if (sealCount >= 30) return;
+
+        var genders = ['male', 'male', 'female', 'female'];
+        for (var p = 0; p < 4; p++) {
+            var gender = genders[p];
+            var pupId = gender === 'male' ? 'bakka_seal_baby_male' : 'bakka_seal_baby_female';
+            var pupData = window.ENEMIES.find(function(e) { return e.id === pupId; });
+            if (!pupData) continue;
+
+            var angle = (p / 4) * Math.PI * 2;
+            var px = mother.position.x + Math.cos(angle) * 1.5;
+            var pz = mother.position.z + Math.sin(angle) * 1.5;
+
+            var pup = createEnemy(pupData, px, pz);
+            if (!pup) continue;
+            pup.position.y = -0.3;
+            pup.userData.ignoreGravity = true;
+            pup.userData.lifecycleState = 'following_mother';
+            pup.userData.isBaby = true;
+            pup.userData.motherRef = mother;
+            pup.userData.stateTimer = 0;
+            pup.userData.maturationTimer = 0;
+            pup.userData.gender = gender;
+
+            GameState.enemies.push(pup);
+            GameState.scene.add(pup);
+        }
+
+        console.log('Bakka seal gave birth to 4 pups!');
+    }
+
+    /**
+     * Mature a bakka seal pup into an adult.
+     */
+    function matureBakkaSealPup(pup) {
+        var adultId = pup.userData.gender === 'male' ? 'bakka_seal_male' : 'bakka_seal_female';
+        var adultData = window.ENEMIES.find(function(e) { return e.id === adultId; });
+        if (!adultData) return;
+
+        var adult = createEnemy(adultData, pup.position.x, pup.position.z);
+        if (!adult) return;
+        adult.position.y = -0.3;
+        adult.userData.ignoreGravity = true;
+        adult.userData.lifecycleState = 'swimming';
+        adult.userData.stateTimer = 0;
+        adult.userData.gender = pup.userData.gender;
+        adult.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
+        adult.userData.dirChangeTime = 5 + Math.random() * 5;
+        adult.userData.isPregnant = false;
+        adult.userData.gestationTimer = 0;
+        adult.userData.beingCourtedBy = null;
+
+        // Remove pup, add adult
+        GameState.scene.remove(pup);
+        var idx = GameState.enemies.indexOf(pup);
+        if (idx !== -1) GameState.enemies.splice(idx, 1);
+
+        GameState.enemies.push(adult);
+        GameState.scene.add(adult);
+    }
+
+    /**
+     * Trigger bakka seal mating — each male picks nearest available female.
+     */
+    function triggerBakkaSealMating() {
+        var males = [];
+        var females = [];
+
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            var e = GameState.enemies[i];
+            if (e.userData.type !== 'bakka_seal' || e.userData.isBaby) continue;
+            if (e.userData.lifecycleState !== 'swimming') continue;
+
+            if (e.userData.gender === 'male') males.push(e);
+            else if (e.userData.gender === 'female' && !e.userData.isPregnant) females.push(e);
+        }
+
+        if (males.length === 0 || females.length === 0) return;
+
+        console.log('Bakka seal mating season! ' + males.length + ' males, ' + females.length + ' females');
+
+        // Each male picks the nearest available female
+        for (var m = 0; m < males.length; m++) {
+            var male = males[m];
+            var bestFemale = null;
+            var bestDist = Infinity;
+
+            for (var f = 0; f < females.length; f++) {
+                var female = females[f];
+                var dx = female.position.x - male.position.x;
+                var dz = female.position.z - male.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestFemale = female;
+                }
+            }
+
+            if (bestFemale) {
+                male.userData.mateTarget = bestFemale;
+                male.userData.lifecycleState = 'seeking_mate';
+                male.userData.stateTimer = 0;
+            }
+        }
     }
 
     // ========================================================================
@@ -15329,6 +17208,12 @@ window.Enemies = (function() {
             // Convert to carcass instead of removing
             convertToCarcass(enemy);
 
+            // Item drops on death
+            if (enemy.userData.type === 'bakka_seal') {
+                GameState.resourceCounts.bakka_seal_tooth = (GameState.resourceCounts.bakka_seal_tooth || 0) + 1;
+                Game.showBlockedMessage('+1 Bakka Seal Tooth!');
+            }
+
             // Give score and coins as reward (tiered by enemy toughness)
             var rewards = CONFIG.KILL_REWARDS || { weak: { score: 10, coins: 5 }, medium: { score: 25, coins: 15 }, tough: { score: 50, coins: 30 } };
             var tier = enemy.userData.maxHealth >= 10 ? rewards.tough : enemy.userData.maxHealth >= 5 ? rewards.medium : rewards.weak;
@@ -15391,6 +17276,21 @@ window.Enemies = (function() {
         spawnBalubanOxenHerd: spawnBalubanOxenHerd,
         updateBalubanOxenBehavior: updateBalubanOxenBehavior,
         triggerBalubanOxenMating: triggerBalubanOxenMating,
+
+        // Fish functions
+        spawnSardineShoal: spawnSardineShoal,
+        spawnOrcleton: spawnOrcleton,
+        updateFishBehavior: updateFishBehavior,
+
+        // Bakka Seal functions
+        spawnBakkaSeals: spawnBakkaSeals,
+        updateBakkaSealBehavior: updateBakkaSealBehavior,
+        triggerBakkaSealMating: triggerBakkaSealMating,
+
+        // Uronin Seal functions
+        spawnUroninSealColony: spawnUroninSealColony,
+        updateUroninSealBehavior: updateUroninSealBehavior,
+        triggerSealMating: triggerSealMating,
 
         // Player combat
         damageEnemy: damageEnemy,

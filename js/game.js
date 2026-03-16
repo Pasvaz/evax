@@ -71,7 +71,10 @@ window.GameState = {
     squatTimer: 0,
 
     score: 0,
-    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0 },
+    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0, bakka_seal_tooth: 0, flour: 0, sugar: 0, butter: 0 },
+    pinnedResources: [],
+    lastResourceCounts: {},
+    resourceLastChanged: {},
     pigCoins: 0,
     timeElapsed: 0,
 
@@ -85,6 +88,12 @@ window.GameState = {
 
     // Arsen bomb puddle system
     activePuddles: [],
+    arsenBombsUsed: 0,
+
+    // Skin system
+    currentSkin: 'default',
+    unlockedSkins: ['default'],
+    easterMode: false,
 
     // Input handling
     keys: {},
@@ -161,7 +170,31 @@ window.GameState = {
     // Become Animal feature (testing mode only)
     becomeAnimalMode: null,      // 'control' or 'spectate' or null
     becomeAnimalTarget: null,    // The animal being controlled/spectated
-    becomeAnimalOriginalPos: null // Peccary's position before becoming
+    becomeAnimalOriginalPos: null, // Peccary's position before becoming
+
+    // Raft / Boat system
+    isPlacingRaft: false,        // Blueprint placement mode active
+    raftBlueprint: null,         // The ghost mesh following the mouse
+    placedRafts: [],             // Array of placed raft objects in the world
+    isInBoat: false,             // Currently sailing a raft
+    activeBoat: null,            // The raft mesh being sailed
+
+    // Ocean islands
+    oceanIslands: [],            // Array of island data objects in the ocean
+
+    // Uronin Seal colonies
+    sealColonies: [],            // Array of colony objects
+    sealMatingTimer: 0,          // Timer for mating season (every 300 sec)
+
+    // Underwater / Diving system
+    isUnderwater: false,         // Currently swimming underwater
+    oxygenLevel: 100,            // Current oxygen (0-100)
+    maxOxygenTime: 30,           // Seconds of oxygen when full
+    drowningTimer: 0,            // Timer for drowning damage ticks
+    divingRaft: null,            // The raft to climb back onto
+    normalFogColor: null,        // Stored normal fog color to restore on surface
+    normalFogNear: 0,            // Stored normal fog near distance
+    normalFogFar: 0              // Stored normal fog far distance
 };
 
 window.Game = (function() {
@@ -296,8 +329,13 @@ window.Game = (function() {
      */
     function updateCamera() {
         // Camera orbits the player based on cameraAngle
-        const distance = 12;
-        const height = 8;
+        var distance = 12;
+        var height = 8;
+        // Underwater camera — closer and lower
+        if (GameState.isUnderwater) {
+            distance = 8;
+            height = 3;
+        }
         const angle = GameState.cameraAngle;
 
         const offset = new THREE.Vector3(
@@ -369,8 +407,9 @@ window.Game = (function() {
         GameState.isTestingMode = testingMode;
 
         if (testingMode) {
-            // Testing mode - infinite resources and coins
+            // Testing mode - infinite resources, coins, and score
             GameState.pigCoins = 99999;
+            GameState.score = 999999;
             GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
             GameState.hasSaddle = true;  // Give saddle for riding gazella
             // Give all artifacts
@@ -739,6 +778,27 @@ window.Game = (function() {
                 Enemies.spawnBalubanOxenHerd(18, i);
             }
         }
+        // Spawn Uronin Seal colonies on islands
+        if (targetData.spawnSeals && targetData.sealColonyIslands) {
+            targetData.sealColonyIslands.forEach(function(islandIdx) {
+                Enemies.spawnUroninSealColony(islandIdx);
+            });
+            GameState.sealMatingTimer = 0;
+        }
+        // Spawn bakka seals in the ocean
+        if (targetData.spawnBakkaSeals && targetData.bakkaSeals > 0) {
+            Enemies.spawnBakkaSeals(targetData.bakkaSeals);
+            GameState.bakkaSealMatingTimer = 0;
+        }
+        // Spawn fish in the ocean
+        if (targetData.spawnFish) {
+            for (var si = 0; si < (targetData.sardineShoals || 3); si++) {
+                Enemies.spawnSardineShoal();
+            }
+            for (var oi = 0; oi < (targetData.orcletons || 5); oi++) {
+                Enemies.spawnOrcleton();
+            }
+        }
 
         // Spawn initial resources
         for (let i = 0; i < 10; i++) {
@@ -851,6 +911,39 @@ window.Game = (function() {
         // Clear baluban oxen herds
         GameState.balubanOxenHerds = [];
 
+        // Clear placed rafts
+        if (GameState.placedRafts) {
+            GameState.placedRafts.forEach(r => GameState.scene.remove(r));
+            GameState.placedRafts = [];
+        }
+        if (GameState.raftBlueprint) {
+            GameState.scene.remove(GameState.raftBlueprint);
+            GameState.raftBlueprint = null;
+        }
+        GameState.isPlacingRaft = false;
+        GameState.isInBoat = false;
+        GameState.activeBoat = null;
+
+        // Clear ocean islands
+        GameState.oceanIslands = [];
+
+        // Clear seal colonies
+        GameState.sealColonies = [];
+        GameState.sealMatingTimer = 0;
+        GameState.bakkaSealMatingTimer = 0;
+        GameState.fishRespawnTimer = 0;
+
+        // Reset underwater state
+        if (GameState.isUnderwater) {
+            GameState.isUnderwater = false;
+            GameState.oxygenLevel = 100;
+            GameState.drowningTimer = 0;
+            GameState.divingRaft = null;
+            // Restore fog
+            GameState.scene.fog = new THREE.Fog(0x87ceeb, 200, 1200);
+            GameState.scene.background = new THREE.Color(0x87ceeb);
+        }
+
         // Clear ocean water references
         GameState.oceanWater = null;
         GameState.oceanShoreZ = null;
@@ -928,6 +1021,16 @@ window.Game = (function() {
             updateSnowParticles(delta);
             Environment.updateGrassTufts(delta);
             updatePuddles(delta);
+
+            // Fuse tip flicker for Shimmering Bomb skin
+            if (GameState.currentSkin === 'shimmering_bomb' && GameState.peccary) {
+                GameState.peccary.traverse(function(obj) {
+                    if (obj.userData && obj.userData.isFuseTip && obj.material) {
+                        obj.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
+                    }
+                });
+            }
+
             checkBiomeTransition(delta);
             updateCamera();
             UI.updateMinimap();
@@ -937,6 +1040,7 @@ window.Game = (function() {
             if (GameState.isTestingMode) {
                 GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
                 GameState.pigCoins = 99999;
+                GameState.score = 999999;
                 GameState.hunger = 100;
                 GameState.thirst = 100;
             }
@@ -1075,6 +1179,64 @@ window.Game = (function() {
             // Ocean wave animation (coastal biome)
             if (GameState.currentBiome === 'coastal') {
                 Environment.updateOceanWaves(delta);
+
+                // Bob placed rafts on the waves
+                if (GameState.placedRafts) {
+                    GameState.placedRafts.forEach(function(raft) {
+                        if (raft !== GameState.activeBoat) { // Active boat has its own bobbing
+                            raft.userData.bobTime = (raft.userData.bobTime || 0) + delta;
+                            raft.position.y = 0.3 + Math.sin(raft.userData.bobTime * 2) * 0.15;
+                        }
+                    });
+                }
+
+                // Uronin Seal mating timer — every 5 minutes (300 seconds)
+                if (GameState.sealColonies && GameState.sealColonies.length > 0) {
+                    GameState.sealMatingTimer += delta;
+                    if (GameState.sealMatingTimer >= 300) {
+                        GameState.sealMatingTimer = 0;
+                        Enemies.triggerSealMating();
+                    }
+                }
+
+                // Bakka seal mating timer — every 5 minutes
+                GameState.bakkaSealMatingTimer = (GameState.bakkaSealMatingTimer || 0) + delta;
+                if (GameState.bakkaSealMatingTimer >= 300) {
+                    GameState.bakkaSealMatingTimer = 0;
+                    Enemies.triggerBakkaSealMating();
+                }
+
+                // Fish respawn check — maintain minimum populations every 30s
+                GameState.fishRespawnTimer = (GameState.fishRespawnTimer || 0) + delta;
+                if (GameState.fishRespawnTimer >= 30) {
+                    GameState.fishRespawnTimer = 0;
+                    var sardineCount = 0;
+                    var orcletonCount = 0;
+                    for (var fi = 0; fi < GameState.enemies.length; fi++) {
+                        if (GameState.enemies[fi].userData.type === 'slitted_sardine') sardineCount++;
+                        if (GameState.enemies[fi].userData.type === 'orcleton') orcletonCount++;
+                    }
+                    var targetData = getBiomeData(GameState.currentBiome);
+                    var minSardines = (targetData.sardineShoals || 3) * 15; // ~75% of full shoals
+                    var minOrcletons = Math.max(2, (targetData.orcletons || 5) - 2);
+                    if (sardineCount < minSardines) {
+                        Enemies.spawnSardineShoal(); // Spawn a new shoal
+                    }
+                    if (orcletonCount < minOrcletons) {
+                        Enemies.spawnOrcleton();
+                    }
+                }
+
+                // Update all seal and fish behaviors
+                GameState.enemies.forEach(function(enemy) {
+                    if (enemy.userData.type === 'uronin_seal') {
+                        Enemies.updateUroninSealBehavior(enemy, delta);
+                    } else if (enemy.userData.type === 'bakka_seal') {
+                        Enemies.updateBakkaSealBehavior(enemy, delta);
+                    } else if (enemy.userData.isFish) {
+                        Enemies.updateFishBehavior(enemy, delta);
+                    }
+                });
             }
 
             // Update carcasses - decomposition, color changes, sinking
@@ -1150,7 +1312,10 @@ window.Game = (function() {
 
                 if (e.key.toLowerCase() === 'e') {
                     // Handle interactions based on context
-                    if (GameState.isInsideHut) {
+                    if (GameState.isPlacingRaft) {
+                        // Cancel raft placement
+                        cancelRaftPlacement();
+                    } else if (GameState.isInsideHut) {
                         // Inside hut - handle hut interactions
                         ResearchHut.handleInteraction();
                     } else if (GameState.isDialogOpen) {
@@ -1160,11 +1325,19 @@ window.Game = (function() {
                     } else if (ResearchHut.checkEnterHut()) {
                         // Near research hut entrance
                         ResearchHut.enterHut();
+                    } else if (GameState.gameRunning && !GameState.isInBoat) {
+                        // Check if holding a raft item — start placement mode
+                        var hotbarItem = UI.getSelectedHotbarItem();
+                        if (hotbarItem && hotbarItem.id === 'basic_rook_boat' && GameState.currentBiome === 'coastal') {
+                            startRaftPlacement();
+                        }
                     }
                 }
 
                 if (e.key === 'Escape') {
-                    if (GameState.isDialogOpen) {
+                    if (GameState.isPlacingRaft) {
+                        cancelRaftPlacement();
+                    } else if (GameState.isDialogOpen) {
                         Dialogs.closeDialog();
                     } else if (GameState.isShopOpen) {
                         UI.closeShop();
@@ -1201,9 +1374,11 @@ window.Game = (function() {
                     }
                 }
 
-                // Number keys: hotbar selection (when not in dialog/menu)
-                if (/^[1-9]$/.test(e.key) && !GameState.isDialogOpen && !GameState.isShopOpen && !GameState.isInventoryOpen && !GameState.isCraftMenuOpen) {
-                    GameState.selectedHotbarSlot = parseInt(e.key) - 1;
+                // Punctuation keys: hotbar selection (when not in dialog/menu)
+                var hotbarKeys = [',', '.', '/', ';', "'", '[', ']', '-', '='];
+                var hotbarIndex = hotbarKeys.indexOf(e.key);
+                if (hotbarIndex !== -1 && !GameState.isDialogOpen && !GameState.isShopOpen && !GameState.isInventoryOpen && !GameState.isCraftMenuOpen) {
+                    GameState.selectedHotbarSlot = hotbarIndex;
                     UI.updateHotbar();
                 }
 
@@ -1229,6 +1404,11 @@ window.Game = (function() {
             });
 
             window.addEventListener('mousemove', (e) => {
+                // Raft blueprint follows mouse during placement mode
+                if (GameState.isPlacingRaft) {
+                    updateRaftBlueprint(e);
+                }
+
                 if (!GameState.cameraDragging) return;
                 const deltaX = e.clientX - GameState.cameraDragStartX;
                 if (Math.abs(deltaX) > 3) GameState.cameraDragMoved = true;
@@ -1275,6 +1455,337 @@ window.Game = (function() {
                 document.getElementById('continue-btn').style.display = '';
                 document.getElementById('load-game-btn').style.display = '';
             }
+
+            // ==========================================
+            // SKINS SCREEN
+            // ==========================================
+            var skinsPreviewState = {
+                scene: null,
+                camera: null,
+                renderer: null,
+                model: null,
+                animFrame: null,
+                selectedSkin: GameState.currentSkin || 'default'
+            };
+
+            function openSkinsScreen() {
+                var fade = document.getElementById('screen-fade');
+                fade.classList.add('active');
+
+                setTimeout(function() {
+                    document.getElementById('start-screen').classList.add('hidden');
+                    document.getElementById('skins-screen').classList.remove('hidden');
+                    renderSkinCards();
+                    initSkinsPreview();
+                    updateSkinsPreview(skinsPreviewState.selectedSkin);
+
+                    // Fade out
+                    fade.classList.remove('active');
+                }, 500);
+            }
+
+            function closeSkinsScreen() {
+                var fade = document.getElementById('screen-fade');
+                fade.classList.add('active');
+
+                setTimeout(function() {
+                    // Apply selected skin
+                    GameState.currentSkin = skinsPreviewState.selectedSkin;
+
+                    // Rebuild Pedro if in-game
+                    if (GameState.peccary) {
+                        Player.rebuildPeccary();
+                    }
+
+                    document.getElementById('skins-screen').classList.add('hidden');
+                    document.getElementById('skin-cheat-box').classList.add('hidden');
+                    document.getElementById('start-screen').classList.remove('hidden');
+                    disposeSkinsPreview();
+
+                    fade.classList.remove('active');
+                }, 500);
+            }
+
+            // Open skins screen from in-game (via lobby return)
+            function openSkinsFromGame() {
+                var fade = document.getElementById('screen-fade');
+                fade.classList.add('active');
+
+                setTimeout(function() {
+                    // Pause the game
+                    GameState.gameRunning = false;
+                    document.getElementById('ui-overlay').classList.add('hidden');
+                    document.getElementById('controls-info').classList.add('hidden');
+                    document.getElementById('minimap').classList.add('hidden');
+                    document.getElementById('hunger-panel').classList.add('hidden');
+                    document.getElementById('thirst-panel').classList.add('hidden');
+
+                    document.getElementById('skins-screen').classList.remove('hidden');
+                    // Override back button to return to game instead of start screen
+                    skinsPreviewState.returnToGame = true;
+                    renderSkinCards();
+                    initSkinsPreview();
+                    updateSkinsPreview(skinsPreviewState.selectedSkin);
+
+                    fade.classList.remove('active');
+                }, 500);
+            }
+
+            function closeSkinsToGame() {
+                var fade = document.getElementById('screen-fade');
+                fade.classList.add('active');
+
+                setTimeout(function() {
+                    GameState.currentSkin = skinsPreviewState.selectedSkin;
+                    Player.rebuildPeccary();
+
+                    document.getElementById('skins-screen').classList.add('hidden');
+                    document.getElementById('skin-cheat-box').classList.add('hidden');
+                    document.getElementById('ui-overlay').classList.remove('hidden');
+                    document.getElementById('controls-info').classList.remove('hidden');
+                    document.getElementById('minimap').classList.remove('hidden');
+                    document.getElementById('hunger-panel').classList.remove('hidden');
+                    document.getElementById('thirst-panel').classList.remove('hidden');
+                    disposeSkinsPreview();
+                    skinsPreviewState.returnToGame = false;
+
+                    // Resume game
+                    GameState.gameRunning = true;
+
+                    fade.classList.remove('active');
+                }, 500);
+            }
+
+            function initSkinsPreview() {
+                var canvas = document.getElementById('skins-preview-canvas');
+                var container = document.getElementById('skins-preview');
+                var w = container.clientWidth;
+                var h = container.clientHeight;
+
+                skinsPreviewState.scene = new THREE.Scene();
+                skinsPreviewState.scene.background = new THREE.Color(0x1a2a10);
+
+                skinsPreviewState.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+                skinsPreviewState.camera.position.set(3, 2.5, 3);
+                skinsPreviewState.camera.lookAt(0, 0.7, 0);
+
+                skinsPreviewState.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                skinsPreviewState.renderer.setSize(w, h);
+                skinsPreviewState.renderer.setPixelRatio(window.devicePixelRatio);
+
+                // Lighting
+                var ambient = new THREE.AmbientLight(0xffffff, 0.5);
+                skinsPreviewState.scene.add(ambient);
+                var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 8, 5);
+                skinsPreviewState.scene.add(dirLight);
+
+                // Ground circle
+                var groundGeo = new THREE.CircleGeometry(2, 32);
+                var groundMat = new THREE.MeshStandardMaterial({ color: 0x2a4a1a });
+                var ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = -0.01;
+                skinsPreviewState.scene.add(ground);
+
+                // Start render loop
+                function animatePreview() {
+                    skinsPreviewState.animFrame = requestAnimationFrame(animatePreview);
+                    if (skinsPreviewState.model) {
+                        skinsPreviewState.model.rotation.y += 0.008;
+
+                        // Fuse tip flicker
+                        skinsPreviewState.model.traverse(function(obj) {
+                            if (obj.userData && obj.userData.isFuseTip && obj.material) {
+                                obj.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
+                            }
+                        });
+                    }
+                    skinsPreviewState.renderer.render(skinsPreviewState.scene, skinsPreviewState.camera);
+                }
+                animatePreview();
+            }
+
+            function updateSkinsPreview(skinId) {
+                var skin = SKINS[skinId] || SKINS['default'];
+
+                // Remove old model
+                if (skinsPreviewState.model) {
+                    skinsPreviewState.scene.remove(skinsPreviewState.model);
+                    skinsPreviewState.model.traverse(function(obj) {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    });
+                }
+
+                // Build new model
+                var model = Player.buildPeccaryModel(skin);
+                skinsPreviewState.scene.add(model);
+                skinsPreviewState.model = model;
+            }
+
+            function disposeSkinsPreview() {
+                if (skinsPreviewState.animFrame) {
+                    cancelAnimationFrame(skinsPreviewState.animFrame);
+                    skinsPreviewState.animFrame = null;
+                }
+                if (skinsPreviewState.model) {
+                    skinsPreviewState.scene.remove(skinsPreviewState.model);
+                    skinsPreviewState.model.traverse(function(obj) {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    });
+                    skinsPreviewState.model = null;
+                }
+                if (skinsPreviewState.renderer) {
+                    skinsPreviewState.renderer.dispose();
+                    skinsPreviewState.renderer = null;
+                }
+                skinsPreviewState.scene = null;
+                skinsPreviewState.camera = null;
+            }
+
+            function isSkinUnlocked(skinId) {
+                var skin = SKINS[skinId];
+                if (!skin) return false;
+                if (skin.unlocked) return true;
+                if (GameState.unlockedSkins.indexOf(skinId) !== -1) return true;
+                // Check condition
+                if (skin.unlockCondition) {
+                    if (skin.unlockCondition.type === 'arsenBombsUsed') {
+                        return (GameState.arsenBombsUsed || 0) >= skin.unlockCondition.count;
+                    }
+                    if (skin.unlockCondition.type === 'easterEvent') {
+                        return GameState.easterMode === true;
+                    }
+                }
+                return false;
+            }
+
+            function getUnlockText(skin) {
+                if (!skin.unlockCondition) return '';
+                if (skin.unlockCondition.type === 'arsenBombsUsed') {
+                    var used = GameState.arsenBombsUsed || 0;
+                    return 'Use Arsenic Bombs ' + used + '/' + skin.unlockCondition.count;
+                }
+                if (skin.unlockCondition.type === 'easterEvent') {
+                    return 'Easter Event only';
+                }
+                return 'Locked';
+            }
+
+            function renderSkinCards() {
+                var list = document.getElementById('skins-list');
+                list.innerHTML = '';
+
+                Object.keys(SKINS).forEach(function(skinId) {
+                    var skin = SKINS[skinId];
+                    // Hide event-only skins unless easter mode is on
+                    if (skin.eventOnly && !GameState.easterMode) return;
+
+                    var unlocked = isSkinUnlocked(skinId);
+                    var isSelected = skinId === skinsPreviewState.selectedSkin;
+
+                    var card = document.createElement('div');
+                    card.className = 'skin-card' + (unlocked ? '' : ' locked') + (isSelected ? ' selected' : '');
+                    card.dataset.skinId = skinId;
+
+                    var nameDiv = document.createElement('div');
+                    nameDiv.className = 'skin-card-name';
+                    nameDiv.textContent = (unlocked ? '' : '🔒 ') + skin.name;
+                    card.appendChild(nameDiv);
+
+                    var descDiv = document.createElement('div');
+                    descDiv.className = 'skin-card-desc';
+                    descDiv.textContent = skin.description;
+                    card.appendChild(descDiv);
+
+                    var statusDiv = document.createElement('div');
+                    statusDiv.className = 'skin-card-status';
+                    if (isSelected && unlocked) {
+                        statusDiv.textContent = 'Selected';
+                    } else if (!unlocked) {
+                        statusDiv.textContent = getUnlockText(skin);
+                    }
+                    card.appendChild(statusDiv);
+
+                    card.addEventListener('click', function() {
+                        var clickedId = this.dataset.skinId;
+                        var clickedSkin = SKINS[clickedId];
+                        var isUnlocked = isSkinUnlocked(clickedId);
+
+                        // Update preview regardless of lock status
+                        updateSkinsPreview(clickedId);
+
+                        if (isUnlocked) {
+                            // Select this skin
+                            skinsPreviewState.selectedSkin = clickedId;
+                            document.getElementById('skin-cheat-box').classList.add('hidden');
+                        } else {
+                            // Show cheat code box for locked skins
+                            if (clickedSkin.cheatCode) {
+                                document.getElementById('skin-cheat-box').classList.remove('hidden');
+                                document.getElementById('skin-cheat-input').value = '';
+                                document.getElementById('skin-cheat-input').dataset.targetSkin = clickedId;
+                                document.getElementById('skin-cheat-input').focus();
+                            }
+                        }
+
+                        renderSkinCards();
+                    });
+
+                    list.appendChild(card);
+                });
+            }
+
+            // Skins button (commented out in HTML until home screen gets a proper image asset)
+            var skinsBtn = document.getElementById('skins-btn');
+            if (skinsBtn) skinsBtn.addEventListener('click', openSkinsScreen);
+
+            // Skins back button — returns to game or start screen depending on context
+            document.getElementById('skins-back-btn').addEventListener('click', function() {
+                if (skinsPreviewState.returnToGame) {
+                    closeSkinsToGame();
+                } else {
+                    closeSkinsScreen();
+                }
+            });
+
+            // Cheat code submit
+            document.getElementById('skin-cheat-submit').addEventListener('click', function() {
+                var input = document.getElementById('skin-cheat-input');
+                var targetSkinId = input.dataset.targetSkin;
+                var skin = SKINS[targetSkinId];
+
+                if (skin && skin.cheatCode && input.value === skin.cheatCode) {
+                    // Unlock!
+                    if (GameState.unlockedSkins.indexOf(targetSkinId) === -1) {
+                        GameState.unlockedSkins.push(targetSkinId);
+                    }
+                    skinsPreviewState.selectedSkin = targetSkinId;
+                    document.getElementById('skin-cheat-box').classList.add('hidden');
+                    renderSkinCards();
+                    showBlockedMessage('Skin unlocked: ' + skin.name + '!');
+                } else {
+                    // Wrong code — shake
+                    input.classList.add('shake');
+                    setTimeout(function() { input.classList.remove('shake'); }, 400);
+                }
+            });
+
+            // Enter key in cheat input triggers submit
+            document.getElementById('skin-cheat-input').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('skin-cheat-submit').click();
+                }
+            });
+
+            // In-game skins button
+            document.getElementById('skins-ingame-btn').addEventListener('click', function() {
+                if (GameState.gameRunning) {
+                    openSkinsFromGame();
+                }
+            });
 
             // Save button in HUD
             document.getElementById('save-btn').addEventListener('click', () => {
@@ -1392,6 +1903,18 @@ window.Game = (function() {
                 if (typeof Enemies !== 'undefined' && Enemies.triggerBalubanOxenMating) {
                     Enemies.triggerBalubanOxenMating();
                     console.log('Baluban Oxen mating triggered!');
+                }
+            });
+            document.getElementById('trigger-seal-mating-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerSealMating) {
+                    Enemies.triggerSealMating();
+                    console.log('Seal mating triggered!');
+                }
+            });
+            document.getElementById('trigger-bakka-seal-mating-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerBakkaSealMating) {
+                    Enemies.triggerBakkaSealMating();
+                    console.log('Bakka seal mating triggered!');
                 }
             });
             document.getElementById('trigger-dog-hunt-oxen-btn').addEventListener('click', () => {
@@ -1801,12 +2324,150 @@ window.Game = (function() {
         }
     }
 
+    // ========================================================================
+    // RAFT PLACEMENT SYSTEM
+    // ========================================================================
+
+    /**
+     * Start raft placement mode — create a blueprint ghost that follows the mouse.
+     */
+    function startRaftPlacement() {
+        if (GameState.isPlacingRaft) return;
+        if (GameState.currentBiome !== 'coastal') {
+            showBlockedMessage("You can only place rafts at the coast!");
+            return;
+        }
+
+        GameState.isPlacingRaft = true;
+
+        // Create the blueprint ghost raft
+        var blueprint = Environment.createRaftModel(true); // transparent blue
+        blueprint.position.set(0, 0.3, GameState.oceanDeepZ + 5); // Start near shore
+        GameState.scene.add(blueprint);
+        GameState.raftBlueprint = blueprint;
+        GameState.raftBlueprintValid = false;
+
+        showBlockedMessage("Click on deep water near shore to place your raft!");
+    }
+
+    /**
+     * Cancel raft placement — remove blueprint, exit mode.
+     */
+    function cancelRaftPlacement() {
+        if (!GameState.isPlacingRaft) return;
+
+        if (GameState.raftBlueprint) {
+            GameState.scene.remove(GameState.raftBlueprint);
+            GameState.raftBlueprint = null;
+        }
+        GameState.isPlacingRaft = false;
+        GameState.raftBlueprintValid = false;
+    }
+
+    /**
+     * Check if a position is valid for raft placement.
+     * Valid near mainland shore OR near an island's shallow zone.
+     */
+    function isValidRaftPosition(x, z) {
+        if (!GameState.oceanDeepZ) return false;
+        // Valid near mainland shore (within 11 units)
+        if (z > GameState.oceanDeepZ && z <= GameState.oceanDeepZ + 11) return true;
+        // Valid near an island's shallow zone
+        if (Environment.isNearIsland(x, z)) return true;
+        return false;
+    }
+
+    /**
+     * Update the blueprint raft position to follow the mouse.
+     * Called on mousemove when in placement mode.
+     */
+    function updateRaftBlueprint(event) {
+        if (!GameState.isPlacingRaft || !GameState.raftBlueprint) return;
+
+        // Raycast from mouse to ground plane
+        var mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, GameState.camera);
+
+        var groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        var intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+
+        if (intersectPoint) {
+            GameState.raftBlueprint.position.set(intersectPoint.x, 0.3, intersectPoint.z);
+
+            // Check if position is valid
+            var valid = isValidRaftPosition(intersectPoint.x, intersectPoint.z);
+            GameState.raftBlueprintValid = valid;
+
+            // Change color based on validity
+            var color = valid ? 0x4488ff : 0xff4444; // Blue = valid, Red = invalid
+            GameState.raftBlueprint.traverse(function(child) {
+                if (child.isMesh && child.material) {
+                    child.material.color.setHex(color);
+                }
+            });
+        }
+    }
+
+    /**
+     * Place the raft at the blueprint position.
+     * Called on left click during placement mode.
+     */
+    function placeRaft(event) {
+        if (!GameState.isPlacingRaft || !GameState.raftBlueprint) return;
+        if (!GameState.raftBlueprintValid) {
+            showBlockedMessage("Can't place here! Must be near shore or an island.");
+            return;
+        }
+
+        var pos = GameState.raftBlueprint.position.clone();
+
+        // Remove the blueprint
+        GameState.scene.remove(GameState.raftBlueprint);
+        GameState.raftBlueprint = null;
+        GameState.isPlacingRaft = false;
+        GameState.raftBlueprintValid = false;
+
+        // Create the solid raft
+        var raft = Environment.createRaftModel(false);
+        raft.position.copy(pos);
+        raft.userData.bobTime = 0; // For wave bobbing animation
+        GameState.scene.add(raft);
+        GameState.placedRafts.push(raft);
+
+        // Remove raft item from hotbar
+        var slot = GameState.selectedHotbarSlot;
+        var hotbarItem = GameState.hotbarSlots[slot];
+        if (hotbarItem && hotbarItem.id === 'basic_rook_boat') {
+            if (hotbarItem.count > 1) {
+                hotbarItem.count--;
+            } else {
+                GameState.hotbarSlots[slot] = null;
+            }
+            UI.updateHotbar();
+        }
+
+        showBlockedMessage("Raft placed! Press E near it to board.");
+        Game.playSound('collect');
+    }
+
     /**
      * Handle click events for combat — sword, axe, bomb.
      * Uses TOOL_STATS to look up damage/behavior instead of hardcoding.
      */
     function onCombatClick(event) {
         if (!GameState.gameRunning) return;
+
+        // Handle raft placement click
+        if (GameState.isPlacingRaft) {
+            placeRaft(event);
+            return;
+        }
+
         if (GameState.isDialogOpen || GameState.isCraftMenuOpen || GameState.isInventoryOpen) return;
         if (GameState.cameraDragMoved) return; // Don't attack after camera drag
         if (GameState.isInsideHut) return;
@@ -1907,6 +2568,13 @@ window.Game = (function() {
                     // Create the puddle!
                     createArsenPuddle(intersectPoint);
                     Game.playSound('hurt');
+
+                    // Track bomb usage for skin unlock
+                    GameState.arsenBombsUsed = (GameState.arsenBombsUsed || 0) + 1;
+                    if (GameState.arsenBombsUsed >= 3 && GameState.unlockedSkins.indexOf('shimmering_bomb') === -1) {
+                        GameState.unlockedSkins.push('shimmering_bomb');
+                        showBlockedMessage('Skin unlocked: Shimmering Bomb!');
+                    }
                 } else {
                     showBlockedMessage('Too far away to throw!');
                 }

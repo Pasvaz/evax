@@ -466,6 +466,135 @@ window.BESTIARY = [
             huntedBy: 'Snow Caninons Lartus',
             calfColors: 'Males mud brown (#8B6914), females potato (#C4A76C)'
         }
+    },
+
+    // ========================================================================
+    // URONIN SEAL
+    // ========================================================================
+    {
+        id: 'uronin_seal',
+        name: 'Uronin Seal',
+        type: 'Colony Marine Mammal',
+        icon: '\uD83E\uDDAD',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' },
+            { id: 'baby_male', name: 'Pup (Male)', gender: 'male', isBaby: true },
+            { id: 'baby_female', name: 'Pup (Female)', gender: 'female', isBaby: true }
+        ],
+        animations: ['rest', 'waddle', 'swim', 'fight', 'bark', 'mate'],
+        stats: {
+            health: '40 (male) / 35 (female)',
+            speed: 'Very Slow on land, Moderate in water',
+            damage: '12 (male fighting)',
+            diet: 'Piscivore (fish)'
+        },
+        description: 'Uronin Seals are descendants of the extinct Uronal Seal. They live in colonies on ocean islands, with the largest male ruling as colony leader. Males are grey with blue-grey patches, while females are lighter grey with white patches. Baby males are adorable white pups with huge black eyes, while baby females are jet black.',
+        behavior: 'Seals rest on islands in colonies led by the biggest male. Every 5 minutes, mating season begins. The leader mates with females, but other males sneak in too! Males can challenge the leader for dominance, though challengers usually lose. Pregnant females swim to a different island to raise their pup in safety, returning with their grown offspring.',
+        habitat: 'Found on the medium and large ocean islands in the Coastal biome. They waddle slowly on land but swim gracefully between islands.',
+        tips: 'Seals are friendly! Watch for mating season to see the leader fighting challengers. If you see a female swimming alone, she might be heading to raise her pup on another island!',
+        special: {
+            colonyAnimal: true,
+            leaderFights: 'Largest male becomes leader through size or combat',
+            matingStyle: 'Leader mates with all females; others sneak-mate',
+            pupRaising: 'Mothers swim to different island to raise pups',
+            pupColors: 'Males are white, females are black'
+        }
+    },
+
+    // ========================================================================
+    // SLITTED SARDINE
+    // ========================================================================
+    {
+        id: 'slitted_sardine',
+        name: 'Slitted Sardine',
+        type: 'Shoaling Fish',
+        icon: '\uD83D\uDC1F',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' }
+        ],
+        animations: ['swim', 'shoal'],
+        stats: {
+            health: '1',
+            speed: 'Moderate',
+            damage: '0',
+            diet: 'Plankton'
+        },
+        description: 'Slitted Sardines are tiny fish that swim in massive shoals of 20. Males are silver with a distinctive blue slit along their dorsal line, while females are pure silver. They are a key food source for seals.',
+        behavior: 'Sardines stay in tight shoals, using boids-like cohesion to move together. They change direction as a group and rarely stray far from their shoal center.',
+        habitat: 'Found swimming in the coastal ocean waters. Multiple shoals can be seen throughout the sea.',
+        tips: 'Bakka seals love hunting sardines! Watch for seals diving into shoals. You can catch them with a fishing spear.',
+        special: {
+            shoalSize: '20 fish per shoal',
+            huntedBy: 'Both uronin and bakka seals'
+        }
+    },
+
+    // ========================================================================
+    // ORCLETON
+    // ========================================================================
+    {
+        id: 'orcleton',
+        name: 'Orcleton',
+        type: 'Solitary Fish',
+        icon: '\uD83D\uDC20',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' }
+        ],
+        animations: ['swim', 'drift'],
+        stats: {
+            health: '3',
+            speed: 'Slow',
+            damage: '0',
+            diet: 'Algae'
+        },
+        description: 'Orcletons are large, solitary ocean fish. Males are a striking blue color, while females are orange. They drift lazily through the ocean, changing direction occasionally.',
+        behavior: 'Unlike sardines, orcletons swim alone. They meander through the ocean with slow, random direction changes. They are larger and tougher than sardines.',
+        habitat: 'Scattered individually throughout the coastal ocean waters.',
+        tips: 'Uronin seals prefer hunting orcletons over sardines! They are worth catching with a fishing spear because of their larger size.',
+        special: {
+            preferredBy: 'Uronin seals (70% preference)',
+            solitary: true
+        }
+    },
+
+    // ========================================================================
+    // BAKKA SEAL
+    // ========================================================================
+    {
+        id: 'bakka_seal',
+        name: 'Bakka Seal',
+        type: 'Solitary Marine Mammal',
+        icon: '\uD83E\uDDAD',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' },
+            { id: 'baby_male', name: 'Pup (Male)', gender: 'male', isBaby: true },
+            { id: 'baby_female', name: 'Pup (Female)', gender: 'female', isBaby: true }
+        ],
+        animations: ['swim', 'warn', 'attack', 'fight', 'mate'],
+        stats: {
+            health: '50 (male) / 40 (female)',
+            speed: 'Fast in water',
+            damage: '15 (attack)',
+            diet: 'Piscivore (prefers sardines)'
+        },
+        description: 'Bakka Seals are solitary, territorial marine mammals. Males are beige, females are grey, baby males are burgundy, and baby females are maroon. Unlike the colony-dwelling uronin seals, bakka seals patrol the open ocean alone.',
+        behavior: 'Bakka seals swim through the open ocean and are fiercely territorial. If Pedro gets too close, they raise their head and growl a warning. Stay too long and they attack! Males fight rivals for mating rights — the loser swims away, but fights lasting too long can be deadly. Females give birth to 4 pups.',
+        habitat: 'Scattered throughout the deep coastal ocean, away from islands. They prefer open water.',
+        tips: 'Be careful near bakka seals — they WILL attack if you ignore their warning! Killing one drops a Bakka Seal Tooth, needed to craft a Fishing Spear.',
+        special: {
+            territorial: 'Warns then attacks if Pedro stays within 12 units',
+            drops: 'Bakka Seal Tooth (crafting material)',
+            mating: 'Males fight rivals; winner mates with female',
+            babies: '4 pups per mating (2 male, 2 female)'
+        }
     }
 ];
 

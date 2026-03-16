@@ -158,6 +158,27 @@ window.Effects = (function() {
                 return true;
 
             // ----------------------------------------------------------------
+            // GIVE RESOURCE - Add resources to player's inventory
+            // ----------------------------------------------------------------
+            case 'give_resource':
+                var resources = effect.resources || {};
+                for (var resKey in resources) {
+                    if (resources.hasOwnProperty(resKey)) {
+                        GameState.resourceCounts[resKey] = (GameState.resourceCounts[resKey] || 0) + resources[resKey];
+                    }
+                }
+                // Also track quest clue if included
+                if (effect.clue) {
+                    if (!GameState.questClues) GameState.questClues = [];
+                    if (!GameState.questClues.includes(effect.clue)) {
+                        GameState.questClues.push(effect.clue);
+                    }
+                }
+                Game.playSound('collect');
+                UI.updateUI();
+                return true;
+
+            // ----------------------------------------------------------------
             // UNKNOWN - Log warning but don't break
             // ----------------------------------------------------------------
             default:
@@ -298,7 +319,10 @@ window.Effects = (function() {
             case 'seaspray_birch_axe':
             case 'manglecacia_sword':
             case 'seaspray_birch_sword':
+            case 'basic_rook_boat':
             case 'arsen_bomb':
+            case 'fishing_spear':
+            case 'diving_mask':
                 // These go into inventory as equippable items
                 // Look up name/description from TOOL_STATS if available
                 var existing = GameState.inventoryItems.find(function(item) {
@@ -311,16 +335,25 @@ window.Effects = (function() {
                     var toolInfo = TOOL_STATS.axes[effect.item] || TOOL_STATS.swords[effect.item];
                     var itemName = toolInfo ? toolInfo.name : effect.item;
                     var itemDesc = toolInfo ? toolInfo.description : '';
+                    // Special cases for items not in TOOL_STATS
+                    if (effect.item === 'basic_rook_boat') {
+                        itemName = 'Basic Rook Boat';
+                        itemDesc = 'A seaspray birch raft! Select from hotbar, press E to place in water.';
+                    }
                     // Special case for arsen bomb (not in TOOL_STATS)
                     if (effect.item === 'arsen_bomb') {
                         itemName = 'Arsen Bomb';
                         itemDesc = 'A toxic bomb. Equip from hotbar, click to throw!';
                     }
+                    if (effect.item === 'diving_mask') {
+                        itemName = 'Diving Mask';
+                        itemDesc = 'Forged glass diving mask. Select from hotbar to swim underwater!';
+                    }
                     GameState.inventoryItems.push({
                         id: effect.item,
                         name: itemName,
                         description: itemDesc,
-                        effect: effect,
+                        effect: { type: 'item', item: effect.item },
                         count: 1
                     });
                 }

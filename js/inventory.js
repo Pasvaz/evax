@@ -124,7 +124,7 @@ window.Inventory = (function() {
      * @returns {string} - The emoji icon
      */
     // Items that can be equipped to the hotbar
-    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'arsen_bomb'];
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask'];
 
     function isEquippable(itemId) {
         return EQUIPPABLE_ITEMS.includes(itemId);
@@ -145,102 +145,152 @@ window.Inventory = (function() {
             seaspray_birch_axe: '🪓',
             manglecacia_sword: '🗡️',
             seaspray_birch_sword: '🗡️',
-            arsen_bomb: '💣'
+            basic_rook_boat: '🚣',
+            arsen_bomb: '💣',
+            fishing_spear: '🔱',
+            diving_mask: '🤿'
         };
         return icons[itemId] || '📦';
     }
 
     /**
+     * Toggle a resource's pinned state in the top bar.
+     */
+    function togglePin(resourceKey) {
+        var pinned = GameState.pinnedResources || [];
+        var index = pinned.indexOf(resourceKey);
+        if (index === -1) {
+            if (pinned.length < 6) {
+                pinned.push(resourceKey);
+            } else {
+                Game.showBlockedMessage('Unpin a resource first! (max 6)');
+                return;
+            }
+        } else {
+            pinned.splice(index, 1);
+        }
+        GameState.pinnedResources = pinned;
+    }
+
+    /**
      * Refresh the inventory grid with current items.
-     * Shows all crafted items from GameState.inventoryItems.
+     * Shows resources (with pin buttons) + crafted items.
      */
     function refreshInventory() {
         const grid = document.getElementById('inventory-grid');
         const emptyMsg = document.getElementById('inventory-empty');
         grid.innerHTML = '';
 
-        // Get items from GameState.inventoryItems
+        var hasAnything = false;
+        var META = UI.RESOURCE_META || {};
+        var pinned = GameState.pinnedResources || [];
+
+        // --- SECTION 1: Resources ---
+        var resourceKeys = Object.keys(META);
+        for (var r = 0; r < resourceKeys.length; r++) {
+            var key = resourceKeys[r];
+            var count = GameState.resourceCounts[key] || 0;
+            if (count <= 0) continue;
+            hasAnything = true;
+            var meta = META[key];
+            var isPinned = pinned.indexOf(key) !== -1;
+
+            var slot = document.createElement('div');
+            slot.className = 'inventory-slot has-item resource-item';
+            slot.dataset.resourceKey = key;
+            slot.innerHTML =
+                '<span class="inventory-slot-icon">' + meta.icon + '</span>' +
+                '<span class="inventory-slot-name">' + meta.name + '</span>' +
+                '<span class="inventory-slot-count">' + count + '</span>' +
+                '<button class="pin-btn ' + (isPinned ? 'pinned' : '') + '" title="' + (isPinned ? 'Unpin from top bar' : 'Pin to top bar') + '">' + (isPinned ? '📌' : '📍') + '</button>';
+            slot.title = meta.name + ' x' + count;
+
+            // Pin button click
+            (function(k) {
+                slot.querySelector('.pin-btn').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    togglePin(k);
+                    refreshInventory();
+                });
+            })(key);
+
+            grid.appendChild(slot);
+        }
+
+        // --- SECTION 2: Crafted/special items ---
         const items = GameState.inventoryItems || [];
+        items.forEach(item => {
+            hasAnything = true;
+            const slot = document.createElement('div');
+            slot.className = 'inventory-slot has-item';
 
-        if (items.length === 0) {
-            emptyMsg.classList.remove('hidden');
-            // Still show empty slots
-            for (let i = 0; i < 32; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'inventory-slot';
-                grid.appendChild(slot);
+            const icon = getItemIcon(item.id);
+            slot.innerHTML = `
+                <span class="inventory-slot-icon">${icon}</span>
+                <span class="inventory-slot-name">${item.name}</span>
+                ${item.count > 1 ? `<span class="inventory-slot-count">${item.count}</span>` : ''}
+            `;
+            if (isEquippable(item.id)) {
+                slot.title = `${item.description}\n\nDrag to a hotbar slot, or click to equip!`;
+
+                // Mousedown: detect click vs drag
+                slot.addEventListener('mousedown', function(e) {
+                    if (e.button !== 0) return;
+                    e.stopPropagation();
+
+                    var startX = e.clientX;
+                    var startY = e.clientY;
+                    var dragStarted = false;
+                    var thisSlot = slot;
+                    var thisItem = item;
+
+                    function onMouseMove(moveEvent) {
+                        var dx = moveEvent.clientX - startX;
+                        var dy = moveEvent.clientY - startY;
+                        if (!dragStarted && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                            dragStarted = true;
+                            startDrag(thisItem, thisSlot, moveEvent);
+                        }
+                        if (dragStarted) {
+                            moveDrag(moveEvent);
+                        }
+                    }
+
+                    function onMouseUp(upEvent) {
+                        if (dragStarted) {
+                            endDrag(upEvent);
+                        } else {
+                            equipToHotbar(thisItem);
+                        }
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                    }
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+            } else {
+                slot.title = `${item.description}\n\nClick to use!`;
+                slot.addEventListener('click', () => useItem(item));
             }
-        } else {
+            slot.style.cursor = 'pointer';
+
+            grid.appendChild(slot);
+        });
+
+        // Show/hide empty message
+        if (hasAnything) {
             emptyMsg.classList.add('hidden');
+        } else {
+            emptyMsg.classList.remove('hidden');
+        }
 
-            // Add items to grid
-            items.forEach(item => {
-                const slot = document.createElement('div');
-                slot.className = 'inventory-slot has-item';
-
-                const icon = getItemIcon(item.id);
-                slot.innerHTML = `
-                    <span class="inventory-slot-icon">${icon}</span>
-                    <span class="inventory-slot-name">${item.name}</span>
-                    ${item.count > 1 ? `<span class="inventory-slot-count">${item.count}</span>` : ''}
-                `;
-                if (isEquippable(item.id)) {
-                    slot.title = `${item.description}\n\nDrag to a hotbar slot, or click to equip!`;
-
-                    // Mousedown: detect click vs drag
-                    slot.addEventListener('mousedown', function(e) {
-                        if (e.button !== 0) return; // Left click only
-                        e.stopPropagation(); // Prevent camera orbit
-
-                        var startX = e.clientX;
-                        var startY = e.clientY;
-                        var dragStarted = false;
-                        var thisSlot = slot;
-                        var thisItem = item;
-
-                        function onMouseMove(moveEvent) {
-                            var dx = moveEvent.clientX - startX;
-                            var dy = moveEvent.clientY - startY;
-
-                            // Start drag after 5px movement
-                            if (!dragStarted && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-                                dragStarted = true;
-                                startDrag(thisItem, thisSlot, moveEvent);
-                            }
-                            if (dragStarted) {
-                                moveDrag(moveEvent);
-                            }
-                        }
-
-                        function onMouseUp(upEvent) {
-                            if (dragStarted) {
-                                endDrag(upEvent);
-                            } else {
-                                // Was a click — equip to selected slot (old behavior)
-                                equipToHotbar(thisItem);
-                            }
-                            window.removeEventListener('mousemove', onMouseMove);
-                            window.removeEventListener('mouseup', onMouseUp);
-                        }
-
-                        window.addEventListener('mousemove', onMouseMove);
-                        window.addEventListener('mouseup', onMouseUp);
-                    });
-                } else {
-                    slot.title = `${item.description}\n\nClick to use!`;
-                    slot.addEventListener('click', () => useItem(item));
-                }
-                slot.style.cursor = 'pointer';
-
-                grid.appendChild(slot);
-            });
-
-            // Fill remaining slots
-            for (let i = items.length; i < 32; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'inventory-slot';
-                grid.appendChild(slot);
-            }
+        // Fill remaining empty slots to reach 32
+        var totalSlots = grid.children.length;
+        for (var i = totalSlots; i < 32; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'inventory-slot';
+            grid.appendChild(slot);
         }
     }
 
@@ -786,10 +836,17 @@ window.Inventory = (function() {
         }
 
         // Animals with gender suffixes in their IDs
-        const genderedAnimals = ['leopard_toad', 'grass_viper', 'antelope', 'wild_dog', 'saltas_gazella', 'dronglous_cat', 'drongulinat_cat', 'snow_caninon', 'baluban_oxen'];
+        const genderedAnimals = ['leopard_toad', 'grass_viper', 'antelope', 'wild_dog', 'saltas_gazella', 'dronglous_cat', 'drongulinat_cat', 'snow_caninon', 'baluban_oxen', 'uronin_seal', 'bakka_seal', 'slitted_sardine', 'orcleton'];
 
         if (genderedAnimals.includes(animalId)) {
-            // For babies, use the parent gender's colors (or male if unspecified)
+            // For babies with separate baby entries (e.g. uronin_seal_baby_male)
+            if (isBaby) {
+                let babyId = animalId + '_baby_' + (gender || 'male');
+                let babyData = ENEMIES.find(e => e.id === babyId);
+                if (babyData) return babyData;
+            }
+
+            // For adults, use gender suffix (or male if unspecified)
             const genderSuffix = gender ? '_' + gender : '_male';
 
             // Try gendered ID first

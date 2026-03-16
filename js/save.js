@@ -24,7 +24,9 @@ window.SaveSystem = (function() {
     var DEFAULT_RESOURCES = {
         berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0,
         arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0,
-        manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0
+        manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0,
+        bakka_seal_tooth: 0,
+        flour: 0, sugar: 0, butter: 0
     };
 
     // ========================================================================
@@ -97,6 +99,14 @@ window.SaveSystem = (function() {
 
             // Quest
             questClues: (GameState.questClues || []).slice(),
+
+            // Resource bar pins
+            pinnedResources: (GameState.pinnedResources || []).slice(),
+
+            // Skin system
+            currentSkin: GameState.currentSkin || 'default',
+            unlockedSkins: (GameState.unlockedSkins || ['default']).slice(),
+            arsenBombsUsed: GameState.arsenBombsUsed || 0,
 
             // Bathroom deltas
             poopQueue: poopDeltas,
@@ -237,6 +247,10 @@ window.SaveSystem = (function() {
         GameState.currentLevel = saveData.currentLevel || 'Newborn Peccary';
         GameState.hasSaddle = saveData.hasSaddle || false;
         GameState.questClues = saveData.questClues || [];
+        GameState.pinnedResources = saveData.pinnedResources || [];
+        GameState.currentSkin = saveData.currentSkin || 'default';
+        GameState.unlockedSkins = saveData.unlockedSkins || ['default'];
+        GameState.arsenBombsUsed = saveData.arsenBombsUsed || 0;
         GameState.dehydrationTimer = 0;
 
         // --- Step 7: Restore bathroom queues from deltas ---
@@ -278,6 +292,9 @@ window.SaveSystem = (function() {
 
         // Spawn all biome-specific content (animals, resources, intervals)
         Game.spawnBiomeContent(targetBiome);
+
+        // Rebuild Pedro with the loaded skin
+        Player.rebuildPeccary();
 
         // --- Step 9: Reposition player ---
         if (biomeCheck === 'ok' && saveData.playerPosition) {

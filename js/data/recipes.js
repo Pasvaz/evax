@@ -328,6 +328,45 @@ window.RECIPES = [
             type: 'item',
             item: 'seaspray_birch_axe'
         }
+    },
+
+    // ========================================================================
+    // RECIPE 14: Basic Rook Boat
+    // ========================================================================
+    // A raft made of seaspray birch logs — sail the deep ocean!
+    {
+        id: 'basic_rook_boat',
+        name: 'Basic Rook Boat',
+        description: 'A seaspray birch raft! Select from hotbar, press E to place in water.',
+        requiredScore: 300,
+
+        cost: {
+            seaspray_birch_wood: 40
+        },
+
+        effect: {
+            type: 'item',
+            item: 'basic_rook_boat'
+        }
+    },
+
+    // ========================================================================
+    // A fishing spear — catch fish in the ocean!
+    {
+        id: 'fishing_spear',
+        name: 'Fishing Spear',
+        description: 'A spear for catching fish! Equip from hotbar, click on fish to spear them.',
+        requiredScore: 300,
+
+        cost: {
+            seaspray_birch_wood: 4,
+            bakka_seal_tooth: 1
+        },
+
+        effect: {
+            type: 'item',
+            item: 'fishing_spear'
+        }
     }
 
 ];
