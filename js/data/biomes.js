@@ -1,0 +1,260 @@
+/**
+ * ============================================================================
+ * BIOMES DATA FILE
+ * ============================================================================
+ *
+ * This file defines all the biomes in the game.
+ * Each biome has its own ground color, water features, and settings.
+ *
+ * To add a new biome:
+ *   1. Add a new entry to the BIOMES object
+ *   2. Define the biome's properties (colors, features, etc.)
+ *   3. Add transitions to/from the biome
+ *
+ * ============================================================================
+ */
+
+window.BIOMES = {
+    // The starting forest biome
+    arboreal: {
+        id: 'arboreal',
+        name: 'Arboreal Biome',
+        displayName: 'Arboreal Biome',
+
+        // Colors
+        groundColor: 0x3d6b3d,        // Forest green
+        grassColor: 0x228b22,          // Grass green
+        minimapBackground: '#1a3d1a',  // Dark green
+
+        // Water feature
+        waterFeature: 'river',         // Has a river
+
+        // Transitions (which direction leads to which biome)
+        transitions: {
+            north: 'savannah',         // Go north to reach savannah
+            south: 'coastal'           // Go south to reach coastal biome
+        },
+
+        // Spawn position when entering this biome
+        spawnOffset: {
+            fromSouth: { x: 0, z: -10 }  // 10 units from south border when coming from south
+        },
+
+        // Features
+        hasVillage: true,
+        hasForest: true,
+        spawnGeese: true,
+        geese: 5
+    },
+
+    // The new savannah biome
+    savannah: {
+        id: 'savannah',
+        name: 'New World Savannah',
+        displayName: 'New World Savannah',
+        requiredScore: 500,  // Must reach Village Champion (unlock all villagers) to enter
+
+        // Colors
+        groundColor: 0xc2a83e,         // Yellow/golden savannah
+        grassColor: 0xb8a030,          // Dry grass color
+        minimapBackground: '#5a4a1a',  // Dark yellow/brown
+
+        // Water feature
+        waterFeature: 'wateringHole',  // Has a watering hole instead of river
+        wateringHoleRadius: 7.5,       // 15 diameter = 7.5 radius
+        wateringHolePosition: { x: 0, z: 0 },  // Center of map
+
+        // Transitions
+        transitions: {
+            south: 'arboreal',         // Go south to return to arboreal
+            west: 'snowy_mountains'    // Go west to reach snowy mountains (requires skull!)
+        },
+
+        // Spawn position when entering this biome
+        spawnOffset: {
+            fromNorth: { x: 0, z: 10 } // 10 units from south border when coming from north
+        },
+
+        // Features
+        hasVillage: false,
+        hasForest: false,
+        spawnGeese: false,
+        geese: 0,
+
+        // Leopard toads live near the watering hole
+        spawnToads: true,
+        toads: 4,  // 2 male, 2 female
+
+        // Grass viper weasels - predators that hunt toads
+        spawnGrassVipers: true,
+        grassVipers: 2,  // 1 male, 1 female
+
+        // New World Rhubarb Antelope - herd animals at east border
+        spawnAntelope: true,
+        antelope: 6,  // 3 male, 3 female (one male becomes leader)
+
+        // New World Hunter's Wild Dogs - pack predators at west border
+        spawnWildDogs: true,
+        wildDogs: 6,  // 3 male, 3 female (first female becomes alpha)
+
+        // Saltas Gazella - fastest animal, rideable
+        spawnSaltasGazella: true,
+        saltasGazella: 8,  // 4 male, 4 female
+
+        // Dronglous Cat - tree-dwelling predator discovered by Professor Snoutworth
+        // Lives in acacia trees, hunts baby gazella, baby antelope, toads, pups, vipers
+        spawnDronglousCats: true,
+        dronglousCats: 4  // 2 male, 2 female (each gets their own tree)
+    },
+
+    // The snowy mountains - homeland of the ancient cats
+    snowy_mountains: {
+        id: 'snowy_mountains',
+        name: 'Snowy Mountains',
+        displayName: 'Snowy Mountains',
+
+        // Colors
+        groundColor: 0xf0f0f0,         // White snow
+        grassColor: 0xe8e8e8,          // Light grey snow
+        minimapBackground: '#c0c0c0',  // Light grey
+
+        // Sky
+        skyColor: 0x8899aa,            // Grey cloudy sky
+        fogColor: 0xaabbcc,            // Light grey fog
+        fogDensity: 0.02,              // Thicker fog for snowy atmosphere
+
+        // Water feature
+        waterFeature: 'none',          // No water in the mountains (frozen)
+
+        // Transitions
+        transitions: {
+            east: 'savannah'           // Go east to return to savannah
+        },
+
+        // Spawn position when entering this biome
+        spawnOffset: {
+            fromEast: { x: -10, z: 0 } // 10 units from west border when coming from east
+        },
+
+        // Features
+        hasVillage: false,
+        hasForest: false,
+        spawnGeese: false,
+        geese: 0,
+
+        // Environmental features
+        hasSnow: true,                 // Falling snow particles
+        snowParticles: 200,            // Number of snowflakes
+        spawnRocks: true,              // Snow-covered rock mounds
+        rocks: 15,                     // Number of rocks
+
+        // Deericus Iricus - mountain deer
+        spawnDeer: true,
+        deer: 2,                       // 2 herds
+
+        // Drongulinat Cats - snow predators
+        spawnDrongulinatCats: true,
+        drongulinatCats: 4,            // 2 male + 2 female (2 pairs)
+
+        // Snow Caninons Lartus - XL bully pack dogs
+        spawnSnowCaninons: true,
+        snowCaninonPacks: 2,           // 2 packs (4 dogs each = 8 total)
+
+        // Snow Baluban Oxen - massive musk ox herds
+        spawnBalubanOxen: true,
+        balubanOxenHerds: 2,           // 2 herds (18 each = 36 total)
+
+        // Requirements
+        requiresArtifact: 'felis_dronglaticus_skull'  // Need the skull to enter!
+    },
+
+    // The coastal biome - seaspray birch forest and ocean
+    coastal: {
+        id: 'coastal',
+        name: 'Coastal Biome',
+        displayName: 'Coastal Biome',
+
+        // Colors
+        groundColor: 0x4a5a3a,         // Green-brown forest floor
+        grassColor: 0x3d6b3d,          // Forest green grass
+        minimapBackground: '#2a3a2a',  // Dark green-brown
+
+        // Special ground colors for the coastal split
+        sandColor: 0xd2b48c,           // Sandy tan for the beach strip
+        oceanColor: 0x5a7a6a,          // Grey-green ocean
+
+        // Sky
+        skyColor: 0x9ab5c8,            // Coastal hazy sky
+        fogColor: 0xb0c4d4,            // Light sea fog
+        fogDensity: 0.008,             // Light coastal fog
+
+        // Water feature
+        waterFeature: 'ocean',         // Large ocean plane on south half
+
+        // Transitions
+        transitions: {
+            north: 'arboreal'          // Go north to return to arboreal
+        },
+
+        // Spawn position when entering this biome
+        spawnOffset: {
+            fromNorth: { x: 0, z: 10 }
+        },
+
+        // Features
+        hasVillage: false,
+        hasForest: false,
+        spawnGeese: false,
+        geese: 0,
+
+        // Coastal features
+        hasBirchForest: true,
+        birchTrees: 70,
+        hasOcean: true,
+        hasBeach: true,
+
+        // Layout boundaries (world Z coordinates)
+        // Forest = north half (z < 0), sand = z 0 to 200, ocean = z > 200
+        forestEndZ: 0,
+        sandEndZ: 200,
+
+        // Ocean islands — each has a shallow zone for raft dismount + walking
+        islands: [
+            // Small islands (radius 8-10)
+            { x: -200, z: 320, radius: 9,  style: 'sandy',        height: 1.5 },
+            { x:  350, z: 400, radius: 8,  style: 'rocky_green',  height: 2.5 },
+            { x: -450, z: 550, radius: 10, style: 'sandy',        height: 1.2 },
+            // Medium islands (radius 15-20)
+            { x:  100, z: 450, radius: 18, style: 'sandy_grassy', height: 3.0 },
+            { x: -300, z: 600, radius: 15, style: 'rocky_green',  height: 3.5 },
+            { x:  500, z: 350, radius: 16, style: 'sandy_grassy', height: 2.8 },
+            { x:   50, z: 620, radius: 20, style: 'sandy',        height: 1.8 }
+        ],
+        shallowZoneRadius: 10,
+
+        // Uronin Seal colonies on medium/large islands
+        spawnSeals: true,
+        sealColonyIslands: [3, 4, 5],
+
+        // Bakka seals — solitary, territorial
+        spawnBakkaSeals: true,
+        bakkaSeals: 8,
+
+        // Fish in the ocean
+        spawnFish: true,
+        sardineShoals: 3,
+        orcletons: 5,
+
+        // Requirements
+        requiresArtifact: 'uronal_seal_tooth'
+    }
+};
+
+/**
+ * Get the biome data by ID
+ * @param {string} biomeId - The biome ID
+ * @returns {Object} - The biome data
+ */
+window.getBiomeData = function(biomeId) {
+    return BIOMES[biomeId] || BIOMES.arboreal;
+};

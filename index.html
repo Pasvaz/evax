@@ -13,6 +13,7 @@
         body {
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
         }
         #game-container {
             width: 100vw;
@@ -61,8 +62,120 @@
         #health-bar {
             width: 100%;
             height: 100%;
-            background: linear-gradient(to right, #ff4444, #44ff44);
+            background: linear-gradient(to right, #44ff44, #88ff88);
             transition: width 0.3s;
+        }
+        #thirst-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 365px;  /* Left of hunger bar */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #thirst-panel .stat-label {
+            margin-bottom: 5px;
+            color: #4a9eff;
+        }
+        #thirst-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2a5a9e;
+        }
+        #thirst-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #4a9eff, #80c0ff);
+            transition: width 0.3s;
+        }
+        #thirst-bar.dehydrated {
+            background: linear-gradient(to right, #cc4444, #ff6666);
+            animation: pulse-thirst 1s infinite;
+        }
+        @keyframes pulse-thirst {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        #hunger-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 185px;  /* Next to minimap (150px + 20px gap + 15px) */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #hunger-panel .stat-label {
+            margin-bottom: 5px;
+            color: #e8a850;
+        }
+        #hunger-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #a86e32;
+        }
+        #hunger-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #e8a850, #ffd080);
+            transition: width 0.3s;
+        }
+        #hunger-bar.starving {
+            background: linear-gradient(to right, #cc4444, #ff6666);
+            animation: pulse-hunger 1s infinite;
+        }
+        @keyframes pulse-hunger {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        #oxygen-panel {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #oxygen-panel .stat-label {
+            margin-bottom: 5px;
+            color: #60c0ff;
+        }
+        #oxygen-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2060a0;
+        }
+        #oxygen-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #2080cc, #60c0ff);
+            transition: width 0.3s;
+        }
+        #oxygen-bar.drowning {
+            background: linear-gradient(to right, #cc2222, #ff4444);
+            animation: pulse-oxygen 0.5s infinite;
+        }
+        @keyframes pulse-oxygen {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
         #controls-info {
             position: fixed;
@@ -82,13 +195,10 @@
         #controls-info p {
             margin: 5px 0;
         }
-        #game-over-screen, #start-screen {
+        #game-over-screen {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -96,15 +206,72 @@
             z-index: 200;
             color: white;
         }
-        #start-screen h1, #game-over-screen h1 {
+        #start-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            background: linear-gradient(135deg, #1a3d1a 0%, #0d260d 40%, #1a2a10 70%, #0a1a0a 100%);
+            overflow: hidden;
+        }
+        #start-screen::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 30%, rgba(100, 180, 80, 0.12) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .start-hero-wrap {
+            position: relative;
+            width: min(50%, 85vw);
+            margin-bottom: 16px;
+        }
+        .start-hero-img {
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 80px rgba(80, 160, 60, 0.15);
+            border: 3px solid rgba(100, 180, 80, 0.3);
+            display: block;
+        }
+        .start-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 16px 0 12px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 70%, transparent 100%);
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .bottom-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 0 12px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+            border-radius: 0 0 16px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #start-screen h1 {
+            font-size: 36px;
+            margin: 0 0 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.9), 0 0 30px rgba(80, 160, 60, 0.3);
+            color: #a8e6a0;
+            font-family: Georgia, serif;
+            letter-spacing: 2px;
+        }
+        #game-over-screen h1 {
             font-size: 48px;
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px black;
-        }
-        #start-screen h1 {
-            color: #88cc88;
-        }
-        #game-over-screen h1 {
             color: #ff6666;
         }
         .game-btn {
@@ -118,10 +285,29 @@
             margin: 10px;
             pointer-events: auto;
             transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(100, 180, 80, 0.3);
         }
         .game-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(100, 200, 100, 0.5);
+        }
+        .game-btn-img {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 2px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.2s, filter 0.2s;
+        }
+        .game-btn-img img {
+            width: 9vw;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .game-btn-img:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
         }
         #final-score {
             font-size: 32px;
@@ -129,24 +315,71 @@
             color: #ffcc00;
         }
         .subtitle {
-            font-size: 18px;
-            opacity: 0.8;
-            margin-bottom: 30px;
+            font-size: 16px;
+            opacity: 0.75;
+            margin-bottom: 24px;
             text-align: center;
-            max-width: 600px;
-            line-height: 1.6;
+            max-width: 500px;
+            line-height: 1.5;
+            padding: 0 20px;
+            color: #c0d8b8;
         }
-        #resource-icons {
+        .resource-bar-wrapper {
+            position: relative;
+            pointer-events: auto;
+        }
+        #resource-bar-collapsed {
             display: flex;
-            gap: 15px;
+            gap: 12px;
         }
-        .resource-icon {
+        .resource-bar-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            font-size: 18px;
         }
-        .resource-icon span {
-            font-size: 20px;
+        .resource-bar-item .res-count {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        #resource-bar-expanded {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 320px;
+            background: rgba(20, 18, 15, 0.95);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+            padding: 10px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            z-index: 150;
+            margin-top: 4px;
+        }
+        .resource-bar-wrapper:hover #resource-bar-expanded {
+            display: grid;
+        }
+        .resource-expanded-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .resource-expanded-item .res-name {
+            font-size: 11px;
+            opacity: 0.8;
+            white-space: nowrap;
+        }
+        .resource-expanded-item .res-count {
+            font-weight: bold;
+            margin-left: auto;
+        }
+        .resource-expanded-item.empty-resource {
+            opacity: 0.4;
         }
         #minimap {
             position: fixed;
@@ -177,32 +410,1799 @@
             transition: opacity 0.3s;
             pointer-events: none;
         }
+        #interact-prompt {
+            position: fixed;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffcc00;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-size: 18px;
+            border: 2px solid #ffcc00;
+            pointer-events: none;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* ============================================================ */
+        /* PROGRESSION SYSTEM                                           */
+        /* ============================================================ */
+
+        .player-score-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .player-progress-col {
+            flex: 1;
+            min-width: 80px;
+        }
+        #progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(to right, #ffcc00, #ffee88);
+            transition: width 0.5s ease;
+        }
+        #progress-text {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 2px;
+        }
+        #interact-prompt.locked-villager {
+            color: #ff6666;
+            border-color: #ff6666;
+        }
+        #unlock-notification {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            pointer-events: none;
+            text-align: center;
+        }
+        #unlock-title {
+            font-size: 32px;
+            color: #ffcc00;
+            text-shadow: 3px 3px 6px #000;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 15px;
+            border: 3px solid #ffcc00;
+        }
+        #unlock-text {
+            font-size: 18px;
+            color: #f5deb3;
+            text-shadow: 2px 2px 4px #000;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 30px;
+            border-radius: 10px;
+        }
+        @keyframes unlockPop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .unlock-animate {
+            animation: unlockPop 0.5s ease forwards;
+        }
+
+        /* ============================================================ */
+        /* HOTBAR (Minecraft-style equipment slots)                     */
+        /* ============================================================ */
+
+        #hotbar {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .hotbar-slot {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #555;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            pointer-events: auto;
+        }
+        .hotbar-slot.selected {
+            border-color: #ffcc00;
+            box-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+        }
+        .hotbar-key {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 10px;
+            color: #888;
+        }
+        .hotbar-slot.selected .hotbar-key {
+            color: #ffcc00;
+        }
+        .hotbar-icon {
+            font-size: 24px;
+        }
+        .hotbar-count {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        /* Drag-and-drop: ghost element follows cursor */
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.85;
+            font-size: 40px;
+            background: rgba(30, 25, 20, 0.9);
+            border: 2px solid #ffcc00;
+            border-radius: 8px;
+            padding: 6px 10px;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Drag-and-drop: hotbar slots glow green when valid drop target */
+        .hotbar-slot.drag-over {
+            border-color: #00ff88 !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6) !important;
+            transform: scale(1.15);
+            transition: all 0.15s;
+        }
+
+        /* Drag-and-drop: source slot dims while dragging */
+        .inventory-slot.dragging {
+            opacity: 0.4;
+        }
+
+        #dialog-box {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            max-width: 90%;
+            background: linear-gradient(to bottom, rgba(60, 40, 20, 0.95), rgba(40, 25, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            color: #f5deb3;
+            font-size: 18px;
+            line-height: 1.6;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+        }
+        #dialog-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #8b7355;
+        }
+        #dialog-text {
+            margin-bottom: 15px;
+            min-height: 60px;
+        }
+        #dialog-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dialog-option {
+            background: rgba(100, 80, 50, 0.6);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #8b7355;
+            transition: background 0.2s;
+        }
+        .dialog-option:hover {
+            background: rgba(139, 115, 85, 0.8);
+        }
+        #dialog-hint {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+        }
         .hidden {
             display: none !important;
+        }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: #88cc88;
+            font-size: 24px;
+        }
+        #craft-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            max-width: 90%;
+            max-height: 80vh;
+            background: linear-gradient(to bottom, rgba(40, 30, 20, 0.95), rgba(30, 20, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            color: #f5deb3;
+            z-index: 150;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #craft-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #8b7355;
+        }
+        #craft-header h2 {
+            color: #ffcc00;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .craft-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin: 0;
+        }
+        #craft-recipes {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .craft-recipe {
+            background: rgba(60, 50, 40, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8b7355;
+            transition: all 0.2s;
+        }
+        .craft-recipe:hover {
+            background: rgba(80, 65, 50, 0.8);
+            border-color: #b59875;
+        }
+        .craft-recipe.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .craft-recipe.disabled:hover {
+            background: rgba(60, 50, 40, 0.6);
+            border-color: #8b7355;
+        }
+        .craft-recipe-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 8px;
+        }
+        .craft-recipe-desc {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+        .craft-recipe-cost {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .craft-cost-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .craft-cost-item.insufficient {
+            color: #ff6666;
+        }
+        .craft-btn {
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .craft-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            transform: translateY(-2px);
+        }
+        .craft-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #craft-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #8b7355;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+        #shop-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            background: linear-gradient(to bottom, rgba(40, 30, 20, 0.95), rgba(30, 20, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            color: #f5deb3;
+            z-index: 150;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #shop-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #8b7355;
+        }
+        #shop-header h2 {
+            color: #ffcc00;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .shop-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin: 5px 0;
+        }
+        .shop-balance {
+            font-size: 18px;
+            color: #ffd700;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #shop-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .shop-tab {
+            flex: 1;
+            background: rgba(60, 50, 40, 0.6);
+            color: #f5deb3;
+            border: 2px solid #8b7355;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .shop-tab:hover {
+            background: rgba(80, 65, 50, 0.8);
+        }
+        .shop-tab.active {
+            background: rgba(139, 115, 85, 0.8);
+            border-color: #ffcc00;
+        }
+        .shop-panel {
+            display: none;
+        }
+        .shop-panel.active {
+            display: block;
+        }
+        .shop-item {
+            background: rgba(60, 50, 40, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8b7355;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .shop-item:hover {
+            background: rgba(80, 65, 50, 0.8);
+            border-color: #b59875;
+        }
+        .shop-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .shop-item-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .shop-item-price {
+            font-size: 16px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .shop-item-stock {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        .shop-item-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .shop-quantity {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .shop-quantity-btn {
+            background: rgba(100, 80, 50, 0.8);
+            color: white;
+            border: 1px solid #8b7355;
+            padding: 5px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .shop-quantity-btn:hover {
+            background: rgba(139, 115, 85, 0.9);
+        }
+        .shop-quantity-value {
+            font-size: 16px;
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .shop-buy-btn, .shop-sell-btn {
+            flex: 1;
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .shop-buy-btn:hover:not(:disabled), .shop-sell-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            transform: translateY(-2px);
+        }
+        .shop-buy-btn:disabled, .shop-sell-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #shop-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #8b7355;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+        /* ========================================= */
+        /* INVENTORY & BESTIARY STYLES              */
+        /* ========================================= */
+        #inventory-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 900px;
+            height: 80%;
+            max-height: 700px;
+            background: linear-gradient(to bottom, rgba(30, 25, 20, 0.98), rgba(20, 15, 10, 0.98));
+            border: 4px solid #8b7355;
+            border-radius: 20px;
+            padding: 0;
+            color: #f5deb3;
+            z-index: 180;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #inventory-tabs {
+            display: flex;
+            background: rgba(50, 40, 30, 0.9);
+            border-bottom: 3px solid #8b7355;
+        }
+        .inventory-tab {
+            flex: 1;
+            padding: 18px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(60, 50, 40, 0.6);
+            color: #888;
+            border: none;
+            transition: all 0.2s;
+            border-right: 2px solid #8b7355;
+        }
+        .inventory-tab:last-child {
+            border-right: none;
+        }
+        .inventory-tab:hover {
+            background: rgba(80, 65, 50, 0.8);
+            color: #ccc;
+        }
+        .inventory-tab.active {
+            background: rgba(100, 80, 50, 0.9);
+            color: #ffcc00;
+            box-shadow: inset 0 -3px 0 #ffcc00;
+        }
+        #inventory-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .inventory-panel {
+            display: none;
+            height: 100%;
+        }
+        .inventory-panel.active {
+            display: block;
+        }
+        /* Inventory Grid */
+        #inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        .inventory-slot {
+            aspect-ratio: 1;
+            background: rgba(40, 35, 30, 0.8);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 70px;
+        }
+        .inventory-slot:hover {
+            background: rgba(60, 50, 40, 0.9);
+            border-color: #8b7355;
+            transform: scale(1.05);
+        }
+        .inventory-slot.has-item {
+            border-color: #a08060;
+            background: rgba(50, 45, 35, 0.9);
+        }
+        .inventory-slot.has-item:hover {
+            border-color: #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 200, 0, 0.3);
+        }
+        .inventory-slot-icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+        .inventory-slot-name {
+            font-size: 10px;
+            text-align: center;
+            color: #ccc;
+        }
+        .inventory-slot-count {
+            position: absolute;
+            bottom: 3px;
+            right: 5px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .pin-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.4;
+            padding: 2px;
+            line-height: 1;
+            z-index: 2;
+        }
+        .pin-btn:hover, .pin-btn.pinned {
+            opacity: 1;
+        }
+        .resource-item {
+            border-color: #5a7a5a;
+        }
+        .inventory-empty-msg {
+            text-align: center;
+            color: #666;
+            font-size: 18px;
+            margin-top: 50px;
+        }
+        /* Quest Panel */
+        #quest-log {
+            padding: 10px;
+        }
+        .quest-title {
+            font-size: 24px;
+            color: #ffcc00;
+            margin-bottom: 5px;
+        }
+        .quest-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        .quest-clue {
+            background: rgba(60, 50, 40, 0.6);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+        }
+        .quest-clue.discovered {
+            border-color: #8b7355;
+            background: rgba(80, 65, 45, 0.7);
+        }
+        .quest-clue.locked {
+            opacity: 0.4;
+        }
+        .quest-clue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .quest-clue-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #e8a850;
+        }
+        .quest-clue-status {
+            font-size: 13px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .quest-clue-status.found {
+            background: #2a5a2a;
+            color: #6aff6a;
+        }
+        .quest-clue-status.not-found {
+            background: #4a3a2a;
+            color: #888;
+        }
+        .quest-clue-status.locked-status {
+            background: #3a2a2a;
+            color: #aa5555;
+        }
+        .quest-clue-text {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.4;
+        }
+        .quest-ingredient-list {
+            margin-top: 15px;
+            padding: 12px 16px;
+            background: rgba(40, 35, 30, 0.8);
+            border: 2px solid #5a4a3a;
+            border-radius: 8px;
+        }
+        .quest-ingredient-list h3 {
+            color: #ffcc00;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .quest-ingredient {
+            font-size: 14px;
+            padding: 3px 0;
+            color: #aaa;
+        }
+        .quest-ingredient.found {
+            color: #6aff6a;
+        }
+        /* Artifacts Panel */
+        .artifacts-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #5a4a3a;
+        }
+        .artifacts-subtitle {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .artifacts-count {
+            color: #e8a850;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        #artifacts-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 10px;
+        }
+        .artifact-slot {
+            aspect-ratio: 1;
+            background: rgba(40, 35, 50, 0.8);
+            border: 3px solid #6a5a7a;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 100px;
+        }
+        .artifact-slot:hover {
+            background: rgba(60, 50, 70, 0.9);
+            border-color: #8a7a9a;
+            transform: scale(1.03);
+        }
+        .artifact-slot.has-artifact {
+            border-color: #9a8aaa;
+            background: linear-gradient(135deg, rgba(60, 50, 80, 0.9), rgba(40, 35, 60, 0.9));
+            box-shadow: 0 0 15px rgba(150, 100, 200, 0.2);
+        }
+        .artifact-slot.has-artifact:hover {
+            border-color: #cc99ff;
+            box-shadow: 0 0 25px rgba(200, 150, 255, 0.4);
+        }
+        .artifact-slot.rarity-common { border-color: #888; }
+        .artifact-slot.rarity-uncommon { border-color: #4a9; }
+        .artifact-slot.rarity-rare { border-color: #77f; }
+        .artifact-slot.rarity-legendary { border-color: #fa0; box-shadow: 0 0 20px rgba(255, 170, 0, 0.3); }
+        .artifact-slot-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        .artifact-slot-name {
+            font-size: 12px;
+            text-align: center;
+            color: #ddd;
+            font-weight: bold;
+        }
+        .artifact-slot-rarity {
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .artifact-slot-rarity.common { color: #888; }
+        .artifact-slot-rarity.uncommon { color: #4a9; }
+        .artifact-slot-rarity.rare { color: #77f; }
+        .artifact-slot-rarity.legendary { color: #fa0; }
+        .artifact-slot-empty {
+            color: #555;
+            font-size: 14px;
+        }
+        /* Bestiary Grid */
+        #bestiary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 10px;
+        }
+        .bestiary-card {
+            background: rgba(50, 45, 35, 0.9);
+            border: 3px solid #5a4a3a;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .bestiary-card:hover {
+            border-color: #ffcc00;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .bestiary-card-preview {
+            width: 100%;
+            height: 100px;
+            background: rgba(30, 25, 20, 0.8);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .bestiary-card-preview canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .bestiary-card-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 5px;
+        }
+        .bestiary-card-type {
+            font-size: 12px;
+            color: #888;
+        }
+        /* Bestiary Detail View */
+        #bestiary-detail {
+            display: none;
+            height: 100%;
+        }
+        #bestiary-detail.active {
+            display: flex;
+            gap: 20px;
+        }
+        #bestiary-detail-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #bestiary-model-viewer {
+            flex: 1;
+            background: rgba(30, 25, 20, 0.9);
+            border: 3px solid #5a4a3a;
+            border-radius: 12px;
+            min-height: 250px;
+            position: relative;
+            overflow: hidden;
+        }
+        #bestiary-model-viewer canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #bestiary-variant-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .variant-btn {
+            background: rgba(60, 50, 40, 0.8);
+            color: #ccc;
+            border: 2px solid #5a4a3a;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .variant-btn:hover {
+            background: rgba(80, 65, 50, 0.9);
+            border-color: #8b7355;
+        }
+        .variant-btn.active {
+            background: rgba(100, 80, 50, 0.9);
+            border-color: #ffcc00;
+            color: #ffcc00;
+        }
+        #bestiary-anim-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .anim-btn {
+            background: rgba(50, 70, 50, 0.8);
+            color: #aaffaa;
+            border: 2px solid #4a6a4a;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .anim-btn:hover {
+            background: rgba(60, 90, 60, 0.9);
+            border-color: #6a9a6a;
+        }
+        .anim-btn.active {
+            background: rgba(70, 110, 70, 0.9);
+            border-color: #88ff88;
+        }
+        #bestiary-detail-right {
+            flex: 1;
+            overflow-y: auto;
+        }
+        #bestiary-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #bestiary-detail-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        #bestiary-back-btn {
+            background: rgba(80, 60, 40, 0.8);
+            color: #ccc;
+            border: 2px solid #8b7355;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        #bestiary-back-btn:hover {
+            background: rgba(100, 80, 50, 0.9);
+            color: #fff;
+        }
+        .bestiary-section {
+            background: rgba(40, 35, 30, 0.8);
+            border: 2px solid #5a4a3a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .bestiary-section h3 {
+            color: #e8a850;
+            font-size: 16px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #5a4a3a;
+        }
+        .bestiary-section p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        .bestiary-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .bestiary-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(90, 74, 58, 0.5);
+        }
+        .bestiary-stat-label {
+            color: #888;
+        }
+        .bestiary-stat-value {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        #inventory-footer {
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 2px solid #5a4a3a;
+            background: rgba(40, 35, 30, 0.9);
+        }
+        @media (max-width: 768px) {
+            #stats-panel {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .stat-box {
+                padding: 8px 12px;
+            }
+        }
+        /* ========================================= */
+        /* ========================================= */
+        /* SKINS SCREEN                              */
+        /* ========================================= */
+        #skins-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1a3d1a 0%, #0d260d 40%, #1a2a10 70%, #0a1a0a 100%);
+            z-index: 210;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+        .skins-layout {
+            display: flex;
+            gap: 40px;
+            width: 90%;
+            max-width: 900px;
+            height: 70vh;
+            align-items: stretch;
+        }
+        #skins-preview {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            border: 2px solid #4a7a3a;
+            overflow: hidden;
+        }
+        #skins-preview-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #skins-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .skin-card {
+            background: rgba(40, 55, 35, 0.9);
+            border: 2px solid #4a7a3a;
+            border-radius: 12px;
+            padding: 15px 18px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s, opacity 0.2s;
+            color: #d4e8c4;
+        }
+        .skin-card:hover {
+            border-color: #88cc88;
+            transform: scale(1.02);
+        }
+        .skin-card.selected {
+            border-color: #88cc88;
+            box-shadow: 0 0 15px rgba(136, 204, 136, 0.4);
+        }
+        .skin-card.locked {
+            opacity: 0.6;
+        }
+        .skin-card.locked:hover {
+            opacity: 0.8;
+        }
+        .skin-card-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #88cc88;
+            margin-bottom: 4px;
+        }
+        .skin-card-desc {
+            font-size: 13px;
+            color: #aaccaa;
+            margin-bottom: 6px;
+        }
+        .skin-card-status {
+            font-size: 12px;
+            color: #cc8844;
+        }
+        .skin-card.selected .skin-card-status {
+            color: #88cc88;
+        }
+        #skin-cheat-box {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 215;
+        }
+        #skin-cheat-input {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #4a7a3a;
+            border-radius: 8px;
+            color: #d4e8c4;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            width: 200px;
+            outline: none;
+        }
+        #skin-cheat-input:focus {
+            border-color: #88cc88;
+        }
+        #skin-cheat-input.shake {
+            animation: cheatShake 0.4s ease;
+        }
+        @keyframes cheatShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-4px); }
+        }
+        #skins-back-btn {
+            margin-top: 20px;
+        }
+
+        /* Screen fade overlay for transitions — NOT using .hidden because it has !important display:none */
+        #screen-fade {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #screen-fade.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ========================================= */
+        /* SAVE / LOAD STYLES                       */
+        /* ========================================= */
+        #saves-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 260;
+        }
+        .saves-modal-box {
+            background: linear-gradient(to bottom, rgba(40, 55, 35, 0.97), rgba(25, 35, 20, 0.97));
+            border: 3px solid #6a9a5a;
+            border-radius: 15px;
+            padding: 25px 30px;
+            color: #d4e8c4;
+            width: 520px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .saves-modal-box h2 {
+            color: #88cc88;
+            margin-bottom: 15px;
+            font-size: 24px;
+            text-align: center;
+        }
+        #saves-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        .save-slot {
+            background: rgba(30, 45, 25, 0.8);
+            border: 2px solid #4a7a3a;
+            border-radius: 8px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .save-slot:hover {
+            border-color: #88cc88;
+            background: rgba(40, 60, 35, 0.9);
+        }
+        .save-slot-info {
+            flex: 1;
+        }
+        .save-slot-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #b8e0a8;
+        }
+        .save-slot-details {
+            font-size: 13px;
+            color: #8aaa7a;
+            margin-top: 3px;
+        }
+        .save-slot-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: 10px;
+        }
+        .save-slot-actions button {
+            background: rgba(60, 80, 55, 0.8);
+            border: 1px solid #6a9a5a;
+            color: #c4d8b4;
+            padding: 4px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .save-slot-actions button:hover {
+            background: rgba(80, 110, 75, 0.9);
+        }
+        .save-slot-actions button.delete-btn {
+            border-color: #aa5555;
+            color: #dd8888;
+        }
+        .save-slot-actions button.delete-btn:hover {
+            background: rgba(120, 40, 40, 0.7);
+        }
+        .save-slot-actions button.export-btn {
+            border-color: #8888aa;
+            color: #aaaadd;
+        }
+        .save-slot-actions button.export-btn:hover {
+            background: rgba(60, 60, 100, 0.7);
+        }
+        .saves-modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .saves-empty {
+            text-align: center;
+            color: #7a9a6a;
+            font-style: italic;
+            padding: 20px;
+        }
+        #save-notification {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 80, 40, 0.9);
+            color: #88ff88;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            z-index: 300;
+            border: 2px solid #66cc66;
+            text-shadow: 1px 1px 2px black;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        #save-notification.hidden {
+            opacity: 0;
+        }
+        #save-notification.show {
+            opacity: 1;
+        }
+        #save-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            padding: 0 0 0 8px;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            vertical-align: middle;
+            pointer-events: auto;
+            filter: brightness(1.3);
+        }
+        #save-btn:hover, #skins-ingame-btn:hover {
+            transform: scale(1.3);
+            filter: brightness(1.8);
+        }
+        #skins-ingame-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            padding: 0 0 0 8px;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            vertical-align: middle;
+            pointer-events: auto;
+            filter: brightness(1.3);
+        }
+        /* ========================================= */
+        /* WORLD MAP                                */
+        /* ========================================= */
+        #world-map-container {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 250;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            pointer-events: auto;
+        }
+        #world-map-container.hidden {
+            display: none;
+        }
+        .world-map-svg {
+            width: min(90vw, 900px);
+            height: auto;
+            filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
+            border-radius: 12px;
+        }
+        .map-fog {
+            transition: opacity 0.4s;
+        }
+        /* ========================================= */
+        /* TESTING MODE STYLES                      */
+        /* ========================================= */
+        #start-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .game-btn.secondary {
+            background: linear-gradient(to bottom, #7a5c3a, #4d3a2d);
+        }
+        .game-btn.secondary:hover {
+            box-shadow: 0 0 20px rgba(200, 150, 100, 0.5);
+        }
+        #testing-indicator {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 100, 100, 0.85);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 100;
+            border: 2px solid #ff6666;
+            text-shadow: 1px 1px 2px black;
+        }
+        #testing-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            max-width: 90%;
+            background: linear-gradient(to bottom, rgba(60, 40, 20, 0.95), rgba(40, 25, 10, 0.95));
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 25px;
+            color: #f5deb3;
+            z-index: 180;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #testing-menu h2 {
+            color: #ffcc00;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .testing-section {
+            margin-bottom: 20px;
+        }
+        .testing-section h3 {
+            color: #e8a850;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #5a4a3a;
+        }
+        .testing-biome-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: 2px solid #6a9a6a;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .testing-biome-btn:hover {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            border-color: #88cc88;
+            transform: translateY(-2px);
+        }
+        .testing-footer {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #5a4a3a;
+        }
+        #testing-menu-content {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .testing-section-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .testing-section-header:hover {
+            color: #ffcc00;
+        }
+        .testing-section-header::before {
+            content: '▶ ';
+            font-size: 12px;
+        }
+        .testing-section-header.expanded::before {
+            content: '▼ ';
+        }
+        .testing-section-content {
+            display: none;
+            padding: 10px 0;
+        }
+        .testing-section-content.expanded {
+            display: block;
+        }
+        .testing-hint {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        .testing-status {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        .testing-btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .testing-action-btn {
+            flex: 1;
+            min-width: 80px;
+            background: linear-gradient(to bottom, #4a7c4a, #2d4d2d);
+            color: white;
+            border: 2px solid #6a9a6a;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .testing-action-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #5a9c5a, #3d6d3d);
+            border-color: #88cc88;
+        }
+        .testing-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .testing-action-btn.secondary {
+            background: linear-gradient(to bottom, #7a5c3a, #4d3a2d);
+            border-color: #9a7a5a;
+        }
+        .testing-action-btn.secondary:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #9a7c5a, #6d5a4d);
+        }
+        .spawn-category {
+            margin-bottom: 10px;
+        }
+        .spawn-category-header {
+            font-size: 14px;
+            color: #ccc;
+            cursor: pointer;
+            padding: 5px 0;
+            margin: 0;
+        }
+        .spawn-category-header:hover {
+            color: #ffcc00;
+        }
+        .spawn-category-header::before {
+            content: '+ ';
+            color: #88cc88;
+        }
+        .spawn-category-header.expanded::before {
+            content: '- ';
+        }
+        .spawn-category-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 0 8px 15px;
+        }
+        .spawn-category-content.hidden {
+            display: none;
+        }
+        .spawn-btn {
+            background: rgba(60, 50, 40, 0.8);
+            color: #ddd;
+            border: 1px solid #6a5a4a;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .spawn-btn:hover {
+            background: rgba(80, 70, 60, 0.9);
+            border-color: #8a7a6a;
+            color: #fff;
+        }
+        #become-indicator {
+            position: fixed;
+            top: 40px;
+            left: 10px;
+            background: rgba(100, 100, 255, 0.85);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            z-index: 100;
+            border: 2px solid #8888ff;
+            text-shadow: 1px 1px 2px black;
         }
     </style>
 </head>
 <body>
+    <div id="loading">Loading game...</div>
     <div id="game-container"></div>
 
-    <div id="start-screen">
-        <h1>Peccary Survival</h1>
+    <div id="start-screen" class="hidden">
+        <div class="start-hero-wrap">
+            <img src="img/peccary.png" alt="A peccary exploring the forest" class="start-hero-img">
+            <div class="start-overlay">
+                <div id="start-buttons">
+                    <button class="game-btn-img" id="new-game-btn"><img src="img/btn-new.png" alt="New Game"></button>
+                    <button class="game-btn-img" id="continue-btn" style="display:none;"><img src="img/btn-continue.png" alt="Continue"></button>
+                    <button class="game-btn-img" id="load-game-btn" style="display:none;"><img src="img/btn-load.png" alt="Load Game"></button>
+                    <!-- Skins button hidden until start screen gets proper image button asset
+                    <button class="game-btn" id="skins-btn">Skins</button>
+                    -->
+                </div>
+            </div>
+            <div class="bottom-overlay">
+                <h1>Peccary Survival</h1>
+            </div>
+        </div>
         <p class="subtitle">
-            You are a peccary trying to survive in an arboreal forest.
-            Collect berries, nuts, and mushrooms to increase your score while avoiding
-            dangerous badgers and weasels! Gather food to restore health and survive as long as possible.
+            Survive the wild as a brave peccary. Explore forests, savannahs, and snowy mountains.
+            Collect food, craft tools, and uncover ancient artifacts!
         </p>
-        <button class="game-btn" onclick="startGame()">Start Game</button>
+    </div>
+
+    <!-- Skins screen -->
+    <div id="skins-screen" class="hidden">
+        <div class="skins-layout">
+            <div id="skins-preview">
+                <canvas id="skins-preview-canvas"></canvas>
+            </div>
+            <div id="skins-list"></div>
+        </div>
+        <div id="skin-cheat-box" class="hidden">
+            <input type="text" id="skin-cheat-input" placeholder="Enter secret code..." autocomplete="off">
+            <button class="game-btn" id="skin-cheat-submit">Try</button>
+        </div>
+        <button class="game-btn secondary" id="skins-back-btn">Back</button>
+    </div>
+
+    <!-- Fade overlay for screen transitions (no .hidden — controlled by opacity) -->
+    <div id="screen-fade"></div>
+
+    <!-- Save/Load modal -->
+    <div id="saves-modal" class="hidden">
+        <div class="saves-modal-box">
+            <h2 id="saves-modal-title">Saved Games</h2>
+            <div id="saves-list"></div>
+            <div class="saves-modal-footer">
+                <button class="game-btn" id="saves-new-slot-btn" style="display:none;">Save to New Slot</button>
+                <button class="game-btn secondary" id="saves-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save notification toast -->
+    <div id="save-notification" class="hidden"></div>
+
+    <!-- World Map overlay -->
+    <div id="world-map-container" class="hidden"></div>
+
+    <!-- Testing mode indicator -->
+    <div id="testing-indicator" class="hidden">TESTING MODE</div>
+
+    <!-- Become animal indicator -->
+    <div id="become-indicator" class="hidden">CONTROLLING: <span id="become-animal-name">-</span></div>
+
+    <!-- Testing menu (T key) -->
+    <div id="testing-menu" class="hidden">
+        <h2>Testing Menu</h2>
+        <div id="testing-menu-content">
+            <!-- Teleport Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="teleport">Teleport to Biome</h3>
+                <div class="testing-section-content" id="section-teleport">
+                    <button class="testing-biome-btn" data-biome="arboreal">Arboreal Forest</button>
+                    <button class="testing-biome-btn" data-biome="savannah">New World Savannah</button>
+                    <button class="testing-biome-btn" data-biome="snowy_mountains">🏔️ Snowy Mountains</button>
+                    <button class="testing-biome-btn" data-biome="coastal">🏖️ Coastal</button>
+                </div>
+            </div>
+
+            <!-- Become Animal Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="become">Become Animal</h3>
+                <div class="testing-section-content" id="section-become">
+                    <p class="testing-hint">Click an animal in the world, then choose a mode:</p>
+                    <div class="testing-btn-row">
+                        <button class="testing-action-btn" id="become-control-btn" disabled>Control</button>
+                        <button class="testing-action-btn" id="become-spectate-btn" disabled>Spectate</button>
+                        <button class="testing-action-btn secondary" id="become-stop-btn" disabled>Stop</button>
+                    </div>
+                    <p id="become-status" class="testing-status">No animal selected</p>
+                </div>
+            </div>
+
+            <!-- Trigger Events Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="events">Trigger Events</h3>
+                <div class="testing-section-content" id="section-events">
+                    <button class="testing-action-btn" id="trigger-hunt-btn">Wild Dog Hunt</button>
+                    <button class="testing-action-btn" id="trigger-toad-mating-btn">Toad Mating</button>
+                    <button class="testing-action-btn" id="trigger-viper-mating-btn">Viper Mating</button>
+                    <button class="testing-action-btn" id="trigger-antelope-mating-btn">Antelope Mating</button>
+                    <button class="testing-action-btn" id="trigger-dog-mating-btn">Wild Dog Mating</button>
+                    <button class="testing-action-btn" id="trigger-gazella-mating-btn">Gazella Mating</button>
+                    <button class="testing-action-btn" id="trigger-cat-mating-btn">Dronglous Cat Mating</button>
+                    <button class="testing-action-btn" id="trigger-cat-hunt-btn">Dronglous Cat Hunt</button>
+                    <button class="testing-action-btn" id="spawn-test-cat-btn">Spawn Test Cat Nearby</button>
+                    <button class="testing-action-btn" id="trigger-snow-caninon-hunt-btn">Dog Hunt (Snow)</button>
+                    <button class="testing-action-btn" id="trigger-oxen-mating-btn">Oxen Mating</button>
+                    <button class="testing-action-btn" id="trigger-dog-hunt-oxen-btn">Dog Hunt Oxen</button>
+                    <button class="testing-action-btn" id="trigger-pregnancy-btn" disabled>Make Pregnant</button>
+                    <p id="pregnancy-status" class="testing-status">Select a female animal first</p>
+                </div>
+            </div>
+
+            <!-- Spawn Animals Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="spawn">Spawn Animals</h3>
+                <div class="testing-section-content" id="section-spawn">
+                    <!-- Arboreal Animals -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="arboreal-animals">Arboreal Forest</h4>
+                        <div class="spawn-category-content hidden" id="spawn-arboreal-animals">
+                            <button class="spawn-btn" data-spawn="badger">Badger</button>
+                            <button class="spawn-btn" data-spawn="weasel">Weasel</button>
+                            <button class="spawn-btn" data-spawn="fox">Fox</button>
+                            <button class="spawn-btn" data-spawn="goose_male">Goose (Male)</button>
+                            <button class="spawn-btn" data-spawn="goose_female">Goose (Female)</button>
+                            <button class="spawn-btn" data-spawn="goose_baby">Goose (Baby)</button>
+                        </div>
+                    </div>
+                    <!-- Savannah Animals -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="savannah-animals">New World Savannah</h4>
+                        <div class="spawn-category-content hidden" id="spawn-savannah-animals">
+                            <button class="spawn-btn" data-spawn="leopard_toad_male">Toad (Male)</button>
+                            <button class="spawn-btn" data-spawn="leopard_toad_female">Toad (Female)</button>
+                            <button class="spawn-btn" data-spawn="leopard_toad_baby">Toad (Baby)</button>
+                            <button class="spawn-btn" data-spawn="grass_viper_male">Viper (Male)</button>
+                            <button class="spawn-btn" data-spawn="grass_viper_female">Viper (Female)</button>
+                            <button class="spawn-btn" data-spawn="grass_viper_baby">Viper (Baby)</button>
+                            <button class="spawn-btn" data-spawn="antelope_male">Antelope (Male)</button>
+                            <button class="spawn-btn" data-spawn="antelope_female">Antelope (Female)</button>
+                            <button class="spawn-btn" data-spawn="antelope_leader">Antelope (Leader)</button>
+                            <button class="spawn-btn" data-spawn="antelope_baby">Antelope (Baby)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_male">Wild Dog (Male)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_female">Wild Dog (Female)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_alpha">Wild Dog (Alpha)</button>
+                            <button class="spawn-btn" data-spawn="wild_dog_pup">Wild Dog (Pup)</button>
+                            <button class="spawn-btn" data-spawn="saltas_gazella_male">Gazella (Male)</button>
+                            <button class="spawn-btn" data-spawn="saltas_gazella_female">Gazella (Female)</button>
+                            <button class="spawn-btn" data-spawn="saltas_gazella_baby">Gazella (Baby)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_male">Dronglous Cat (Male)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_female">Dronglous Cat (Female)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_baby_male">Dronglous Cat Baby (M)</button>
+                            <button class="spawn-btn" data-spawn="dronglous_cat_baby_female">Dronglous Cat Baby (F)</button>
+                        </div>
+                    </div>
+                    <!-- Snowy Mountains Animals -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="snowy-animals">Snowy Mountains</h4>
+                        <div class="spawn-category-content hidden" id="spawn-snowy-animals">
+                            <button class="spawn-btn" data-spawn="deericus_iricus_male">Deer (Male)</button>
+                            <button class="spawn-btn" data-spawn="deericus_iricus_female">Deer (Female)</button>
+                            <button class="spawn-btn" data-spawn="deericus_iricus_baby">Deer (Baby)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_male">Drongulinat Cat (Male)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_female">Drongulinat Cat (Female)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_baby_male">Drongulinat Cat Baby (M)</button>
+                            <button class="spawn-btn" data-spawn="drongulinat_cat_baby_female">Drongulinat Cat Baby (F)</button>
+                            <button class="spawn-btn" data-spawn="snow_caninon_male">Snow Caninon (Male)</button>
+                            <button class="spawn-btn" data-spawn="snow_caninon_female">Snow Caninon (Female)</button>
+                            <button class="spawn-btn" data-spawn="snow_caninon_leader">Snow Caninon (Leader)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_male">Oxen (Male)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_female">Oxen (Female)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_leader">Oxen (Leader)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_baby_male">Oxen Calf (M)</button>
+                            <button class="spawn-btn" data-spawn="baluban_oxen_baby_female">Oxen Calf (F)</button>
+                        </div>
+                    </div>
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="coastal-animals">Coastal</h4>
+                        <div class="spawn-category-content hidden" id="spawn-coastal-animals">
+                            <button class="spawn-btn" data-spawn="uronin_seal_male">Seal (Male)</button>
+                            <button class="spawn-btn" data-spawn="uronin_seal_female">Seal (Female)</button>
+                            <button class="spawn-btn" data-spawn="uronin_seal_baby_male">Seal Pup (M)</button>
+                            <button class="spawn-btn" data-spawn="uronin_seal_baby_female">Seal Pup (F)</button>
+                            <button class="testing-action-btn" id="trigger-seal-mating-btn">Seal Mating</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_male">Bakka Seal (M)</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_female">Bakka Seal (F)</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_baby_male">Bakka Pup (M)</button>
+                            <button class="spawn-btn" data-spawn="bakka_seal_baby_female">Bakka Pup (F)</button>
+                            <button class="testing-action-btn" id="trigger-bakka-seal-mating-btn">Bakka Seal Mating</button>
+                            <button class="spawn-btn" data-spawn="slitted_sardine_male">Sardine (M)</button>
+                            <button class="spawn-btn" data-spawn="slitted_sardine_female">Sardine (F)</button>
+                            <button class="spawn-btn" data-spawn="orcleton_male">Orcleton (M)</button>
+                            <button class="spawn-btn" data-spawn="orcleton_female">Orcleton (F)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="testing-footer">Press T to close</div>
     </div>
 
     <div id="game-over-screen" class="hidden">
         <h1>Game Over!</h1>
         <div id="final-score">Score: 0</div>
         <p class="subtitle">The predators caught you!</p>
-        <button class="game-btn" onclick="restartGame()">Play Again</button>
+        <button class="game-btn" id="restart-btn">Play Again</button>
     </div>
 
-    <div id="ui-overlay">
+    <div id="thirst-panel" class="hidden">
+        <div class="stat-label">💧 Thirst</div>
+        <div id="thirst-bar-container">
+            <div id="thirst-bar"></div>
+        </div>
+    </div>
+
+    <div id="hunger-panel" class="hidden">
+        <div class="stat-label">🍖 Hunger</div>
+        <div id="hunger-bar-container">
+            <div id="hunger-bar"></div>
+        </div>
+    </div>
+
+    <div id="oxygen-panel" class="hidden">
+        <div class="stat-label">🫧 Oxygen</div>
+        <div id="oxygen-bar-container">
+            <div id="oxygen-bar"></div>
+        </div>
+    </div>
+
+    <div id="ui-overlay" class="hidden">
         <div id="stats-panel">
             <div class="stat-box">
                 <div class="stat-label">Health</div>
@@ -210,993 +2210,220 @@
                     <div id="health-bar"></div>
                 </div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">Score</div>
-                <div class="stat-value" id="score-display">0</div>
+            <div class="stat-box player-box">
+                <div class="stat-label" id="level-display">Newborn Peccary</div>
+                <div class="player-score-row">
+                    <div class="stat-value" id="score-display">0</div>
+                    <div class="player-progress-col">
+                        <div id="progress-bar-container">
+                            <div id="progress-bar"></div>
+                        </div>
+                        <div id="progress-text">Next: Piglet Explorer (25)</div>
+                    </div>
+                </div>
             </div>
-            <div class="stat-box">
+            <div class="stat-box resource-bar-wrapper">
                 <div class="stat-label">Resources</div>
-                <div id="resource-icons">
-                    <div class="resource-icon"><span>🫐</span><span id="berries-count">0</span></div>
-                    <div class="resource-icon"><span>🥜</span><span id="nuts-count">0</span></div>
-                    <div class="resource-icon"><span>🍄</span><span id="mushrooms-count">0</span></div>
+                <div id="resource-bar-collapsed">
+                    <!-- JS fills up to 6 slots dynamically -->
+                </div>
+                <div id="resource-bar-expanded">
+                    <!-- JS fills ALL non-zero resources here, shown on hover -->
                 </div>
             </div>
             <div class="stat-box">
+                <div class="stat-label">Pig Coins</div>
+                <div class="stat-value" id="coins-display">🪙 0</div>
+            </div>
+            <div class="stat-box">
                 <div class="stat-label">Time Survived</div>
-                <div class="stat-value" id="time-display">0:00</div>
+                <div class="stat-value"><span id="time-display">0:00</span> <button id="save-btn" title="Save Game">💾</button> <button id="skins-ingame-btn" title="Change Skin">🎨</button></div>
             </div>
         </div>
     </div>
 
-    <div id="controls-info">
+    <div id="controls-info" class="hidden">
         <h3>Controls</h3>
         <p>WASD / Arrow Keys - Move</p>
         <p>SHIFT - Sprint</p>
         <p>SPACE - Jump</p>
-        <p>Collect resources to heal!</p>
+        <p>1/2/3/4/5 - Use Berry/Nut/Mushroom/Seaweed/Egg</p>
+        <p>E - Talk to villagers</p>
+        <p>TAB - Open Craft Menu</p>
+        <p>I - Inventory & Bestiary</p>
     </div>
 
-    <div id="minimap">
+    <div id="minimap" class="hidden">
+        <div id="biome-label" style="text-align: center; color: #88cc88; font-size: 12px; font-weight: bold; padding: 5px; text-shadow: 1px 1px 2px black;">Arboreal Biome</div>
         <canvas id="minimap-canvas"></canvas>
     </div>
 
     <div id="warning-text">DANGER!</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Biome transition message -->
+    <div id="biome-transition" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; color: #ffcc00; text-shadow: 3px 3px 6px #000; font-weight: bold; z-index: 1000; pointer-events: none; background: rgba(0,0,0,0.7); padding: 30px 50px; border-radius: 15px; border: 3px solid #ffcc00;">
+        <span id="biome-transition-text">Entering New World Savannah</span>
+    </div>
+
+    <!-- Goose chase warning -->
+    <div id="goose-chase-warning" style="display: none; position: fixed; top: 20%; left: 50%; transform: translateX(-50%); font-size: 24px; color: #ffaa00; text-shadow: 2px 2px 4px #000; font-weight: bold; z-index: 1000; pointer-events: none;">
+        ANGRY GOOSE CHASING YOU! GET TO THE VILLAGE!
+    </div>
+
+    <!-- Unlock notification -->
+    <div id="unlock-notification" class="hidden">
+        <div id="unlock-title">NEW LEVEL!</div>
+        <div id="unlock-text"></div>
+    </div>
+
+    <!-- Interaction prompt -->
+    <div id="interact-prompt" class="hidden">Press E to talk</div>
+
+    <!-- Hotbar (Minecraft-style item slots) -->
+    <div id="hotbar">
+        <div class="hotbar-slot selected" data-slot="0"><span class="hotbar-key">,</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="1"><span class="hotbar-key">.</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="2"><span class="hotbar-key">/</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="3"><span class="hotbar-key">;</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="4"><span class="hotbar-key">'</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="5"><span class="hotbar-key">[</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="6"><span class="hotbar-key">]</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="7"><span class="hotbar-key">-</span><span class="hotbar-icon"></span></div>
+        <div class="hotbar-slot" data-slot="8"><span class="hotbar-key">=</span><span class="hotbar-icon"></span></div>
+    </div>
+
+    <!-- Dialog box for villager conversations -->
+    <div id="dialog-box" class="hidden">
+        <div id="dialog-name"></div>
+        <div id="dialog-text"></div>
+        <div id="dialog-options"></div>
+        <div id="dialog-hint">Press E to continue / ESC to close</div>
+    </div>
+
+    <!-- Crafting menu -->
+    <div id="craft-menu" class="hidden">
+        <div id="craft-header">
+            <h2>Crafting Menu</h2>
+            <p class="craft-subtitle">Combine resources to create useful items</p>
+        </div>
+        <div id="craft-recipes"></div>
+        <div id="craft-footer">Press TAB to close</div>
+    </div>
+
+    <!-- Inventory & Bestiary Screen -->
+    <div id="inventory-screen" class="hidden">
+        <div id="inventory-tabs">
+            <button class="inventory-tab active" data-tab="inventory">Inventory</button>
+            <button class="inventory-tab" data-tab="artifacts">Artifacts</button>
+            <button class="inventory-tab" data-tab="bestiary">Bestiary</button>
+            <button class="inventory-tab" data-tab="quest">Quest</button>
+        </div>
+        <div id="inventory-content">
+            <!-- Inventory Panel -->
+            <div id="inventory-panel" class="inventory-panel active">
+                <div id="inventory-grid"></div>
+                <p id="inventory-empty" class="inventory-empty-msg">Your inventory is empty. Press TAB to craft items!</p>
+            </div>
+            <!-- Artifacts Panel -->
+            <div id="artifacts-panel" class="inventory-panel">
+                <div class="artifacts-header">
+                    <p class="artifacts-subtitle">Mysterious items found throughout the world. Give them to Ningle at the Research Hut!</p>
+                    <p class="artifacts-count">Slots: <span id="artifact-slot-count">0</span> / 8</p>
+                </div>
+                <div id="artifacts-grid"></div>
+                <p id="artifacts-empty" class="inventory-empty-msg">No artifacts found yet. Explore the world to discover mysterious items!</p>
+            </div>
+            <!-- Bestiary Panel -->
+            <div id="bestiary-panel" class="inventory-panel">
+                <div id="bestiary-grid"></div>
+            </div>
+            <!-- Bestiary Detail View -->
+            <div id="bestiary-detail">
+                <div id="bestiary-detail-left">
+                    <div id="bestiary-model-viewer"></div>
+                    <div id="bestiary-variant-btns"></div>
+                    <div id="bestiary-anim-btns"></div>
+                </div>
+                <div id="bestiary-detail-right">
+                    <div id="bestiary-detail-header">
+                        <span id="bestiary-detail-name">Animal Name</span>
+                        <button id="bestiary-back-btn">Back</button>
+                    </div>
+                    <div id="bestiary-detail-info"></div>
+                </div>
+            </div>
+            <!-- Quest Panel -->
+            <div id="quest-panel" class="inventory-panel">
+                <div id="quest-log"></div>
+            </div>
+        </div>
+        <div id="inventory-footer">Press I to close</div>
+    </div>
+
+    <!-- Shop menu -->
+    <div id="shop-menu" class="hidden">
+        <div id="shop-header">
+            <h2>Patches' Trading Post</h2>
+            <p class="shop-subtitle">Buy and sell resources for pig coins 🪙</p>
+            <div class="shop-balance">Your coins: <span id="shop-coins-display">0</span> 🪙</div>
+        </div>
+        <div id="shop-tabs">
+            <button class="shop-tab active" data-tab="buy">Buy Items</button>
+            <button class="shop-tab" data-tab="sell">Sell Resources</button>
+        </div>
+        <div id="shop-content">
+            <div id="shop-buy" class="shop-panel active"></div>
+            <div id="shop-sell" class="shop-panel"></div>
+        </div>
+        <div id="shop-footer">Press ESC to close</div>
+    </div>
+
+    <!-- Three.js Library -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+    <!-- ================================================================== -->
+    <!-- DATA FILES - Pure data, no logic (load first!) -->
+    <!-- ================================================================== -->
+    <!-- These files contain settings, villagers, recipes, etc. -->
+    <!-- Edit these to customize the game without touching logic! -->
+    <script src="js/data/settings.js"></script>
+    <script src="js/data/enemies.js"></script>
+    <script src="js/data/villagers.js"></script>
+    <script src="js/data/recipes.js"></script>
+    <script src="js/data/shop-items.js"></script>
+    <script src="js/data/biomes.js"></script>
+    <script src="js/data/bestiary.js"></script>
+    <script src="js/data/artifacts.js"></script>
+    <script src="js/data/progression.js"></script>
+    <script src="js/data/tools.js"></script>
+    <script src="js/data/skins.js"></script>
+
+    <!-- ================================================================== -->
+    <!-- LOGIC FILES - Game behavior (load after data!) -->
+    <!-- ================================================================== -->
+    <!-- These files contain the game logic that uses the data above -->
+    <script src="js/config.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/environment.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/items.js"></script>
+    <script src="js/dialogs.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/research-hut.js"></script>
+    <script src="js/map.js"></script>
+
+    <!-- Initialize Game -->
     <script>
-        // Game state
-        let scene, camera, renderer, clock;
-        let peccary, enemies = [], resources = [], trees = [];
-        let gameRunning = false;
-        let health = 100;
-        let score = 0;
-        let resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
-        let timeElapsed = 0;
-        let keys = {};
-        let velocity = new THREE.Vector3();
-        let isJumping = false;
-        let groundLevel = 0;
-
-        // Game settings
-        const WORLD_SIZE = 200;
-        const ENEMY_SPAWN_RATE = 5000;
-        const RESOURCE_SPAWN_RATE = 3000;
-        const MAX_ENEMIES = 8;
-        const MAX_RESOURCES = 20;
-
-        // Minimap
-        let minimapCanvas, minimapCtx;
-
-        function init() {
-            // Scene setup
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 10, 15);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.getElementById('game-container').appendChild(renderer.domElement);
-
-            // Clock
-            clock = new THREE.Clock();
-
-            // Lighting
-            setupLighting();
-
-            // Ground
-            createGround();
-
-            // Forest
-            createForest();
-
-            // Player
-            createPeccary();
-
-            // Minimap
-            setupMinimap();
-
-            // Event listeners
-            window.addEventListener('resize', onWindowResize);
-            window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
-            window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
-
-            // Start render loop
-            animate();
+        // Start the game when page is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', Game.init);
+        } else {
+            Game.init();
         }
-
-        function setupLighting() {
-            // Ambient light
-            const ambient = new THREE.AmbientLight(0x404040, 0.6);
-            scene.add(ambient);
-
-            // Directional light (sun)
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(50, 100, 50);
-            sun.castShadow = true;
-            sun.shadow.mapSize.width = 2048;
-            sun.shadow.mapSize.height = 2048;
-            sun.shadow.camera.near = 0.5;
-            sun.shadow.camera.far = 500;
-            sun.shadow.camera.left = -100;
-            sun.shadow.camera.right = 100;
-            sun.shadow.camera.top = 100;
-            sun.shadow.camera.bottom = -100;
-            scene.add(sun);
-
-            // Hemisphere light for natural outdoor feel
-            const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3d5c3d, 0.4);
-            scene.add(hemi);
-        }
-
-        function createGround() {
-            // Main ground
-            const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2, 50, 50);
-
-            // Add some height variation
-            const vertices = groundGeo.attributes.position.array;
-            for (let i = 0; i < vertices.length; i += 3) {
-                vertices[i + 2] += Math.random() * 0.5;
-            }
-            groundGeo.computeVertexNormals();
-
-            const groundMat = new THREE.MeshStandardMaterial({
-                color: 0x3d6b3d,
-                roughness: 1,
-                metalness: 0
-            });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            scene.add(ground);
-
-            // Add some grass patches
-            for (let i = 0; i < 500; i++) {
-                const grass = createGrassPatch();
-                grass.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                    0.1,
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
-                );
-                scene.add(grass);
-            }
-        }
-
-        function createGrassPatch() {
-            const group = new THREE.Group();
-            const grassMat = new THREE.MeshStandardMaterial({
-                color: 0x228b22,
-                side: THREE.DoubleSide
-            });
-
-            for (let i = 0; i < 5; i++) {
-                const blade = new THREE.Mesh(
-                    new THREE.PlaneGeometry(0.1, 0.5 + Math.random() * 0.5),
-                    grassMat
-                );
-                blade.position.set(
-                    (Math.random() - 0.5) * 0.5,
-                    0.25,
-                    (Math.random() - 0.5) * 0.5
-                );
-                blade.rotation.y = Math.random() * Math.PI;
-                group.add(blade);
-            }
-            return group;
-        }
-
-        function createTree(x, z) {
-            const tree = new THREE.Group();
-
-            // Trunk
-            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 8 + Math.random() * 4, 8);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 4;
-            trunk.castShadow = true;
-            tree.add(trunk);
-
-            // Foliage layers
-            const foliageColors = [0x228b22, 0x2e8b2e, 0x1e7b1e];
-            for (let i = 0; i < 3; i++) {
-                const foliageGeo = new THREE.ConeGeometry(4 - i * 0.8, 5, 8);
-                const foliageMat = new THREE.MeshStandardMaterial({
-                    color: foliageColors[i % foliageColors.length]
-                });
-                const foliage = new THREE.Mesh(foliageGeo, foliageMat);
-                foliage.position.y = 8 + i * 2.5;
-                foliage.castShadow = true;
-                tree.add(foliage);
-            }
-
-            tree.position.set(x, 0, z);
-            tree.userData.radius = 1.5;
-            return tree;
-        }
-
-        function createForest() {
-            // Create trees avoiding the center spawn area
-            for (let i = 0; i < 150; i++) {
-                let x, z;
-                do {
-                    x = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
-                    z = (Math.random() - 0.5) * WORLD_SIZE * 1.5;
-                } while (Math.sqrt(x * x + z * z) < 15);
-
-                const tree = createTree(x, z);
-                trees.push(tree);
-                scene.add(tree);
-            }
-
-            // Add some rocks
-            for (let i = 0; i < 50; i++) {
-                const rock = createRock();
-                rock.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                    0,
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
-                );
-                scene.add(rock);
-            }
-
-            // Add fallen logs
-            for (let i = 0; i < 20; i++) {
-                const log = createLog();
-                log.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE,
-                    0.3,
-                    (Math.random() - 0.5) * WORLD_SIZE
-                );
-                log.rotation.y = Math.random() * Math.PI;
-                scene.add(log);
-            }
-        }
-
-        function createRock() {
-            const rockGeo = new THREE.DodecahedronGeometry(1 + Math.random() * 1.5, 1);
-            const rockMat = new THREE.MeshStandardMaterial({
-                color: 0x666666,
-                roughness: 0.9
-            });
-            const rock = new THREE.Mesh(rockGeo, rockMat);
-            rock.scale.y = 0.5;
-            rock.castShadow = true;
-            rock.receiveShadow = true;
-            return rock;
-        }
-
-        function createLog() {
-            const log = new THREE.Group();
-            const logGeo = new THREE.CylinderGeometry(0.4, 0.4, 5, 8);
-            const logMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
-            const logMesh = new THREE.Mesh(logGeo, logMat);
-            logMesh.rotation.z = Math.PI / 2;
-            logMesh.castShadow = true;
-            log.add(logMesh);
-            return log;
-        }
-
-        function createPeccary() {
-            peccary = new THREE.Group();
-
-            // Body
-            const bodyGeo = new THREE.CapsuleGeometry(0.6, 1.2, 8, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.rotation.z = Math.PI / 2;
-            body.position.y = 0.8;
-            body.castShadow = true;
-            peccary.add(body);
-
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-            const head = new THREE.Mesh(headGeo, bodyMat);
-            head.position.set(1, 0.9, 0);
-            head.scale.set(1.2, 1, 0.9);
-            head.castShadow = true;
-            peccary.add(head);
-
-            // Snout
-            const snoutGeo = new THREE.CylinderGeometry(0.15, 0.2, 0.4, 8);
-            const snoutMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
-            const snout = new THREE.Mesh(snoutGeo, snoutMat);
-            snout.rotation.z = Math.PI / 2;
-            snout.position.set(1.5, 0.8, 0);
-            peccary.add(snout);
-
-            // Nose
-            const noseMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
-            const nose = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), noseMat);
-            nose.position.set(1.7, 0.8, 0);
-            peccary.add(nose);
-
-            // Eyes
-            const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-            const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            [-0.15, 0.15].forEach(z => {
-                const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), eyeWhiteMat);
-                eyeWhite.position.set(1.25, 1.05, z);
-                peccary.add(eyeWhite);
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
-                eye.position.set(1.3, 1.05, z);
-                peccary.add(eye);
-            });
-
-            // Ears
-            const earMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
-            [-0.25, 0.25].forEach(z => {
-                const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.25, 8), earMat);
-                ear.position.set(0.9, 1.3, z);
-                ear.rotation.x = z > 0 ? 0.3 : -0.3;
-                peccary.add(ear);
-            });
-
-            // Legs
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a });
-            const legPositions = [
-                [0.5, 0.3, 0.3], [0.5, 0.3, -0.3],
-                [-0.5, 0.3, 0.3], [-0.5, 0.3, -0.3]
-            ];
-            legPositions.forEach(pos => {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8), legMat);
-                leg.position.set(...pos);
-                leg.castShadow = true;
-                peccary.add(leg);
-
-                // Hoof
-                const hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.1, 8),
-                    new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-                hoof.position.set(pos[0], 0.05, pos[2]);
-                peccary.add(hoof);
-            });
-
-            // Tail (small)
-            const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bodyMat);
-            tail.position.set(-1, 0.9, 0);
-            peccary.add(tail);
-
-            // White collar marking
-            const collarGeo = new THREE.TorusGeometry(0.5, 0.08, 8, 16, Math.PI);
-            const collarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-            const collar = new THREE.Mesh(collarGeo, collarMat);
-            collar.rotation.y = Math.PI / 2;
-            collar.rotation.x = Math.PI / 2;
-            collar.position.set(0.6, 0.9, 0);
-            peccary.add(collar);
-
-            peccary.position.set(0, 0, 0);
-            peccary.userData.radius = 1;
-            scene.add(peccary);
-        }
-
-        function createBadger(x, z) {
-            const badger = new THREE.Group();
-
-            // Body
-            const bodyGeo = new THREE.CapsuleGeometry(0.4, 1, 8, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2f2f2f });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.rotation.z = Math.PI / 2;
-            body.position.y = 0.5;
-            body.castShadow = true;
-            badger.add(body);
-
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
-            const head = new THREE.Mesh(headGeo, bodyMat);
-            head.position.set(0.8, 0.55, 0);
-            head.scale.set(1.1, 0.9, 0.9);
-            badger.add(head);
-
-            // White stripes on face
-            const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            [-0.12, 0.12].forEach(z => {
-                const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.1), stripeMat);
-                stripe.position.set(0.9, 0.6, z);
-                badger.add(stripe);
-            });
-
-            // Black stripe in middle
-            const blackStripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.08), bodyMat);
-            blackStripe.position.set(0.9, 0.65, 0);
-            badger.add(blackStripe);
-
-            // Snout
-            const snout = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8),
-                new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-            snout.position.set(1.1, 0.45, 0);
-            snout.scale.set(1.2, 0.8, 0.9);
-            badger.add(snout);
-
-            // Eyes (red for menacing look)
-            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0x330000 });
-            [-0.12, 0.12].forEach(z => {
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
-                eye.position.set(1, 0.6, z);
-                badger.add(eye);
-            });
-
-            // Legs (short and stubby)
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
-            [[0.4, 0.2, 0.25], [0.4, 0.2, -0.25], [-0.4, 0.2, 0.25], [-0.4, 0.2, -0.25]].forEach(pos => {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 8), legMat);
-                leg.position.set(...pos);
-                badger.add(leg);
-            });
-
-            badger.position.set(x, 0, z);
-            badger.userData = {
-                type: 'badger',
-                speed: 3 + Math.random() * 1,
-                radius: 0.8,
-                damage: 15
-            };
-
-            return badger;
-        }
-
-        function createWeasel(x, z) {
-            const weasel = new THREE.Group();
-
-            // Long body
-            const bodyGeo = new THREE.CapsuleGeometry(0.2, 1.2, 8, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.rotation.z = Math.PI / 2;
-            body.position.y = 0.35;
-            body.castShadow = true;
-            weasel.add(body);
-
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.2, 16, 16);
-            const head = new THREE.Mesh(headGeo, bodyMat);
-            head.position.set(0.9, 0.35, 0);
-            head.scale.set(1.2, 1, 0.9);
-            weasel.add(head);
-
-            // Snout
-            const snoutMat = new THREE.MeshStandardMaterial({ color: 0xd2691e });
-            const snout = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), snoutMat);
-            snout.position.set(1.1, 0.3, 0);
-            weasel.add(snout);
-
-            // Nose
-            const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
-                new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-            nose.position.set(1.18, 0.3, 0);
-            weasel.add(nose);
-
-            // Eyes (yellow, predatory)
-            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x333300 });
-            [-0.08, 0.08].forEach(z => {
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
-                eye.position.set(1, 0.42, z);
-                weasel.add(eye);
-            });
-
-            // Ears
-            const earMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-            [-0.1, 0.1].forEach(z => {
-                const ear = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), earMat);
-                ear.position.set(0.8, 0.5, z);
-                weasel.add(ear);
-            });
-
-            // Short legs
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x6b3310 });
-            [[0.4, 0.15, 0.15], [0.4, 0.15, -0.15], [-0.4, 0.15, 0.15], [-0.4, 0.15, -0.15]].forEach(pos => {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8), legMat);
-                leg.position.set(...pos);
-                weasel.add(leg);
-            });
-
-            // Long tail
-            const tailGeo = new THREE.CylinderGeometry(0.05, 0.03, 0.8, 8);
-            const tail = new THREE.Mesh(tailGeo, bodyMat);
-            tail.rotation.z = Math.PI / 2 + 0.3;
-            tail.position.set(-1, 0.4, 0);
-            weasel.add(tail);
-
-            weasel.position.set(x, 0, z);
-            weasel.userData = {
-                type: 'weasel',
-                speed: 4.5 + Math.random() * 1.5,
-                radius: 0.6,
-                damage: 10
-            };
-
-            return weasel;
-        }
-
-        function createResource(type) {
-            const resource = new THREE.Group();
-            let color, geometry, value, healAmount;
-
-            switch(type) {
-                case 'berry':
-                    color = 0x4169e1;
-                    healAmount = 5;
-                    value = 10;
-                    // Cluster of berries
-                    for (let i = 0; i < 5; i++) {
-                        const berry = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.15, 8, 8),
-                            new THREE.MeshStandardMaterial({ color: color })
-                        );
-                        berry.position.set(
-                            (Math.random() - 0.5) * 0.3,
-                            0.2 + Math.random() * 0.2,
-                            (Math.random() - 0.5) * 0.3
-                        );
-                        resource.add(berry);
-                    }
-                    // Leaves
-                    const leafMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), leafMat);
-                    leaf.scale.set(1, 0.3, 1);
-                    leaf.position.y = 0.5;
-                    resource.add(leaf);
-                    break;
-
-                case 'nut':
-                    color = 0x8b4513;
-                    healAmount = 8;
-                    value = 15;
-                    // Acorn-like nut
-                    const nutBody = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.2, 8, 8),
-                        new THREE.MeshStandardMaterial({ color: color })
-                    );
-                    nutBody.position.y = 0.2;
-                    nutBody.scale.y = 1.3;
-                    resource.add(nutBody);
-                    // Cap
-                    const cap = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.18, 8, 8),
-                        new THREE.MeshStandardMaterial({ color: 0x5c3317 })
-                    );
-                    cap.position.y = 0.35;
-                    cap.scale.y = 0.4;
-                    resource.add(cap);
-                    // Stem
-                    const stem = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.03, 0.03, 0.1, 8),
-                        new THREE.MeshStandardMaterial({ color: 0x3d2314 })
-                    );
-                    stem.position.y = 0.45;
-                    resource.add(stem);
-                    break;
-
-                case 'mushroom':
-                    color = 0xff6347;
-                    healAmount = 12;
-                    value = 20;
-                    // Stem
-                    const mushroomStem = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.1, 0.12, 0.3, 8),
-                        new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
-                    );
-                    mushroomStem.position.y = 0.15;
-                    resource.add(mushroomStem);
-                    // Cap
-                    const mushroomCap = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.25, 16, 16),
-                        new THREE.MeshStandardMaterial({ color: color })
-                    );
-                    mushroomCap.scale.y = 0.5;
-                    mushroomCap.position.y = 0.35;
-                    resource.add(mushroomCap);
-                    // Spots
-                    const spotMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-                    for (let i = 0; i < 5; i++) {
-                        const spot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), spotMat);
-                        const angle = (i / 5) * Math.PI * 2;
-                        spot.position.set(
-                            Math.cos(angle) * 0.15,
-                            0.4,
-                            Math.sin(angle) * 0.15
-                        );
-                        resource.add(spot);
-                    }
-                    break;
-            }
-
-            resource.userData = {
-                type: type,
-                value: value,
-                healAmount: healAmount,
-                radius: 0.5,
-                bobOffset: Math.random() * Math.PI * 2
-            };
-
-            // Position randomly in world
-            let x, z;
-            do {
-                x = (Math.random() - 0.5) * WORLD_SIZE;
-                z = (Math.random() - 0.5) * WORLD_SIZE;
-            } while (Math.sqrt(x * x + z * z) < 10);
-
-            resource.position.set(x, 0, z);
-
-            return resource;
-        }
-
-        function setupMinimap() {
-            minimapCanvas = document.getElementById('minimap-canvas');
-            minimapCanvas.width = 150;
-            minimapCanvas.height = 150;
-            minimapCtx = minimapCanvas.getContext('2d');
-        }
-
-        function updateMinimap() {
-            const ctx = minimapCtx;
-            const size = 150;
-            const scale = size / WORLD_SIZE;
-
-            // Clear
-            ctx.fillStyle = '#1a3d1a';
-            ctx.fillRect(0, 0, size, size);
-
-            // Draw trees as small dots
-            ctx.fillStyle = '#0a2a0a';
-            trees.forEach(tree => {
-                const x = (tree.position.x + WORLD_SIZE / 2) * scale;
-                const y = (tree.position.z + WORLD_SIZE / 2) * scale;
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw resources
-            resources.forEach(res => {
-                let color;
-                switch(res.userData.type) {
-                    case 'berry': color = '#4169e1'; break;
-                    case 'nut': color = '#8b4513'; break;
-                    case 'mushroom': color = '#ff6347'; break;
-                }
-                ctx.fillStyle = color;
-                const x = (res.position.x + WORLD_SIZE / 2) * scale;
-                const y = (res.position.z + WORLD_SIZE / 2) * scale;
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw enemies
-            enemies.forEach(enemy => {
-                ctx.fillStyle = enemy.userData.type === 'badger' ? '#ff4444' : '#ff8800';
-                const x = (enemy.position.x + WORLD_SIZE / 2) * scale;
-                const y = (enemy.position.z + WORLD_SIZE / 2) * scale;
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw player
-            ctx.fillStyle = '#44ff44';
-            const px = (peccary.position.x + WORLD_SIZE / 2) * scale;
-            const py = (peccary.position.z + WORLD_SIZE / 2) * scale;
-            ctx.beginPath();
-            ctx.arc(px, py, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Player direction indicator
-            ctx.strokeStyle = '#88ff88';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(
-                px + Math.sin(peccary.rotation.y) * 10,
-                py + Math.cos(peccary.rotation.y) * 10
-            );
-            ctx.stroke();
-        }
-
-        function spawnEnemy() {
-            if (enemies.length >= MAX_ENEMIES) return;
-
-            // Spawn at edge of world
-            const angle = Math.random() * Math.PI * 2;
-            const distance = WORLD_SIZE * 0.4 + Math.random() * 20;
-            const x = Math.cos(angle) * distance;
-            const z = Math.sin(angle) * distance;
-
-            const enemy = Math.random() > 0.5 ? createBadger(x, z) : createWeasel(x, z);
-            enemies.push(enemy);
-            scene.add(enemy);
-        }
-
-        function spawnResource() {
-            if (resources.length >= MAX_RESOURCES) return;
-
-            const types = ['berry', 'nut', 'mushroom'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            const resource = createResource(type);
-            resources.push(resource);
-            scene.add(resource);
-        }
-
-        function updatePlayer(delta) {
-            const moveSpeed = keys['shift'] ? 12 : 6;
-            const direction = new THREE.Vector3();
-
-            if (keys['w'] || keys['arrowup']) direction.z -= 1;
-            if (keys['s'] || keys['arrowdown']) direction.z += 1;
-            if (keys['a'] || keys['arrowleft']) direction.x -= 1;
-            if (keys['d'] || keys['arrowright']) direction.x += 1;
-
-            if (direction.length() > 0) {
-                direction.normalize();
-
-                // Move peccary
-                peccary.position.x += direction.x * moveSpeed * delta;
-                peccary.position.z += direction.z * moveSpeed * delta;
-
-                // Rotate to face movement direction
-                const targetRotation = Math.atan2(direction.x, direction.z);
-                peccary.rotation.y = THREE.MathUtils.lerp(
-                    peccary.rotation.y,
-                    targetRotation,
-                    0.15
-                );
-
-                // Bobbing animation
-                peccary.position.y = Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.1;
-            }
-
-            // Jump
-            if ((keys[' '] || keys['space']) && !isJumping) {
-                velocity.y = 8;
-                isJumping = true;
-            }
-
-            // Apply gravity
-            if (isJumping) {
-                velocity.y -= 20 * delta;
-                peccary.position.y += velocity.y * delta;
-
-                if (peccary.position.y <= groundLevel) {
-                    peccary.position.y = groundLevel;
-                    isJumping = false;
-                    velocity.y = 0;
-                }
-            }
-
-            // World bounds
-            const bound = WORLD_SIZE * 0.7;
-            peccary.position.x = Math.max(-bound, Math.min(bound, peccary.position.x));
-            peccary.position.z = Math.max(-bound, Math.min(bound, peccary.position.z));
-
-            // Tree collision
-            trees.forEach(tree => {
-                const dist = peccary.position.distanceTo(tree.position);
-                if (dist < tree.userData.radius + peccary.userData.radius) {
-                    const pushDir = new THREE.Vector3()
-                        .subVectors(peccary.position, tree.position)
-                        .normalize();
-                    peccary.position.add(pushDir.multiplyScalar(0.1));
-                }
-            });
-        }
-
-        function updateEnemies(delta) {
-            let closestDistance = Infinity;
-
-            enemies.forEach((enemy, index) => {
-                // Move towards player
-                const direction = new THREE.Vector3()
-                    .subVectors(peccary.position, enemy.position)
-                    .normalize();
-
-                const distance = enemy.position.distanceTo(peccary.position);
-                closestDistance = Math.min(closestDistance, distance);
-
-                // Speed increases when close
-                let speed = enemy.userData.speed;
-                if (distance < 20) speed *= 1.3;
-
-                enemy.position.x += direction.x * speed * delta;
-                enemy.position.z += direction.z * speed * delta;
-
-                // Rotate to face player
-                enemy.rotation.y = Math.atan2(direction.x, direction.z);
-
-                // Bobbing animation
-                enemy.position.y = Math.abs(Math.sin(clock.elapsedTime * 12 + index)) * 0.05;
-
-                // Collision with player
-                if (distance < enemy.userData.radius + peccary.userData.radius) {
-                    takeDamage(enemy.userData.damage * delta);
-                }
-
-                // Remove if too far
-                if (distance > WORLD_SIZE) {
-                    scene.remove(enemy);
-                    enemies.splice(index, 1);
-                }
-            });
-
-            // Warning indicator
-            const warningEl = document.getElementById('warning-text');
-            if (closestDistance < 15) {
-                warningEl.style.opacity = Math.max(0, 1 - closestDistance / 15);
-            } else {
-                warningEl.style.opacity = 0;
-            }
-        }
-
-        function updateResources(delta) {
-            resources.forEach((resource, index) => {
-                // Bobbing animation
-                resource.position.y = 0.1 + Math.sin(clock.elapsedTime * 2 + resource.userData.bobOffset) * 0.1;
-                resource.rotation.y += delta * 0.5;
-
-                // Check collection
-                const distance = peccary.position.distanceTo(resource.position);
-                if (distance < resource.userData.radius + peccary.userData.radius) {
-                    collectResource(resource);
-                    scene.remove(resource);
-                    resources.splice(index, 1);
-                }
-            });
-        }
-
-        function collectResource(resource) {
-            const type = resource.userData.type;
-            const value = resource.userData.value;
-            const heal = resource.userData.healAmount;
-
-            // Update counts
-            if (type === 'berry') resourceCounts.berries++;
-            else if (type === 'nut') resourceCounts.nuts++;
-            else if (type === 'mushroom') resourceCounts.mushrooms++;
-
-            // Update score
-            score += value;
-
-            // Heal player
-            health = Math.min(100, health + heal);
-
-            updateUI();
-        }
-
-        function takeDamage(amount) {
-            health -= amount;
-            updateUI();
-
-            if (health <= 0) {
-                gameOver();
-            }
-        }
-
-        function updateCamera() {
-            // Third person follow camera
-            const offset = new THREE.Vector3(0, 8, 12);
-            const targetPosition = new THREE.Vector3()
-                .copy(peccary.position)
-                .add(offset);
-
-            camera.position.lerp(targetPosition, 0.05);
-            camera.lookAt(peccary.position.x, peccary.position.y + 1, peccary.position.z);
-        }
-
-        function updateUI() {
-            document.getElementById('health-bar').style.width = `${health}%`;
-            document.getElementById('score-display').textContent = score;
-            document.getElementById('berries-count').textContent = resourceCounts.berries;
-            document.getElementById('nuts-count').textContent = resourceCounts.nuts;
-            document.getElementById('mushrooms-count').textContent = resourceCounts.mushrooms;
-
-            const minutes = Math.floor(timeElapsed / 60);
-            const seconds = Math.floor(timeElapsed % 60);
-            document.getElementById('time-display').textContent =
-                `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            document.getElementById('game-over-screen').classList.remove('hidden');
-            document.getElementById('final-score').textContent = `Score: ${score}`;
-        }
-
-        function startGame() {
-            document.getElementById('start-screen').classList.add('hidden');
-            gameRunning = true;
-
-            // Spawn initial resources
-            for (let i = 0; i < 10; i++) {
-                spawnResource();
-            }
-
-            // Start spawn timers
-            setInterval(() => {
-                if (gameRunning) spawnEnemy();
-            }, ENEMY_SPAWN_RATE);
-
-            setInterval(() => {
-                if (gameRunning) spawnResource();
-            }, RESOURCE_SPAWN_RATE);
-
-            // Spawn first enemies after delay
-            setTimeout(() => {
-                if (gameRunning) {
-                    spawnEnemy();
-                    spawnEnemy();
-                }
-            }, 3000);
-        }
-
-        function restartGame() {
-            // Reset game state
-            health = 100;
-            score = 0;
-            resourceCounts = { berries: 0, nuts: 0, mushrooms: 0 };
-            timeElapsed = 0;
-
-            // Clear enemies and resources
-            enemies.forEach(e => scene.remove(e));
-            resources.forEach(r => scene.remove(r));
-            enemies = [];
-            resources = [];
-
-            // Reset player position
-            peccary.position.set(0, 0, 0);
-            peccary.rotation.y = 0;
-
-            // Hide game over screen
-            document.getElementById('game-over-screen').classList.add('hidden');
-
-            updateUI();
-            gameRunning = true;
-
-            // Spawn initial resources
-            for (let i = 0; i < 10; i++) {
-                spawnResource();
-            }
-
-            // Spawn enemies after delay
-            setTimeout(() => {
-                if (gameRunning) {
-                    spawnEnemy();
-                    spawnEnemy();
-                }
-            }, 3000);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const delta = Math.min(clock.getDelta(), 0.1);
-
-            if (gameRunning) {
-                timeElapsed += delta;
-                updatePlayer(delta);
-                updateEnemies(delta);
-                updateResources(delta);
-                updateCamera();
-                updateMinimap();
-                updateUI();
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // Initialize game
-        init();
     </script>
 </body>
 </html>
