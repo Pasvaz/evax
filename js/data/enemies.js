@@ -459,8 +459,9 @@ window.ENEMIES = [
         minimapColor: '#8B4513',       // Brown
         groundY: 0.35,                 // Medium height dog
 
-        friendly: true,                // Friendly unless hunting
+        friendly: false,               // Hostile — attacks player on sight
         defensive: false,
+        detectionRange: 30,            // Medium range detection
         biome: 'savannah',
         isPackAnimal: true,
 
@@ -500,8 +501,9 @@ window.ENEMIES = [
         minimapColor: '#A0522D',       // Sienna (potato brown)
         groundY: 0.33,                 // Slightly smaller than male
 
-        friendly: true,
+        friendly: false,               // Hostile — attacks player on sight
         defensive: false,
+        detectionRange: 30,            // Medium range detection
         biome: 'savannah',
         isPackAnimal: true,
         canGetPregnant: true,
@@ -541,8 +543,9 @@ window.ENEMIES = [
         minimapColor: '#FFD700',       // Gold
         groundY: 0.34,                 // Between male and female
 
-        friendly: true,
+        friendly: false,               // Hostile — attacks player on sight
         defensive: false,
+        detectionRange: 30,            // Medium range detection
         biome: 'savannah',
         isPackAnimal: true,
         isAlpha: true,
@@ -1526,6 +1529,218 @@ window.ENEMIES = [
             tail: "#A0A0A0",
             eyes: "#1A1A1A",
             fins: "#B0B0B0"
+        }
+    },
+
+    // =====================================================================
+    // PILFERA COASTALIS — Coastal seagulls
+    // Males are white with yellow bills, females are grey with black bills
+    // Walk on the beach, steal food from the player when eating
+    // =====================================================================
+
+    {
+        id: 'pilfera_coastalis_male',
+        type: 'pilfera_coastalis',
+        category: 'omnivore',
+        speed: 5,
+        speedVariation: 1,
+        chaseSpeed: 8,
+        damage: 3,                     // Weak peck
+        radius: 0.4,
+        size: 1.5,
+        health: 22,
+        spawnWeight: 0,                // Spawned via flock spawner
+        minimapColor: '#F5F5F5',       // White
+        groundY: 0.25,
+
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        canStealFood: true,            // Steals food when player eats nearby
+
+        colors: {
+            body: "#F5F5F5",           // White plumage
+            belly: "#EEEEEE",          // Slightly off-white
+            wings: "#E8E8E8",          // Light grey wing edges
+            wingTips: "#333333",       // Dark wingtips
+            head: "#FFFFFF",           // Pure white head
+            bill: "#E8B830",           // Yellow bill
+            billTip: "#CC4400",        // Orange-red spot on bill
+            eyes: "#1A1A1A",           // Black eyes
+            legs: "#E8A030",           // Yellow-orange legs
+            feet: "#E8A030",           // Webbed feet
+            tail: "#D8D8D8"            // Light grey tail
+        }
+    },
+    {
+        id: 'pilfera_coastalis_female',
+        type: 'pilfera_coastalis',
+        category: 'omnivore',
+        speed: 5,
+        speedVariation: 1,
+        chaseSpeed: 8,
+        damage: 3,
+        radius: 0.35,
+        size: 1.25,                    // Slightly smaller
+        health: 20,
+        spawnWeight: 0,
+        minimapColor: '#B0B0B0',       // Grey
+        groundY: 0.22,
+
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        canStealFood: true,
+
+        colors: {
+            body: "#A8A8A8",           // Grey plumage
+            belly: "#B8B8B8",          // Lighter grey belly
+            wings: "#909090",          // Darker grey wings
+            wingTips: "#2A2A2A",       // Dark wingtips
+            head: "#B0B0B0",           // Grey head
+            bill: "#1A1A1A",           // Black bill
+            billTip: "#333333",        // Dark bill tip
+            eyes: "#1A1A1A",           // Black eyes
+            legs: "#C89830",           // Duller yellow legs
+            feet: "#C89830",
+            tail: "#999999"            // Grey tail
+        }
+    },
+
+    // Pilfera Coastalis — Chick (male, grey downy fluff)
+    {
+        id: 'pilfera_coastalis_chick_male',
+        type: 'pilfera_coastalis',
+        category: 'omnivore',
+        speed: 1,
+        speedVariation: 0.5,
+        chaseSpeed: 2,
+        damage: 0,
+        radius: 0.2,
+        size: 0.8,
+        health: 5,
+        spawnWeight: 0,
+        minimapColor: '#C0C0C0',
+        groundY: 0.15,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        babyStage: 'chick',
+        colors: {
+            body: "#B0B0B0",           // Grey downy fluff
+            belly: "#C0C0C0",
+            wings: "#A0A0A0",
+            wingTips: "#808080",
+            head: "#B8B8B8",
+            bill: "#555555",           // Dark grey stubby bill
+            billTip: "#444444",
+            eyes: "#1A1A1A",
+            legs: "#888888",           // Grey legs
+            feet: "#888888",
+            tail: "#A0A0A0"
+        }
+    },
+    // Pilfera Coastalis — Chick (female, brown downy fluff)
+    {
+        id: 'pilfera_coastalis_chick_female',
+        type: 'pilfera_coastalis',
+        category: 'omnivore',
+        speed: 1,
+        speedVariation: 0.5,
+        chaseSpeed: 2,
+        damage: 0,
+        radius: 0.2,
+        size: 0.8,
+        health: 5,
+        spawnWeight: 0,
+        minimapColor: '#A08060',
+        groundY: 0.15,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        babyStage: 'chick',
+        colors: {
+            body: "#8B7355",           // Brown downy fluff
+            belly: "#A08B70",
+            wings: "#7A6348",
+            wingTips: "#5A4A38",
+            head: "#9B8365",
+            bill: "#555555",
+            billTip: "#444444",
+            eyes: "#1A1A1A",
+            legs: "#888888",
+            feet: "#888888",
+            tail: "#7A6348"
+        }
+    },
+    // Pilfera Coastalis — Fledgling (male, grey, larger, can hop)
+    {
+        id: 'pilfera_coastalis_fledgling_male',
+        type: 'pilfera_coastalis',
+        category: 'omnivore',
+        speed: 3,
+        speedVariation: 1,
+        chaseSpeed: 4,
+        damage: 1,
+        radius: 0.3,
+        size: 1.8,
+        health: 10,
+        spawnWeight: 0,
+        minimapColor: '#C0C0C0',
+        groundY: 0.2,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        babyStage: 'fledgling',
+        colors: {
+            body: "#B8B8B8",           // Lighter grey, patchy
+            belly: "#CCCCCC",
+            wings: "#A8A8A8",
+            wingTips: "#555555",
+            head: "#C0C0C0",
+            bill: "#888855",           // Starting to turn yellow
+            billTip: "#886644",
+            eyes: "#1A1A1A",
+            legs: "#B09050",           // Starting to turn orange
+            feet: "#B09050",
+            tail: "#AAAAAA"
+        }
+    },
+    // Pilfera Coastalis — Fledgling (female, brown, larger, can hop)
+    {
+        id: 'pilfera_coastalis_fledgling_female',
+        type: 'pilfera_coastalis',
+        category: 'omnivore',
+        speed: 3,
+        speedVariation: 1,
+        chaseSpeed: 4,
+        damage: 1,
+        radius: 0.28,
+        size: 1.6,
+        health: 9,
+        spawnWeight: 0,
+        minimapColor: '#907050',
+        groundY: 0.18,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        babyStage: 'fledgling',
+        colors: {
+            body: "#9B8B75",           // Lighter brown, patchy
+            belly: "#B0A090",
+            wings: "#8A7A65",
+            wingTips: "#4A3A28",
+            head: "#A89B85",
+            bill: "#444444",           // Still dark
+            billTip: "#333333",
+            eyes: "#1A1A1A",
+            legs: "#A08848",
+            feet: "#A08848",
+            tail: "#8A7A65"
         }
     },
 

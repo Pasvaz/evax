@@ -149,6 +149,12 @@ window.Player = (function() {
         // Model built facing +X — no initial rotation needed
         GameState.peccary.add(model);
 
+        // Cache fuse tip reference for efficient per-frame flicker
+        GameState.fuseTipRef = null;
+        model.traverse(function(obj) {
+            if (obj.userData && obj.userData.isFuseTip) GameState.fuseTipRef = obj;
+        });
+
         // Spawn player in the village (safe zone)
         GameState.peccary.position.set(
             CONFIG.VILLAGE_CENTER.x,
@@ -179,6 +185,12 @@ window.Player = (function() {
         // Build fresh model
         var model = buildPeccaryModel(skin);
         GameState.peccary.add(model);
+
+        // Re-cache fuse tip reference
+        GameState.fuseTipRef = null;
+        model.traverse(function(obj) {
+            if (obj.userData && obj.userData.isFuseTip) GameState.fuseTipRef = obj;
+        });
     }
 
     /**
@@ -653,6 +665,7 @@ window.Player = (function() {
                 GameState.drowningTimer += delta;
                 if (GameState.drowningTimer >= 2) {
                     GameState.drowningTimer = 0;
+                    GameState.lastDamageSource = 'drowning';
                     GameState.health -= 5;
                     Game.playSound('hurt');
                     if (GameState.health <= 0) {

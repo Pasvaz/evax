@@ -506,6 +506,37 @@ window.BESTIARY = [
     // ========================================================================
     // SLITTED SARDINE
     // ========================================================================
+    // PILFERA COASTALIS
+    // ========================================================================
+    {
+        id: 'pilfera_coastalis',
+        name: 'Pilfera Coastalis',
+        type: 'Coastal Bird',
+        icon: '\uD83E\uDD86',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' }
+        ],
+        animations: ['walk', 'peck', 'flee'],
+        stats: {
+            health: '7-8',
+            speed: 'Fast',
+            damage: '3 (peck)',
+            diet: 'Omnivore — fish, scraps, YOUR food'
+        },
+        description: 'The Pilfera Coastalis is a cunning coastal seagull known for its thieving nature. Males are white with bright yellow bills and a distinctive red bill tip spot. Females are smaller and grey with black bills. They roam the beach in small flocks, always watching for an easy meal.',
+        behavior: 'Seagulls walk along the beach looking for food. When the player eats nearby, they have a chance to swoop in and steal the food right out of your hooves! They will peck if provoked, then flee.',
+        habitat: 'Found walking on the sandy beach of the Coastal Biome. They rarely venture into the birch forest or ocean.',
+        tips: 'Be careful eating food near seagulls — they might steal it! Hit them to scare them off before eating. They are not dangerous, just annoying.',
+        special: {
+            flockSize: '6-8 birds',
+            stealChance: '40% when eating near one',
+            funFact: 'Their scientific name "Pilfera" comes from "pilfer" — to steal!'
+        }
+    },
+
+    // ========================================================================
     {
         id: 'slitted_sardine',
         name: 'Slitted Sardine',

@@ -123,6 +123,7 @@ window.CONFIG = {
             description: item.description,
             price: item.price,
             icon: item.icon,
+            vendor: item.vendor || 'patches',
             // Convert data effect to executable function
             effect: function() {
                 Effects.execute(item.effect);

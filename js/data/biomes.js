@@ -240,6 +240,10 @@ window.BIOMES = {
         spawnBakkaSeals: true,
         bakkaSeals: 8,
 
+        // Pilfera Coastalis — seagulls on the beach
+        spawnSeagulls: true,
+        seagullCount: 7,               // Small flock of 6-8
+
         // Fish in the ocean
         spawnFish: true,
         sardineShoals: 3,

@@ -262,6 +262,16 @@ window.UI = (function() {
         document.getElementById('health-bar').style.width = Math.max(0, GameState.health) + '%';
         document.getElementById('score-display').textContent = GameState.score;
 
+        // --- Low-health vignette warning ---
+        var vignette = document.getElementById('low-health-vignette');
+        if (GameState.health <= 15) {
+            vignette.className = 'active critical';
+        } else if (GameState.health <= 25) {
+            vignette.className = 'active';
+        } else {
+            vignette.className = '';
+        }
+
         // --- Recency tracking: detect resource changes by comparing to last frame ---
         var keys = Object.keys(RESOURCE_META);
         for (var i = 0; i < keys.length; i++) {
@@ -356,9 +366,11 @@ window.UI = (function() {
 
     /**
      * Open the shop menu.
+     * @param {string} vendor - Which vendor's items to show ('patches' or 'bruno')
      */
-    function openShop() {
+    function openShop(vendor) {
         GameState.isShopOpen = true;
+        GameState.currentShopVendor = vendor || 'patches';
         const shopMenu = document.getElementById('shop-menu');
 
         CONFIG.SHOP_ITEMS.forEach(item => {
@@ -386,6 +398,24 @@ window.UI = (function() {
      */
     function renderShop() {
         document.getElementById('shop-coins-display').textContent = GameState.pigCoins;
+
+        // Update shop header based on vendor
+        var vendor = GameState.currentShopVendor || 'patches';
+        var shopHeader = document.querySelector('#shop-header h2');
+        var shopSubtitle = document.querySelector('#shop-header .shop-subtitle');
+        var sellTab = document.querySelector('.shop-tab[data-tab="sell"]');
+
+        if (vendor === 'bruno') {
+            shopHeader.textContent = "Bruno's Forge";
+            shopSubtitle.textContent = "Weapons, tools, and materials";
+            sellTab.style.display = 'none';
+            // Make sure buy tab is active (in case sell was active before)
+            switchShopTab('buy');
+        } else {
+            shopHeader.textContent = "Patches' Trading Post";
+            shopSubtitle.textContent = "Buy and sell resources for pig coins";
+            sellTab.style.display = '';
+        }
 
         renderShopBuyTab();
         renderShopSellTab();
@@ -423,7 +453,12 @@ window.UI = (function() {
         const buyPanel = document.getElementById('shop-buy');
         buyPanel.innerHTML = '';
 
-        CONFIG.SHOP_ITEMS.forEach(item => {
+        var vendor = GameState.currentShopVendor || 'patches';
+        var vendorItems = CONFIG.SHOP_ITEMS.filter(function(item) {
+            return item.vendor === vendor;
+        });
+
+        vendorItems.forEach(item => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'shop-item';
 
@@ -637,6 +672,20 @@ window.UI = (function() {
                     GameState.unlockedVillagers.push(milestone.villager);
                     GameState.currentLevel = milestone.title;
                     showUnlockNotification(milestone);
+
+                    // Trigger memory fragment if this milestone has one
+                    if (milestone.memoryFragment) {
+                        setTimeout(function() {
+                            showMemoryFlashback(milestone.memoryFragment);
+                        }, 4500);
+                    }
+                }
+            }
+
+            // Milestones without villagers but with memory fragments
+            if (!milestone.villager && milestone.memoryFragment && GameState.score >= milestone.score) {
+                if (!GameState.memoriesFound || GameState.memoriesFound.indexOf(milestone.memoryFragment) === -1) {
+                    showMemoryFlashback(milestone.memoryFragment);
                 }
             }
 
@@ -645,6 +694,44 @@ window.UI = (function() {
                 GameState.currentLevel = milestone.title;
             }
         });
+
+        // Check score_since_last memory triggers
+        if (typeof MEMORIES !== 'undefined') {
+            var scoreSinceLast = GameState.score - (GameState.lastMemoryScore || 0);
+            for (var mi = 0; mi < MEMORIES.length; mi++) {
+                var mem = MEMORIES[mi];
+                if (mem.trigger !== 'score_since_last') continue;
+                // Already found? Skip
+                if (GameState.memoriesFound && GameState.memoriesFound.indexOf(mem.id) !== -1) continue;
+                // Check that the PREVIOUS memory in the array has been found
+                // (score_since_last fragments form a chain)
+                if (mi > 0) {
+                    var prevMem = MEMORIES[mi - 1];
+                    if (!GameState.memoriesFound || GameState.memoriesFound.indexOf(prevMem.id) === -1) break;
+                }
+                if (scoreSinceLast >= mem.scoreGap) {
+                    showMemoryFlashback(mem.id);
+                    break; // One at a time
+                }
+            }
+
+            // Check island trigger (player standing on an ocean island)
+            if (typeof Environment !== 'undefined' && Environment.isNearIsland &&
+                GameState.peccary && GameState.currentBiome === 'coastal') {
+                var onIsland = Environment.isNearIsland(
+                    GameState.peccary.position.x,
+                    GameState.peccary.position.z
+                );
+                if (onIsland) {
+                    for (var ii = 0; ii < MEMORIES.length; ii++) {
+                        if (MEMORIES[ii].trigger === 'island') {
+                            showMemoryFlashback(MEMORIES[ii].id);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         // Update the level display in HUD
         var levelDisplay = document.getElementById('level-display');
@@ -776,6 +863,147 @@ window.UI = (function() {
         return GameState.hotbarSlots[GameState.selectedHotbarSlot] || null;
     }
 
+    /**
+     * Show a memory flashback overlay.
+     * Pauses the game, displays the memory text, resumes on dismiss.
+     */
+    function showMemoryFlashback(fragmentId) {
+        // Find the fragment in MEMORIES
+        var fragment = null;
+        for (var i = 0; i < MEMORIES.length; i++) {
+            if (MEMORIES[i].id === fragmentId) {
+                fragment = MEMORIES[i];
+                break;
+            }
+        }
+        if (!fragment) return;
+
+        // Skip if already found
+        if (GameState.memoriesFound && GameState.memoriesFound.indexOf(fragmentId) !== -1) return;
+
+        // Record it
+        if (!GameState.memoriesFound) GameState.memoriesFound = [];
+        GameState.memoriesFound.push(fragmentId);
+
+        // Track score at time of finding (for score_since_last triggers)
+        GameState.lastMemoryScore = GameState.score;
+
+        // Pause game
+        GameState.gameRunning = false;
+
+        // Show flashback overlay
+        var overlay = document.getElementById('memory-flashback');
+        overlay.querySelector('.memory-title').textContent = fragment.title;
+        overlay.querySelector('.memory-text').textContent = fragment.text;
+        overlay.classList.remove('hidden');
+
+        Game.playSound('collect');
+    }
+
+    // Dismiss button for memory flashback
+    document.addEventListener('DOMContentLoaded', function() {
+        var dismissBtn = document.getElementById('memory-dismiss-btn');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', function() {
+                document.getElementById('memory-flashback').classList.add('hidden');
+
+                // Toast notification for memory recovery
+                showToast('Memory Fragment Recovered!', 'A piece of your past has returned.', 'Press <b>J</b> to revisit it.');
+
+                // Check if The Revelation was just found — show Chapter 1 Complete
+                if (GameState.memoriesFound &&
+                    GameState.memoriesFound.indexOf('the_revelation') !== -1 &&
+                    !GameState.chapter1Shown) {
+                    GameState.chapter1Shown = true;
+                    // Short delay for dramatic effect
+                    setTimeout(function() {
+                        showChapterComplete();
+                    }, 500);
+                } else {
+                    GameState.gameRunning = true;
+                }
+            });
+        }
+
+        // Chapter complete dismiss
+        var chapterDismiss = document.getElementById('chapter-dismiss-btn');
+        if (chapterDismiss) {
+            chapterDismiss.addEventListener('click', function() {
+                document.getElementById('chapter-complete').classList.add('hidden');
+                GameState.gameRunning = true;
+            });
+        }
+    });
+
+    /**
+     * Show the Chapter 1 Complete screen.
+     */
+    function showChapterComplete() {
+        var overlay = document.getElementById('chapter-complete');
+        if (!overlay) return;
+        overlay.classList.remove('hidden');
+        Game.playSound('collect');
+    }
+
+    // ========================================================================
+    // TOAST NOTIFICATION SYSTEM
+    // ========================================================================
+    var toastQueue = [];
+    var activeToasts = 0;
+    var MAX_TOASTS = 3;
+
+    function showToast(title, body, key, duration) {
+        key = key || false;
+        duration = duration || 4000;
+        toastQueue.push({ title: title, body: body, key: key, duration: duration });
+        processToastQueue();
+    }
+
+    function processToastQueue() {
+        if (activeToasts >= MAX_TOASTS || toastQueue.length === 0) return;
+
+        var item = toastQueue.shift();
+        activeToasts++;
+
+        var container = document.getElementById('toast-container');
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+        var titleDiv = document.createElement('div');
+        titleDiv.className = 'toast-title';
+        titleDiv.textContent = item.title;
+        var bodyDiv = document.createElement('div');
+        bodyDiv.className = 'toast-body';
+        bodyDiv.textContent = item.body;
+        toast.appendChild(titleDiv);
+        toast.appendChild(bodyDiv);
+        if (item.key) {
+            var keyDiv = document.createElement('div');
+            keyDiv.className = 'toast-key';
+            keyDiv.innerHTML = item.key;
+            toast.appendChild(keyDiv);
+        }
+        container.appendChild(toast);
+
+        requestAnimationFrame(function() { toast.classList.add('show'); });
+
+        setTimeout(function() {
+            toast.classList.remove('show');
+            toast.classList.add('fade-out');
+            setTimeout(function() {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+                activeToasts--;
+                processToastQueue();
+            }, 400);
+        }, item.duration);
+    }
+
+    function clearToasts() {
+        toastQueue.length = 0;
+        activeToasts = 0;
+        var container = document.getElementById('toast-container');
+        if (container) container.innerHTML = '';
+    }
+
     return {
         setupMinimap: setupMinimap,
         updateMinimap: updateMinimap,
@@ -791,6 +1019,9 @@ window.UI = (function() {
         updateHotbar: updateHotbar,
         getSelectedHotbarItem: getSelectedHotbarItem,
         getVisibleResources: getVisibleResources,
+        showMemoryFlashback: showMemoryFlashback,
+        showToast: showToast,
+        clearToasts: clearToasts,
         RESOURCE_META: RESOURCE_META
     };
 })();

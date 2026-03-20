@@ -433,6 +433,18 @@ window.Items = (function() {
 
         GameState.score += value;
 
+        // First-time resource discovery notification
+        if (!GameState.discoveredResources) GameState.discoveredResources = [];
+        if (GameState.discoveredResources.indexOf(type) === -1) {
+            GameState.discoveredResources.push(type);
+            // Use plural resource key to look up display name from RESOURCE_META
+            var pluralKey = type === 'berry' ? 'berries' : type === 'nut' ? 'nuts' : type === 'mushroom' ? 'mushrooms' : type === 'egg' ? 'eggs' : type === 'arsenic_mushroom' ? 'arsenic_mushrooms' : type;
+            var meta = UI.RESOURCE_META[pluralKey];
+            var displayName = meta ? meta.name : type;
+            if (meta && meta.icon) displayName = meta.icon + " " + displayName
+            UI.showToast('New Resource Found!', 'You discovered ' + displayName + '!','Press <b>I</b> to open your inventory.');
+        }
+
         UI.updateUI();
     }
 

@@ -67,11 +67,16 @@ window.Inventory = (function() {
         screen.classList.remove('hidden');
         GameState.isInventoryOpen = true;
 
-        // Refresh inventory contents
-        refreshInventory();
+        // Reset bestiary detail view
+        document.getElementById('bestiary-detail').classList.remove('active');
 
-        // Show bestiary grid (not detail view)
-        showBestiaryGrid();
+        // Refresh the currently active tab's content
+        var activeTab = document.querySelector('.inventory-tab.active');
+        if (activeTab) {
+            switchTab(activeTab.dataset.tab);
+        } else {
+            switchTab('inventory');
+        }
     }
 
     /**
@@ -104,6 +109,7 @@ window.Inventory = (function() {
         document.getElementById('artifacts-panel').classList.toggle('active', tabId === 'artifacts');
         document.getElementById('bestiary-panel').classList.toggle('active', tabId === 'bestiary');
         document.getElementById('quest-panel').classList.toggle('active', tabId === 'quest');
+        document.getElementById('journal-panel').classList.toggle('active', tabId === 'journal');
         document.getElementById('bestiary-detail').classList.remove('active');
 
         // Refresh content
@@ -113,7 +119,10 @@ window.Inventory = (function() {
             refreshArtifacts();
         } else if (tabId === 'quest') {
             refreshQuestLog();
+        } else if (tabId === 'journal') {
+            refreshMemories();
         } else {
+            populateBestiaryGrid();
             showBestiaryGrid();
         }
     }
@@ -319,6 +328,45 @@ window.Inventory = (function() {
             return;
         }
 
+        // Check for seagull food theft — if eating food near a Pilfera Coastalis
+        var isFood = item.effect && (item.effect.type === 'heal' || item.effect.type === 'full_heal' ||
+            (item.effect.type === 'combo' && item.effect.effects && item.effect.effects.some(function(e) { return e.type === 'heal'; })));
+
+        if (isFood && GameState.peccary && GameState.enemies) {
+            var stealRange = 8; // Seagulls within 8 units can steal
+            var nearbyGull = null;
+            for (var gi = 0; gi < GameState.enemies.length; gi++) {
+                var gull = GameState.enemies[gi];
+                if (gull.userData.canStealFood && gull.userData.health > 0 &&
+                    !gull.userData.retaliating && !gull.userData.retaliationFleeing) {
+                    var dist = gull.position.distanceTo(GameState.peccary.position);
+                    if (dist < stealRange) {
+                        nearbyGull = gull;
+                        break;
+                    }
+                }
+            }
+
+            if (nearbyGull && Math.random() < 0.4) { // 40% chance to steal
+                // Seagull snatches the food!
+                removeItemFromInventory(item.id);
+                Game.playSound('hurt');
+                Game.showBlockedMessage('A Pilfera Coastalis stole your ' + item.name + '!');
+
+                // Make the seagull flee with its prize
+                nearbyGull.userData.retaliationFleeing = true;
+                nearbyGull.userData.fleeDirection = new THREE.Vector3(
+                    nearbyGull.position.x - GameState.peccary.position.x, 0,
+                    nearbyGull.position.z - GameState.peccary.position.z
+                ).normalize();
+                nearbyGull.userData.fleeTimer = 5;
+
+                refreshInventory();
+                UI.updateUI();
+                return; // Food gone — no healing!
+            }
+        }
+
         // Execute the item's effect
         const success = Effects.execute(item.effect);
 
@@ -495,17 +543,33 @@ window.Inventory = (function() {
         const grid = document.getElementById('bestiary-grid');
         grid.innerHTML = '';
 
+        var discovered = GameState.discoveredAnimals || [];
+        var showAll = GameState.isTestingMode;
+
         BESTIARY.forEach(animal => {
+            var isDiscovered = showAll || animal.id === 'peccary' || discovered.indexOf(animal.id) !== -1;
+
             const card = document.createElement('div');
-            card.className = 'bestiary-card';
-            card.innerHTML = `
-                <div class="bestiary-card-preview" id="preview-${animal.id}">
-                    <span style="font-size: 48px;">${animal.icon}</span>
-                </div>
-                <div class="bestiary-card-name">${animal.name}</div>
-                <div class="bestiary-card-type">${animal.type}</div>
-            `;
-            card.addEventListener('click', () => showAnimalDetail(animal.id));
+            card.className = 'bestiary-card' + (isDiscovered ? '' : ' locked');
+
+            if (isDiscovered) {
+                card.innerHTML = `
+                    <div class="bestiary-card-preview" id="preview-${animal.id}">
+                        <span style="font-size: 48px;">${animal.icon}</span>
+                    </div>
+                    <div class="bestiary-card-name">${animal.name}</div>
+                    <div class="bestiary-card-type">${animal.type}</div>
+                `;
+                card.addEventListener('click', () => showAnimalDetail(animal.id));
+            } else {
+                card.innerHTML = `
+                    <div class="bestiary-card-preview">
+                        <span style="font-size: 48px;">${animal.icon}</span>
+                    </div>
+                    <div class="bestiary-card-name">?</div>
+                    <div class="bestiary-card-type">Undiscovered</div>
+                `;
+            }
             grid.appendChild(card);
         });
     }
@@ -1223,6 +1287,7 @@ window.Inventory = (function() {
         const artifactData = getArtifactData(artifactId);
         if (artifactData) {
             console.log('Found artifact: ' + artifactData.name + '!');
+            UI.showToast('Mysterious Artifact Found!', 'You found ' + artifactData.name + '!','Press <b>I</b> to check your inventory.');
         }
 
         return true;
@@ -1381,12 +1446,86 @@ window.Inventory = (function() {
         return count;
     }
 
+    /**
+     * Refresh the Memories tab — shows found and locked memory fragments.
+     */
+    function refreshMemories() {
+        var grid = document.getElementById('memories-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        var found = GameState.memoriesFound || [];
+        var foundCount = 0;
+
+        MEMORIES.forEach(function(fragment) {
+            var isFound = found.indexOf(fragment.id) !== -1;
+            if (isFound) foundCount++;
+
+            var card = document.createElement('div');
+            card.className = 'memory-card' + (isFound ? ' found' : ' locked');
+
+            var title = document.createElement('div');
+            title.className = 'memory-card-title';
+            title.textContent = isFound ? fragment.title : '???';
+            card.appendChild(title);
+
+            var preview = document.createElement('div');
+            preview.className = 'memory-card-preview';
+            if (isFound) {
+                // Show first 80 characters of the memory text
+                preview.textContent = fragment.text.length > 80
+                    ? fragment.text.substring(0, 80) + '...'
+                    : fragment.text;
+            } else {
+                preview.textContent = fragment.hint || 'Keep exploring...';
+            }
+            card.appendChild(preview);
+
+            // Click found memories to re-read them
+            if (isFound) {
+                card.addEventListener('click', function() {
+                    var overlay = document.getElementById('memory-flashback');
+                    overlay.querySelector('.memory-title').textContent = fragment.title;
+                    overlay.querySelector('.memory-text').textContent = fragment.text;
+                    overlay.classList.remove('hidden');
+                });
+            }
+
+            grid.appendChild(card);
+        });
+
+        // Update counters
+        var foundEl = document.getElementById('memories-found-count');
+        var totalEl = document.getElementById('memories-total-count');
+        if (foundEl) foundEl.textContent = foundCount;
+        if (totalEl) totalEl.textContent = MEMORIES.length;
+    }
+
+    /**
+     * Open inventory directly to a specific tab. Toggle: close if already on that tab.
+     * @param {string} tabId - 'inventory', 'artifacts', 'bestiary', 'quest', or 'journal'
+     */
+    function openToTab(tabId) {
+        if (GameState.isInventoryOpen) {
+            var activeTab = document.querySelector('.inventory-tab.active');
+            if (activeTab && activeTab.dataset.tab === tabId) {
+                close();
+                return;
+            }
+            switchTab(tabId);
+        } else {
+            open();
+            switchTab(tabId);
+        }
+    }
+
     // Public API
     return {
         init: init,
         toggle: toggle,
         open: open,
         close: close,
+        openToTab: openToTab,
         refreshInventory: refreshInventory,
         refreshArtifacts: refreshArtifacts,
         refreshQuestLog: refreshQuestLog,
@@ -1395,6 +1534,8 @@ window.Inventory = (function() {
         hasArtifact: hasArtifact,
         equipToHotbar: equipToHotbar,
         addItemToInventory: addItemToInventory,
-        isEquippable: isEquippable
+        isEquippable: isEquippable,
+        refreshMemories: refreshMemories,
+        refreshBestiary: populateBestiaryGrid
     };
 })();

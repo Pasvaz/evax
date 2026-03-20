@@ -248,7 +248,7 @@ window.VILLAGERS = [
                 'cookie_reveal_3': {
                     text: "Don't you remember, Pedro? You came to this forest searching for the recipe. You'd heard rumours of the World's Best Cookie and travelled from far away to find it. But you got lost in the wilderness, stumbled into our village half-starved, and... well, you've been here ever since. You forgot WHY you came!",
                     choices: [
-                        { text: "I... I remember now!", nextNode: 'cookie_reveal_4' }
+                        { text: "I... I remember now!", nextNode: 'cookie_reveal_4', effect: { type: 'trigger_memory', memoryId: 'running_through_forest' } }
                     ]
                 },
 
@@ -377,115 +377,25 @@ window.VILLAGERS = [
                     text: "*CLANG CLANG* Oh! Didn't see you there, Pedro! Welcome to the forge!",
                     choices: [
                         { text: "What are you making?", nextNode: 'forge_info' },
-                        { text: "Buy weapons", nextNode: 'buy_weapons' },
-                        { text: "Buy materials", nextNode: 'buy_materials' },
-                        { text: "Buy diving gear", nextNode: 'buy_diving' },
+                        { text: "Open Shop", nextNode: 'shop_opened', effect: { type: 'open_shop', vendor: 'bruno' } },
                         { text: "About that cookie recipe...", nextNode: 'cookie_quest' },
                         { text: "Goodbye.", nextNode: null }
                     ]
                 },
 
                 'forge_info': {
-                    text: "I forge tools, weapons, and horseshoes. Tough work but honest living! I also smelt glass from sand.",
+                    text: "I forge tools, weapons, and horseshoes. Tough work but honest living! I also smelt glass from sand. Take a look at my wares!",
                     choices: [
-                        { text: "Can I buy a weapon?", nextNode: 'buy_weapons' },
-                        { text: "Can I buy some glass?", nextNode: 'buy_materials' },
+                        { text: "Open Shop", nextNode: 'shop_opened', effect: { type: 'open_shop', vendor: 'bruno' } },
                         { text: "Impressive!", nextNode: null }
                     ]
                 },
 
-                'buy_weapons': {
-                    text: "Looking to defend yourself, Pedro? I've got swords, axes AND a special Barbanit Axe that can chop savannah and coastal trees!",
+                'shop_opened': {
+                    text: "Take your time browsing! Everything's forged right here.",
                     choices: [
-                        {
-                            text: "Buy Wood Sword (30 coins)",
-                            nextNode: 'weapon_success',
-                            effect: { type: 'trade', cost: { coins: 30 }, reward: { item: 'wood_sword' } },
-                            failNode: 'buy_fail'
-                        },
-                        {
-                            text: "Buy Wood Axe (30 coins)",
-                            nextNode: 'weapon_success',
-                            effect: { type: 'trade', cost: { coins: 30 }, reward: { item: 'wood_axe' } },
-                            failNode: 'buy_fail'
-                        },
-                        {
-                            text: "Buy Barbanit Axe (50 coins)",
-                            nextNode: 'barbanit_success',
-                            effect: { type: 'trade', cost: { coins: 50 }, reward: { item: 'barbanit_axe' } },
-                            failNode: 'buy_fail'
-                        },
-                        { text: "Not now.", nextNode: 'greeting' }
-                    ]
-                },
-
-                'barbanit_success': {
-                    text: "A Barbanit Axe! This beauty can chop acacia trees in the savannah and birch trees at the coast. You'll get manglecacia wood and seaspray birch wood — perfect for crafting even better tools!",
-                    choices: [
-                        { text: "Buy another weapon", nextNode: 'buy_weapons' },
+                        { text: "Open Shop again", nextNode: 'shop_opened', effect: { type: 'open_shop', vendor: 'bruno' } },
                         { text: "Thanks Bruno!", nextNode: null }
-                    ]
-                },
-
-                'weapon_success': {
-                    text: "Fine craftsmanship! Open your inventory and equip it to your hotbar. Sword hits enemies, axe chops trees!",
-                    choices: [
-                        { text: "Buy another weapon", nextNode: 'buy_weapons' },
-                        { text: "Thanks!", nextNode: null }
-                    ]
-                },
-
-                'buy_materials': {
-                    text: "I've got glass fresh from the furnace! 3 pig coins per piece. Good for crafting all sorts of things.",
-                    choices: [
-                        {
-                            text: "Buy 1 glass (3 coins)",
-                            nextNode: 'buy_success',
-                            effect: { type: 'trade', cost: { coins: 3 }, reward: { glass: 1 } },
-                            failNode: 'buy_fail'
-                        },
-                        {
-                            text: "Buy 5 glass (15 coins)",
-                            nextNode: 'buy_success',
-                            effect: { type: 'trade', cost: { coins: 15 }, reward: { glass: 5 } },
-                            failNode: 'buy_fail'
-                        },
-                        { text: "Not now.", nextNode: 'greeting' }
-                    ]
-                },
-
-                'buy_success': {
-                    text: "Here you go! Handle it carefully, it's fragile stuff.",
-                    choices: [
-                        { text: "Buy more glass", nextNode: 'buy_materials' },
-                        { text: "Thanks!", nextNode: null }
-                    ]
-                },
-
-                'buy_diving': {
-                    text: "Ah, looking to explore the deep ocean? I've been working on a special diving mask — forged glass lens, leather straps, sealed with tree sap. Not cheap though — 400 coins!",
-                    choices: [
-                        {
-                            text: "Buy Diving Mask (400 coins)",
-                            nextNode: 'diving_success',
-                            effect: { type: 'trade', cost: { coins: 400 }, reward: { item: 'diving_mask' } },
-                            failNode: 'buy_fail'
-                        },
-                        { text: "Too expensive!", nextNode: 'greeting' }
-                    ]
-                },
-
-                'diving_success': {
-                    text: "Here you go! Equip it from your hotbar, then walk into the deep ocean. You'll be able to swim underwater! But watch your oxygen — come up for air before it runs out!",
-                    choices: [
-                        { text: "Thanks Bruno!", nextNode: null }
-                    ]
-                },
-
-                'buy_fail': {
-                    text: "You don't have enough coins! Go collect some resources and come back.",
-                    choices: [
-                        { text: "I'll be back.", nextNode: 'greeting' }
                     ]
                 },
 
