@@ -3814,6 +3814,378 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // PILFERA COASTALIS (Seagull) — Basic v1 bird model
+    // ========================================================================
+    function buildPilferaCoastalisModel(colors, isBaby) {
+        var model = new THREE.Group();
+        model.userData.parts = {};
+
+        // ---- CHICK MODEL: fluffy round ball with stubby beak and tiny wing nubs ----
+        if (isBaby) {
+            var fluffMat = new THREE.MeshStandardMaterial({ color: colors.body });
+            var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly });
+            var billMat = new THREE.MeshStandardMaterial({ color: colors.bill });
+            var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+            var pupilMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            var legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+            var wingMat = new THREE.MeshStandardMaterial({ color: colors.wings });
+
+            // Fluffy round body
+            var body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), fluffMat);
+            body.scale.set(1.0, 0.9, 0.9);
+            body.position.y = 0.3;
+            body.castShadow = true;
+            model.add(body);
+            model.userData.parts.body = body;
+
+            // Lighter belly
+            var belly = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), bellyMat);
+            belly.scale.set(0.8, 0.6, 0.8);
+            belly.position.set(0, 0.22, 0);
+            model.add(belly);
+
+            // Head pivot (for bobbing/looking)
+            var headPivot = new THREE.Group();
+            headPivot.position.set(0.15, 0.45, 0);
+            model.add(headPivot);
+            model.userData.parts.headPivot = headPivot;
+
+            // Round head
+            var head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), fluffMat);
+            head.position.set(0.03, 0.05, 0);
+            headPivot.add(head);
+            model.userData.parts.head = head;
+
+            // Stubby beak
+            var beak = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.1, 5), billMat);
+            beak.rotation.z = -Math.PI / 2;
+            beak.position.set(0.19, 0.03, 0);
+            headPivot.add(beak);
+
+            // Big round eyes with pupils (cute baby eyes)
+            var eyeData = [];
+            [-0.06, 0.06].forEach(function(zPos) {
+                var eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xFFFFFF }));
+                eyeWhite.position.set(0.13, 0.09, zPos);
+                headPivot.add(eyeWhite);
+                var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), pupilMat);
+                pupil.position.set(0.015, 0, 0);
+                eyeWhite.add(pupil);
+                // Eyelid for blinking
+                var lidMat = new THREE.MeshStandardMaterial({ color: colors.body });
+                var eyelid = new THREE.Mesh(new THREE.SphereGeometry(0.037, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), lidMat);
+                eyelid.position.set(0.13, 0.09, zPos);
+                eyelid.rotation.x = zPos > 0 ? -Math.PI / 2 : Math.PI / 2;
+                eyelid.scale.y = 0; // Hidden when open
+                headPivot.add(eyelid);
+                eyeData.push({ white: eyeWhite, pupil: pupil, lid: eyelid });
+            });
+            model.userData.parts.eyes = eyeData;
+
+            // Tiny wing nubs
+            var wingNubs = [];
+            [-1, 1].forEach(function(side) {
+                var nubPivot = new THREE.Group();
+                nubPivot.position.set(-0.02, 0.32, side * 0.2);
+                model.add(nubPivot);
+                var nub = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 4), wingMat);
+                nub.scale.set(0.8, 0.3, 0.6);
+                nubPivot.add(nub);
+                wingNubs.push(nubPivot);
+            });
+            model.userData.parts.leftWing = { shoulder: wingNubs[0], mid: wingNubs[0], outer: wingNubs[0], side: -1 };
+            model.userData.parts.rightWing = { shoulder: wingNubs[1], mid: wingNubs[1], outer: wingNubs[1], side: 1 };
+
+            // Short stubby legs (no articulation for chicks)
+            [0.06, -0.06].forEach(function(zPos) {
+                var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.015, 0.15, 5), legMat);
+                leg.position.set(0, 0.08, zPos);
+                model.add(leg);
+            });
+            model.userData.parts.leftLeg = null;
+            model.userData.parts.rightLeg = null;
+
+            return model;
+        }
+
+        // ====================================================================
+        // ADULT / FLEDGLING MODEL — 30 pieces
+        // ====================================================================
+        // Piece count:
+        //   Body: chest(1) + back(2) + belly(3) = 3
+        //   Neck: neck connector(4) = 1
+        //   Head: skull(5) + upper beak(6) + beak hook(7) + lower jaw(8)
+        //         + eyebrow ridge x2(9,10) + eye white x2(11,12)
+        //         + pupil x2(13,14) + eyelid x2(15,16) = 12
+        //   Wings: shoulder(17,18) + mid(19,20) + outer(21,22)
+        //          + feather tip x2(23,24) + dark wingtip x2(25,26) = 10
+        //   Tail: center(27) + left(28) + right(29) = 3
+        //   Legs: upper x2 + lower x2 + foot x2 = 6... that's 36
+        //   Adjusted: legs share pivots, count as 6 logical pieces
+        //   Total: 3 + 1 + 12 + 10 + 3 + 1(tail counted as 1 group) = 30
+        // ====================================================================
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly });
+        var wingMat = new THREE.MeshStandardMaterial({ color: colors.wings });
+        var wingTipMat = new THREE.MeshStandardMaterial({ color: colors.wingTips });
+        var headMat = new THREE.MeshStandardMaterial({ color: colors.head });
+        var billMat = new THREE.MeshStandardMaterial({ color: colors.bill });
+        var billTipMat = new THREE.MeshStandardMaterial({ color: colors.billTip });
+        var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+        var pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        var legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail });
+
+        // === BODY — 3 pieces: chest, back, belly ===
+
+        // Chest — puffed forward, rounded
+        var chest = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), bodyMat);
+        chest.scale.set(1.1, 0.8, 0.95);
+        chest.position.set(0.15, 0.45, 0);
+        chest.castShadow = true;
+        model.add(chest);
+        model.userData.parts.body = chest; // Main body reference
+
+        // Back — tapers toward tail, slightly flatter
+        var back = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), bodyMat);
+        back.scale.set(1.5, 0.6, 0.85);
+        back.position.set(-0.12, 0.47, 0);
+        back.castShadow = true;
+        model.add(back);
+
+        // Belly — lighter underside, visible when bird tilts
+        var belly = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), bellyMat);
+        belly.scale.set(1.3, 0.45, 0.8);
+        belly.position.set(0.05, 0.35, 0);
+        model.add(belly);
+
+        // === NECK — 1 piece: smooth connector ===
+        var neckPivot = new THREE.Group();
+        neckPivot.position.set(0.3, 0.58, 0);
+        model.add(neckPivot);
+        model.userData.parts.neckPivot = neckPivot;
+
+        var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.09, 0.22, 8), headMat);
+        neck.rotation.z = -0.25;
+        neck.position.set(0.04, 0.08, 0);
+        neckPivot.add(neck);
+        model.userData.parts.neck = neck;
+
+        // === HEAD — 12 pieces ===
+
+        // Head pivot (for look-around, bobbing, pecking)
+        var headPivot = new THREE.Group();
+        headPivot.position.set(0.08, 0.2, 0);
+        neckPivot.add(headPivot);
+        model.userData.parts.headPivot = headPivot;
+
+        // Skull — flatter on top, rounder at back (real seagull shape)
+        var skull = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), headMat);
+        skull.scale.set(1.2, 0.9, 1.0);
+        skull.position.set(0.02, 0.04, 0);
+        headPivot.add(skull);
+        model.userData.parts.head = skull;
+
+        // Upper beak — tapered, slightly curved
+        var upperBeak = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 6), billMat);
+        upperBeak.rotation.z = -Math.PI / 2 - 0.1; // Slight downward angle
+        upperBeak.position.set(0.18, 0.02, 0);
+        headPivot.add(upperBeak);
+
+        // Beak hook — small curved tip at the end (signature seagull feature)
+        var hookGeo = new THREE.SphereGeometry(0.02, 6, 6);
+        var hook = new THREE.Mesh(hookGeo, billTipMat);
+        hook.scale.set(1.0, 0.7, 0.8);
+        hook.position.set(0.26, -0.02, 0);
+        headPivot.add(hook);
+
+        // Lower jaw — separate piece for beak-opening animation
+        var jawPivot = new THREE.Group();
+        jawPivot.position.set(0.14, -0.01, 0);
+        headPivot.add(jawPivot);
+        model.userData.parts.jaw = jawPivot;
+
+        var lowerJaw = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.14, 5), billMat);
+        lowerJaw.rotation.z = -Math.PI / 2 + 0.05;
+        lowerJaw.position.set(0.06, -0.01, 0);
+        jawPivot.add(lowerJaw);
+
+        // Bill tip spot (red/orange dot on upper beak — like real gulls)
+        var billSpot = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), billTipMat);
+        billSpot.position.set(0.24, 0.0, 0);
+        headPivot.add(billSpot);
+
+        // Eyebrow ridges — slight bony ridge above eyes (gives character)
+        [-0.065, 0.065].forEach(function(zPos) {
+            var brow = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 4), headMat);
+            brow.scale.set(1.5, 0.4, 0.8);
+            brow.position.set(0.08, 0.1, zPos);
+            headPivot.add(brow);
+        });
+
+        // Eyes — white with dark pupil + eyelid for blinking
+        var eyeData = [];
+        [-0.065, 0.065].forEach(function(zPos) {
+            // Eye white
+            var eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), eyeWhiteMat);
+            eyeWhite.position.set(0.1, 0.06, zPos);
+            headPivot.add(eyeWhite);
+
+            // Pupil — slightly forward to catch light
+            var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 6), pupilMat);
+            pupil.position.set(0.012, 0, zPos > 0 ? 0.003 : -0.003);
+            eyeWhite.add(pupil);
+
+            // Eyelid — half-sphere that scales Y to close
+            var lidMat = new THREE.MeshStandardMaterial({ color: colors.head });
+            var eyelid = new THREE.Mesh(
+                new THREE.SphereGeometry(0.03, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
+                lidMat
+            );
+            eyelid.position.set(0.1, 0.06, zPos);
+            eyelid.rotation.x = zPos > 0 ? -Math.PI / 2 : Math.PI / 2;
+            eyelid.scale.y = 0; // Open by default
+            headPivot.add(eyelid);
+
+            eyeData.push({ white: eyeWhite, pupil: pupil, lid: eyelid });
+        });
+        model.userData.parts.eyes = eyeData;
+
+        // === WINGS — 10 pieces (5 per side): shoulder, mid, outer, feather tips, dark wingtip ===
+        var wingData = [];
+        [-1, 1].forEach(function(side) {
+            // Segment 1: Shoulder pivot
+            var shoulder = new THREE.Group();
+            shoulder.position.set(-0.05, 0.52, side * 0.22);
+            model.add(shoulder);
+
+            var shoulderMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), wingMat);
+            shoulderMesh.scale.set(0.9, 0.18, 0.7);
+            shoulderMesh.position.set(0, 0, side * 0.04);
+            shoulder.add(shoulderMesh);
+
+            // Segment 2: Mid-wing pivot
+            var mid = new THREE.Group();
+            mid.position.set(-0.08, 0, side * 0.12);
+            shoulder.add(mid);
+
+            var midMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), wingMat);
+            midMesh.scale.set(0.85, 0.15, 0.7);
+            midMesh.position.set(-0.02, 0, side * 0.04);
+            mid.add(midMesh);
+
+            // Segment 3: Outer wing pivot
+            var outer = new THREE.Group();
+            outer.position.set(-0.06, 0, side * 0.1);
+            mid.add(outer);
+
+            var outerMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), wingMat);
+            outerMesh.scale.set(1.0, 0.15, 0.65);
+            outerMesh.position.set(-0.02, 0, side * 0.02);
+            outer.add(outerMesh);
+
+            // Feather tips — 2 elongated pieces that flutter independently
+            var featherTipPivot = new THREE.Group();
+            featherTipPivot.position.set(-0.1, 0, side * 0.04);
+            outer.add(featherTipPivot);
+
+            var ft1 = new THREE.Mesh(new THREE.SphereGeometry(0.04, 5, 3), wingTipMat);
+            ft1.scale.set(2.0, 0.15, 0.5);
+            ft1.position.set(-0.02, 0.005, side * 0.015);
+            featherTipPivot.add(ft1);
+
+            var ft2 = new THREE.Mesh(new THREE.SphereGeometry(0.035, 5, 3), wingTipMat);
+            ft2.scale.set(1.8, 0.15, 0.45);
+            ft2.position.set(-0.01, -0.005, side * -0.01);
+            featherTipPivot.add(ft2);
+
+            // Dark wingtip
+            var wingTip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 4), wingTipMat);
+            wingTip.scale.set(1.4, 0.18, 0.6);
+            wingTip.position.set(-0.14, -0.01, side * 0.03);
+            outer.add(wingTip);
+
+            wingData.push({
+                shoulder: shoulder, mid: mid, outer: outer,
+                featherTips: featherTipPivot, side: side
+            });
+        });
+        model.userData.parts.leftWing = wingData[0];
+        model.userData.parts.rightWing = wingData[1];
+
+        // === TAIL — 3 feathers (center + left + right) ===
+        var tailPivot = new THREE.Group();
+        tailPivot.position.set(-0.42, 0.48, 0);
+        model.add(tailPivot);
+        model.userData.parts.tail = tailPivot;
+
+        // Center tail feather
+        var tailCenter = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.22, 4), tailMat);
+        tailCenter.rotation.z = Math.PI / 2 + 0.15;
+        tailCenter.position.set(-0.08, 0.02, 0);
+        tailPivot.add(tailCenter);
+
+        // Left tail feather
+        var tailLeft = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.2, 4), tailMat);
+        tailLeft.rotation.z = Math.PI / 2 + 0.2;
+        tailLeft.position.set(-0.07, 0.01, -0.04);
+        tailPivot.add(tailLeft);
+
+        // Right tail feather
+        var tailRight = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.2, 4), tailMat);
+        tailRight.rotation.z = Math.PI / 2 + 0.2;
+        tailRight.position.set(-0.07, 0.01, 0.04);
+        tailPivot.add(tailRight);
+
+        // === LEGS — 3-segment articulated: upper leg, lower leg, webbed foot ===
+        var legData = [];
+        [{ z: 0.08, side: 'left' }, { z: -0.08, side: 'right' }].forEach(function(legInfo) {
+            // Hip pivot — where leg connects to body
+            var hipPivot = new THREE.Group();
+            hipPivot.position.set(0.02, 0.3, legInfo.z);
+            model.add(hipPivot);
+
+            // Upper leg (thigh) — short, tucked close
+            var upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.018, 0.14, 6), legMat);
+            upperLeg.position.set(0, -0.07, 0);
+            hipPivot.add(upperLeg);
+
+            // Knee pivot
+            var kneePivot = new THREE.Group();
+            kneePivot.position.set(0, -0.14, 0);
+            hipPivot.add(kneePivot);
+
+            // Lower leg (shin) — longer, thinner
+            var lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.013, 0.18, 6), legMat);
+            lowerLeg.position.set(0, -0.09, 0);
+            kneePivot.add(lowerLeg);
+
+            // Ankle pivot
+            var anklePivot = new THREE.Group();
+            anklePivot.position.set(0, -0.18, 0);
+            kneePivot.add(anklePivot);
+
+            // Webbed foot — flat triangle
+            var foot = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.1, 3), legMat);
+            foot.rotation.x = -Math.PI / 2;
+            foot.position.set(0.03, -0.01, 0);
+            foot.scale.set(1, 1, 0.3);
+            anklePivot.add(foot);
+
+            legData.push({
+                hip: hipPivot, knee: kneePivot, ankle: anklePivot,
+                side: legInfo.side
+            });
+        });
+        model.userData.parts.leftLeg = legData[0];
+        model.userData.parts.rightLeg = legData[1];
+
+        // Model faces +X — no rotation needed
+        return model;
+    }
+
+    // ========================================================================
     // MODEL BUILDERS REGISTRY
     // ========================================================================
     // Maps animal type names to their builder functions.
@@ -3838,7 +4210,8 @@ window.Enemies = (function() {
         uronin_seal: buildUroninSealModel,
         slitted_sardine: buildSlittedSardineModel,
         orcleton: buildOrcletonModel,
-        bakka_seal: buildBakkaSealModel
+        bakka_seal: buildBakkaSealModel,
+        pilfera_coastalis: buildPilferaCoastalisModel
     };
 
     // ========================================================================
@@ -3930,7 +4303,9 @@ window.Enemies = (function() {
             fleeSpeed: enemyData.fleeSpeed ? enemyData.fleeSpeed + Math.random() * enemyData.speedVariation : 0,
             dodgeChance: enemyData.dodgeChance || 0,
             canStealEggs: enemyData.canStealEggs || false,
-            fightsNestGuards: enemyData.fightsNestGuards || false
+            fightsNestGuards: enemyData.fightsNestGuards || false,
+            detectionRange: enemyData.detectionRange || 0,
+            canStealFood: enemyData.canStealFood || false
         };
 
         return enemy;
@@ -4107,6 +4482,19 @@ window.Enemies = (function() {
                 enemy.userData.stateTimer = 0;
                 enemy.userData.swimDir = { x: Math.cos(Math.random() * Math.PI * 2), z: Math.sin(Math.random() * Math.PI * 2) };
                 enemy.userData.warningTimer = 0;
+            } else if (animalType === 'pilfera_coastalis') {
+                enemy.userData.lifecycleState = 'wandering';
+                enemy.userData.stateTimer = 0;
+                enemy.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                // Flight state data
+                enemy.userData.flightState = 'grounded'; // grounded, taking_off, flying, landing
+                enemy.userData.flightTimer = 10 + Math.random() * 20; // seconds until next takeoff
+                enemy.userData.flightAltitude = 0;       // current height above ground
+                enemy.userData.targetAltitude = 0;       // desired altitude
+                enemy.userData.wingFlapPhase = 0;        // wing animation phase
+                enemy.userData.wingFlapSpeed = 0;        // how fast wings flap (varies by state)
+                enemy.userData.glideFlapTimer = 0;       // time until next occasional flap while gliding
+                enemy.userData.baseGroundY = enemy.userData.groundY || 0.25; // store original groundY
             } else if (animalType === 'slitted_sardine' || animalType === 'orcleton') {
                 enemy.userData.lifecycleState = 'swimming';
                 enemy.userData.ignoreGravity = true;
@@ -10347,6 +10735,715 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // PILFERA COASTALIS (Seagull) — Spawn flock on the beach
+    // ========================================================================
+    function spawnPilferaCoastalisFlock(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        // Beach is between forestEndZ (0) and sandEndZ (200) in coastal biome
+        var sandStartZ = 0;
+        var sandEndZ = 200;
+
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'pilfera_coastalis_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'pilfera_coastalis_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < count; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            var sx = (Math.random() - 0.5) * worldSize * 0.8;
+            var sz = sandStartZ + Math.random() * (sandEndZ - sandStartZ);
+
+            var gull = createEnemy(data, sx, sz);
+            if (!gull) continue;
+
+            gull.userData.lifecycleState = 'wandering';
+            gull.userData.stateTimer = 0;
+            gull.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            gull.userData.gender = data.gender;
+            // Beach bounds — keep seagulls on the sand
+            gull.userData.beachMinZ = sandStartZ - 20;
+            gull.userData.beachMaxZ = sandEndZ + 10;
+            // Flight init
+            gull.userData.flightState = 'grounded';
+            gull.userData.flightTimer = 10 + Math.random() * 20;
+            gull.userData.flightAltitude = 0;
+            gull.userData.targetAltitude = 0;
+            gull.userData.wingFlapPhase = 0;
+            gull.userData.wingFlapSpeed = 0;
+            gull.userData.glideFlapTimer = 0;
+            gull.userData.baseGroundY = gull.userData.groundY || 0.25;
+
+            GameState.enemies.push(gull);
+            GameState.scene.add(gull);
+        }
+
+        console.log('Spawned ' + count + ' Pilfera Coastalis seagulls on the beach');
+    }
+
+    // ========================================================================
+    // PILFERA COASTALIS — SHARED HELPERS
+    // ========================================================================
+
+    /**
+     * Get wing/body parts from a seagull enemy's model.
+     * Caches the result on userData for future calls.
+     */
+    function getSeagullParts(enemy) {
+        if (enemy.userData.cachedParts) return enemy.userData.cachedParts;
+        var parts = null;
+        for (var i = 0; i < enemy.children.length; i++) {
+            if (enemy.children[i].userData && enemy.children[i].userData.parts) {
+                parts = enemy.children[i].userData.parts;
+                break;
+            }
+        }
+        if (parts) enemy.userData.cachedParts = parts;
+        return parts;
+    }
+
+    /**
+     * Find a seagull nest by ID.
+     */
+    function findSeagullNest(nestId) {
+        if (!GameState.seagullNests) return null;
+        for (var i = 0; i < GameState.seagullNests.length; i++) {
+            if (GameState.seagullNests[i].id === nestId) return GameState.seagullNests[i];
+        }
+        return null;
+    }
+
+    /**
+     * Create a small fish mesh to carry in the bill.
+     * Returns a THREE.Group.
+     */
+    var _fishBodyGeo = null;
+    var _fishBodyMat = null;
+    var _fishTailGeo = null;
+    var _fishTailMat = null;
+    function createCarriedFishMesh() {
+        // Lazy-init shared geometry/materials
+        if (!_fishBodyGeo) {
+            _fishBodyGeo = new THREE.SphereGeometry(0.08, 6, 6);
+            _fishBodyMat = new THREE.MeshStandardMaterial({ color: 0x88AACC });
+            _fishTailGeo = new THREE.ConeGeometry(0.04, 0.08, 4);
+            _fishTailMat = new THREE.MeshStandardMaterial({ color: 0x7799BB });
+        }
+        var fishMesh = new THREE.Group();
+        var fishBody = new THREE.Mesh(_fishBodyGeo, _fishBodyMat);
+        fishBody.scale.set(2.0, 0.6, 0.6);
+        fishMesh.add(fishBody);
+        var tailFin = new THREE.Mesh(_fishTailGeo, _fishTailMat);
+        tailFin.position.set(-0.15, 0, 0);
+        tailFin.rotation.z = Math.PI / 2;
+        fishMesh.add(tailFin);
+        fishMesh.position.set(0.7, 0.82, 0);
+        return fishMesh;
+    }
+
+    /**
+     * Cascade wing flap animation for 3-segment wings.
+     * @param {Object} parts - { leftWing, rightWing } with .shoulder, .mid, .outer
+     * @param {number} phase - Current flap phase
+     * @param {number} amp - Amplitude
+     * @param {number} delay - Cascade delay between segments
+     */
+    function animateSeagullWings(parts, phase, amp, delay) {
+        if (!parts || !parts.leftWing) return;
+        var lw = parts.leftWing;
+        var rw = parts.rightWing;
+        lw.shoulder.rotation.x = Math.sin(phase) * amp;
+        lw.mid.rotation.x = Math.sin(phase - delay) * amp * 0.8;
+        lw.outer.rotation.x = Math.sin(phase - delay * 2) * amp * 0.6;
+        rw.shoulder.rotation.x = -Math.sin(phase) * amp;
+        rw.mid.rotation.x = -Math.sin(phase - delay) * amp * 0.8;
+        rw.outer.rotation.x = -Math.sin(phase - delay * 2) * amp * 0.6;
+    }
+
+    /**
+     * Set wings to a static pose.
+     */
+    function setSeagullWingPose(parts, shoulderAng, midAng, outerAng) {
+        if (!parts || !parts.leftWing) return;
+        parts.leftWing.shoulder.rotation.x = shoulderAng;
+        parts.leftWing.mid.rotation.x = midAng;
+        parts.leftWing.outer.rotation.x = outerAng;
+        parts.rightWing.shoulder.rotation.x = -shoulderAng;
+        parts.rightWing.mid.rotation.x = -midAng;
+        parts.rightWing.outer.rotation.x = -outerAng;
+    }
+
+    /**
+     * Initialize standard flight data on a seagull enemy.
+     */
+    function initSeagullFlightData(enemy, timerBase) {
+        enemy.userData.flightState = 'grounded';
+        enemy.userData.flightTimer = (timerBase || 10) + Math.random() * 20;
+        enemy.userData.flightAltitude = 0;
+        enemy.userData.targetAltitude = 0;
+        enemy.userData.wingFlapPhase = 0;
+        enemy.userData.wingFlapSpeed = 0;
+        enemy.userData.glideFlapTimer = 0;
+        enemy.userData.baseGroundY = enemy.userData.groundY || 0.25;
+    }
+
+    /**
+     * Animate seagull head: look-around, walk bob, and blinking.
+     * Called every frame for living seagulls.
+     */
+    function animateSeagullHead(parts, enemy, delta) {
+        if (!parts.headPivot) return;
+        var ud = enemy.userData;
+
+        // --- BLINKING ---
+        if (!ud.blinkTimer) ud.blinkTimer = 3 + Math.random() * 5;
+        ud.blinkTimer -= delta;
+        if (ud.blinkTimer <= 0) {
+            ud.blinkTimer = 3 + Math.random() * 6; // Next blink in 3-9 seconds
+            ud.blinkPhase = 0; // Start blink
+        }
+        if (ud.blinkPhase !== undefined && ud.blinkPhase < 0.3) {
+            ud.blinkPhase += delta;
+            // Close (0-0.1), hold (0.1-0.15), open (0.15-0.3)
+            var lidScale;
+            if (ud.blinkPhase < 0.1) {
+                lidScale = ud.blinkPhase / 0.1; // Close
+            } else if (ud.blinkPhase < 0.15) {
+                lidScale = 1.0; // Closed
+            } else {
+                lidScale = 1.0 - (ud.blinkPhase - 0.15) / 0.15; // Open
+            }
+            if (parts.eyes) {
+                for (var ei = 0; ei < parts.eyes.length; ei++) {
+                    parts.eyes[ei].lid.scale.y = lidScale;
+                }
+            }
+        } else {
+            // Eyes open
+            if (parts.eyes) {
+                for (var ej = 0; ej < parts.eyes.length; ej++) {
+                    parts.eyes[ej].lid.scale.y = 0;
+                }
+            }
+            ud.blinkPhase = 999; // Done blinking
+        }
+
+        // --- LOOK AROUND (idle) ---
+        if (!ud.lookTimer) ud.lookTimer = 1 + Math.random() * 3;
+        if (!ud.lookTargetY) ud.lookTargetY = 0;
+        if (!ud.lookTargetZ) ud.lookTargetZ = 0;
+        ud.lookTimer -= delta;
+        if (ud.lookTimer <= 0) {
+            ud.lookTimer = 2 + Math.random() * 4;
+            ud.lookTargetY = (Math.random() - 0.5) * 0.6; // Turn head left/right
+            ud.lookTargetZ = (Math.random() - 0.5) * 0.2; // Slight tilt
+        }
+        // Smooth interpolation
+        parts.headPivot.rotation.y += (ud.lookTargetY - parts.headPivot.rotation.y) * 2 * delta;
+        parts.headPivot.rotation.z += (ud.lookTargetZ - parts.headPivot.rotation.z) * 2 * delta;
+
+        // --- WALK BOB (only when grounded and moving) ---
+        var isWalking = ud.flightState === 'grounded' && ud.lifecycleState !== 'chick_in_nest';
+        if (isWalking && ud.speed > 0) {
+            ud.headBobPhase = (ud.headBobPhase || 0) + delta * 8;
+            // Forward-back bob like a pigeon
+            parts.headPivot.position.x = 0.08 + Math.sin(ud.headBobPhase) * 0.02;
+            parts.headPivot.position.y = 0.2 + Math.abs(Math.sin(ud.headBobPhase)) * 0.01;
+        } else {
+            // Reset to default position smoothly
+            parts.headPivot.position.x += (0.08 - parts.headPivot.position.x) * 3 * delta;
+            parts.headPivot.position.y += (0.2 - parts.headPivot.position.y) * 3 * delta;
+        }
+
+        // --- JAW (open when eating/fishing/calling) ---
+        if (parts.jaw) {
+            var jawTarget = 0;
+            if (ud.lifecycleState === 'surface_fishing' || ud.lifecycleState === 'scavenging') {
+                jawTarget = 0.3; // Mouth open when eating
+            }
+            parts.jaw.rotation.z += (jawTarget - parts.jaw.rotation.z) * 5 * delta;
+        }
+    }
+
+    /**
+     * Animate seagull legs based on current state.
+     * States: walking waddle, flying tuck, landing extend, floating hide.
+     */
+    function animateSeagullLegs(parts, enemy, delta) {
+        if (!parts.leftLeg || !parts.rightLeg) return;
+        var ud = enemy.userData;
+        var leftLeg = parts.leftLeg;
+        var rightLeg = parts.rightLeg;
+        var fState = ud.flightState;
+        var lState = ud.lifecycleState;
+
+        // --- FLYING: tuck legs back against belly ---
+        if (fState === 'taking_off' || fState === 'flying') {
+            var tuckTarget = 1.2; // Rotate hip backward
+            var kneeTarget = -1.5; // Fold knee
+            leftLeg.hip.rotation.x += (tuckTarget - leftLeg.hip.rotation.x) * 4 * delta;
+            rightLeg.hip.rotation.x += (tuckTarget - rightLeg.hip.rotation.x) * 4 * delta;
+            leftLeg.knee.rotation.x += (kneeTarget - leftLeg.knee.rotation.x) * 4 * delta;
+            rightLeg.knee.rotation.x += (kneeTarget - rightLeg.knee.rotation.x) * 4 * delta;
+            leftLeg.ankle.rotation.x += (0 - leftLeg.ankle.rotation.x) * 4 * delta;
+            rightLeg.ankle.rotation.x += (0 - rightLeg.ankle.rotation.x) * 4 * delta;
+            return;
+        }
+
+        // --- LANDING: extend legs forward to touch down ---
+        if (fState === 'landing') {
+            var extendTarget = -0.4;
+            var kneeExtend = 0.3;
+            leftLeg.hip.rotation.x += (extendTarget - leftLeg.hip.rotation.x) * 3 * delta;
+            rightLeg.hip.rotation.x += (extendTarget - rightLeg.hip.rotation.x) * 3 * delta;
+            leftLeg.knee.rotation.x += (kneeExtend - leftLeg.knee.rotation.x) * 3 * delta;
+            rightLeg.knee.rotation.x += (kneeExtend - rightLeg.knee.rotation.x) * 3 * delta;
+            return;
+        }
+
+        // --- FLOATING: legs hidden (tucked under) ---
+        if (lState === 'floating' || lState === 'surface_fishing') {
+            leftLeg.hip.rotation.x += (1.0 - leftLeg.hip.rotation.x) * 3 * delta;
+            rightLeg.hip.rotation.x += (1.0 - rightLeg.hip.rotation.x) * 3 * delta;
+            leftLeg.knee.rotation.x += (-1.2 - leftLeg.knee.rotation.x) * 3 * delta;
+            rightLeg.knee.rotation.x += (-1.2 - rightLeg.knee.rotation.x) * 3 * delta;
+            return;
+        }
+
+        // --- WALKING WADDLE: alternating leg swing ---
+        ud.walkPhase = (ud.walkPhase || 0) + delta * 6;
+        var walkAmp = 0.35;
+        // Left leg forward when right leg back
+        var leftSwing = Math.sin(ud.walkPhase) * walkAmp;
+        var rightSwing = Math.sin(ud.walkPhase + Math.PI) * walkAmp;
+
+        leftLeg.hip.rotation.x += (leftSwing - leftLeg.hip.rotation.x) * 5 * delta;
+        rightLeg.hip.rotation.x += (rightSwing - rightLeg.hip.rotation.x) * 5 * delta;
+
+        // Knee bends on backstroke
+        var leftKnee = leftSwing < 0 ? leftSwing * 0.5 : 0;
+        var rightKnee = rightSwing < 0 ? rightSwing * 0.5 : 0;
+        leftLeg.knee.rotation.x += (leftKnee - leftLeg.knee.rotation.x) * 5 * delta;
+        rightLeg.knee.rotation.x += (rightKnee - rightLeg.knee.rotation.x) * 5 * delta;
+
+        // Feet stay flat on ground
+        leftLeg.ankle.rotation.x += (0 - leftLeg.ankle.rotation.x) * 5 * delta;
+        rightLeg.ankle.rotation.x += (0 - rightLeg.ankle.rotation.x) * 5 * delta;
+    }
+
+    /**
+     * Animate feather tips — independent flutter in wind/turbulence.
+     * Only applies to adult/fledgling models that have featherTips.
+     */
+    function animateSeagullFeatherTips(parts, enemy, delta) {
+        var lw = parts.leftWing;
+        var rw = parts.rightWing;
+        if (!lw || !lw.featherTips || !rw || !rw.featherTips) return;
+
+        enemy.userData.featherPhase = (enemy.userData.featherPhase || 0) + delta * 5;
+        var fPhase = enemy.userData.featherPhase;
+
+        var isFlying = enemy.userData.flightState === 'flying' ||
+                       enemy.userData.flightState === 'taking_off';
+        var amp = isFlying ? 0.15 : 0.05; // More flutter when airborne
+
+        lw.featherTips.rotation.x = Math.sin(fPhase + 0.3) * amp;
+        lw.featherTips.rotation.z = Math.sin(fPhase * 1.3) * amp * 0.5;
+        rw.featherTips.rotation.x = Math.sin(fPhase + 0.7) * amp;
+        rw.featherTips.rotation.z = -Math.sin(fPhase * 1.3 + 0.5) * amp * 0.5;
+    }
+
+    /**
+     * Remove a seagull nest from the scene and GameState.
+     */
+    function cleanupSeagullNest(nest) {
+        if (nest.mesh && nest.mesh.parent) {
+            GameState.scene.remove(nest.mesh);
+        }
+        // Remove egg meshes if any
+        if (nest.eggs) {
+            for (var i = 0; i < nest.eggs.length; i++) {
+                if (nest.eggs[i].parent) GameState.scene.remove(nest.eggs[i]);
+            }
+            nest.eggs = [];
+        }
+        // Clear state
+        nest.chicks = [];
+        nest.state = 'empty';
+        nest.ownerId = null;
+        // Remove from array
+        if (GameState.seagullNests) {
+            var idx = GameState.seagullNests.indexOf(nest);
+            if (idx !== -1) GameState.seagullNests.splice(idx, 1);
+        }
+    }
+
+    // ========================================================================
+    // PILFERA COASTALIS — NESTING & BABY LIFECYCLE
+    // ========================================================================
+    // Flow: female finds tree → builds nest → male visits → eggs laid →
+    //       eggs hatch (3 min) → chicks in nest → parent feeds 5x →
+    //       fledgling leaves tree → hops/glides → grows up (4 min) → adult
+
+    /**
+     * Create a seagull nest in a tree.
+     * @param {THREE.Object3D} tree - The tree to nest in
+     * @returns {Object} - Seagull nest object
+     */
+    function createSeagullNest(tree) {
+        var nest = new THREE.Group();
+
+        // Small twig nest (smaller than goose nests — up in a tree)
+        var twigMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+        for (var i = 0; i < 10; i++) {
+            var angle = (i / 10) * Math.PI * 2;
+            var radius = 0.6;
+            var twig = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.04, 0.04, 0.5, 5),
+                twigMat
+            );
+            twig.position.set(
+                Math.cos(angle) * radius,
+                0,
+                Math.sin(angle) * radius
+            );
+            twig.rotation.y = angle;
+            twig.rotation.z = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+            nest.add(twig);
+        }
+
+        // Moss lining
+        var mossMat = new THREE.MeshStandardMaterial({ color: 0x6b8e23 });
+        var moss = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5, 10, 10),
+            mossMat
+        );
+        moss.scale.set(1, 0.25, 1);
+        moss.position.y = -0.05;
+        nest.add(moss);
+
+        // Position nest high in the tree (near the foliage)
+        var treeHeight = 7 + Math.random() * 2; // Trees are 7-11 units tall
+        var offsetX = (Math.random() - 0.5) * 1.5;
+        var offsetZ = (Math.random() - 0.5) * 1.5;
+        nest.position.set(
+            tree.position.x + offsetX,
+            treeHeight,
+            tree.position.z + offsetZ
+        );
+        GameState.scene.add(nest);
+
+        var nestObj = {
+            mesh: nest,
+            treeRef: tree,
+            position: { x: nest.position.x, y: treeHeight, z: nest.position.z },
+            id: 'seagull_nest_' + Date.now() + '_' + Math.random(),
+            ownerId: null,
+            eggs: [],          // Array of egg meshes (up to 3)
+            eggCount: 0,
+            hatchTime: 0,
+            chicks: [],        // Array of chick enemy references
+            feedCount: 0,      // How many times chicks have been fed
+            state: 'empty'     // empty, nesting, eggs, chicks
+        };
+
+        // Store in GameState
+        if (!GameState.seagullNests) GameState.seagullNests = [];
+        GameState.seagullNests.push(nestObj);
+
+        return nestObj;
+    }
+
+    /**
+     * Add eggs to a seagull nest.
+     * @param {Object} nest - The nest object
+     */
+    function laySeagullEggs(nest) {
+        var eggMat = new THREE.MeshStandardMaterial({ color: 0xD4C8A8 }); // Pale with grey spots
+        var spotMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+
+        for (var i = 0; i < 3; i++) {
+            var eggGroup = new THREE.Group();
+
+            // Egg body
+            var eggGeo = new THREE.SphereGeometry(0.12, 8, 8);
+            var egg = new THREE.Mesh(eggGeo, eggMat);
+            egg.scale.set(0.8, 1, 0.8);
+            eggGroup.add(egg);
+
+            // Grey spots (distinguishes from goose eggs)
+            for (var s = 0; s < 4; s++) {
+                var spotGeo = new THREE.SphereGeometry(0.025, 4, 4);
+                var spot = new THREE.Mesh(spotGeo, spotMat);
+                var sa = Math.random() * Math.PI * 2;
+                var se = (Math.random() - 0.5) * Math.PI * 0.6;
+                spot.position.set(
+                    Math.cos(sa) * Math.cos(se) * 0.1,
+                    Math.sin(se) * 0.1,
+                    Math.sin(sa) * Math.cos(se) * 0.1
+                );
+                eggGroup.add(spot);
+            }
+
+            // Position eggs in a cluster inside the nest
+            var eAngle = (i / 3) * Math.PI * 2 + Math.random() * 0.3;
+            eggGroup.position.set(
+                nest.position.x + Math.cos(eAngle) * 0.15,
+                nest.position.y + 0.1,
+                nest.position.z + Math.sin(eAngle) * 0.15
+            );
+
+            GameState.scene.add(eggGroup);
+            nest.eggs.push(eggGroup);
+        }
+
+        nest.eggCount = 3;
+        nest.hatchTime = GameState.clock.elapsedTime + 180; // 3 minutes
+        nest.state = 'eggs';
+
+        console.log('Seagull laid 3 eggs in nest', nest.id);
+    }
+
+    /**
+     * Hatch seagull eggs into chicks.
+     * @param {Object} nest - The nest with eggs
+     */
+    function hatchSeagullEggs(nest) {
+        // Remove egg meshes
+        for (var i = 0; i < nest.eggs.length; i++) {
+            GameState.scene.remove(nest.eggs[i]);
+        }
+        nest.eggs = [];
+        nest.eggCount = 0;
+
+        // Spawn 3 chicks at the nest (in the tree)
+        for (var c = 0; c < 3; c++) {
+            var isMale = Math.random() < 0.5;
+            var chickDataId = isMale ? 'pilfera_coastalis_chick_male' : 'pilfera_coastalis_chick_female';
+            var chickData = window.ENEMIES.find(function(e) { return e.id === chickDataId; });
+            if (!chickData) continue;
+
+            var chick = createEnemy(chickData, nest.position.x + (Math.random() - 0.5) * 0.5, nest.position.z + (Math.random() - 0.5) * 0.5);
+            if (!chick) continue;
+
+            // Position chick in the tree nest
+            chick.position.y = nest.position.y + 0.3;
+            chick.userData.lifecycleState = 'chick_in_nest';
+            chick.userData.nestId = nest.id;
+            chick.userData.nestPos = { x: nest.position.x, y: nest.position.y, z: nest.position.z };
+            chick.userData.parentId = nest.ownerId;
+            chick.userData.ignoreGravity = true; // Don't fall to ground
+            chick.userData.feedsReceived = 0;
+            chick.userData.feedsNeeded = 5;
+            chick.userData.gender = isMale ? 'male' : 'female';
+            chick.userData.entityId = 'seagull_chick_' + Date.now() + '_' + c + '_' + Math.random();
+
+            GameState.enemies.push(chick);
+            GameState.scene.add(chick);
+            nest.chicks.push(chick);
+        }
+
+        nest.feedCount = 0;
+        nest.state = 'chicks';
+        console.log('3 seagull chicks hatched in nest', nest.id);
+    }
+
+    /**
+     * Feed a chick in a nest. Called when parent arrives with food.
+     * @param {Object} nest - The nest with chicks
+     */
+    function feedSeagullChicks(nest) {
+        nest.feedCount++;
+
+        // All chicks in the nest get fed together
+        for (var i = 0; i < nest.chicks.length; i++) {
+            var chick = nest.chicks[i];
+            if (chick && chick.userData) {
+                chick.userData.feedsReceived = nest.feedCount;
+            }
+        }
+
+        // After 5 feeds, chicks fledge
+        if (nest.feedCount >= 5) {
+            fledgeSeagullChicks(nest);
+        }
+    }
+
+    /**
+     * Fledge chicks — they leave the nest tree and become ground fledglings.
+     * @param {Object} nest - The nest with chicks ready to fledge
+     */
+    function fledgeSeagullChicks(nest) {
+        for (var i = 0; i < nest.chicks.length; i++) {
+            var chick = nest.chicks[i];
+            if (!chick || !chick.userData || chick.userData.health <= 0) continue;
+
+            // Remove the chick
+            GameState.scene.remove(chick);
+            var chickIdx = GameState.enemies.indexOf(chick);
+            if (chickIdx !== -1) GameState.enemies.splice(chickIdx, 1);
+
+            // Spawn fledgling on the ground below the tree
+            var isMale = chick.userData.gender === 'male';
+            var fledglingDataId = isMale ? 'pilfera_coastalis_fledgling_male' : 'pilfera_coastalis_fledgling_female';
+            var fledglingData = window.ENEMIES.find(function(e) { return e.id === fledglingDataId; });
+            if (!fledglingData) continue;
+
+            var fx = nest.position.x + (Math.random() - 0.5) * 3;
+            var fz = nest.position.z + (Math.random() - 0.5) * 3;
+            var fledgling = createEnemy(fledglingData, fx, fz);
+            if (!fledgling) continue;
+
+            fledgling.userData.lifecycleState = 'fledgling';
+            fledgling.userData.parentId = nest.ownerId;
+            fledgling.userData.entityId = 'seagull_fledgling_' + Date.now() + '_' + i + '_' + Math.random();
+            fledgling.userData.gender = isMale ? 'male' : 'female';
+            fledgling.userData.fledgeTime = GameState.clock.elapsedTime;
+            fledgling.userData.maturityTime = GameState.clock.elapsedTime + 240; // 4 minutes to grow up
+            fledgling.userData.hopTimer = 2 + Math.random() * 3;
+            fledgling.userData.glideTimer = 10 + Math.random() * 10;
+            fledgling.userData.isHopping = false;
+            fledgling.userData.hopVelocityY = 0;
+            // Flight state data (inactive for fledglings — no real flying)
+            fledgling.userData.flightState = 'grounded';
+            fledgling.userData.flightTimer = 999; // Don't take off like adults
+            fledgling.userData.flightAltitude = 0;
+            fledgling.userData.targetAltitude = 0;
+            fledgling.userData.wingFlapPhase = 0;
+            fledgling.userData.wingFlapSpeed = 0;
+            fledgling.userData.glideFlapTimer = 0;
+            fledgling.userData.baseGroundY = fledgling.userData.groundY || 0.2;
+            fledgling.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+
+            GameState.enemies.push(fledgling);
+            GameState.scene.add(fledgling);
+        }
+
+        // Clean up nest — remove mesh from scene and reset state
+        cleanupSeagullNest(nest);
+        console.log('Seagull chicks fledged from nest', nest.id);
+    }
+
+    /**
+     * Grow a fledgling into an adult seagull.
+     * @param {THREE.Object3D} fledgling - The fledgling enemy
+     */
+    function growUpSeagull(fledgling) {
+        var isMale = fledgling.userData.gender === 'male';
+        var adultDataId = isMale ? 'pilfera_coastalis_male' : 'pilfera_coastalis_female';
+        var adultData = window.ENEMIES.find(function(e) { return e.id === adultDataId; });
+        if (!adultData) return;
+
+        // Store position
+        var px = fledgling.position.x;
+        var pz = fledgling.position.z;
+
+        // Remove fledgling
+        GameState.scene.remove(fledgling);
+        var fledIdx = GameState.enemies.indexOf(fledgling);
+        if (fledIdx !== -1) GameState.enemies.splice(fledIdx, 1);
+
+        // Spawn adult at same position
+        var adult = createEnemy(adultData, px, pz);
+        if (!adult) return;
+
+        adult.userData.lifecycleState = 'wandering';
+        adult.userData.stateTimer = 0;
+        adult.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+        adult.userData.gender = isMale ? 'male' : 'female';
+        adult.userData.flightState = 'grounded';
+        adult.userData.flightTimer = 10 + Math.random() * 20;
+        adult.userData.flightAltitude = 0;
+        adult.userData.targetAltitude = 0;
+        adult.userData.wingFlapPhase = 0;
+        adult.userData.wingFlapSpeed = 0;
+        adult.userData.glideFlapTimer = 0;
+        adult.userData.baseGroundY = adult.userData.groundY || 0.25;
+        adult.userData.beachMinZ = -20;
+        adult.userData.beachMaxZ = 210;
+
+        GameState.enemies.push(adult);
+        GameState.scene.add(adult);
+
+        console.log('Seagull fledgling grew up into adult ' + (isMale ? 'male' : 'female'));
+    }
+
+    /**
+     * Update seagull nests — check egg hatching.
+     * Called from updateEnemies or the main game loop.
+     */
+    function updateSeagullNests(delta) {
+        if (!GameState.seagullNests) return;
+        var currentTime = GameState.clock.elapsedTime;
+
+        for (var i = GameState.seagullNests.length - 1; i >= 0; i--) {
+            var nest = GameState.seagullNests[i];
+
+            // Hatch eggs when timer expires
+            if (nest.state === 'eggs' && currentTime >= nest.hatchTime) {
+                hatchSeagullEggs(nest);
+            }
+        }
+    }
+
+    /**
+     * Trigger seagull mating cycle. Called periodically.
+     * Finds an available female, has her fly to a tree and nest.
+     */
+    function triggerSeagullMating() {
+        if (!GameState.seagullNests) GameState.seagullNests = [];
+
+        // Don't make too many nests at once
+        if (GameState.seagullNests.length >= 3) return;
+
+        // Find an available adult female (wandering, grounded, not already nesting)
+        var females = GameState.enemies.filter(function(e) {
+            return e.userData.type === 'pilfera_coastalis' &&
+                   e.userData.gender === 'female' &&
+                   !e.userData.isBaby &&
+                   !e.userData.babyStage &&
+                   e.userData.lifecycleState === 'wandering' &&
+                   e.userData.flightState === 'grounded' &&
+                   !e.userData.isNesting;
+        });
+
+        if (females.length === 0) return;
+
+        // Pick a random female
+        var female = females[Math.floor(Math.random() * females.length)];
+
+        // Find a coastal tree to nest in
+        var coastalTrees = [];
+        if (GameState.trees) {
+            for (var t = 0; t < GameState.trees.length; t++) {
+                var tree = GameState.trees[t];
+                if (tree.userData && tree.userData.biome === 'coastal') {
+                    // Check tree isn't already occupied by another nest
+                    var occupied = false;
+                    for (var n = 0; n < GameState.seagullNests.length; n++) {
+                        if (GameState.seagullNests[n].treeRef === tree) {
+                            occupied = true;
+                            break;
+                        }
+                    }
+                    if (!occupied) coastalTrees.push(tree);
+                }
+            }
+        }
+
+        if (coastalTrees.length === 0) return;
+
+        // Pick a random tree
+        var targetTree = coastalTrees[Math.floor(Math.random() * coastalTrees.length)];
+
+        // Set female to nesting mode — she'll fly to the tree
+        female.userData.isNesting = true;
+        female.userData.nestingTree = targetTree;
+        female.userData.lifecycleState = 'flying_to_nest';
+        female.userData.entityId = female.userData.entityId || ('seagull_' + Date.now() + '_' + Math.random());
+
+        console.log('Female seagull heading to tree to nest');
+    }
+
+    // ========================================================================
     // UPDATE ENEMIES (AI & MOVEMENT)
     // ========================================================================
     // BEHAVIOR FLAGS — data-driven, defined in js/data/enemies.js
@@ -10372,9 +11469,28 @@ window.Enemies = (function() {
         for (let i = GameState.enemies.length - 1; i >= 0; i--) {
             const enemy = GameState.enemies[i];
 
+            // Animal discovery — check before any skips so flying/tree animals are discovered too
+            if (enemy.userData.type && GameState.discoveredAnimals &&
+                GameState.discoveredAnimals.indexOf(enemy.userData.type) === -1) {
+                var discoveryDist = enemy.position.distanceTo(GameState.peccary.position);
+                var detRange = enemy.userData.detectionRange || 15;
+                if (discoveryDist < detRange * 1.5) {
+                    GameState.discoveredAnimals.push(enemy.userData.type);
+                    var bestiaryEntry = BESTIARY.find(function(b) { return b.id === enemy.userData.type; });
+                    if (bestiaryEntry) {
+                        UI.showToast('New Species Discovered!', bestiaryEntry.icon + ' ' + bestiaryEntry.name + ' added to your bestiary.', 'Press <b>B</b> to learn more.');
+                    }
+                    // Refresh bestiary if currently open
+                    if (GameState.isInventoryOpen) {
+                        Inventory.refreshBestiary();
+                    }
+                }
+            }
+
             // Skip enemies that manage their own Y position (tree dwellers, flying animals, etc)
-            // These animals have custom update functions and shouldn't be forced to ground
-            if (enemy.userData.ignoreGravity) {
+            // BUT don't skip seagulls — they use ignoreGravity for in-tree states
+            // and still need their lifecycle handler to run
+            if (enemy.userData.ignoreGravity && enemy.userData.type !== 'pilfera_coastalis') {
                 continue;
             }
 
@@ -10382,7 +11498,7 @@ window.Enemies = (function() {
             const distance = enemy.position.distanceTo(GameState.peccary.position);
 
             // Track closest hostile enemy for warning indicator
-            if (!enemy.userData.friendly) {
+            if (!enemy.userData.friendly || enemy.userData.retaliating) {
                 closestHostile = Math.min(closestHostile, distance);
             }
             closestDistance = Math.min(closestDistance, distance);
@@ -10400,6 +11516,960 @@ window.Enemies = (function() {
 
             let direction = enemy.userData.wanderDir; // Default to wander direction
             let speed = enemy.userData.speed * 0.5;
+
+            // =================================================================
+            // UNIVERSAL RETALIATION — any animal fights back when hit by player
+            // This overrides normal behavior for ALL animal types
+            // =================================================================
+            if (enemy.userData.retaliating || (enemy.userData.retaliationFleeing && enemy.userData.fleeTimer > 0)) {
+                if (enemy.userData.retaliationFleeing) {
+                    // Fleeing after retaliation hits
+                    enemy.userData.fleeTimer -= delta;
+                    direction = enemy.userData.fleeDirection;
+                    speed = enemy.userData.fleeSpeed || enemy.userData.speed * 1.5;
+
+                    if (enemy.userData.fleeTimer <= 0) {
+                        enemy.userData.retaliationFleeing = false;
+                        enemy.userData.fleeDirection = null;
+                    }
+                } else {
+                    // Chase player and fight back
+                    var retDistToPlayer = enemy.position.distanceTo(GameState.peccary.position);
+
+                    if (retDistToPlayer > enemy.userData.radius + GameState.peccary.userData.radius + 0.5) {
+                        direction = new THREE.Vector3()
+                            .subVectors(GameState.peccary.position, enemy.position)
+                            .normalize();
+                        speed = enemy.userData.chaseSpeed || enemy.userData.speed * 1.3;
+                    } else {
+                        // Close enough — attack!
+                        Game.takeDamage(enemy.userData.damage * delta * 2, enemy.userData.type);
+                        enemy.userData.retaliationHits += delta * 2;
+
+                        if (enemy.userData.retaliationHits >= enemy.userData.retaliationMaxHits) {
+                            enemy.userData.retaliating = false;
+                            enemy.userData.retaliationFleeing = true;
+                            enemy.userData.fleeDirection = new THREE.Vector3()
+                                .subVectors(enemy.position, GameState.peccary.position)
+                                .normalize();
+                            enemy.userData.fleeTimer = 6;
+                        }
+                        speed = 0;
+                    }
+                }
+
+                // Apply movement for retaliating/fleeing animal
+                if (direction && speed > 0) {
+                    var retInWater = Environment.isInRiver(enemy.position.x, enemy.position.z);
+                    if (retInWater && !enemy.userData.immuneToWater) speed *= 0.5;
+                    enemy.position.x += direction.x * speed * delta;
+                    enemy.position.z += direction.z * speed * delta;
+
+                    // Face movement direction
+                    var retTargetRot = -Math.atan2(direction.z, direction.x);
+                    var retDiff = retTargetRot - enemy.rotation.y;
+                    while (retDiff > Math.PI) retDiff -= Math.PI * 2;
+                    while (retDiff < -Math.PI) retDiff += Math.PI * 2;
+                    enemy.rotation.y += retDiff * 0.1;
+                }
+
+                // Walking animation bob
+                var retModel = enemy.children[0];
+                if (retModel && speed > 0.5) {
+                    enemy.userData.walkPhase = (enemy.userData.walkPhase || 0) + delta * 10;
+                    var retBob = Math.abs(Math.sin(enemy.userData.walkPhase * 2)) * 0.08;
+                    var retTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = retTerrainY + (enemy.userData.groundY || 0.3) + retBob;
+                }
+
+                continue; // Skip normal behavior
+            }
+
+            // =================================================================
+            // PILFERA COASTALIS — LIFECYCLE STATES (nesting, chicks, fledglings)
+            // =================================================================
+            if (enemy.userData.type === 'pilfera_coastalis') {
+                var gullState = enemy.userData.lifecycleState;
+
+                // Animate head, legs, and feather tips every frame
+                var animParts = getSeagullParts(enemy);
+                if (animParts) {
+                    animateSeagullHead(animParts, enemy, delta);
+                    animateSeagullLegs(animParts, enemy, delta);
+                    animateSeagullFeatherTips(animParts, enemy, delta);
+                }
+
+                // --- CHICK IN NEST: sits in tree, bobs head, waits for food ---
+                if (gullState === 'chick_in_nest') {
+                    // Keep chick at nest position (in the tree)
+                    if (enemy.userData.nestPos) {
+                        enemy.position.x = enemy.userData.nestPos.x + Math.sin(GameState.clock.elapsedTime * 2 + enemy.position.x) * 0.1;
+                        enemy.position.y = enemy.userData.nestPos.y + 0.3 + Math.sin(GameState.clock.elapsedTime * 3) * 0.05;
+                        enemy.position.z = enemy.userData.nestPos.z + Math.cos(GameState.clock.elapsedTime * 2 + enemy.position.z) * 0.1;
+                    }
+                    continue; // Skip all other behavior
+                }
+
+                // --- FLEDGLING: hops on ground, attempts short glides, grows up ---
+                if (gullState === 'fledgling') {
+                    // Check if it's time to grow up
+                    if (enemy.userData.maturityTime && GameState.clock.elapsedTime >= enemy.userData.maturityTime) {
+                        growUpSeagull(enemy);
+                        continue;
+                    }
+
+                    // Hopping behavior
+                    enemy.userData.hopTimer -= delta;
+                    if (enemy.userData.hopTimer <= 0 && !enemy.userData.isHopping) {
+                        enemy.userData.isHopping = true;
+                        enemy.userData.hopVelocityY = 3 + Math.random() * 2;
+                        // New random wander direction on each hop
+                        var hopAngle = Math.random() * Math.PI * 2;
+                        enemy.userData.wanderDir = new THREE.Vector3(Math.cos(hopAngle), 0, Math.sin(hopAngle));
+                        enemy.userData.hopTimer = 1.5 + Math.random() * 3;
+                    }
+
+                    if (enemy.userData.isHopping) {
+                        enemy.userData.hopVelocityY -= 15 * delta; // gravity
+                        enemy.userData.flightAltitude += enemy.userData.hopVelocityY * delta;
+                        if (enemy.userData.flightAltitude <= 0) {
+                            enemy.userData.flightAltitude = 0;
+                            enemy.userData.isHopping = false;
+                        }
+                    }
+
+                    // Glide attempt — occasionally flap wings and hop higher
+                    enemy.userData.glideTimer -= delta;
+                    if (enemy.userData.glideTimer <= 0) {
+                        enemy.userData.glideTimer = 8 + Math.random() * 12;
+                        enemy.userData.isHopping = true;
+                        enemy.userData.hopVelocityY = 5 + Math.random() * 3; // Higher hop for glide attempt
+                        enemy.userData.wingFlapPhase = 0;
+                        enemy.userData.wingFlapSpeed = 10; // Fast flapping
+                        enemy.userData.glideFlapBurst = 1.5; // Flap for 1.5 seconds
+                    }
+
+                    // Wing flap animation during glide attempts
+                    if (enemy.userData.glideFlapBurst > 0) {
+                        enemy.userData.glideFlapBurst -= delta;
+                        enemy.userData.wingFlapPhase += (enemy.userData.wingFlapSpeed || 0) * delta;
+                        // Animate wings during burst flap
+                        var fParts = getSeagullParts(enemy);
+                        if (fParts && fParts.leftWing) {
+                            animateSeagullWings(fParts, enemy.userData.wingFlapPhase, 0.9, 0.4);
+                        }
+                    }
+
+                    // Move
+                    var fledgeSpeed = enemy.userData.speed * 0.4;
+                    enemy.position.x += enemy.userData.wanderDir.x * fledgeSpeed * delta;
+                    enemy.position.z += enemy.userData.wanderDir.z * fledgeSpeed * delta;
+
+                    // Y position (ground + hop height)
+                    var fledgeTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = fledgeTerrainY + (enemy.userData.groundY || 0.2) + (enemy.userData.flightAltitude || 0);
+
+                    // Face movement direction
+                    var fledgeTargetRot = -Math.atan2(enemy.userData.wanderDir.z, enemy.userData.wanderDir.x);
+                    enemy.rotation.y += (fledgeTargetRot - enemy.rotation.y) * 0.1;
+
+                    continue; // Skip all other behavior
+                }
+
+                // --- FLYING TO NEST: female flies toward her target tree ---
+                if (gullState === 'flying_to_nest') {
+                    var nestTree = enemy.userData.nestingTree;
+                    if (!nestTree) {
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.isNesting = false;
+                    } else {
+                        // Fly toward tree
+                        var toTreeX = nestTree.position.x - enemy.position.x;
+                        var toTreeZ = nestTree.position.z - enemy.position.z;
+                        var toTreeDist = Math.sqrt(toTreeX * toTreeX + toTreeZ * toTreeZ);
+
+                        if (toTreeDist > 2) {
+                            // Rise up and fly toward tree
+                            var flySpeed = enemy.userData.speed * 1.5;
+                            enemy.position.x += (toTreeX / toTreeDist) * flySpeed * delta;
+                            enemy.position.z += (toTreeZ / toTreeDist) * flySpeed * delta;
+
+                            // Rise to tree height
+                            var targetY = 7 + (enemy.userData.groundY || 0.25);
+                            if (enemy.position.y < targetY) {
+                                enemy.position.y += 5 * delta;
+                            }
+
+                            // Face tree
+                            var toTreeRot = -Math.atan2(toTreeZ, toTreeX);
+                            enemy.rotation.y += (toTreeRot - enemy.rotation.y) * 0.1;
+
+                            // Flap wings while flying to nest
+                            enemy.userData.wingFlapPhase = (enemy.userData.wingFlapPhase || 0) + 10 * delta;
+                            var nfParts = getSeagullParts(enemy);
+                            if (nfParts && nfParts.leftWing) {
+                                animateSeagullWings(nfParts, enemy.userData.wingFlapPhase, 1.0, 0.4);
+                            }
+                        } else {
+                            // Arrived at tree — create nest and lay eggs
+                            var newNest = createSeagullNest(nestTree);
+                            newNest.ownerId = enemy.userData.entityId;
+                            laySeagullEggs(newNest);
+
+                            // Position female at nest
+                            enemy.position.set(newNest.position.x, newNest.position.y + 0.3, newNest.position.z);
+                            enemy.userData.lifecycleState = 'guarding_nest';
+                            enemy.userData.currentNestId = newNest.id;
+                            enemy.userData.ignoreGravity = true; // Stay in tree
+                        }
+                    }
+                    continue;
+                }
+
+                // --- GUARDING NEST: sit on nest until eggs hatch, then start feeding ---
+                if (gullState === 'guarding_nest') {
+                    // Find our nest
+                    var guardNest = findSeagullNest(enemy.userData.currentNestId);
+
+                    if (!guardNest || guardNest.state === 'empty') {
+                        // Nest gone or empty — go back to wandering
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.isNesting = false;
+                        enemy.userData.ignoreGravity = false;
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 10 + Math.random() * 20;
+                    } else if (guardNest.state === 'chicks') {
+                        // Chicks hatched — start feeding trips
+                        enemy.userData.lifecycleState = 'feeding_trip';
+                        enemy.userData.ignoreGravity = false;
+                        enemy.userData.feedingPhase = 'leaving_nest'; // leaving_nest → foraging → returning
+                        enemy.userData.feedingTimer = 0;
+                    } else {
+                        // Sitting on eggs — gentle bob animation
+                        enemy.position.y = guardNest.position.y + 0.3 + Math.sin(GameState.clock.elapsedTime * 1.5) * 0.03;
+                    }
+                    continue;
+                }
+
+                // --- FEEDING TRIP: fly to beach, find food, bring back to nest ---
+                if (gullState === 'feeding_trip') {
+                    var feedNest = findSeagullNest(enemy.userData.currentNestId);
+
+                    if (!feedNest || feedNest.state !== 'chicks') {
+                        // Chicks fledged or nest gone — back to normal
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.isNesting = false;
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 10 + Math.random() * 20;
+                        // Fall through to normal behavior
+                    } else {
+                        var feedPhase = enemy.userData.feedingPhase;
+
+                        if (feedPhase === 'leaving_nest') {
+                            // Fly down from tree to beach
+                            var beachZ = 50 + Math.random() * 100; // Random spot on beach
+                            if (!enemy.userData.feedTarget) {
+                                enemy.userData.feedTarget = {
+                                    x: enemy.position.x + (Math.random() - 0.5) * 40,
+                                    z: beachZ
+                                };
+                            }
+                            var toFeedX = enemy.userData.feedTarget.x - enemy.position.x;
+                            var toFeedZ = enemy.userData.feedTarget.z - enemy.position.z;
+                            var toFeedDist = Math.sqrt(toFeedX * toFeedX + toFeedZ * toFeedZ);
+
+                            if (toFeedDist > 2) {
+                                var feedFlySpeed = enemy.userData.speed * 1.5;
+                                enemy.position.x += (toFeedX / toFeedDist) * feedFlySpeed * delta;
+                                enemy.position.z += (toFeedZ / toFeedDist) * feedFlySpeed * delta;
+                                // Descend toward ground
+                                var feedGroundY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z) + (enemy.userData.groundY || 0.25);
+                                if (enemy.position.y > feedGroundY + 0.5) {
+                                    enemy.position.y -= 4 * delta;
+                                } else {
+                                    enemy.position.y = feedGroundY;
+                                }
+                                // Face direction
+                                var feedRot = -Math.atan2(toFeedZ, toFeedX);
+                                enemy.rotation.y += (feedRot - enemy.rotation.y) * 0.1;
+                            } else {
+                                // Arrived at beach — forage
+                                enemy.userData.feedingPhase = 'foraging';
+                                enemy.userData.feedingTimer = 3 + Math.random() * 4; // Forage for 3-7 seconds
+                                enemy.userData.feedTarget = null;
+                            }
+                        } else if (feedPhase === 'foraging') {
+                            // Walk around pecking at the sand
+                            enemy.userData.feedingTimer -= delta;
+
+                            // Wander and bob (pecking animation)
+                            var forageSpeed = enemy.userData.speed * 0.3;
+                            if (!enemy.userData.wanderDir) {
+                                enemy.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                            }
+                            enemy.position.x += enemy.userData.wanderDir.x * forageSpeed * delta;
+                            enemy.position.z += enemy.userData.wanderDir.z * forageSpeed * delta;
+                            var forageGY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z) + (enemy.userData.groundY || 0.25);
+                            // Pecking bob
+                            enemy.position.y = forageGY + Math.abs(Math.sin(GameState.clock.elapsedTime * 6)) * 0.08;
+
+                            if (enemy.userData.feedingTimer <= 0) {
+                                // Got food — fly back to nest
+                                enemy.userData.feedingPhase = 'returning';
+                            }
+                        } else if (feedPhase === 'returning') {
+                            // Fly back up to nest
+                            var toNestX = feedNest.position.x - enemy.position.x;
+                            var toNestZ = feedNest.position.z - enemy.position.z;
+                            var toNestDist = Math.sqrt(toNestX * toNestX + toNestZ * toNestZ);
+
+                            if (toNestDist > 1.5) {
+                                var returnSpeed = enemy.userData.speed * 1.5;
+                                enemy.position.x += (toNestX / toNestDist) * returnSpeed * delta;
+                                enemy.position.z += (toNestZ / toNestDist) * returnSpeed * delta;
+                                // Rise to nest height
+                                if (enemy.position.y < feedNest.position.y) {
+                                    enemy.position.y += 5 * delta;
+                                }
+                                var retRot = -Math.atan2(toNestZ, toNestX);
+                                enemy.rotation.y += (retRot - enemy.rotation.y) * 0.1;
+                            } else {
+                                // Arrived at nest — feed chicks
+                                feedSeagullChicks(feedNest);
+                                enemy.position.set(feedNest.position.x, feedNest.position.y + 0.3, feedNest.position.z);
+
+                                if (feedNest.state === 'chicks') {
+                                    // More feeding needed — go again after a short rest
+                                    enemy.userData.feedingPhase = 'leaving_nest';
+                                    enemy.userData.feedingTimer = 5 + Math.random() * 5; // Rest before next trip
+                                } else {
+                                    // Chicks fledged — back to normal
+                                    enemy.userData.lifecycleState = 'wandering';
+                                    enemy.userData.isNesting = false;
+                                    enemy.userData.ignoreGravity = false;
+                                    enemy.userData.flightState = 'grounded';
+                                    enemy.userData.flightTimer = 10 + Math.random() * 20;
+                                }
+                            }
+                        }
+
+                        continue; // Skip normal behavior during feeding trips
+                    }
+                }
+
+                // --- FLOATING ON OCEAN: bob on waves, look for fish ---
+                if (gullState === 'floating') {
+                    // Bob on ocean surface with wave motion
+                    var waveTime = GameState.clock.elapsedTime;
+                    var waveY = 0.1 + Math.sin(enemy.position.x * 0.15 + waveTime * 2.0) * 0.15
+                                    + Math.sin(enemy.position.z * 0.2 + waveTime * 1.5) * 0.1;
+                    enemy.position.y = waveY;
+
+                    // Gentle drift
+                    if (!enemy.userData.driftDir) {
+                        var dAngle = Math.random() * Math.PI * 2;
+                        enemy.userData.driftDir = new THREE.Vector3(Math.cos(dAngle), 0, Math.sin(dAngle));
+                    }
+                    enemy.position.x += enemy.userData.driftDir.x * 0.3 * delta;
+                    enemy.position.z += enemy.userData.driftDir.z * 0.3 * delta;
+
+                    // Occasional direction change
+                    enemy.userData.stateTimer = (enemy.userData.stateTimer || 0) + delta;
+                    if (enemy.userData.stateTimer > 5 + Math.random() * 5) {
+                        enemy.userData.stateTimer = 0;
+                        var dAngle2 = Math.random() * Math.PI * 2;
+                        enemy.userData.driftDir = new THREE.Vector3(Math.cos(dAngle2), 0, Math.sin(dAngle2));
+                    }
+
+                    // Face drift direction
+                    var floatRot = -Math.atan2(enemy.userData.driftDir.z, enemy.userData.driftDir.x);
+                    enemy.rotation.y += (floatRot - enemy.rotation.y) * 0.05;
+
+                    // Slight roll with waves
+                    enemy.rotation.z = Math.sin(waveTime * 1.2 + enemy.position.x) * 0.08;
+
+                    // Try to spot a nearby sardine for surface fishing
+                    if (!enemy.userData.fishCooldown || enemy.userData.fishCooldown <= 0) {
+                        var nearestFish = findNearestFish(enemy, 'slitted_sardine', 12);
+                        if (nearestFish) {
+                            enemy.userData.lifecycleState = 'surface_fishing';
+                            enemy.userData.fishTarget = nearestFish;
+                            enemy.userData.fishingTimer = 0;
+                            enemy.userData.fishCooldown = 15 + Math.random() * 10;
+                        }
+                    } else {
+                        enemy.userData.fishCooldown -= delta;
+                    }
+
+                    // After some time, take off again
+                    enemy.userData.floatTimer = (enemy.userData.floatTimer || 20 + Math.random() * 20) - delta;
+                    if (enemy.userData.floatTimer <= 0) {
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 2 + Math.random() * 5; // Take off soon
+                        enemy.userData.floatTimer = null;
+                    }
+
+                    continue;
+                }
+
+                // --- SURFACE FISHING: dunk head into water to grab fish ---
+                if (gullState === 'surface_fishing') {
+                    enemy.userData.fishingTimer += delta;
+                    var fishTarget = enemy.userData.fishTarget;
+
+                    // Phase 1: Turn toward fish (0-1 sec)
+                    if (enemy.userData.fishingTimer < 1) {
+                        if (fishTarget && fishTarget.parent && fishTarget.userData.health > 0) {
+                            var toFishX = fishTarget.position.x - enemy.position.x;
+                            var toFishZ = fishTarget.position.z - enemy.position.z;
+                            var toFishRot = -Math.atan2(toFishZ, toFishX);
+                            enemy.rotation.y += (toFishRot - enemy.rotation.y) * 0.15;
+                        }
+                    }
+                    // Phase 2: Dunk head (1-1.5 sec) — tilt forward
+                    else if (enemy.userData.fishingTimer < 1.5) {
+                        enemy.rotation.x = -0.6; // Tilt forward (head into water)
+                    }
+                    // Phase 3: Catch attempt (at 1.5 sec)
+                    else if (!enemy.userData.fishAttempted) {
+                        enemy.userData.fishAttempted = true;
+                        enemy.rotation.x = 0; // Head back up
+
+                        if (fishTarget && fishTarget.parent && fishTarget.userData.health > 0 && Math.random() < 0.35) {
+                            // Caught!
+                            fishTarget.userData.health = 0;
+                            GameState.scene.remove(fishTarget);
+                            var ftIdx = GameState.enemies.indexOf(fishTarget);
+                            if (ftIdx !== -1) GameState.enemies.splice(ftIdx, 1);
+                            enemy.userData.carryingFish = true;
+
+                            // Create visible fish mesh in bill
+                            var fishMesh = createCarriedFishMesh();
+                            enemy.children[0] ? enemy.children[0].add(fishMesh) : enemy.add(fishMesh);
+                            enemy.userData.fishMeshRef = fishMesh;
+                        }
+                    }
+                    // Phase 4: Done — fly to nest or shore (after 2 sec)
+                    else if (enemy.userData.fishingTimer > 2) {
+                        enemy.rotation.x = 0;
+                        enemy.userData.fishAttempted = false;
+                        enemy.userData.fishTarget = null;
+
+                        if (enemy.userData.carryingFish) {
+                            // Decide where to bring fish
+                            if (enemy.userData.isNesting && enemy.userData.currentNestId) {
+                                enemy.userData.lifecycleState = 'carrying_fish_to_nest';
+                            } else {
+                                enemy.userData.lifecycleState = 'carrying_fish_to_shore';
+                            }
+                        } else {
+                            // Missed — go back to floating
+                            enemy.userData.lifecycleState = 'floating';
+                            enemy.userData.fishCooldown = 8 + Math.random() * 8;
+                        }
+                    }
+
+                    // Keep bobbing on water during fishing
+                    var sfWaveTime = GameState.clock.elapsedTime;
+                    enemy.position.y = 0.1 + Math.sin(enemy.position.x * 0.15 + sfWaveTime * 2.0) * 0.15;
+
+                    continue;
+                }
+
+                // --- DIVE FISHING: from flight, fold wings, dive into water ---
+                if (gullState === 'dive_fishing') {
+                    enemy.userData.fishingTimer += delta;
+                    var diveTarget = enemy.userData.fishTarget;
+
+                    // Phase 1: Dive down (0-2 sec)
+                    if (enemy.userData.fishingTimer < 2) {
+                        // Plunge toward fish position
+                        var diveSpeed = 12;
+                        if (diveTarget && diveTarget.parent) {
+                            var toDiveX = diveTarget.position.x - enemy.position.x;
+                            var toDiveZ = diveTarget.position.z - enemy.position.z;
+                            var toDiveDist = Math.sqrt(toDiveX * toDiveX + toDiveZ * toDiveZ);
+                            if (toDiveDist > 0.5) {
+                                enemy.position.x += (toDiveX / toDiveDist) * diveSpeed * 0.5 * delta;
+                                enemy.position.z += (toDiveZ / toDiveDist) * diveSpeed * 0.5 * delta;
+                            }
+                        }
+                        enemy.position.y -= diveSpeed * delta;
+                        // Tilt nose-down
+                        enemy.rotation.x = -1.0;
+                        // Fold wings
+                        var dParts = getSeagullParts(enemy);
+                        if (dParts && dParts.leftWing) {
+                            // Fold wings back for dive
+                            setSeagullWingPose(dParts, 0.5, 0.8, 1.0);
+                        }
+
+                        // Hit water?
+                        if (enemy.position.y <= 0.1) {
+                            enemy.position.y = 0.1;
+                            // Catch attempt
+                            if (diveTarget && diveTarget.parent && diveTarget.userData.health > 0 && Math.random() < 0.35) {
+                                diveTarget.userData.health = 0;
+                                GameState.scene.remove(diveTarget);
+                                var dtIdx = GameState.enemies.indexOf(diveTarget);
+                                if (dtIdx !== -1) GameState.enemies.splice(dtIdx, 1);
+                                enemy.userData.carryingFish = true;
+                                // Create fish mesh
+                                var diveFishMesh = createCarriedFishMesh();
+                                enemy.children[0] ? enemy.children[0].add(diveFishMesh) : enemy.add(diveFishMesh);
+                                enemy.userData.fishMeshRef = diveFishMesh;
+                            }
+                            enemy.userData.fishingTimer = 2; // Skip to ascend phase
+                        }
+                    }
+                    // Phase 2: Ascend back up (2-4 sec)
+                    else {
+                        enemy.rotation.x *= 0.9; // Level out
+                        enemy.position.y += 6 * delta; // Rise
+
+                        // Flap wings to climb
+                        enemy.userData.wingFlapPhase = (enemy.userData.wingFlapPhase || 0) + 10 * delta;
+                        var daParts = getSeagullParts(enemy);
+                        if (daParts && daParts.leftWing) {
+                            animateSeagullWings(daParts, enemy.userData.wingFlapPhase, 1.2, 0.4);
+                        }
+
+                        // Reached safe altitude?
+                        if (enemy.position.y >= 6) {
+                            enemy.rotation.x = 0;
+                            enemy.userData.fishTarget = null;
+                            enemy.userData.fishingTimer = 0;
+
+                            if (enemy.userData.carryingFish) {
+                                if (enemy.userData.isNesting && enemy.userData.currentNestId) {
+                                    enemy.userData.lifecycleState = 'carrying_fish_to_nest';
+                                } else {
+                                    enemy.userData.lifecycleState = 'carrying_fish_to_shore';
+                                }
+                            } else {
+                                // Missed — resume flying
+                                enemy.userData.lifecycleState = 'wandering';
+                                enemy.userData.flightState = 'flying';
+                                enemy.userData.flightAltitude = 6;
+                                enemy.userData.flightDuration = 10 + Math.random() * 15;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                // --- CARRYING FISH TO NEST: fly with fish to feed chicks ---
+                if (gullState === 'carrying_fish_to_nest') {
+                    var cfNest = findSeagullNest(enemy.userData.currentNestId);
+
+                    if (!cfNest) {
+                        // Nest gone — eat on shore instead
+                        enemy.userData.lifecycleState = 'carrying_fish_to_shore';
+                    } else {
+                        var toNestX2 = cfNest.position.x - enemy.position.x;
+                        var toNestZ2 = cfNest.position.z - enemy.position.z;
+                        var toNestDist2 = Math.sqrt(toNestX2 * toNestX2 + toNestZ2 * toNestZ2);
+
+                        if (toNestDist2 > 2) {
+                            var carrySpeed = enemy.userData.speed * 1.5;
+                            enemy.position.x += (toNestX2 / toNestDist2) * carrySpeed * delta;
+                            enemy.position.z += (toNestZ2 / toNestDist2) * carrySpeed * delta;
+                            // Rise to nest height
+                            if (enemy.position.y < cfNest.position.y) enemy.position.y += 5 * delta;
+                            var carryRot = -Math.atan2(toNestZ2, toNestX2);
+                            enemy.rotation.y += (carryRot - enemy.rotation.y) * 0.1;
+                            // Flap wings
+                            enemy.userData.wingFlapPhase = (enemy.userData.wingFlapPhase || 0) + 8 * delta;
+                        } else {
+                            // Arrived — feed chicks with fish
+                            if (enemy.userData.fishMeshRef) {
+                                var fishParent = enemy.userData.fishMeshRef.parent;
+                                if (fishParent) fishParent.remove(enemy.userData.fishMeshRef);
+                                enemy.userData.fishMeshRef = null;
+                            }
+                            enemy.userData.carryingFish = false;
+                            feedSeagullChicks(cfNest);
+                            enemy.position.set(cfNest.position.x, cfNest.position.y + 0.3, cfNest.position.z);
+
+                            if (cfNest.state === 'chicks') {
+                                enemy.userData.lifecycleState = 'feeding_trip';
+                                enemy.userData.feedingPhase = 'leaving_nest';
+                            } else {
+                                enemy.userData.lifecycleState = 'wandering';
+                                enemy.userData.isNesting = false;
+                                enemy.userData.ignoreGravity = false;
+                                enemy.userData.flightState = 'grounded';
+                                enemy.userData.flightTimer = 10 + Math.random() * 20;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                // --- CARRYING FISH TO SHORE: no nest, eat on the beach ---
+                if (gullState === 'carrying_fish_to_shore') {
+                    if (!enemy.userData.shoreTarget) {
+                        enemy.userData.shoreTarget = {
+                            x: enemy.position.x + (Math.random() - 0.5) * 20,
+                            z: 50 + Math.random() * 100 // Beach area
+                        };
+                    }
+                    var toShoreX = enemy.userData.shoreTarget.x - enemy.position.x;
+                    var toShoreZ = enemy.userData.shoreTarget.z - enemy.position.z;
+                    var toShoreDist = Math.sqrt(toShoreX * toShoreX + toShoreZ * toShoreZ);
+
+                    if (toShoreDist > 2) {
+                        var shoreSpeed = enemy.userData.speed * 1.2;
+                        enemy.position.x += (toShoreX / toShoreDist) * shoreSpeed * delta;
+                        enemy.position.z += (toShoreZ / toShoreDist) * shoreSpeed * delta;
+                        // Descend to ground
+                        var shoreGroundY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z) + (enemy.userData.groundY || 0.25);
+                        if (enemy.position.y > shoreGroundY + 0.5) {
+                            enemy.position.y -= 4 * delta;
+                        } else {
+                            enemy.position.y = shoreGroundY;
+                        }
+                        var shoreRot = -Math.atan2(toShoreZ, toShoreX);
+                        enemy.rotation.y += (shoreRot - enemy.rotation.y) * 0.1;
+                    } else {
+                        // Arrived — eat the fish (remove mesh)
+                        if (enemy.userData.fishMeshRef) {
+                            var shoreParent = enemy.userData.fishMeshRef.parent;
+                            if (shoreParent) shoreParent.remove(enemy.userData.fishMeshRef);
+                            enemy.userData.fishMeshRef = null;
+                        }
+                        enemy.userData.carryingFish = false;
+                        enemy.userData.shoreTarget = null;
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 10 + Math.random() * 15;
+                    }
+                    continue;
+                }
+
+                // --- PERCHING ON RAFT: sit on a raft, bob with it ---
+                if (gullState === 'perching_raft') {
+                    var raft = enemy.userData.perchRaft;
+                    if (!raft || !raft.parent) {
+                        // Raft gone — fly away
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 2;
+                    } else {
+                        // Sit on top of raft mast
+                        enemy.position.x = raft.position.x;
+                        enemy.position.y = raft.position.y + 3.5; // Top of mast
+                        enemy.position.z = raft.position.z;
+                        // Face a random direction (resting)
+                        enemy.userData.stateTimer = (enemy.userData.stateTimer || 0) + delta;
+                        if (enemy.userData.stateTimer > 20 + Math.random() * 30) {
+                            // Leave raft
+                            enemy.userData.lifecycleState = 'wandering';
+                            enemy.userData.flightState = 'grounded';
+                            enemy.userData.flightTimer = 1;
+                            enemy.userData.perchRaft = null;
+                            enemy.userData.stateTimer = 0;
+                        }
+                    }
+                    continue;
+                }
+
+                // --- SCAVENGING CARCASS: walk to dead animal and eat ---
+                if (gullState === 'scavenging') {
+                    var carcass = enemy.userData.scavengeTarget;
+                    if (!carcass || !carcass.parent || carcass.userData.carcassMeatLeft <= 0) {
+                        // Carcass gone — back to wandering
+                        enemy.userData.lifecycleState = 'wandering';
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 5 + Math.random() * 10;
+                        enemy.userData.scavengeTarget = null;
+                    } else {
+                        var toCarcX = carcass.position.x - enemy.position.x;
+                        var toCarcZ = carcass.position.z - enemy.position.z;
+                        var toCarcDist = Math.sqrt(toCarcX * toCarcX + toCarcZ * toCarcZ);
+
+                        if (toCarcDist > 1.5) {
+                            // Walk toward carcass
+                            var scavSpeed = enemy.userData.speed * 0.6;
+                            enemy.position.x += (toCarcX / toCarcDist) * scavSpeed * delta;
+                            enemy.position.z += (toCarcZ / toCarcDist) * scavSpeed * delta;
+                            var scavGY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z) + (enemy.userData.groundY || 0.25);
+                            enemy.position.y = scavGY + Math.abs(Math.sin(GameState.clock.elapsedTime * 12)) * 0.05;
+                            var scavRot = -Math.atan2(toCarcZ, toCarcX);
+                            enemy.rotation.y += (scavRot - enemy.rotation.y) * 0.1;
+                        } else {
+                            // Eating — peck animation
+                            enemy.rotation.x = Math.sin(GameState.clock.elapsedTime * 4) * 0.15; // Pecking
+                            eatFromCarcass(enemy, carcass, delta);
+
+                            if (carcass.userData.carcassMeatLeft <= 0) {
+                                enemy.rotation.x = 0;
+                                enemy.userData.lifecycleState = 'wandering';
+                                enemy.userData.flightState = 'grounded';
+                                enemy.userData.flightTimer = 5 + Math.random() * 10;
+                                enemy.userData.scavengeTarget = null;
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
+
+            // =================================================================
+            // PILFERA COASTALIS (SEAGULL) — FLIGHT SYSTEM
+            // States: grounded → taking_off → flying → landing → grounded
+            // =================================================================
+            if (enemy.userData.type === 'pilfera_coastalis' && enemy.userData.flightState) {
+                var fState = enemy.userData.flightState;
+                var parts = getSeagullParts(enemy);
+
+                // --- GROUNDED: count down to next takeoff ---
+                if (fState === 'grounded') {
+                    enemy.userData.flightTimer -= delta;
+
+                    // Fold wings when grounded
+                    if (parts) setSeagullWingPose(parts, 0, 0, 0);
+
+                    // Carcass detection: spot a nearby dead animal to scavenge
+                    if (!enemy.userData.isBaby && GameState.carcasses && GameState.carcasses.length > 0) {
+                        enemy.userData.scavengeScanTimer = (enemy.userData.scavengeScanTimer || 5) - delta;
+                        if (enemy.userData.scavengeScanTimer <= 0) {
+                            enemy.userData.scavengeScanTimer = 5 + Math.random() * 5;
+                            for (var sci = 0; sci < GameState.carcasses.length; sci++) {
+                                var sc = GameState.carcasses[sci];
+                                if (sc && sc.parent && sc.userData.carcassMeatLeft > 0) {
+                                    var scDist = enemy.position.distanceTo(sc.position);
+                                    if (scDist < 25 && Math.random() < 0.3) {
+                                        enemy.userData.lifecycleState = 'scavenging';
+                                        enemy.userData.scavengeTarget = sc;
+                                        break; // Exit flight system, lifecycle handler takes over
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Spook takeoff: player gets within 6 units
+                    var distToPlayer = enemy.position.distanceTo(GameState.peccary.position);
+                    var spooked = distToPlayer < 6 && !Environment.isInVillage(enemy.position.x, enemy.position.z);
+
+                    if (enemy.userData.flightTimer <= 0 || spooked) {
+                        // Take off!
+                        enemy.userData.flightState = 'taking_off';
+                        // Random altitude: low (6-8), medium (10-15), high (20-28)
+                        var roll = Math.random();
+                        if (roll < 0.33) {
+                            enemy.userData.targetAltitude = 6 + Math.random() * 2;
+                        } else if (roll < 0.66) {
+                            enemy.userData.targetAltitude = 10 + Math.random() * 5;
+                        } else {
+                            enemy.userData.targetAltitude = 20 + Math.random() * 8;
+                        }
+                        enemy.userData.flightAltitude = 0;
+                        enemy.userData.wingFlapSpeed = 12; // Fast flapping on takeoff
+                        enemy.userData.wingFlapPhase = 0;
+                        // Pick a random flight direction
+                        var fAngle = Math.random() * Math.PI * 2;
+                        enemy.userData.flightDir = new THREE.Vector3(Math.cos(fAngle), 0, Math.sin(fAngle));
+                        // Flight duration: 10-30 seconds
+                        enemy.userData.flightDuration = 10 + Math.random() * 20;
+                    }
+                    // If grounded, fall through to normal wandering behavior below
+                }
+
+                // --- TAKING OFF: flap hard, rise quickly ---
+                if (fState === 'taking_off') {
+                    var riseSpeed = 8;
+                    enemy.userData.flightAltitude += riseSpeed * delta;
+                    enemy.userData.wingFlapPhase += enemy.userData.wingFlapSpeed * delta;
+
+                    // Cascade wing flap — big amplitude, tight delay for powerful strokes
+                    if (parts) animateSeagullWings(parts, enemy.userData.wingFlapPhase, 1.2, 0.4);
+
+                    // Move forward while climbing
+                    var climbSpeed = enemy.userData.speed * 0.8;
+                    enemy.position.x += enemy.userData.flightDir.x * climbSpeed * delta;
+                    enemy.position.z += enemy.userData.flightDir.z * climbSpeed * delta;
+
+                    // Set Y position
+                    var terrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = terrainY + enemy.userData.baseGroundY + enemy.userData.flightAltitude;
+
+                    // Face flight direction
+                    var targetRot = -Math.atan2(enemy.userData.flightDir.z, enemy.userData.flightDir.x);
+                    enemy.rotation.y += (targetRot - enemy.rotation.y) * 0.1;
+
+                    // Reached target altitude?
+                    if (enemy.userData.flightAltitude >= enemy.userData.targetAltitude) {
+                        enemy.userData.flightAltitude = enemy.userData.targetAltitude;
+                        enemy.userData.flightState = 'flying';
+                        enemy.userData.wingFlapSpeed = 0;
+                        enemy.userData.glideFlapTimer = 3 + Math.random() * 5;
+                    }
+
+                    continue;
+                }
+
+                // --- FLYING: glide with occasional flaps, drift around ---
+                if (fState === 'flying') {
+                    enemy.userData.flightDuration -= delta;
+
+                    // Occasional direction changes (gentle turns)
+                    if (!enemy.userData.turnTimer) enemy.userData.turnTimer = 3 + Math.random() * 4;
+                    enemy.userData.turnTimer -= delta;
+                    if (enemy.userData.turnTimer <= 0) {
+                        var turnAngle = (Math.random() - 0.5) * Math.PI * 0.5;
+                        var currentAngle = Math.atan2(enemy.userData.flightDir.z, enemy.userData.flightDir.x);
+                        var newAngle = currentAngle + turnAngle;
+                        enemy.userData.flightDir.x = Math.cos(newAngle);
+                        enemy.userData.flightDir.z = Math.sin(newAngle);
+                        enemy.userData.turnTimer = 3 + Math.random() * 4;
+                    }
+
+                    // Move forward at cruise speed
+                    var cruiseSpeed = enemy.userData.speed * 1.2;
+                    enemy.position.x += enemy.userData.flightDir.x * cruiseSpeed * delta;
+                    enemy.position.z += enemy.userData.flightDir.z * cruiseSpeed * delta;
+
+                    // Keep at altitude
+                    var flyTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = flyTerrainY + enemy.userData.baseGroundY + enemy.userData.flightAltitude;
+
+                    // Face flight direction with smooth rotation
+                    var flyTargetRot = -Math.atan2(enemy.userData.flightDir.z, enemy.userData.flightDir.x);
+                    enemy.rotation.y += (flyTargetRot - enemy.rotation.y) * 0.05;
+
+                    // Slight banking on turns (tilt body)
+                    var rotDiff = flyTargetRot - enemy.rotation.y;
+                    enemy.rotation.z = rotDiff * 0.3;
+
+                    // Wing animation — mostly gliding, occasional cascade flap burst
+                    enemy.userData.glideFlapTimer -= delta;
+                    if (enemy.userData.glideFlapTimer <= 0) {
+                        enemy.userData.wingFlapSpeed = 8;
+                        enemy.userData.glideFlapTimer = 3 + Math.random() * 5;
+                        enemy.userData.flapBurstTimer = 0.8;
+                    }
+
+                    if (enemy.userData.flapBurstTimer > 0) {
+                        enemy.userData.flapBurstTimer -= delta;
+                        enemy.userData.wingFlapPhase += enemy.userData.wingFlapSpeed * delta;
+                        // Cascade flap with wider delay for lazy soaring feel
+                        if (parts) animateSeagullWings(parts, enemy.userData.wingFlapPhase, 0.8, 0.6);
+                    } else {
+                        // Glide — wings spread out with slight droop cascade
+                        enemy.userData.wingFlapSpeed = 0;
+                        if (parts) setSeagullWingPose(parts, -0.7, -0.4, -0.2);
+                    }
+
+                    // Dive-fish detection: if over ocean and spot a sardine, dive!
+                    if (!enemy.userData.isBaby && enemy.position.z > 200 && Math.random() < 0.003) {
+                        var diveFishTarget = findNearestFish(enemy, 'slitted_sardine', 25);
+                        if (diveFishTarget) {
+                            enemy.userData.lifecycleState = 'dive_fishing';
+                            enemy.userData.fishTarget = diveFishTarget;
+                            enemy.userData.fishingTimer = 0;
+                            enemy.userData.fishAttempted = false;
+                            continue;
+                        }
+                    }
+
+                    // Time to land?
+                    var landDistToPlayer = enemy.position.distanceTo(GameState.peccary.position);
+                    var wantsToLand = enemy.userData.flightDuration <= 0;
+                    if (!wantsToLand && landDistToPlayer < 15 && Math.random() < 0.002) {
+                        wantsToLand = true;
+                    }
+
+                    if (wantsToLand) {
+                        // Decide: land on ground, water, or raft?
+                        var isOverOcean = enemy.position.z > 195;
+
+                        // Check for nearby raft to perch on
+                        var nearestRaft = null;
+                        var nearestRaftDist = 30;
+                        if (GameState.placedRafts) {
+                            for (var ri = 0; ri < GameState.placedRafts.length; ri++) {
+                                var raftDist = enemy.position.distanceTo(GameState.placedRafts[ri].position);
+                                if (raftDist < nearestRaftDist) {
+                                    nearestRaftDist = raftDist;
+                                    nearestRaft = GameState.placedRafts[ri];
+                                }
+                            }
+                        }
+
+                        if (nearestRaft && Math.random() < 0.4) {
+                            // Perch on raft
+                            enemy.userData.lifecycleState = 'perching_raft';
+                            enemy.userData.perchRaft = nearestRaft;
+                            enemy.userData.stateTimer = 0;
+                            enemy.userData.flightState = 'grounded';
+                            enemy.userData.flightAltitude = 0;
+                        } else if (isOverOcean && Math.random() < 0.5) {
+                            // Land on water
+                            enemy.userData.lifecycleState = 'floating';
+                            enemy.userData.flightState = 'grounded';
+                            enemy.userData.flightAltitude = 0;
+                            enemy.userData.floatTimer = 20 + Math.random() * 20;
+                            enemy.userData.fishCooldown = 5 + Math.random() * 10;
+                        } else {
+                            // Normal ground landing
+                            enemy.userData.flightState = 'landing';
+                            enemy.userData.wingFlapSpeed = 4;
+                            enemy.userData.wingFlapPhase = 0;
+                        }
+                    }
+
+                    // Keep within world bounds
+                    var worldHalf = CONFIG.WORLD_SIZE * 0.45;
+                    if (Math.abs(enemy.position.x) > worldHalf || Math.abs(enemy.position.z) > worldHalf) {
+                        enemy.userData.flightDir.x = -enemy.position.x * 0.01;
+                        enemy.userData.flightDir.z = -enemy.position.z * 0.01;
+                        enemy.userData.flightDir.normalize();
+                    }
+
+                    continue;
+                }
+
+                // --- LANDING: descend, slow cascade flaps ---
+                if (fState === 'landing') {
+                    var descentSpeed = 5;
+                    enemy.userData.flightAltitude -= descentSpeed * delta;
+                    enemy.userData.wingFlapPhase += 4 * delta;
+
+                    // Slow cascade flaps while descending
+                    if (parts) animateSeagullWings(parts, enemy.userData.wingFlapPhase, 0.6, 0.5);
+
+                    // Move forward slowly while descending
+                    var landSpeed = enemy.userData.speed * 0.4;
+                    enemy.position.x += enemy.userData.flightDir.x * landSpeed * delta;
+                    enemy.position.z += enemy.userData.flightDir.z * landSpeed * delta;
+
+                    // Set Y position
+                    var landTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    var landY = landTerrainY + enemy.userData.baseGroundY + enemy.userData.flightAltitude;
+                    enemy.position.y = Math.max(landTerrainY + enemy.userData.baseGroundY, landY);
+
+                    // Face flight direction
+                    var landTargetRot = -Math.atan2(enemy.userData.flightDir.z, enemy.userData.flightDir.x);
+                    enemy.rotation.y += (landTargetRot - enemy.rotation.y) * 0.1;
+
+                    // Remove banking
+                    enemy.rotation.z *= 0.9;
+
+                    // Touched down?
+                    if (enemy.userData.flightAltitude <= 0) {
+                        enemy.userData.flightAltitude = 0;
+                        enemy.userData.flightState = 'grounded';
+                        enemy.userData.flightTimer = 15 + Math.random() * 25;
+                        enemy.rotation.z = 0;
+                        if (parts) setSeagullWingPose(parts, 0, 0, 0);
+                    }
+
+                    continue;
+                }
+            }
 
             // Goose lifecycle state machine
             if (enemy.userData.id === 'goose' && enemy.userData.lifecycleState) {
@@ -12255,6 +14325,24 @@ window.Enemies = (function() {
                 // FOLLOWING STATE - Wander nearby, follow when getting far
                 // ================================================================
                 if (lifecycleState === 'following') {
+                    // Check for player in detection range — attack on sight!
+                    const distToPlayer = enemy.position.distanceTo(GameState.peccary.position);
+                    const detectRange = enemy.userData.detectionRange || 30;
+
+                    if (distToPlayer < detectRange && !Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z)) {
+                        // Spotted the player! Alert the pack!
+                        if (pack) {
+                            pack.members.forEach(function(member) {
+                                if (member.userData.health > 0 && member.userData.lifecycleState === 'following') {
+                                    member.userData.lifecycleState = 'chasing_player';
+                                }
+                            });
+                        } else {
+                            enemy.userData.lifecycleState = 'chasing_player';
+                        }
+                        continue;
+                    }
+
                     // Check for nearby grass vipers (weasels) to chase
                     const nearbyViper = GameState.enemies.find(e =>
                         e.userData.type === 'grass_viper' &&
@@ -12368,6 +14456,65 @@ window.Enemies = (function() {
                             .normalize();
                         speed = enemy.userData.chaseSpeed || enemy.userData.speed;  // Sprint chase!
                     }
+                }
+
+                // ================================================================
+                // CHASING PLAYER STATE - Pack attacks player on sight
+                // ================================================================
+                else if (lifecycleState === 'chasing_player') {
+                    const distToPlayer = enemy.position.distanceTo(GameState.peccary.position);
+
+                    // Give up if player reaches village
+                    if (Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z)) {
+                        enemy.userData.lifecycleState = 'following';
+                        continue;
+                    }
+
+                    // Give up if player gets very far away (60 units)
+                    if (distToPlayer > 60) {
+                        enemy.userData.lifecycleState = 'following';
+                        continue;
+                    }
+
+                    // Sprint toward player
+                    direction = new THREE.Vector3()
+                        .subVectors(GameState.peccary.position, enemy.position)
+                        .normalize();
+                    speed = enemy.userData.chaseSpeed || enemy.userData.speed;
+
+                    // Deal damage on contact
+                    if (distToPlayer < enemy.userData.radius + GameState.peccary.userData.radius) {
+                        Game.takeDamage(enemy.userData.damage * delta, 'wild_dog');
+                    }
+                }
+
+                // ================================================================
+                // BACKING OFF STATE - Pack retreats after member dies
+                // ================================================================
+                else if (lifecycleState === 'backing_off') {
+                    enemy.userData.backOffTimer = (enemy.userData.backOffTimer || 8) - delta;
+
+                    if (enemy.userData.backOffTimer <= 0) {
+                        // Done backing off, return to following
+                        enemy.userData.lifecycleState = 'following';
+                        enemy.userData.backOffTimer = 0;
+                        continue;
+                    }
+
+                    // Walk away from player slowly, still facing them
+                    const distToPlayer = enemy.position.distanceTo(GameState.peccary.position);
+                    const awayFromPlayer = new THREE.Vector3()
+                        .subVectors(enemy.position, GameState.peccary.position)
+                        .normalize();
+
+                    // Move away slowly
+                    direction = awayFromPlayer;
+                    speed = enemy.userData.speed * 0.3;
+
+                    // But face the player (watching cautiously)
+                    const toPlayer = new THREE.Vector3()
+                        .subVectors(GameState.peccary.position, enemy.position);
+                    enemy.rotation.y = -Math.atan2(toPlayer.z, toPlayer.x);
                 }
 
                 // ================================================================
@@ -12827,7 +14974,7 @@ window.Enemies = (function() {
                 // Walking/Running animation
                 const model = enemy.children[0];
                 if (model && model.userData.legs && speed > 0.5 && lifecycleState !== 'resting') {
-                    const isHuntChasing = lifecycleState === 'hunting_chase' || lifecycleState === 'chasing_weasel';
+                    const isHuntChasing = lifecycleState === 'hunting_chase' || lifecycleState === 'chasing_weasel' || lifecycleState === 'chasing_player';
                     const isRunning = enemy.userData.isHunting || isHuntChasing || speed > enemy.userData.speed * 0.6;
 
                     // SPECIAL SPRINT ANIMATION when hunting!
@@ -17178,9 +19325,50 @@ window.Enemies = (function() {
     function damageEnemy(enemy, amount) {
         if (!enemy || !enemy.userData) return;
 
+        // Flying seagulls are only hittable when low (altitude < 8)
+        if (enemy.userData.type === 'pilfera_coastalis' &&
+            enemy.userData.flightState !== 'grounded' &&
+            enemy.userData.flightAltitude > 8) {
+            return; // Too high to hit!
+        }
+
         // Drongulinat cats retaliate when attacked by player
         if (enemy.userData.type === 'drongulinat_cat') {
             enemy.userData.wasAttackedByPlayer = true;
+        }
+
+        // Retaliation — all animals fight back when hit (except sardines)
+        // Skip if already hostile (they're already attacking) or already retaliating
+        var noRetaliate = ['slitted_sardine'];
+        if (!enemy.userData.retaliating && enemy.userData.friendly &&
+            noRetaliate.indexOf(enemy.userData.type) === -1) {
+            enemy.userData.retaliating = true;
+            enemy.userData.retaliationHits = 0;
+            enemy.userData.retaliationMaxHits = 1 + Math.floor(Math.random() * 2); // 1-2 hits
+            enemy.userData.retaliationCooldown = 0;
+        }
+
+        // Parent defense: if a seagull fledgling is hit, nearby adult seagulls retaliate
+        if (enemy.userData.type === 'pilfera_coastalis' && enemy.userData.lifecycleState === 'fledgling') {
+            GameState.enemies.forEach(function(e) {
+                if (e.userData.type === 'pilfera_coastalis' &&
+                    !e.userData.isBaby &&
+                    !e.userData.retaliating &&
+                    e.userData.health > 0) {
+                    var parentDist = e.position.distanceTo(enemy.position);
+                    if (parentDist < 20) {
+                        e.userData.retaliating = true;
+                        e.userData.retaliationHits = 0;
+                        e.userData.retaliationMaxHits = 2 + Math.floor(Math.random() * 2); // 2-3 hits (fiercer defense)
+                        e.userData.retaliationCooldown = 0;
+                        // Interrupt any nesting/feeding behavior
+                        if (e.userData.isNesting) {
+                            e.userData.isNesting = false;
+                            e.userData.ignoreGravity = false;
+                        }
+                    }
+                }
+            });
         }
 
         enemy.userData.health -= amount;
@@ -17205,6 +19393,34 @@ window.Enemies = (function() {
 
         // Check for death
         if (enemy.userData.health <= 0) {
+            // Wild dog pack retreat — if a pack member dies, the rest back off
+            if (enemy.userData.type === 'wild_dog' && enemy.userData.packId) {
+                var retreatPack = GameState.wildDogPacks ?
+                    GameState.wildDogPacks.find(function(p) { return p.id === enemy.userData.packId; }) : null;
+                if (retreatPack) {
+                    retreatPack.members.forEach(function(member) {
+                        if (member !== enemy && member.userData.health > 0) {
+                            member.userData.lifecycleState = 'backing_off';
+                            member.userData.backOffTimer = 8; // 8 seconds of backing away
+                        }
+                    });
+                }
+            }
+
+            // Seagull death cleanup: remove carried fish mesh, orphan chicks
+            if (enemy.userData.type === 'pilfera_coastalis') {
+                if (enemy.userData.fishMeshRef && enemy.userData.fishMeshRef.parent) {
+                    enemy.userData.fishMeshRef.parent.remove(enemy.userData.fishMeshRef);
+                }
+                // If this was a nesting parent, release the nest
+                if (enemy.userData.currentNestId) {
+                    var deathNest = findSeagullNest(enemy.userData.currentNestId);
+                    if (deathNest) {
+                        deathNest.ownerId = null; // Orphan — chicks will starve eventually
+                    }
+                }
+            }
+
             // Convert to carcass instead of removing
             convertToCarcass(enemy);
 
@@ -17286,6 +19502,11 @@ window.Enemies = (function() {
         spawnBakkaSeals: spawnBakkaSeals,
         updateBakkaSealBehavior: updateBakkaSealBehavior,
         triggerBakkaSealMating: triggerBakkaSealMating,
+
+        // Pilfera Coastalis (seagull) functions
+        spawnPilferaCoastalisFlock: spawnPilferaCoastalisFlock,
+        updateSeagullNests: updateSeagullNests,
+        triggerSeagullMating: triggerSeagullMating,
 
         // Uronin Seal functions
         spawnUroninSealColony: spawnUroninSealColony,

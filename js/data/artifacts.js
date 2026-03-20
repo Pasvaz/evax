@@ -152,7 +152,8 @@ Mountains. To the west, beyond our known lands. If this skull is here, then perh
 
 This changes everything we know about our world. Keep this skull safe - it might be the key to discovering lands we've only dreamed of!"`,
         reward: { coins: 500, score: 1000 },
-        unlocksBiome: 'snowy_mountains'  // Unlocks the snowy mountain biome!
+        unlocksBiome: 'snowy_mountains',  // Unlocks the snowy mountain biome!
+        memoryFragment: 'silenced'
     },
 
     // ========================================================================

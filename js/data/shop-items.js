@@ -79,6 +79,7 @@ window.SHOP_ITEMS = [
         description: 'Restore 30 health',
         price: 15,                     // Costs 15 pig coins
         icon: '💊',
+        vendor: 'patches',
 
         effect: {
             type: 'heal',
@@ -96,6 +97,7 @@ window.SHOP_ITEMS = [
         description: 'Gain 50 bonus score points',
         price: 25,
         icon: '⚡',
+        vendor: 'patches',
 
         effect: {
             type: 'give_score',
@@ -113,6 +115,7 @@ window.SHOP_ITEMS = [
         description: 'Restore health to maximum',
         price: 40,
         icon: '✨',
+        vendor: 'patches',
 
         effect: {
             type: 'full_heal'
@@ -129,6 +132,7 @@ window.SHOP_ITEMS = [
         description: 'Gain 200 score points',
         price: 30,
         icon: '🍀',
+        vendor: 'patches',
 
         effect: {
             type: 'give_score',
@@ -146,6 +150,7 @@ window.SHOP_ITEMS = [
         description: 'Heal 50 health AND gain 100 score!',
         price: 50,
         icon: '🎁',
+        vendor: 'patches',
 
         effect: {
             type: 'combo',
@@ -154,28 +159,89 @@ window.SHOP_ITEMS = [
                 { type: 'give_score', amount: 100 }
             ]
         }
+    },
+
+    // ========================================================================
+    // BRUNO'S FORGE ITEMS
+    // ========================================================================
+    // Weapons, tools, and materials sold by Bruno the Blacksmith
+
+    {
+        id: 'shop_wood_sword',
+        name: 'Wood Sword',
+        description: 'A basic wooden sword. Equip from hotbar, click enemies to attack!',
+        price: 30,
+        icon: '⚔️',
+        vendor: 'bruno',
+
+        effect: {
+            type: 'item',
+            item: 'wood_sword'
+        }
+    },
+
+    {
+        id: 'shop_wood_axe',
+        name: 'Wood Axe',
+        description: 'A basic wooden axe. Equip from hotbar, click trees to chop!',
+        price: 30,
+        icon: '🪓',
+        vendor: 'bruno',
+
+        effect: {
+            type: 'item',
+            item: 'wood_axe'
+        }
+    },
+
+    {
+        id: 'shop_barbanit_axe',
+        name: 'Barbanit Axe',
+        description: 'Chops acacia and birch trees in savannah and coastal biomes!',
+        price: 50,
+        icon: '🪓',
+        vendor: 'bruno',
+
+        effect: {
+            type: 'item',
+            item: 'barbanit_axe'
+        }
+    },
+
+    {
+        id: 'shop_glass',
+        name: 'Glass',
+        description: 'Smelted glass, useful for crafting.',
+        price: 3,
+        icon: '🔮',
+        vendor: 'bruno',
+
+        effect: {
+            type: 'give_resource',
+            resources: { glass: 1 }
+        }
+    },
+
+    {
+        id: 'shop_diving_mask',
+        name: 'Diving Mask',
+        description: 'Forged glass lens with leather straps. Swim underwater!',
+        price: 400,
+        icon: '🤿',
+        vendor: 'bruno',
+
+        effect: {
+            type: 'item',
+            item: 'diving_mask'
+        }
     }
 
     // ========================================================================
     // ADD MORE SHOP ITEMS HERE!
     // ========================================================================
     //
-    // Example of a new item:
-    //
-    // {
-    //     id: 'diamond_potion',
-    //     name: 'Diamond Potion',
-    //     description: 'Full health + 500 points!',
-    //     price: 100,
-    //     icon: '💎',
-    //     effect: {
-    //         type: 'combo',
-    //         effects: [
-    //             { type: 'full_heal' },
-    //             { type: 'give_score', amount: 500 }
-    //         ]
-    //     }
-    // }
+    // Each item needs a 'vendor' field: 'patches' or 'bruno'
+    // This determines which NPC's shop shows the item.
     //
     // Remember to add a comma after the last item if you add more!
 

@@ -9,7 +9,6 @@
     <link rel="shortcut icon" href="favicon/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="MyWebSite" />
-    <link rel="manifest" href="favicon/site.webmanifest" />
 
     <style>
         * {
@@ -202,6 +201,33 @@
         #controls-info p {
             margin: 5px 0;
         }
+        /* Low-health vignette warning */
+        #low-health-vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(180,0,0,0.45) 100%);
+        }
+        #low-health-vignette.active {
+            opacity: 1;
+            animation: healthPulse 2s ease-in-out infinite;
+        }
+        #low-health-vignette.critical {
+            animation: healthPulseCritical 0.8s ease-in-out infinite;
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(200,0,0,0.6) 100%);
+        }
+        @keyframes healthPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        @keyframes healthPulseCritical {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
         #game-over-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -322,11 +348,11 @@
             color: #ffcc00;
         }
         .subtitle {
-            font-size: 16px;
+            font-size: 24px;
             opacity: 0.75;
             margin-bottom: 24px;
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
             line-height: 1.5;
             padding: 0 20px;
             color: #c0d8b8;
@@ -1264,6 +1290,9 @@
             max-width: 100%;
             max-height: 100%;
         }
+        .bestiary-card.locked .bestiary-card-preview span {
+            opacity: 0.1;
+        }
         .bestiary-card-name {
             font-size: 16px;
             font-weight: bold;
@@ -1273,6 +1302,16 @@
         .bestiary-card-type {
             font-size: 12px;
             color: #888;
+        }
+        .bestiary-card.locked {
+            opacity: 0.8;
+            filter: grayscale(100%);
+            cursor: default;
+        }
+        .bestiary-card.locked:hover {
+            border-color: #5a4a3a;
+            transform: none;
+            box-shadow: none;
         }
         /* Bestiary Detail View */
         #bestiary-detail {
@@ -1574,6 +1613,204 @@
         }
 
         /* ========================================= */
+        /* MEMORY FLASHBACK OVERLAY                 */
+        /* ========================================= */
+        #memory-flashback {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 350;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .memory-flashback-inner {
+            max-width: 600px;
+            padding: 40px;
+            text-align: center;
+            animation: memoryFadeIn 1.5s ease;
+        }
+        .memory-label {
+            color: #8866aa;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+        }
+        .memory-title {
+            color: #ddbbff;
+            font-size: 24px;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        .memory-text {
+            color: #cccccc;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        #memory-dismiss-btn {
+            margin-top: 10px;
+        }
+        @keyframes memoryFadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========================================= */
+        /* CHAPTER COMPLETE SCREEN                  */
+        /* ========================================= */
+        #chapter-complete {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 360;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chapter-complete-inner {
+            max-width: 650px;
+            padding: 50px;
+            text-align: center;
+            animation: chapterFadeIn 2.5s ease;
+        }
+        .chapter-label {
+            color: #cc9933;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            margin-bottom: 8px;
+        }
+        .chapter-title {
+            color: #ffdd66;
+            font-size: 36px;
+            margin-bottom: 5px;
+            font-family: serif;
+        }
+        .chapter-subtitle {
+            color: #cc9933;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 25px;
+        }
+        .chapter-divider {
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #cc9933, transparent);
+            margin: 0 auto 25px;
+        }
+        .chapter-text {
+            color: #cccccc;
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        .chapter-next {
+            color: #88aacc;
+            font-size: 14px;
+            font-style: italic;
+            letter-spacing: 1px;
+            margin: 25px 0 30px;
+        }
+        @keyframes chapterFadeIn {
+            0% { opacity: 0; }
+            30% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* ========================================= */
+        /* MEMORY INTRO SCREEN                      */
+        /* ========================================= */
+        #memory-intro {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 310;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .memory-intro-inner {
+            max-width: 550px;
+            padding: 40px;
+            text-align: center;
+            animation: memoryFadeIn 2s ease;
+        }
+        .memory-intro-text {
+            color: #cccccc;
+            font-size: 18px;
+            line-height: 2;
+            font-style: italic;
+            margin-bottom: 35px;
+        }
+
+        /* ========================================= */
+        /* MEMORY JOURNAL (INVENTORY TAB)           */
+        /* ========================================= */
+        #memories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            padding: 10px 0;
+        }
+        .memory-card {
+            background: rgba(40, 30, 55, 0.8);
+            border: 2px solid #553377;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .memory-card:hover {
+            border-color: #8866aa;
+            transform: translateY(-2px);
+        }
+        .memory-card.found {
+            border-color: #8866aa;
+            background: rgba(60, 40, 80, 0.8);
+        }
+        .memory-card.locked {
+            opacity: 0.5;
+            cursor: default;
+        }
+        .memory-card.locked:hover {
+            transform: none;
+            border-color: #553377;
+        }
+        .memory-card-title {
+            color: #ddbbff;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .memory-card-preview {
+            color: #999;
+            font-size: 12px;
+            font-style: italic;
+            line-height: 1.5;
+        }
+        .memories-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .memories-header h3 {
+            color: #ddbbff;
+            margin: 0;
+        }
+        .memories-count {
+            color: #8866aa;
+            font-size: 13px;
+        }
+
+        /* ========================================= */
         /* SAVE / LOAD STYLES                       */
         /* ========================================= */
         #saves-modal {
@@ -1705,6 +1942,65 @@
         }
         #save-notification.show {
             opacity: 1;
+        }
+        /* Toast notification system */
+        #toast-container {
+            position: fixed;
+            top: 123px;
+            right: 20px;
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            max-width: 500px;
+        }
+        .toast {
+            background: linear-gradient(
+180deg, #0f1d11db, #0f1d11bf, #0f1d1100);
+            border: none;
+            border-radius: 12px;
+            padding: 20px 24px;
+            color: #f5deb3;
+            font-size: 14px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 0.3s, transform 0.3s;
+            /* box-shadow: 0 6px 20px rgba(0,0,0,0.7); */
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.fade-out {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        .toast-title {
+            font-weight: bold;
+            font-size: 20px;
+            color: #ffd700;
+            margin-bottom: 4px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        .toast-body {
+            font-size: 17px;
+            color: #b8a878;
+            line-height: 1.5;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+        }
+        .toast-key {
+            font-style: italic;
+            font-variant: small-caps;
+            font-size: smaller;
+            text-align: center;
+        }
+        .toast-key b {
+            text-decoration-color: #ffd700;
+            text-decoration-line: underline;
+            text-underline-offset: 3px;
+            color: #ffd700;
         }
         #save-btn {
             background: none;
@@ -2018,6 +2314,46 @@
     <!-- Fade overlay for screen transitions (no .hidden — controlled by opacity) -->
     <div id="screen-fade"></div>
 
+    <!-- Low-health warning vignette (red pulse when health is low) -->
+    <div id="low-health-vignette"></div>
+
+    <!-- Memory intro screen (New Game only) -->
+    <div id="memory-intro" class="hidden">
+        <div class="memory-intro-inner">
+            <p class="memory-intro-text">
+                Wha? Where am I? Last thing I remember was... ermmm... OH YES!
+                A cookie recipe, but what kind? Maybe the best one of all time?
+                Hmmm, I'm going to ask Granny Trotter, in the corner of this village.
+                I have heard of her tasty cookies, maybe she knows something I don't...
+            </p>
+            <button class="game-btn" id="intro-go-btn">Let's go!</button>
+        </div>
+    </div>
+
+    <!-- Memory flashback overlay -->
+    <div id="memory-flashback" class="hidden">
+        <div class="memory-flashback-inner">
+            <p class="memory-label">Memory Fragment Recovered</p>
+            <h2 class="memory-title"></h2>
+            <p class="memory-text"></p>
+            <button class="game-btn" id="memory-dismiss-btn">Continue...</button>
+        </div>
+    </div>
+
+    <!-- Chapter Complete overlay -->
+    <div id="chapter-complete" class="hidden">
+        <div class="chapter-complete-inner">
+            <p class="chapter-label">CHAPTER ONE</p>
+            <h2 class="chapter-title">The Awakening</h2>
+            <p class="chapter-subtitle">Complete</p>
+            <div class="chapter-divider"></div>
+            <p class="chapter-text">Pedro's memories have returned. The mystery of Emilia Snoutworth and the prehistoric beasts she brought back from extinction is just the beginning.</p>
+            <p class="chapter-text">She is hiding somewhere out there — in a biome you haven't explored yet. Keep surviving. Keep exploring. Find her.</p>
+            <p class="chapter-next">Chapter Two: The Search for Emilia Snoutworth</p>
+            <button class="game-btn" id="chapter-dismiss-btn">Continue your journey...</button>
+        </div>
+    </div>
+
     <!-- Save/Load modal -->
     <div id="saves-modal" class="hidden">
         <div class="saves-modal-box">
@@ -2032,6 +2368,9 @@
 
     <!-- Save notification toast -->
     <div id="save-notification" class="hidden"></div>
+
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
 
     <!-- World Map overlay -->
     <div id="world-map-container" class="hidden"></div>
@@ -2089,6 +2428,16 @@
                     <button class="testing-action-btn" id="trigger-dog-hunt-oxen-btn">Dog Hunt Oxen</button>
                     <button class="testing-action-btn" id="trigger-pregnancy-btn" disabled>Make Pregnant</button>
                     <p id="pregnancy-status" class="testing-status">Select a female animal first</p>
+                </div>
+            </div>
+
+            <!-- Memory Fragments Section -->
+            <div class="testing-section">
+                <h3 class="testing-section-header" data-section="memories">Memory Fragments</h3>
+                <div class="testing-section-content" id="section-memories">
+                    <button class="testing-action-btn" id="trigger-memory-next-btn">Trigger Next Memory</button>
+                    <button class="testing-action-btn" id="trigger-memory-reset-btn">Reset All Memories</button>
+                    <p id="memory-test-status" class="testing-status">No memories triggered</p>
                 </div>
             </div>
 
@@ -2169,6 +2518,13 @@
                             <button class="spawn-btn" data-spawn="bakka_seal_baby_male">Bakka Pup (M)</button>
                             <button class="spawn-btn" data-spawn="bakka_seal_baby_female">Bakka Pup (F)</button>
                             <button class="testing-action-btn" id="trigger-bakka-seal-mating-btn">Bakka Seal Mating</button>
+                            <button class="spawn-btn" data-spawn="pilfera_coastalis_male">Seagull (M)</button>
+                            <button class="spawn-btn" data-spawn="pilfera_coastalis_female">Seagull (F)</button>
+                            <button class="spawn-btn" data-spawn="pilfera_coastalis_chick_male">Gull Chick (M)</button>
+                            <button class="spawn-btn" data-spawn="pilfera_coastalis_chick_female">Gull Chick (F)</button>
+                            <button class="spawn-btn" data-spawn="pilfera_coastalis_fledgling_male">Gull Fledgling (M)</button>
+                            <button class="spawn-btn" data-spawn="pilfera_coastalis_fledgling_female">Gull Fledgling (F)</button>
+                            <button class="testing-action-btn" id="trigger-seagull-nesting-btn">Seagull Nesting</button>
                             <button class="spawn-btn" data-spawn="slitted_sardine_male">Sardine (M)</button>
                             <button class="spawn-btn" data-spawn="slitted_sardine_female">Sardine (F)</button>
                             <button class="spawn-btn" data-spawn="orcleton_male">Orcleton (M)</button>
@@ -2324,6 +2680,7 @@
             <button class="inventory-tab" data-tab="artifacts">Artifacts</button>
             <button class="inventory-tab" data-tab="bestiary">Bestiary</button>
             <button class="inventory-tab" data-tab="quest">Quest</button>
+            <button class="inventory-tab" data-tab="journal">Journal</button>
         </div>
         <div id="inventory-content">
             <!-- Inventory Panel -->
@@ -2363,8 +2720,16 @@
             <div id="quest-panel" class="inventory-panel">
                 <div id="quest-log"></div>
             </div>
+            <!-- Journal Panel (Pedro's Memories) -->
+            <div id="journal-panel" class="inventory-panel">
+                <div class="memories-header">
+                    <h3>Pedro's Journal</h3>
+                    <p class="memories-count"><span id="memories-found-count">0</span> / <span id="memories-total-count">0</span> recovered</p>
+                </div>
+                <div id="memories-grid"></div>
+            </div>
         </div>
-        <div id="inventory-footer">Press I to close</div>
+        <div id="inventory-footer">B = Bestiary | Q = Quest | J = Journal | I = Close</div>
     </div>
 
     <!-- Shop menu -->
@@ -2402,6 +2767,7 @@
     <script src="js/data/bestiary.js"></script>
     <script src="js/data/artifacts.js"></script>
     <script src="js/data/progression.js"></script>
+    <script src="js/data/memories.js"></script>
     <script src="js/data/tools.js"></script>
     <script src="js/data/skins.js"></script>
 

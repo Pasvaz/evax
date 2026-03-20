@@ -103,6 +103,18 @@ window.SaveSystem = (function() {
             // Resource bar pins
             pinnedResources: (GameState.pinnedResources || []).slice(),
 
+            // Memory fragments
+            memoriesFound: (GameState.memoriesFound || []).slice(),
+            introShown: GameState.introShown || false,
+            lastMemoryScore: GameState.lastMemoryScore || 0,
+            chapter1Shown: GameState.chapter1Shown || false,
+
+            // Discovery tracking
+            discoveredAnimals: (GameState.discoveredAnimals || []).slice(),
+            discoveredResources: (GameState.discoveredResources || []).slice(),
+            discoveredBiomes: (GameState.discoveredBiomes || []).slice(),
+            villageNotified: GameState.villageNotified || false,
+
             // Skin system
             currentSkin: GameState.currentSkin || 'default',
             unlockedSkins: (GameState.unlockedSkins || ['default']).slice(),
@@ -248,6 +260,14 @@ window.SaveSystem = (function() {
         GameState.hasSaddle = saveData.hasSaddle || false;
         GameState.questClues = saveData.questClues || [];
         GameState.pinnedResources = saveData.pinnedResources || [];
+        GameState.memoriesFound = saveData.memoriesFound || [];
+        GameState.introShown = saveData.introShown || false;
+        GameState.lastMemoryScore = saveData.lastMemoryScore || 0;
+        GameState.chapter1Shown = saveData.chapter1Shown || false;
+        GameState.discoveredAnimals = saveData.discoveredAnimals || [];
+        GameState.discoveredResources = saveData.discoveredResources || [];
+        GameState.discoveredBiomes = saveData.discoveredBiomes || [];
+        GameState.villageNotified = saveData.villageNotified || false;
         GameState.currentSkin = saveData.currentSkin || 'default';
         GameState.unlockedSkins = saveData.unlockedSkins || ['default'];
         GameState.arsenBombsUsed = saveData.arsenBombsUsed || 0;

@@ -60,7 +60,8 @@ window.PROGRESSION = {
             score: 100,
             villager: "Bruno",
             title: "Apprentice",
-            unlockMessage: "Bruno respects your courage and opens his forge! Wood Sword and Wood Axe are now available!"
+            unlockMessage: "Bruno respects your courage and opens his forge! Wood Sword and Wood Axe are now available!",
+            memoryFragment: "village_belonging"
         },
         {
             score: 200,

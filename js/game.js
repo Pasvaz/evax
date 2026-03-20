@@ -58,6 +58,7 @@ window.GameState = {
     // Game status
     gameRunning: false,
     health: 100,
+    lastDamageSource: null,      // What last damaged the player (for death messages)
     hunger: 100,  // Hunger bar - decreases over time, eat food to restore
     thirst: 100,  // Thirst bar - decreases over time, stand in water to restore
     dehydrationTimer: 0,  // Timer for dehydration damage
@@ -315,6 +316,7 @@ window.Game = (function() {
         }
 
         GameState.health -= amount;
+        GameState.lastDamageSource = enemyType || 'unknown';
         playSound('hurt');
         if (enemyType) playSound(enemyType);
         UI.updateUI();
@@ -356,12 +358,42 @@ window.Game = (function() {
     }
 
     /**
+     * Death messages — shown on game over screen based on what killed the player.
+     * Edit these to change the flavour text!
+     */
+    var DEATH_MESSAGES = {
+        'dehydration':      "You died of thirst! Find water and drink regularly.",
+        'drowning':         "You drowned! Watch your oxygen bar when diving.",
+        'badger':           "A badger mauled you! Those claws are brutal.",
+        'weasel':           "A sneaky weasel got you!",
+        'goose':            "A mother goose defended her eggs... fatally!",
+        'fox':              "A fox caught you! They're fast and cunning.",
+        'leopard_toad':     "Death by toad! Those tongues pack a punch.",
+        'grass_viper':      "A grass viper's bite was fatal!",
+        'antelope':         "An antelope kicked you! Stay clear of their hooves.",
+        'wild_dog':         "The wild dogs hunted you down!",
+        'dronglous_cat':    "A Dronglous Cat pounced on you!",
+        'drongulinat_cat':  "The Drongulinat Cat was too fierce!",
+        'snow_caninon':     "A Snow Caninon got you in the mountains!",
+        'baluban_oxen':     "A Baluban Oxen charged you down!",
+        'uronin_seal':      "A seal attacked you in the water!",
+        'orcleton':         "An Orcleton caught you!",
+        'bakka_seal':       "A Bakka Seal got you!",
+        'default':          "Something got you! Better luck next time."
+    };
+
+    /**
      * Game over handler.
      */
     function gameOver() {
         GameState.gameRunning = false;
         document.getElementById('game-over-screen').classList.remove('hidden');
         document.getElementById('final-score').textContent = 'Score: ' + GameState.score;
+
+        // Show death cause message
+        var cause = GameState.lastDamageSource || 'default';
+        var msg = DEATH_MESSAGES[cause] || DEATH_MESSAGES['default'];
+        document.querySelector('#game-over-screen .subtitle').textContent = msg;
 
         document.getElementById('ui-overlay').classList.add('hidden');
         document.getElementById('controls-info').classList.add('hidden');
@@ -426,6 +458,11 @@ window.Game = (function() {
         GameState.dehydrationTimer = 0;
         if (!GameState.questClues) GameState.questClues = [];
         if (!GameState.artifactsGiven) GameState.artifactsGiven = [];
+        if (!GameState.memoriesFound) GameState.memoriesFound = [];
+        if (!GameState.lastMemoryScore) GameState.lastMemoryScore = 0;
+        if (!GameState.discoveredAnimals) GameState.discoveredAnimals = [];
+        if (!GameState.discoveredResources) GameState.discoveredResources = [];
+        if (!GameState.discoveredBiomes) GameState.discoveredBiomes = [];
         UI.updateUI();
 
         GameState.gameRunning = true;
@@ -445,6 +482,7 @@ window.Game = (function() {
         GameState.hunger = 100;
         GameState.thirst = 100;
         GameState.dehydrationTimer = 0;
+        GameState.lastDamageSource = null;
         GameState.score = 0;
         GameState.resourceCounts = Object.assign(
             { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0 },
@@ -460,6 +498,28 @@ window.Game = (function() {
         // Reset hotbar
         GameState.hotbarSlots = [null, null, null, null, null, null, null, null, null];
         GameState.selectedHotbarSlot = 0;
+
+        // Reset inventory and quest state
+        GameState.inventoryItems = [];
+        GameState.questClues = [];
+        GameState.artifactsGiven = [];
+        GameState.pinnedResources = [];
+
+        // Reset memory/story state (don't reset introShown — skip intro on replay)
+        GameState.memoriesFound = [];
+        GameState.lastMemoryScore = 0;
+        GameState.chapter1Shown = false;
+
+        // Reset discovery tracking
+        GameState.discoveredAnimals = [];
+        GameState.discoveredResources = [];
+        GameState.discoveredBiomes = [];
+        GameState.villageNotified = false;
+        GameState.hungerWarned = false;
+        GameState.thirstWarned = false;
+
+        // Clear any pending toast notifications
+        UI.clearToasts();
 
         // Clear arsen bomb puddles
         GameState.activePuddles.forEach(function(puddle) {
@@ -510,6 +570,7 @@ window.Game = (function() {
         document.getElementById('thirst-panel').classList.remove('hidden');
 
         UI.updateUI();
+        UI.updateHotbar();
         GameState.gameRunning = true;
 
         // Spawn arboreal content (same as any other biome)
@@ -710,12 +771,30 @@ window.Game = (function() {
             // Update biome label
             document.getElementById('biome-label').textContent = targetData.displayName;
 
+            // First-time biome discovery notification
+            if (!GameState.discoveredBiomes) GameState.discoveredBiomes = [];
+            if (GameState.discoveredBiomes.indexOf(targetBiome) === -1) {
+                GameState.discoveredBiomes.push(targetBiome);
+                UI.showToast('New Biome Discovered!', 'You discovered ' + targetData.displayName + '!');
+            }
+
             // Spawn all biome-specific content (animals, resources, intervals)
             spawnBiomeContent(targetBiome);
 
             // Hide transition message
             transitionEl.style.display = 'none';
             GameState.isTransitioning = false;
+
+            // Check for biome-triggered memory fragments
+            if (typeof MEMORIES !== 'undefined') {
+                MEMORIES.forEach(function(fragment) {
+                    if (fragment.trigger === 'biome' && fragment.biomeId === targetBiome) {
+                        setTimeout(function() {
+                            UI.showMemoryFlashback(fragment.id);
+                        }, 1500);
+                    }
+                });
+            }
 
         }, 3000);
     }
@@ -789,6 +868,10 @@ window.Game = (function() {
         if (targetData.spawnBakkaSeals && targetData.bakkaSeals > 0) {
             Enemies.spawnBakkaSeals(targetData.bakkaSeals);
             GameState.bakkaSealMatingTimer = 0;
+        }
+        // Spawn seagulls on the beach
+        if (targetData.spawnSeagulls && targetData.seagullCount > 0) {
+            Enemies.spawnPilferaCoastalisFlock(targetData.seagullCount);
         }
         // Spawn fish in the ocean
         if (targetData.spawnFish) {
@@ -1015,6 +1098,7 @@ window.Game = (function() {
             }
             Enemies.updateEnemies(delta);
             Enemies.updateNests(delta);
+            Enemies.updateSeagullNests(delta);
             Items.updateResources(delta);
             Items.updateArtifacts(delta);
             Dialogs.updateVillagers(delta);
@@ -1023,18 +1107,21 @@ window.Game = (function() {
             updatePuddles(delta);
 
             // Fuse tip flicker for Shimmering Bomb skin
-            if (GameState.currentSkin === 'shimmering_bomb' && GameState.peccary) {
-                GameState.peccary.traverse(function(obj) {
-                    if (obj.userData && obj.userData.isFuseTip && obj.material) {
-                        obj.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
-                    }
-                });
+            if (GameState.fuseTipRef && GameState.fuseTipRef.material) {
+                GameState.fuseTipRef.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
             }
 
             checkBiomeTransition(delta);
             updateCamera();
             UI.updateMinimap();
             UI.updateUI();
+
+            // Village safe zone notification (once per save)
+            if (!GameState.villageNotified && GameState.currentBiome === 'arboreal' &&
+                Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z)) {
+                GameState.villageNotified = true;
+                UI.showToast('Safe Zone', 'You entered the village. Enemies cannot follow you here.');
+            }
 
             // Testing mode - keep resources infinite
             if (GameState.isTestingMode) {
@@ -1054,11 +1141,26 @@ window.Game = (function() {
                 // Thirst decreases slower than hunger
                 GameState.thirst = Math.max(0, GameState.thirst - delta * 0.12);
 
+                // Hunger/thirst warnings (session-only cooldown)
+                if (GameState.hunger < 20 && !GameState.hungerWarned) {
+                    GameState.hungerWarned = true;
+                    UI.showToast('You are hungry!', 'Find food soon or you will starve.');
+                } else if (GameState.hunger > 30) {
+                    GameState.hungerWarned = false;
+                }
+                if (GameState.thirst < 20 && !GameState.thirstWarned) {
+                    GameState.thirstWarned = true;
+                    UI.showToast('You are thirsty!', 'Find water soon or you will dehydrate.');
+                } else if (GameState.thirst > 30) {
+                    GameState.thirstWarned = false;
+                }
+
                 // Dehydration damage - lose 5 health every 10 seconds when thirst is 0
                 if (GameState.thirst <= 0) {
                     GameState.dehydrationTimer += delta;
                     if (GameState.dehydrationTimer >= 10) {
                         GameState.dehydrationTimer = 0;
+                        GameState.lastDamageSource = 'dehydration';
                         GameState.health = Math.max(0, GameState.health - 5);
                         if (GameState.health <= 0) {
                             gameOver();
@@ -1206,6 +1308,13 @@ window.Game = (function() {
                     Enemies.triggerBakkaSealMating();
                 }
 
+                // Seagull nesting timer — every 3 minutes
+                GameState.seagullMatingTimer = (GameState.seagullMatingTimer || 0) + delta;
+                if (GameState.seagullMatingTimer >= 180) {
+                    GameState.seagullMatingTimer = 0;
+                    Enemies.triggerSeagullMating();
+                }
+
                 // Fish respawn check — maintain minimum populations every 30s
                 GameState.fishRespawnTimer = (GameState.fishRespawnTimer || 0) + delta;
                 if (GameState.fishRespawnTimer >= 30) {
@@ -1319,7 +1428,13 @@ window.Game = (function() {
                         // Inside hut - handle hut interactions
                         ResearchHut.handleInteraction();
                     } else if (GameState.isDialogOpen) {
-                        Dialogs.advanceDialog();
+                        // Try clicking the first dialog option (works for both villager and scientist dialogs)
+                        var firstOpt = document.querySelector('[data-option-number="1"]');
+                        if (firstOpt) {
+                            firstOpt.click();
+                        } else {
+                            Dialogs.advanceDialog();
+                        }
                     } else if (GameState.nearbyVillager) {
                         Dialogs.openDialog(GameState.nearbyVillager);
                     } else if (ResearchHut.checkEnterHut()) {
@@ -1353,9 +1468,13 @@ window.Game = (function() {
                     }
                 }
 
-                // I key - Inventory & Bestiary
-                if (e.key.toLowerCase() === 'i') {
-                    if (GameState.gameRunning && !GameState.isDialogOpen && !GameState.isCraftMenuOpen && !GameState.isShopOpen) {
+                // Inventory shortcuts: I=toggle, B=bestiary, Q=quest, J=journal
+                var inventoryShortcuts = { i: null, b: 'bestiary', q: 'quest', j: 'journal' };
+                var inventoryTab = inventoryShortcuts[e.key.toLowerCase()];
+                if (inventoryTab !== undefined && GameState.gameRunning && !GameState.isDialogOpen && !GameState.isCraftMenuOpen && !GameState.isShopOpen) {
+                    if (inventoryTab) {
+                        Inventory.openToTab(inventoryTab);
+                    } else {
                         Inventory.toggle();
                     }
                 }
@@ -1420,12 +1539,34 @@ window.Game = (function() {
             });
 
             // Start screen buttons
-            document.getElementById('new-game-btn').addEventListener('click', () => {
+            function launchNewGame() {
                 startGame(false);
                 GameState.currentBiome = 'arboreal';
                 Environment.rebuildForBiome('arboreal');
                 document.getElementById('biome-label').textContent = BIOMES.arboreal.displayName;
                 spawnBiomeContent('arboreal');
+            }
+
+            document.getElementById('new-game-btn').addEventListener('click', function() {
+                if (!GameState.introShown) {
+                    // Show intro screen first
+                    document.getElementById('start-screen').classList.add('hidden');
+                    document.getElementById('memory-intro').classList.remove('hidden');
+                } else {
+                    launchNewGame();
+                }
+            });
+
+            // Intro "Let's go!" button
+            var introGoBtn = document.getElementById('intro-go-btn');
+            if (introGoBtn) introGoBtn.addEventListener('click', function() {
+                document.getElementById('memory-intro').classList.add('hidden');
+                GameState.introShown = true;
+                if (!GameState.memoriesFound) GameState.memoriesFound = [];
+                if (GameState.memoriesFound.indexOf('awakening') === -1) {
+                    GameState.memoriesFound.push('awakening');
+                }
+                launchNewGame();
             });
             document.getElementById('restart-btn').addEventListener('click', restartGame);
 
@@ -1475,6 +1616,7 @@ window.Game = (function() {
                 setTimeout(function() {
                     document.getElementById('start-screen').classList.add('hidden');
                     document.getElementById('skins-screen').classList.remove('hidden');
+                    document.getElementById('skin-cheat-box').classList.add('hidden');
                     renderSkinCards();
                     initSkinsPreview();
                     updateSkinsPreview(skinsPreviewState.selectedSkin);
@@ -1521,6 +1663,7 @@ window.Game = (function() {
                     document.getElementById('thirst-panel').classList.add('hidden');
 
                     document.getElementById('skins-screen').classList.remove('hidden');
+                    document.getElementById('skin-cheat-box').classList.add('hidden');
                     // Override back button to return to game instead of start screen
                     skinsPreviewState.returnToGame = true;
                     renderSkinCards();
@@ -1594,12 +1737,10 @@ window.Game = (function() {
                     if (skinsPreviewState.model) {
                         skinsPreviewState.model.rotation.y += 0.008;
 
-                        // Fuse tip flicker
-                        skinsPreviewState.model.traverse(function(obj) {
-                            if (obj.userData && obj.userData.isFuseTip && obj.material) {
-                                obj.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
-                            }
-                        });
+                        // Fuse tip flicker (cached reference)
+                        if (skinsPreviewState.fuseTip && skinsPreviewState.fuseTip.material) {
+                            skinsPreviewState.fuseTip.material.emissiveIntensity = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
+                        }
                     }
                     skinsPreviewState.renderer.render(skinsPreviewState.scene, skinsPreviewState.camera);
                 }
@@ -1622,6 +1763,12 @@ window.Game = (function() {
                 var model = Player.buildPeccaryModel(skin);
                 skinsPreviewState.scene.add(model);
                 skinsPreviewState.model = model;
+
+                // Cache fuse tip reference
+                skinsPreviewState.fuseTip = null;
+                model.traverse(function(obj) {
+                    if (obj.userData && obj.userData.isFuseTip) skinsPreviewState.fuseTip = obj;
+                });
             }
 
             function disposeSkinsPreview() {
@@ -1629,18 +1776,19 @@ window.Game = (function() {
                     cancelAnimationFrame(skinsPreviewState.animFrame);
                     skinsPreviewState.animFrame = null;
                 }
-                if (skinsPreviewState.model) {
-                    skinsPreviewState.scene.remove(skinsPreviewState.model);
-                    skinsPreviewState.model.traverse(function(obj) {
+                // Dispose all scene objects (model, lights, ground)
+                if (skinsPreviewState.scene) {
+                    skinsPreviewState.scene.traverse(function(obj) {
                         if (obj.geometry) obj.geometry.dispose();
                         if (obj.material) obj.material.dispose();
                     });
-                    skinsPreviewState.model = null;
                 }
                 if (skinsPreviewState.renderer) {
                     skinsPreviewState.renderer.dispose();
                     skinsPreviewState.renderer = null;
                 }
+                skinsPreviewState.model = null;
+                skinsPreviewState.fuseTip = null;
                 skinsPreviewState.scene = null;
                 skinsPreviewState.camera = null;
             }
@@ -1743,7 +1891,8 @@ window.Game = (function() {
             if (skinsBtn) skinsBtn.addEventListener('click', openSkinsScreen);
 
             // Skins back button — returns to game or start screen depending on context
-            document.getElementById('skins-back-btn').addEventListener('click', function() {
+            var skinsBackBtn = document.getElementById('skins-back-btn');
+            if (skinsBackBtn) skinsBackBtn.addEventListener('click', function() {
                 if (skinsPreviewState.returnToGame) {
                     closeSkinsToGame();
                 } else {
@@ -1752,7 +1901,8 @@ window.Game = (function() {
             });
 
             // Cheat code submit
-            document.getElementById('skin-cheat-submit').addEventListener('click', function() {
+            var cheatSubmit = document.getElementById('skin-cheat-submit');
+            if (cheatSubmit) cheatSubmit.addEventListener('click', function() {
                 var input = document.getElementById('skin-cheat-input');
                 var targetSkinId = input.dataset.targetSkin;
                 var skin = SKINS[targetSkinId];
@@ -1774,14 +1924,16 @@ window.Game = (function() {
             });
 
             // Enter key in cheat input triggers submit
-            document.getElementById('skin-cheat-input').addEventListener('keydown', function(e) {
+            var cheatInput = document.getElementById('skin-cheat-input');
+            if (cheatInput) cheatInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     document.getElementById('skin-cheat-submit').click();
                 }
             });
 
             // In-game skins button
-            document.getElementById('skins-ingame-btn').addEventListener('click', function() {
+            var skinsIngameBtn = document.getElementById('skins-ingame-btn');
+            if (skinsIngameBtn) skinsIngameBtn.addEventListener('click', function() {
                 if (GameState.gameRunning) {
                     openSkinsFromGame();
                 }
@@ -1917,6 +2069,36 @@ window.Game = (function() {
                     console.log('Bakka seal mating triggered!');
                 }
             });
+            document.getElementById('trigger-seagull-nesting-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerSeagullMating) {
+                    Enemies.triggerSeagullMating();
+                    console.log('Seagull nesting triggered!');
+                }
+            });
+
+            // Memory fragment test buttons
+            document.getElementById('trigger-memory-next-btn').addEventListener('click', () => {
+                if (typeof MEMORIES === 'undefined') return;
+                if (!GameState.memoriesFound) GameState.memoriesFound = [];
+                // Find the first unfound memory
+                for (var i = 0; i < MEMORIES.length; i++) {
+                    if (GameState.memoriesFound.indexOf(MEMORIES[i].id) === -1) {
+                        UI.showMemoryFlashback(MEMORIES[i].id);
+                        var statusEl = document.getElementById('memory-test-status');
+                        if (statusEl) statusEl.textContent = 'Triggered: ' + MEMORIES[i].title + ' (' + (i + 1) + '/' + MEMORIES.length + ')';
+                        break;
+                    }
+                }
+            });
+            document.getElementById('trigger-memory-reset-btn').addEventListener('click', () => {
+                GameState.memoriesFound = [];
+                GameState.lastMemoryScore = 0;
+                GameState.chapter1Shown = false;
+                var statusEl = document.getElementById('memory-test-status');
+                if (statusEl) statusEl.textContent = 'All memories reset!';
+                console.log('All memory fragments reset');
+            });
+
             document.getElementById('trigger-dog-hunt-oxen-btn').addEventListener('click', () => {
                 if (typeof Enemies !== 'undefined' && Enemies.triggerSnowCaninonHunt && GameState.snowCaninonPacks) {
                     // Force dogs to hunt oxen specifically
@@ -2957,6 +3139,7 @@ window.Game = (function() {
             Environment.rebuildForBiome('arboreal');
             document.getElementById('biome-label').textContent = BIOMES.arboreal.displayName;
             spawnBiomeContent('arboreal');
+            Inventory.refreshBestiary();
             console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
             return;
         }
@@ -2979,6 +3162,7 @@ window.Game = (function() {
         GameState.artifacts = ARTIFACTS.map(a => a.id);
         document.getElementById('testing-indicator').classList.remove('hidden');
         UI.updateUI();
+        Inventory.refreshBestiary();
         console.log('%c TESTING MODE ACTIVATED ', 'background: #ff4444; color: white; font-size: 16px; padding: 4px;');
         console.log('Press T to open testing menu. Type Game.play() to exit.');
     }

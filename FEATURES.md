@@ -57,4 +57,27 @@ you can only enter the coastal biome once you have collected " uronal seal tooth
 uronin seals are descended from uronal seals but arent extinct. please take a lot of care when making both seals and make sure they have proper  seal-like animations. uronin seals are large and chunky and males are grey with grey-blue patches and whiskers. females are a lighter shade of grey, are only a little smaller than males and have white patches and whiskers.baby males are white with completely black, adorable eyes and baby females are black and smaller. they sleep on islands and have a mating season every 5 minutes in which the largest male [ the leader ] will attempt to do all the mating but other males always manage to mate anyways. if a male wants to become a leader he fights the leader and normally loses but if he wins he becomes the leader! if a female has a pup she normally tends to leave her island and her colony and raises the pup to maturity before taking her pup [ now an adult ] back to the colony. bakka seals are also descended from uronal seals but are different from uronin  and live alone. they are slimmer to body proportion than uronin seals and also are smaller. males are creamy beige and females are black. pups are black in both genders and the only difference is size. bakka seals are faster and more agile than uronin seals both in water and on land. if a male and female bakka seal are on the same island they can mate and the female raises four pups. FISH: seals hunt fish of all kinds. 1: slitted sardine. they live in shoals of 20 and males are silver with a blue slit along their back while females are pure silver. they  like to leave eggs on the seafloor and males fertilize them. they are all hunted by both seal types. 2: orcletons. large, solitary fish that is blue in males and ornage in females. females lay eggs whenever and wherever they like and they lay five eggs in their lifetime. are hunted by both seal types but more commonly uronin seals.
 #### sea salt. 
 You find it underwater when diving, because you need it for the cookie recipe. It can be harvested by pressing E and is found deep at sea. It is practically a rock with the top being white. It cannot be eaten. 
-####
+## memory fragments
+
+### memory fragment 1
+something chasing pedro through the forest. but what and why?
+### memory fragment 2
+After entering the savannah, you get another memory fragment
+it tells about how pedro was looking, for something, but how does that lead to the chase?(the player must find the next memory fragment to find out!)
+### memory fragment 3
+after ningle tells pedro about the felis dronglaticus skull
+pedro gets another memory: someone wanted to silence me? but why? how? 
+### memory fragment 4
+after finding the snow temple a memory comes along: somebody, hiding, not wanting to be found, i was looking for them, but they... wait...what did they do?
+### memory fragment 5
+after entering the coastal biome another memory comes along: somebody was hiding in some cave, sent a creature after me because i knew where they were hiding, i knew too much...
+### memory fragment 6
+after the player gets to an island: someone, making a breakthrough, went into hiding and their family sent me to look for them,then they sent IT,a part of their breakthrough, but what was their breakthrough... 
+### memory fragment 7
+after the player gets 500 score since the last memory fragment was found:the breakthrough, something to do with bringing back things from a time unknown, but what time? what things?
+### memory fragment 8 
+after the player gets 670 score since last memory was found: the things were prehistoric beasts, but which ones? and what time? wait... the time... it was the time of a great felinid...
+### memory fragment 9
+after the player gets 1000 score since last memory was found: the beasts were ancestors of the animals we have tody and other ones that live in other areas of the planet and the time, well, it was the time of felis dronlaticus, and the person? Emilia snoutworth...
+### memory fragment 10
+after 1000 score since last memory fragment: the beast, the one chasing me, I think it was ... it was errmmm... Ive got it! the beast was felis dronglaticus, brought back from the dead... and Emilia put the skull near ningles hut, thats what I was looking for... and where Emilia was hiding? who knows, probably in some other biome, far, far, away. I will have to look in them all, but, Emilia snoutworth, know that I am coming for you, no matter how far you are, I will look for you, I will find you, and I will punish you by making you bake the best cookies of all time without instructions! And then I will send you to your family, and find a place for all the beasts you brought back...

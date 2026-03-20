@@ -124,7 +124,7 @@ window.Effects = (function() {
             // OPEN SHOP - Open the shop menu
             // ----------------------------------------------------------------
             case 'open_shop':
-                UI.openShop();
+                UI.openShop(effect.vendor);
                 return true;
 
             // ----------------------------------------------------------------
@@ -154,6 +154,7 @@ window.Effects = (function() {
                     GameState.questClues.push(effect.clue);
                     Game.playSound('collect');
                     console.log('Quest clue discovered: ' + effect.clue);
+                    UI.showToast('New Quest Clue!', 'A new clue has been discovered. <div>Press <b>Q</b> to check your quest log.</div>');
                 }
                 return true;
 
@@ -176,6 +177,18 @@ window.Effects = (function() {
                 }
                 Game.playSound('collect');
                 UI.updateUI();
+                return true;
+
+            // ----------------------------------------------------------------
+            // TRIGGER MEMORY - Show a memory flashback from a dialog
+            // ----------------------------------------------------------------
+            case 'trigger_memory':
+                if (effect.memoryId) {
+                    // Delay so the dialog closes first
+                    setTimeout(function() {
+                        UI.showMemoryFlashback(effect.memoryId);
+                    }, 500);
+                }
                 return true;
 
             // ----------------------------------------------------------------

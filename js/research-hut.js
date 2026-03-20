@@ -776,6 +776,13 @@ window.ResearchHut = (function() {
                         Game.playSound('collect');
                         UI.updateUI();
                     }
+
+                    // Check for artifact-triggered memory fragments
+                    if (artifactData.memoryFragment) {
+                        setTimeout(function() {
+                            UI.showMemoryFlashback(artifactData.memoryFragment);
+                        }, 500);
+                    }
                 }
             }]
         );
@@ -798,6 +805,7 @@ window.ResearchHut = (function() {
         options.forEach((opt, i) => {
             const optDiv = document.createElement('div');
             optDiv.className = 'dialog-option';
+            optDiv.setAttribute('data-option-number', i + 1);
             optDiv.textContent = `${i + 1}. ${opt.text}`;
             optDiv.addEventListener('click', opt.action);
             dialogOptions.appendChild(optDiv);
