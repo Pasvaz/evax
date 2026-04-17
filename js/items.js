@@ -322,6 +322,69 @@ window.Items = (function() {
     }
 
     /**
+     * Create a decorated Easter egg mesh (colourful painted egg).
+     * Used instead of a normal egg when the Easter event is active.
+     */
+    function createEasterEgg() {
+        var eggGroup = new THREE.Group();
+
+        // Base egg body — bright pastel colour (random from palette)
+        var eggColors = [0xff69b4, 0x87ceeb, 0x98fb98, 0xffd700, 0xdda0dd, 0xff6347];
+        var baseColor = eggColors[Math.floor(Math.random() * eggColors.length)];
+
+        var eggBody = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 16, 16),
+            new THREE.MeshStandardMaterial({ color: baseColor })
+        );
+        eggBody.scale.set(1, 1.3, 1);
+        eggBody.position.y = 0.3;
+        eggGroup.add(eggBody);
+
+        // Painted stripes — 3 horizontal rings of contrasting colour
+        var stripeColors = [0xffffff, 0xff4500, 0x4169e1, 0x32cd32, 0xff1493];
+        var stripeColor = stripeColors[Math.floor(Math.random() * stripeColors.length)];
+        var stripeMat = new THREE.MeshStandardMaterial({ color: stripeColor });
+
+        for (var s = 0; s < 3; s++) {
+            var stripe = new THREE.Mesh(
+                new THREE.TorusGeometry(0.22, 0.02, 8, 24),
+                stripeMat
+            );
+            stripe.position.y = 0.2 + s * 0.15;
+            stripe.rotation.x = Math.PI / 2;
+            eggGroup.add(stripe);
+        }
+
+        // Colourful dots scattered around
+        var dotColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
+        for (var d = 0; d < 6; d++) {
+            var dot = new THREE.Mesh(
+                new THREE.SphereGeometry(0.035, 8, 8),
+                new THREE.MeshStandardMaterial({ color: dotColors[d % dotColors.length] })
+            );
+            var angle = (d / 6) * Math.PI * 2;
+            var height = 0.15 + Math.random() * 0.3;
+            dot.position.set(
+                Math.cos(angle) * 0.21,
+                height + 0.15,
+                Math.sin(angle) * 0.21
+            );
+            eggGroup.add(dot);
+        }
+
+        eggGroup.userData = {
+            type: 'egg',
+            isEasterEgg: true,
+            value: 5,
+            healAmount: 10,
+            radius: 0.5,
+            bobOffset: Math.random() * Math.PI * 2
+        };
+
+        return eggGroup;
+    }
+
+    /**
      * Find a random position on the riverbank.
      */
     function findRiverbankPosition() {
@@ -411,6 +474,14 @@ window.Items = (function() {
         } else if (type === 'egg') {
             GameState.resourceCounts.eggs++;
 
+            // Track Easter egg collection for quest progress
+            if (resource.userData.isEasterEgg && GameState.easterQuest && GameState.easterQuest.goal.type === 'collect_easter_eggs') {
+                GameState.easterQuestEggsCollected++;
+                if (GameState.easterQuestEggsCollected >= GameState.easterQuest.goal.count) {
+                    UI.showToast('Quest Ready!', 'Return to Marshmallow to claim your reward!');
+                }
+            }
+
             // Check if this egg came from a nest and trigger nest owner defense
             if (resource.userData.nestId && GameState.nests) {
                 const nest = GameState.nests.find(n => n.id === resource.userData.nestId);
@@ -429,6 +500,24 @@ window.Items = (function() {
                     }
                 }
             }
+        }
+
+        // PIGLET LUCKY DROPS — 25% chance to double the resource
+        if (GameState.pigletBuffs && GameState.pigletBuffs.luckyDrops && Math.random() < 0.25) {
+            if (type === 'berry') GameState.resourceCounts.berries++;
+            else if (type === 'nut') GameState.resourceCounts.nuts++;
+            else if (type === 'mushroom') GameState.resourceCounts.mushrooms++;
+            else if (type === 'seaweed') GameState.resourceCounts.seaweed++;
+            else if (type === 'arsenic_mushroom') GameState.resourceCounts.arsenic_mushrooms++;
+            else if (type === 'egg') GameState.resourceCounts.eggs++;
+            UI.showToast('Lucky!', 'Clover found a bonus ' + type + '!');
+        }
+
+        // Flamingo score boost (2x when mounted on Gold or Blood flamingo)
+        if (GameState.mountedFlamingo && GameState.mountedFlamingo.userData &&
+            GameState.mountedFlamingo.userData.abilities &&
+            GameState.mountedFlamingo.userData.abilities.indexOf('score_boost') !== -1) {
+            value *= 2;
         }
 
         GameState.score += value;
@@ -767,6 +856,7 @@ window.Items = (function() {
     return {
         createResource: createResource,
         spawnResource: spawnResource,
+        createEasterEgg: createEasterEgg,
         updateResources: updateResources,
         collectResource: collectResource,
         toggleCraftMenu: toggleCraftMenu,

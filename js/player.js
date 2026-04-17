@@ -72,14 +72,25 @@ window.Player = (function() {
             model.add(eye);
         });
 
-        // Ears
+        // Ears — floppy for lamb skins, pointy for normal
         var earMat = new THREE.MeshStandardMaterial({ color: skin.detail });
-        [-0.25, 0.25].forEach(function(z) {
-            var ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.25, 8), earMat);
-            ear.position.set(1.0, 1.3, z);
-            ear.rotation.x = z > 0 ? 0.3 : -0.3;
-            model.add(ear);
-        });
+        if (skin.tailOverride === 'lamb') {
+            // Floppy lamb ears: flat ovals that droop down
+            [-0.25, 0.25].forEach(function(z) {
+                var ear = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), earMat);
+                ear.scale.set(0.6, 1.2, 1.0);
+                ear.position.set(1.05, 0.95, z * 1.3);
+                ear.rotation.x = z > 0 ? 0.8 : -0.8;
+                model.add(ear);
+            });
+        } else {
+            [-0.25, 0.25].forEach(function(z) {
+                var ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.25, 8), earMat);
+                ear.position.set(1.0, 1.3, z);
+                ear.rotation.x = z > 0 ? 0.3 : -0.3;
+                model.add(ear);
+            });
+        }
 
         // Legs
         var legMat = new THREE.MeshStandardMaterial({ color: skin.detail });
@@ -99,7 +110,7 @@ window.Player = (function() {
             model.add(hoof);
         });
 
-        // Tail — either default (small sphere) or fuse (for Shimmering Bomb)
+        // Tail — fuse (Shimmering Bomb), lamb (cotton ball), or default (small sphere)
         if (skin.tailOverride === 'fuse') {
             // Fuse: longer cylinder going backward + glowing tip
             var fuseMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
@@ -118,11 +129,62 @@ window.Player = (function() {
             tip.position.set(-1.7, 0.9, 0);
             tip.userData.isFuseTip = true;
             model.add(tip);
+        } else if (skin.tailOverride === 'lamb') {
+            // Fluffy cotton-ball tail — big and poofy!
+            var woolMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            var cottonTail = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), woolMat);
+            cottonTail.position.set(-1.15, 0.95, 0);
+            model.add(cottonTail);
+            // Extra fluff bumps around the cotton tail
+            var fluffPositions = [
+                [-1.0, 1.05, 0.08], [-1.0, 1.05, -0.08],
+                [-1.25, 0.85, 0.06], [-1.25, 0.85, -0.06],
+                [-1.1, 1.1, 0]
+            ];
+            fluffPositions.forEach(function(fp) {
+                var fluff = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), woolMat);
+                fluff.position.set(fp[0], fp[1], fp[2]);
+                model.add(fluff);
+            });
         } else {
             // Default small tail
             var tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bodyMat);
             tail.position.set(-1.1, 0.9, 0);
             model.add(tail);
+        }
+
+        // Lamb wool — fluffy white bumps covering the body
+        if (skin.tailOverride === 'lamb') {
+            var woolBodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            // Wool tufts scattered over the back and sides
+            var woolTufts = [
+                // Back row (top)
+                [0.3, 1.25, 0], [-0.1, 1.25, 0], [0.6, 1.2, 0], [-0.4, 1.2, 0],
+                // Left side
+                [0.3, 1.0, 0.5], [-0.1, 1.0, 0.5], [0.5, 1.05, 0.4], [-0.3, 1.05, 0.4],
+                // Right side
+                [0.3, 1.0, -0.5], [-0.1, 1.0, -0.5], [0.5, 1.05, -0.4], [-0.3, 1.05, -0.4],
+                // Belly area (slightly smaller)
+                [0.2, 0.6, 0.35], [-0.2, 0.6, 0.35], [0.2, 0.6, -0.35], [-0.2, 0.6, -0.35],
+                // Extra top fluff
+                [0.1, 1.3, 0.15], [0.1, 1.3, -0.15], [-0.3, 1.28, 0.12], [-0.3, 1.28, -0.12]
+            ];
+            woolTufts.forEach(function(wp) {
+                var tuftSize = 0.12 + Math.random() * 0.06;
+                var tuft = new THREE.Mesh(new THREE.SphereGeometry(tuftSize, 6, 6), woolBodyMat);
+                tuft.position.set(wp[0], wp[1], wp[2]);
+                model.add(tuft);
+            });
+            // Fluffy face wool (around collar area, like a lamb's woolly face)
+            var faceWool = [
+                [0.85, 1.15, 0.2], [0.85, 1.15, -0.2],
+                [0.9, 1.2, 0], [0.75, 1.2, 0.15], [0.75, 1.2, -0.15]
+            ];
+            faceWool.forEach(function(fp) {
+                var fw = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), woolBodyMat);
+                fw.position.set(fp[0], fp[1], fp[2]);
+                model.add(fw);
+            });
         }
 
         // Collar marking
@@ -428,6 +490,11 @@ window.Player = (function() {
      * @param {number} delta - Time elapsed since last frame
      */
     function updatePlayer(delta) {
+        // If mounted on flamingo, flight controls are handled in game.js
+        if (GameState.mountedFlamingo) {
+            return;
+        }
+
         // If mounted on gazella, handle riding
         if (GameState.mountedAnimal) {
             updateRiding(delta);
@@ -501,8 +568,13 @@ window.Player = (function() {
         const inWater = inRiver || inWateringHole || inShallowOcean;
         GameState.playerInWater = inWater;
 
-        const isSprinting = GameState.keys['shift'];
+        const isSprinting = GameState.keys['shift'] && GameState.stamina > 0;
         let moveSpeed = isSprinting ? window.CONFIG.PLAYER_SPRINT_SPEED : window.CONFIG.PLAYER_WALK_SPEED;
+
+        // Roller skates override (Easter item)
+        if (GameState.rollerSkatesOn) {
+            moveSpeed = 20;
+        }
 
         // Testing mode - 2x speed boost!
         if (GameState.isTestingMode) {
@@ -524,6 +596,11 @@ window.Player = (function() {
                 // Getting hungry - slightly slower
                 moveSpeed *= 0.7;  // 70% speed when very hungry
             }
+        }
+
+        // Piglet speed boost (Spark ability)
+        if (GameState.pigletBuffs && GameState.pigletBuffs.speedMultiplier !== 1.0) {
+            moveSpeed *= GameState.pigletBuffs.speedMultiplier;
         }
 
         const rawDir = new THREE.Vector3();
@@ -611,10 +688,12 @@ window.Player = (function() {
         }
 
         // World bounds - allow going slightly past 0.7 to trigger biome transitions
-        // The transition border is at 0.7, so we allow up to 0.75 for the actual edge
-        const bound = CONFIG.WORLD_SIZE * 0.75;
-        GameState.peccary.position.x = Math.max(-bound, Math.min(bound, GameState.peccary.position.x));
-        GameState.peccary.position.z = Math.max(-bound, Math.min(bound, GameState.peccary.position.z));
+        // Skip bounds when in the Easter biome (far west, outside normal world)
+        if (!GameState.inEasterBiome) {
+            const bound = CONFIG.WORLD_SIZE * 0.75;
+            GameState.peccary.position.x = Math.max(-bound, Math.min(bound, GameState.peccary.position.x));
+            GameState.peccary.position.z = Math.max(-bound, Math.min(bound, GameState.peccary.position.z));
+        }
 
         // Block deep ocean — can't swim past the deep water boundary (unless in a boat or diving!)
         // Note: isInDeepOcean returns false near islands, so players can walk in island shallow zones
@@ -1222,8 +1301,11 @@ window.Player = (function() {
     function exitUnderwater() {
         GameState.isUnderwater = false;
         GameState.oxygenLevel = 100;
-        // Restore normal fog
-        if (GameState.normalFogColor) {
+        // Restore normal fog (or Easter sky if event is active)
+        if (GameState.easterSkyActive) {
+            GameState.scene.background = new THREE.Color(0xf5b8c4);
+            GameState.scene.fog = new THREE.Fog(0xf0c0cc, 200, 1200);
+        } else if (GameState.normalFogColor) {
             GameState.scene.fog = new THREE.Fog(GameState.normalFogColor, GameState.normalFogNear, GameState.normalFogFar);
             GameState.scene.background = GameState.normalFogColor.clone();
         } else {
@@ -1280,11 +1362,255 @@ window.Player = (function() {
         Game.showBlockedMessage("Raft picked up!");
     }
 
+    /**
+     * Create the back-mounted sword mesh (initially hidden).
+     * Call after createPeccary / rebuildPeccary.
+     */
+    function createBackSword() {
+        // Remove old one if it exists
+        if (GameState.backSword) {
+            GameState.peccary.remove(GameState.backSword);
+            GameState.backSword = null;
+        }
+
+        var swordGroup = new THREE.Group();
+
+        // Blade — long silver rectangle lying along Pedro's back
+        var bladeMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.6, roughness: 0.3 });
+        var blade = new THREE.Mesh(
+            new THREE.BoxGeometry(1.4, 0.08, 0.18),
+            bladeMat
+        );
+        blade.position.set(0.2, 0, 0);
+        blade.castShadow = true;
+        swordGroup.add(blade);
+
+        // Handle — brown wood grip
+        var handleMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+        var handle = new THREE.Mesh(
+            new THREE.BoxGeometry(0.45, 0.12, 0.12),
+            handleMat
+        );
+        handle.position.set(-0.6, 0, 0);
+        swordGroup.add(handle);
+
+        // Guard — gold crossbar
+        var guardMat = new THREE.MeshStandardMaterial({ color: 0xDAA520, metalness: 0.5 });
+        var guard = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.1, 0.4),
+            guardMat
+        );
+        guard.position.set(-0.3, 0, 0);
+        swordGroup.add(guard);
+
+        // Position on Pedro's back — on top of the body, lying along the spine
+        // Body center is at y=0.8, radius 0.6, so top is ~1.4
+        swordGroup.position.set(0, 1.5, 0);
+        swordGroup.visible = false;
+
+        GameState.peccary.add(swordGroup);
+        GameState.backSword = swordGroup;
+    }
+
+    /**
+     * Show/hide the back sword based on currently selected hotbar item.
+     */
+    function updateBackSword() {
+        if (!GameState.backSword) return;
+        var hotbarItem = GameState.hotbarSlots[GameState.selectedHotbarSlot];
+        var isSword = !!(hotbarItem && TOOL_STATS.swords && TOOL_STATS.swords[hotbarItem.id]);
+        GameState.backSword.visible = isSword;
+    }
+
+    // ========================================================================
+    // WICKER BASKET — back accessory for Memory Collector skin
+    // ========================================================================
+
+    function createBackBasket() {
+        // Remove old basket if it exists
+        destroyBackBasket();
+
+        var skin = SKINS[GameState.currentSkin || 'default'];
+        if (!skin || !skin.fogReduction) return; // Only for Memory Collector
+
+        var basket = new THREE.Group();
+
+        // Basket body — open-top wicker container
+        var wickerColor = 0xc4913b;
+        var wickerMat = new THREE.MeshStandardMaterial({ color: wickerColor, roughness: 0.9 });
+
+        // Main basket cylinder (open top)
+        var bodyGeo = new THREE.CylinderGeometry(0.28, 0.22, 0.4, 8, 1, true);
+        var body = new THREE.Mesh(bodyGeo, wickerMat);
+        body.position.y = 0.2;
+        body.castShadow = true;
+        basket.add(body);
+
+        // Basket bottom (flat disc)
+        var bottomGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.04, 8);
+        var bottom = new THREE.Mesh(bottomGeo, wickerMat);
+        bottom.position.y = 0.02;
+        basket.add(bottom);
+
+        // Wicker rim at top
+        var rimGeo = new THREE.TorusGeometry(0.28, 0.03, 8, 16);
+        var rimMat = new THREE.MeshStandardMaterial({ color: 0xa07030, roughness: 0.9 });
+        var rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = 0.4;
+        basket.add(rim);
+
+        // Blue glowing orb inside the basket
+        var glowMat = new THREE.MeshStandardMaterial({
+            color: 0x4488ff,
+            emissive: 0x2244cc,
+            emissiveIntensity: 1.2,
+            transparent: true,
+            opacity: 0.85
+        });
+        var glow = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), glowMat);
+        glow.position.y = 0.25;
+        glow.userData.isBasketGlow = true;
+        basket.add(glow);
+
+        // A few smaller orbs peeking out
+        for (var i = 0; i < 3; i++) {
+            var angle = (i / 3) * Math.PI * 2;
+            var miniGlow = new THREE.Mesh(
+                new THREE.SphereGeometry(0.07, 6, 6),
+                glowMat
+            );
+            miniGlow.position.set(
+                Math.cos(angle) * 0.12,
+                0.35,
+                Math.sin(angle) * 0.12
+            );
+            miniGlow.userData.isBasketGlow = true;
+            basket.add(miniGlow);
+        }
+
+        // Position on Pedro's back — behind the body, slightly raised
+        // Body backCap is at x=-0.6, body top ~1.4
+        basket.position.set(-0.6, 1.1, 0);
+
+        GameState.peccary.add(basket);
+        GameState.backBasket = basket;
+    }
+
+    function destroyBackBasket() {
+        if (GameState.backBasket && GameState.peccary) {
+            GameState.peccary.remove(GameState.backBasket);
+            GameState.backBasket.traverse(function(obj) {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+            GameState.backBasket = null;
+        }
+    }
+
+    function updateBackBasket() {
+        if (!GameState.backBasket) return;
+        // Pulse the glow orbs
+        var time = Date.now() * 0.001;
+        GameState.backBasket.traverse(function(obj) {
+            if (obj.userData && obj.userData.isBasketGlow && obj.material) {
+                obj.material.emissiveIntensity = 0.8 + Math.sin(time * 2.5 + obj.position.x * 10) * 0.5;
+            }
+        });
+    }
+
+    // ========================================================================
+    // SKIN SPARKLES — blue light particles for Memory Collector skin
+    // ========================================================================
+    var SPARKLE_COUNT = 20;
+
+    function createSkinSparkles() {
+        // Remove old sparkles if they exist
+        destroySkinSparkles();
+
+        var skin = SKINS[GameState.currentSkin || 'default'];
+        if (!skin || !skin.fogReduction) return; // Only sparkle skins with fog power
+
+        var geo = new THREE.BufferGeometry();
+        var positions = [];
+        var angles = [];  // Each sparkle orbits at its own angle + height
+
+        for (var i = 0; i < SPARKLE_COUNT; i++) {
+            positions.push(0, 0, 0);  // Will be set in update
+            angles.push({
+                angle: Math.random() * Math.PI * 2,
+                radius: 1.0 + Math.random() * 1.2,
+                height: 0.3 + Math.random() * 1.8,
+                speed: 0.5 + Math.random() * 1.0,
+                bob: Math.random() * Math.PI * 2
+            });
+        }
+
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+        var mat = new THREE.PointsMaterial({
+            color: 0x4488ff,
+            size: 0.2,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
+        });
+
+        var sparkles = new THREE.Points(geo, mat);
+        sparkles.userData = { type: 'skin_sparkles', orbitData: angles };
+
+        GameState.scene.add(sparkles);
+        GameState.skinSparkles = sparkles;
+    }
+
+    function destroySkinSparkles() {
+        if (GameState.skinSparkles) {
+            GameState.scene.remove(GameState.skinSparkles);
+            GameState.skinSparkles.geometry.dispose();
+            GameState.skinSparkles.material.dispose();
+            GameState.skinSparkles = null;
+        }
+    }
+
+    function updateSkinSparkles(delta) {
+        if (!GameState.skinSparkles || !GameState.peccary) return;
+
+        var sparkles = GameState.skinSparkles;
+        var positions = sparkles.geometry.attributes.position.array;
+        var orbitData = sparkles.userData.orbitData;
+        var px = GameState.peccary.position.x;
+        var py = GameState.peccary.position.y;
+        var pz = GameState.peccary.position.z;
+        var time = Date.now() * 0.001;
+
+        for (var i = 0; i < SPARKLE_COUNT; i++) {
+            var d = orbitData[i];
+            d.angle += d.speed * delta;
+            var idx = i * 3;
+            positions[idx]     = px + Math.cos(d.angle) * d.radius;
+            positions[idx + 1] = py + d.height + Math.sin(time * 2 + d.bob) * 0.3;
+            positions[idx + 2] = pz + Math.sin(d.angle) * d.radius;
+        }
+
+        sparkles.geometry.attributes.position.needsUpdate = true;
+
+        // Pulse opacity for a gentle glow
+        sparkles.material.opacity = 0.5 + Math.sin(time * 3) * 0.3;
+    }
+
     // Public API
     return {
         createPeccary: createPeccary,
         rebuildPeccary: rebuildPeccary,
         buildPeccaryModel: buildPeccaryModel,
-        updatePlayer: updatePlayer
+        updatePlayer: updatePlayer,
+        createBackSword: createBackSword,
+        updateBackSword: updateBackSword,
+        createSkinSparkles: createSkinSparkles,
+        destroySkinSparkles: destroySkinSparkles,
+        updateSkinSparkles: updateSkinSparkles,
+        createBackBasket: createBackBasket,
+        destroyBackBasket: destroyBackBasket,
+        updateBackBasket: updateBackBasket
     };
 })();

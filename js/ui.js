@@ -27,7 +27,8 @@ window.UI = (function() {
         bakka_seal_tooth:    { icon: '🦷',  name: 'Bakka Seal Tooth',    tier: 2 },
         flour:               { icon: '🌾',  name: 'Flour',               tier: 2 },
         sugar:               { icon: '🍬',  name: 'Sugar',               tier: 2 },
-        butter:              { icon: '🧈',  name: 'Butter',              tier: 2 }
+        butter:              { icon: '🧈',  name: 'Butter',              tier: 2 },
+        cherry_petals:       { icon: '🌸',  name: 'Cherry Petals',       tier: 2 }
     };
 
     // ========================================================================
@@ -311,6 +312,16 @@ window.UI = (function() {
         }
 
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
+
+        // Update stamina bar
+        var staminaBar = document.getElementById('stamina-bar');
+        var staminaPct = (GameState.stamina / GameState.maxStamina) * 100;
+        staminaBar.style.width = Math.max(0, staminaPct) + '%';
+        if (GameState.stamina <= 15) {
+            staminaBar.classList.add('exhausted');
+        } else {
+            staminaBar.classList.remove('exhausted');
+        }
 
         // Update hunger bar
         const hungerBar = document.getElementById('hunger-bar');
@@ -813,7 +824,12 @@ window.UI = (function() {
         manglecacia_axe: '🪓',
         seaspray_birch_axe: '🪓',
         basic_rook_boat: '🚣',
-        arsen_bomb: '💣'
+        arsen_bomb: '💣',
+        fishing_spear: '🔱',
+        catcher_net: '🥅',
+        chocolate_goggles: '🥽',
+        roller_skates: '⛸️',
+        flamingo_license: '🦩'
     };
 
     /**
@@ -848,9 +864,40 @@ window.UI = (function() {
                 } else {
                     if (countEl) countEl.remove();
                 }
+
+                // Cooldown overlay for swords and axes
+                var cooldownEl = slot.querySelector('.hotbar-cooldown');
+                var cooldownTextEl = slot.querySelector('.hotbar-cooldown-text');
+                var isSwordItem = TOOL_STATS.swords && TOOL_STATS.swords[item.id];
+                var isAxeItem = TOOL_STATS.axes && TOOL_STATS.axes[item.id];
+                var cooldown = isSwordItem ? GameState.attackCooldown : (isAxeItem ? GameState.chopCooldown : 0);
+                var maxCooldown = 3;
+
+                if (cooldown > 0 && (isSwordItem || isAxeItem)) {
+                    if (!cooldownEl) {
+                        cooldownEl = document.createElement('div');
+                        cooldownEl.className = 'hotbar-cooldown';
+                        slot.appendChild(cooldownEl);
+                    }
+                    if (!cooldownTextEl) {
+                        cooldownTextEl = document.createElement('div');
+                        cooldownTextEl.className = 'hotbar-cooldown-text';
+                        slot.appendChild(cooldownTextEl);
+                    }
+                    var pct = (cooldown / maxCooldown) * 100;
+                    cooldownEl.style.height = pct + '%';
+                    cooldownTextEl.textContent = Math.ceil(cooldown) + 's';
+                } else {
+                    if (cooldownEl) cooldownEl.remove();
+                    if (cooldownTextEl) cooldownTextEl.remove();
+                }
             } else {
                 iconEl.textContent = '';
                 if (countEl) countEl.remove();
+                var cooldownEl = slot.querySelector('.hotbar-cooldown');
+                var cooldownTextEl = slot.querySelector('.hotbar-cooldown-text');
+                if (cooldownEl) cooldownEl.remove();
+                if (cooldownTextEl) cooldownTextEl.remove();
             }
         });
     }
@@ -884,6 +931,12 @@ window.UI = (function() {
         // Record it
         if (!GameState.memoriesFound) GameState.memoriesFound = [];
         GameState.memoriesFound.push(fragmentId);
+
+        // Check if Memory Collector skin should unlock (3 memories)
+        if (GameState.memoriesFound.length === 3 && GameState.unlockedSkins.indexOf('memory_collector') === -1) {
+            GameState.unlockedSkins.push('memory_collector');
+            UI.showToast('Skin Unlocked!', 'Memory Collector — your memories light the way. Press ESC to equip it!');
+        }
 
         // Track score at time of finding (for score_since_last triggers)
         GameState.lastMemoryScore = GameState.score;
@@ -1004,6 +1057,140 @@ window.UI = (function() {
         if (container) container.innerHTML = '';
     }
 
+    // ========================================================================
+    // EASTER SHOP (Clover's Chocolate Egg Shop)
+    // ========================================================================
+
+    function openEasterShop() {
+        GameState.isShopOpen = true;
+        GameState.currentShopVendor = 'clover';
+        var shopMenu = document.getElementById('shop-menu');
+        renderEasterShop();
+        shopMenu.classList.remove('hidden');
+        Game.playSound('collect');
+    }
+
+    function renderEasterShop() {
+        document.getElementById('shop-coins-display').textContent = GameState.chocolateEggs + ' 🥚';
+
+        var shopHeader = document.querySelector('#shop-header h2');
+        var shopSubtitle = document.querySelector('#shop-header .shop-subtitle');
+        var sellTab = document.querySelector('.shop-tab[data-tab="sell"]');
+
+        shopHeader.textContent = "Clover's Easter Shop";
+        shopSubtitle.textContent = "Buy gear with chocolate eggs!";
+        sellTab.style.display = 'none';
+        switchShopTab('buy');
+
+        var buyPanel = document.getElementById('shop-buy');
+        buyPanel.innerHTML = '';
+
+        EASTER_SHOP_ITEMS.forEach(function(item) {
+            var itemDiv = document.createElement('div');
+            itemDiv.className = 'shop-item';
+
+            var headerDiv = document.createElement('div');
+            headerDiv.className = 'shop-item-header';
+            headerDiv.innerHTML =
+                '<div class="shop-item-name">' + item.icon + ' ' + item.name + '</div>' +
+                '<div class="shop-item-price">' + item.price + ' 🥚</div>';
+            itemDiv.appendChild(headerDiv);
+
+            var descDiv = document.createElement('div');
+            descDiv.className = 'shop-item-stock';
+            descDiv.textContent = item.description;
+            itemDiv.appendChild(descDiv);
+
+            var actionsDiv = document.createElement('div');
+            actionsDiv.className = 'shop-item-actions';
+
+            var buyBtn = document.createElement('button');
+            buyBtn.className = 'shop-buy-btn';
+            buyBtn.textContent = 'Buy (' + item.price + ' 🥚)';
+            buyBtn.disabled = GameState.chocolateEggs < item.price;
+            buyBtn.onclick = function() { buyEasterItem(item); };
+            actionsDiv.appendChild(buyBtn);
+
+            itemDiv.appendChild(actionsDiv);
+            buyPanel.appendChild(itemDiv);
+        });
+    }
+
+    function buyEasterItem(item) {
+        if (GameState.chocolateEggs < item.price) {
+            Game.playSound('hurt');
+            return;
+        }
+
+        GameState.chocolateEggs -= item.price;
+
+        // Add item to hotbar
+        var hotbarItem = {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            icon: item.icon,
+            count: 1,
+            isEasterItem: true
+        };
+
+        // Handle permanent unlocks (flamingo license, etc.)
+        if (item.type === 'permanent_unlock') {
+            if (item.id === 'flamingo_license') {
+                if (GameState.hasFlamingoLicense) {
+                    showToast('Already Owned!', 'You already have a Flamingo Riding License!');
+                    GameState.chocolateEggs += item.price; // Refund
+                    return;
+                }
+                GameState.hasFlamingoLicense = true;
+            }
+            // Add to inventory for tracking
+            if (!GameState.inventoryItems) GameState.inventoryItems = [];
+            GameState.inventoryItems.push({ id: item.id, name: item.name, count: 1 });
+        } else if (item.type === 'consumable') {
+            // Check if stackable consumable already in hotbar
+            var existing = GameState.hotbarSlots.find(function(slot) {
+                return slot && slot.id === item.id;
+            });
+            if (existing) {
+                existing.count++;
+            } else {
+                addToHotbar(hotbarItem);
+            }
+        } else {
+            // Equippable — check if already owned
+            var alreadyOwned = GameState.hotbarSlots.find(function(slot) {
+                return slot && slot.id === item.id;
+            });
+            if (alreadyOwned) {
+                showToast('Already Owned!', 'You already have ' + item.name + ' in your hotbar.');
+                GameState.chocolateEggs += item.price; // Refund
+                return;
+            }
+            addToHotbar(hotbarItem);
+        }
+
+        Game.playSound('collect');
+        showToast('Purchased!', item.icon + ' ' + item.name);
+        updateUI();
+        updateHotbar();
+        renderEasterShop();
+    }
+
+    function addToHotbar(item) {
+        for (var i = 0; i < GameState.hotbarSlots.length; i++) {
+            if (!GameState.hotbarSlots[i]) {
+                GameState.hotbarSlots[i] = item;
+                return true;
+            }
+        }
+        // Hotbar full — try inventory
+        if (!GameState.inventoryItems) GameState.inventoryItems = [];
+        GameState.inventoryItems.push(item);
+        showToast('Hotbar Full', item.name + ' added to inventory instead.');
+        return true;
+    }
+
     return {
         setupMinimap: setupMinimap,
         updateMinimap: updateMinimap,
@@ -1022,6 +1209,7 @@ window.UI = (function() {
         showMemoryFlashback: showMemoryFlashback,
         showToast: showToast,
         clearToasts: clearToasts,
+        openEasterShop: openEasterShop,
         RESOURCE_META: RESOURCE_META
     };
 })();

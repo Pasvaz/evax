@@ -1217,7 +1217,13 @@ window.Environment = (function() {
 
         // Update fog if biome specifies it
         if (biomeData.fogColor !== undefined && biomeData.fogDensity !== undefined) {
-            GameState.scene.fog = new THREE.FogExp2(biomeData.fogColor, biomeData.fogDensity);
+            var density = biomeData.fogDensity;
+            // Memory Collector skin reduces fog
+            var activeSkin = SKINS[GameState.currentSkin || 'default'];
+            if (activeSkin && activeSkin.fogReduction) {
+                density *= activeSkin.fogReduction;
+            }
+            GameState.scene.fog = new THREE.FogExp2(biomeData.fogColor, density);
         } else {
             // Clear fog if not specified
             GameState.scene.fog = null;

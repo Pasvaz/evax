@@ -267,12 +267,17 @@ window.Dialogs = (function() {
         const dialogOptions = document.getElementById('dialog-options');
         const dialogHint = document.getElementById('dialog-hint');
 
+        // Resolve dynamic Easter dialog content
+        var resolved = resolveEasterDialog(node, villager);
+        var displayText = resolved.text;
+        var displayChoices = resolved.choices;
+
         dialogName.textContent = `${villager.userData.name} - ${villager.userData.role}`;
-        dialogText.textContent = node.text;
+        dialogText.textContent = displayText;
 
         dialogOptions.innerHTML = '';
 
-        node.choices.forEach((choice, index) => {
+        displayChoices.forEach((choice, index) => {
             const optionDiv = document.createElement('div');
             optionDiv.className = 'dialog-option';
             optionDiv.setAttribute('data-option-number', index + 1);
@@ -285,11 +290,320 @@ window.Dialogs = (function() {
     }
 
     /**
+     * Resolve dynamic Easter dialog text and choices.
+     * Returns { text, choices } — unmodified for non-Easter villagers.
+     */
+    function resolveEasterDialog(node, villager) {
+        var text = node.text;
+        var choices = node.choices;
+        var name = villager.userData.name;
+
+        // Not an Easter NPC or not dynamic — return as-is
+        if ((name !== 'Marshmallow' && name !== 'Clover' && name !== 'Larry') || !text.startsWith('DYNAMIC_')) {
+            return { text: text, choices: choices };
+        }
+
+        // === LARRY THE LAMB dynamic text ===
+        if (name === 'Larry') {
+            if (text === 'DYNAMIC_LARRY_BALANCE') {
+                var eggCount = GameState.easterEggs || 0;
+                return {
+                    text: "You have " + eggCount + " Easter Egg" + (eggCount !== 1 ? 's' : '') + "!" +
+                        (eggCount >= 150 ? " That's enough for a LEGENDARY egg!" :
+                         eggCount >= 75 ? " You could afford a Gold egg!" :
+                         eggCount >= 35 ? " Enough for a Silver egg!" :
+                         eggCount >= 15 ? " You can buy a Bronze egg!" :
+                         " Do some quests to earn more!"),
+                    choices: choices
+                };
+            }
+            if (text === 'DYNAMIC_LARRY_SHOP') {
+                // Open the egg shop UI
+                if (typeof openEggShop === 'function') openEggShop();
+                return { text: "*Larry opens his egg crate* Take a look!", choices: choices };
+            }
+            if (text === 'DYNAMIC_LARRY_QUEST') {
+                var qIdx = GameState.larryQuestIndex || 0;
+                var allQuests = typeof larryQuests !== 'undefined' ? larryQuests : [];
+                if (qIdx >= allQuests.length) {
+                    return {
+                        text: "*Larry wipes a tear* You've done ALL my quests! You're the best helper a chef could ask for!",
+                        choices: choices
+                    };
+                }
+                var quest = allQuests[qIdx];
+                var playerHas = (GameState.resourceCounts && GameState.resourceCounts[quest.requirement.item]) || 0;
+                var needed = quest.requirement.count;
+                if (playerHas >= needed) {
+                    // Player CAN complete — show the quest and offer to hand in
+                    return {
+                        text: "*Larry checks his recipe* " + quest.name + ": " + quest.description +
+                            "\n\nYou have " + playerHas + "/" + needed + " — that's enough!" +
+                            "\nReward: " + quest.rewardText,
+                        choices: [
+                            { text: "Hand them over!", nextNode: 'quest_complete' },
+                            { text: "Not yet, I'll keep them.", nextNode: 'greeting' }
+                        ]
+                    };
+                } else {
+                    return {
+                        text: "*Larry checks his recipe* " + quest.name + ": " + quest.description +
+                            "\n\nProgress: " + playerHas + "/" + needed +
+                            "\nReward: " + quest.rewardText,
+                        choices: [
+                            { text: "I'll go get them!", nextNode: null },
+                            { text: "Back.", nextNode: 'greeting' }
+                        ]
+                    };
+                }
+            }
+            if (text === 'DYNAMIC_LARRY_HEAL') {
+                // Show list of knocked-out piglets with heal costs
+                var koPiglets = [];
+                if (GameState.ownedPiglets) {
+                    for (var ki = 0; ki < GameState.ownedPiglets.length; ki++) {
+                        if (GameState.ownedPiglets[ki].knockedOut) {
+                            koPiglets.push(GameState.ownedPiglets[ki]);
+                        }
+                    }
+                }
+                if (koPiglets.length === 0) {
+                    return {
+                        text: "*Larry looks relieved* All your piglets are healthy! No healing needed. Take good care of them!",
+                        choices: choices
+                    };
+                }
+                var healCosts = {
+                    'Common': 5, 'Uncommon': 10, 'Rare': 20,
+                    'Ultra Rare': 35, 'Epic': 50, 'Godly': 75, 'Easter Symbol': 100
+                };
+                var healChoices = [];
+                for (var hi = 0; hi < koPiglets.length; hi++) {
+                    var kp = koPiglets[hi];
+                    var cost = healCosts[kp.rarity] || 5;
+                    var canAfford = (GameState.easterEggs || 0) >= cost;
+                    healChoices.push({
+                        text: (canAfford ? 'Heal ' : '[Need ' + cost + ' eggs] ') + kp.name + ' (' + cost + ' Easter Eggs)',
+                        nextNode: canAfford ? 'heal_confirm' : 'heal_check',
+                        healPigletId: kp.id,
+                        healCost: cost,
+                        canAfford: canAfford
+                    });
+                }
+                healChoices.push({ text: "Maybe later.", nextNode: 'greeting' });
+                return {
+                    text: "*Larry examines your piglets* Oh no, some of your little ones are hurt! I can patch them up with my special Easter medicine. You have " +
+                        (GameState.easterEggs || 0) + " Easter Eggs.",
+                    choices: healChoices
+                };
+            }
+            if (text === 'DYNAMIC_LARRY_HEAL_CONFIRM') {
+                // The dialog system passes the selected choice data — check for pending heal
+                var healId = GameState._pendingHealPigletId;
+                var healCostVal = GameState._pendingHealCost;
+                if (healId && healCostVal) {
+                    if ((GameState.easterEggs || 0) >= healCostVal) {
+                        GameState.easterEggs -= healCostVal;
+                        // Find and heal the piglet
+                        for (var pi = 0; pi < GameState.ownedPiglets.length; pi++) {
+                            if (GameState.ownedPiglets[pi].id === healId && GameState.ownedPiglets[pi].knockedOut) {
+                                GameState.ownedPiglets[pi].knockedOut = false;
+                                var healedName = GameState.ownedPiglets[pi].name;
+                                UI.showToast(healedName + ' Healed!', healedName + ' is back to full health! Press P to summon it.');
+                                break;
+                            }
+                        }
+                        GameState._pendingHealPigletId = null;
+                        GameState._pendingHealCost = null;
+                        return {
+                            text: "*Larry applies his Easter medicine* There we go, good as new! Your piglet is all patched up and ready for adventure!",
+                            choices: [
+                                { text: "Heal another piglet", nextNode: 'heal_check' },
+                                { text: "Thanks Larry!", nextNode: 'greeting' }
+                            ]
+                        };
+                    }
+                }
+                GameState._pendingHealPigletId = null;
+                GameState._pendingHealCost = null;
+                return {
+                    text: "Hmm, something went wrong. Let's try again!",
+                    choices: [{ text: "Back.", nextNode: 'heal_check' }]
+                };
+            }
+            if (text === 'DYNAMIC_LARRY_COMPLETE') {
+                var qIdx2 = GameState.larryQuestIndex || 0;
+                var allQuests2 = typeof larryQuests !== 'undefined' ? larryQuests : [];
+                if (qIdx2 >= allQuests2.length) {
+                    return { text: "No more quests!", choices: choices };
+                }
+                var quest2 = allQuests2[qIdx2];
+                var playerHas2 = (GameState.resourceCounts && GameState.resourceCounts[quest2.requirement.item]) || 0;
+                var needed2 = quest2.requirement.count;
+                if (playerHas2 >= needed2) {
+                    // Actually complete the quest NOW
+                    GameState.resourceCounts[quest2.requirement.item] -= needed2;
+                    GameState.easterEggs = (GameState.easterEggs || 0) + quest2.reward.easterEggs;
+                    GameState.completedLarryQuests = GameState.completedLarryQuests || [];
+                    GameState.completedLarryQuests.push(quest2.id);
+                    GameState.larryQuestIndex++;
+                    if (typeof UI !== 'undefined') UI.showToast('Quest Complete! 🎉', quest2.rewardText);
+                    return {
+                        text: "*Larry does a happy dance* You did it! Here's " + quest2.reward.easterEggs + " Easter Eggs! " +
+                            (GameState.larryQuestIndex < allQuests2.length ? "I've got another quest when you're ready!" : "That was my last quest — you're amazing!"),
+                        choices: [
+                            { text: "Next quest!", nextNode: 'quest_check' },
+                            { text: "Thanks! Goodbye.", nextNode: null }
+                        ]
+                    };
+                } else {
+                    return {
+                        text: "Hmm, looks like you don't have enough anymore. Go collect more!",
+                        choices: [{ text: "OK!", nextNode: null }]
+                    };
+                }
+            }
+            return { text: text, choices: choices };
+        }
+
+        var eggs = GameState.chocolateEggs || 0;
+        var quest = GameState.easterQuest;
+
+        if (text === 'DYNAMIC_EGGS') {
+            return {
+                text: "You have " + eggs + " chocolate egg" + (eggs !== 1 ? 's' : '') + "!" + (eggs >= 30 ? " That's enough for Roller Skates from Clover!" : eggs >= 10 ? " Clover has some gear you can afford!" : " Keep doing quests to earn more!"),
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_QUEST_MENU') {
+            // If player already has a quest, redirect
+            if (quest) {
+                var progress = getEasterQuestProgress();
+                return {
+                    text: "You already have a quest: \"" + quest.name + "\" (" + quest.difficulty + ")\nProgress: " + progress + "/" + quest.goal.count + "\nFinish it first, or abandon it!",
+                    choices: [
+                        { text: "I'll keep going!", nextNode: null },
+                        { text: "Abandon quest", nextNode: 'abandon_confirm' }
+                    ]
+                };
+            }
+
+            // Build quest selection — show one quest from each difficulty
+            var questChoices = [];
+            var difficulties = ['Easy', 'Medium', 'Challenging', 'Hard', 'Almost Impossible'];
+            difficulties.forEach(function(diff) {
+                var available = EASTER_QUESTS.filter(function(q) { return q.difficulty === diff; });
+                if (available.length > 0) {
+                    var q = available[Math.floor(Math.random() * available.length)];
+                    questChoices.push({
+                        text: q.name + " (" + diff + " — " + q.reward + " eggs)",
+                        nextNode: 'quest_accepted',
+                        effectData: { type: 'easter_accept_quest', questId: q.id }
+                    });
+                }
+            });
+
+            // 5% chance of the rare LAMB QUEST appearing!
+            var petals = GameState.resourceCounts ? (GameState.resourceCounts.cherry_petals || 0) : 0;
+            if (Math.random() < 0.05 && !GameState.easterLamb) {
+                var lambText = "Catch the Naughty Lamb! (RARE — 30 eggs + skin!)";
+                if (petals < 30) {
+                    lambText += " [Need 30 cherry petals — you have " + petals + "]";
+                }
+                questChoices.unshift({
+                    text: lambText,
+                    nextNode: 'lamb_quest_info',
+                    effectData: null
+                });
+            }
+
+            questChoices.push({ text: "Back.", nextNode: 'greeting' });
+
+            return {
+                text: "Here are today's quests! Pick one based on how brave you're feeling:\n\n" +
+                    "Easy = 1 egg | Medium = 5 | Challenging = 10 | Hard = 15 | Almost Impossible = 20",
+                choices: questChoices
+            };
+        }
+
+        if (text === 'DYNAMIC_TURN_IN') {
+            if (!quest) {
+                return {
+                    text: "You don't have an active quest to turn in! Want to pick one up?",
+                    choices: [
+                        { text: "Sure!", nextNode: 'quest_menu' },
+                        { text: "Goodbye.", nextNode: null }
+                    ]
+                };
+            }
+            var progress = getEasterQuestProgress();
+            if (progress >= quest.goal.count) {
+                // Quest complete!
+                return {
+                    text: "COMPLETE! You finished \"" + quest.name + "\"! Here are your " + quest.reward + " chocolate egg" + (quest.reward !== 1 ? 's' : '') + "!",
+                    choices: [
+                        { text: "Claim reward!", nextNode: 'quest_turned_in', effectData: { type: 'easter_complete_quest' } }
+                    ]
+                };
+            } else {
+                return {
+                    text: "Not done yet! \"" + quest.name + "\" — " + progress + "/" + quest.goal.count + ". Keep going!",
+                    choices: [
+                        { text: "I'll keep at it!", nextNode: null }
+                    ]
+                };
+            }
+        }
+
+        if (text === 'DYNAMIC_QUEST_ACCEPTED') {
+            return {
+                text: "Quest accepted: \"" + (quest ? quest.name : '???') + "\"! Good luck out there, Pedro!",
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_QUEST_TURNED_IN') {
+            return {
+                text: "Wonderful! You now have " + eggs + " chocolate egg" + (eggs !== 1 ? 's' : '') + ". Spend them at Clover's shop!",
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_ALREADY_HAS_QUEST') {
+            var progress = getEasterQuestProgress();
+            return {
+                text: "You're working on: \"" + (quest ? quest.name : '???') + "\" — " + progress + "/" + (quest ? quest.goal.count : '?') + ". Keep at it!",
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_NOT_COMPLETE') {
+            var progress = getEasterQuestProgress();
+            return {
+                text: "Not done yet! " + progress + "/" + (quest ? quest.goal.count : '?') + ". You can do it!",
+                choices: choices
+            };
+        }
+
+        return { text: text, choices: choices };
+    }
+
+    /**
+     * Get progress for the current Easter quest.
+     */
+    function getEasterQuestProgress() {
+        var quest = GameState.easterQuest;
+        if (!quest) return 0;
+        if (quest.goal.type === 'catch_bunnies') return GameState.easterQuestBunnyCaught || 0;
+        if (quest.goal.type === 'collect_easter_eggs') return GameState.easterQuestEggsCollected || 0;
+        return 0;
+    }
+
+    /**
      * Handle selecting a dialog choice.
      *
-     * Choices can have effects defined in two ways:
-     * 1. NEW WAY: effectData object (from data files) - handled by Effects.execute()
-     * 2. OLD WAY: action string (for backwards compatibility)
+     * Choices can have effectData objects (from data files) - handled by Effects.execute().
      *
      * If an effect fails (player can't afford it), we go to failNode instead.
      */
@@ -320,21 +634,11 @@ window.Dialogs = (function() {
         }
 
         // ====================================================================
-        // OLD ACTION SYSTEM (for backwards compatibility)
+        // LARRY HEAL — store pending heal data before navigating
         // ====================================================================
-        // If choice has an action string, use the old executeDialogAction
-        if (choice.action) {
-            success = executeDialogAction(choice.action, villager);
-
-            if (!success) {
-                const failNode = villager.userData.conversationTree.nodes['trade_fail'] ||
-                                 villager.userData.conversationTree.nodes['heal_fail'];
-                if (failNode) {
-                    renderDialogNode(failNode, villager);
-                    Game.playSound('hurt');
-                    return;
-                }
-            }
+        if (choice.healPigletId && choice.canAfford) {
+            GameState._pendingHealPigletId = choice.healPigletId;
+            GameState._pendingHealCost = choice.healCost;
         }
 
         // ====================================================================
@@ -353,56 +657,6 @@ window.Dialogs = (function() {
         } else {
             // nextNode is null - end the conversation
             closeDialog();
-        }
-    }
-
-    /**
-     * Execute a dialog action (trading, healing, etc.)
-     */
-    function executeDialogAction(actionName, villager) {
-        switch (actionName) {
-            case 'open_shop':
-                UI.openShop();
-                return true;
-
-            case 'trade_berries':
-                if (GameState.resourceCounts.berries >= 10) {
-                    GameState.resourceCounts.berries -= 10;
-                    GameState.health = Math.min(100, GameState.health + 20);
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            case 'trade_nuts':
-                if (GameState.resourceCounts.nuts >= 5) {
-                    GameState.resourceCounts.nuts -= 5;
-                    GameState.health = Math.min(100, GameState.health + 15);
-                    GameState.score += 5;
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            case 'trade_mushrooms':
-                if (GameState.resourceCounts.mushrooms >= 3) {
-                    GameState.resourceCounts.mushrooms -= 3;
-                    GameState.health = Math.min(100, GameState.health + 30);
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            case 'heal_player':
-                if (GameState.health < 100) {
-                    GameState.health = 100;
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            default:
-                return true;
         }
     }
 
@@ -432,7 +686,6 @@ window.Dialogs = (function() {
         openDialog: openDialog,
         closeDialog: closeDialog,
         advanceDialog: advanceDialog,
-        selectDialogChoice: selectDialogChoice,
-        executeDialogAction: executeDialogAction
+        selectDialogChoice: selectDialogChoice
     };
 })();

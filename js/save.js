@@ -26,7 +26,8 @@ window.SaveSystem = (function() {
         arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0,
         manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0,
         bakka_seal_tooth: 0,
-        flour: 0, sugar: 0, butter: 0
+        flour: 0, sugar: 0, butter: 0,
+        cherry_petals: 0
     };
 
     // ========================================================================
@@ -99,6 +100,7 @@ window.SaveSystem = (function() {
 
             // Quest
             questClues: (GameState.questClues || []).slice(),
+            claimedGifts: (GameState.claimedGifts || []).slice(),
 
             // Resource bar pins
             pinnedResources: (GameState.pinnedResources || []).slice(),
@@ -119,6 +121,19 @@ window.SaveSystem = (function() {
             currentSkin: GameState.currentSkin || 'default',
             unlockedSkins: (GameState.unlockedSkins || ['default']).slice(),
             arsenBombsUsed: GameState.arsenBombsUsed || 0,
+
+            // Easter event (bunny count + chocolate eggs persist, event flag does NOT)
+            easterBunniesCaught: GameState.easterBunniesCaught || 0,
+            chocolateEggs: GameState.chocolateEggs || 0,
+            hasFlamingoLicense: GameState.hasFlamingoLicense || false,
+            ownedPiglets: (GameState.ownedPiglets || []).slice(),
+            easterEggs: GameState.easterEggs || 0,
+            larryQuestIndex: GameState.larryQuestIndex || 0,
+            completedLarryQuests: (GameState.completedLarryQuests || []).slice(),
+
+            // Coastal chests & eyepatch
+            eyepatchEquipped: GameState.eyepatchEquipped || false,
+            chestRespawnTimer: GameState.chestRespawnTimer || undefined,
 
             // Bathroom deltas
             poopQueue: poopDeltas,
@@ -141,6 +156,10 @@ window.SaveSystem = (function() {
         // Check special items
         if (itemId === 'arsen_bomb') return true;
         if (itemId === 'saddle') return true;
+        // Check Easter items
+        if (itemId === 'catcher_net') return true;
+        if (itemId === 'chocolate_goggles') return true;
+        if (itemId === 'roller_skates') return true;
         return false;
     }
 
@@ -259,6 +278,7 @@ window.SaveSystem = (function() {
         GameState.currentLevel = saveData.currentLevel || 'Newborn Peccary';
         GameState.hasSaddle = saveData.hasSaddle || false;
         GameState.questClues = saveData.questClues || [];
+        GameState.claimedGifts = saveData.claimedGifts || [];
         GameState.pinnedResources = saveData.pinnedResources || [];
         GameState.memoriesFound = saveData.memoriesFound || [];
         GameState.introShown = saveData.introShown || false;
@@ -271,6 +291,15 @@ window.SaveSystem = (function() {
         GameState.currentSkin = saveData.currentSkin || 'default';
         GameState.unlockedSkins = saveData.unlockedSkins || ['default'];
         GameState.arsenBombsUsed = saveData.arsenBombsUsed || 0;
+        GameState.easterBunniesCaught = saveData.easterBunniesCaught || 0;
+        GameState.chocolateEggs = saveData.chocolateEggs || 0;
+        GameState.hasFlamingoLicense = saveData.hasFlamingoLicense || false;
+        GameState.ownedPiglets = saveData.ownedPiglets || [];
+        GameState.easterEggs = saveData.easterEggs || 0;
+        GameState.larryQuestIndex = saveData.larryQuestIndex || 0;
+        GameState.completedLarryQuests = saveData.completedLarryQuests || [];
+        GameState.eyepatchEquipped = saveData.eyepatchEquipped || false;
+        GameState.chestRespawnTimer = saveData.chestRespawnTimer || undefined;
         GameState.dehydrationTimer = 0;
 
         // --- Step 7: Restore bathroom queues from deltas ---
@@ -315,6 +344,7 @@ window.SaveSystem = (function() {
 
         // Rebuild Pedro with the loaded skin
         Player.rebuildPeccary();
+        Player.createBackSword();
 
         // --- Step 9: Reposition player ---
         if (biomeCheck === 'ok' && saveData.playerPosition) {

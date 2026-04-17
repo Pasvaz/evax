@@ -133,7 +133,7 @@ window.Inventory = (function() {
      * @returns {string} - The emoji icon
      */
     // Items that can be equipped to the hotbar
-    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask'];
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask', 'pirate_eyepatch'];
 
     function isEquippable(itemId) {
         return EQUIPPABLE_ITEMS.includes(itemId);
@@ -157,7 +157,8 @@ window.Inventory = (function() {
             basic_rook_boat: '🚣',
             arsen_bomb: '💣',
             fishing_spear: '🔱',
-            diving_mask: '🤿'
+            diving_mask: '🤿',
+            pirate_eyepatch: '🏴‍☠️'
         };
         return icons[itemId] || '📦';
     }

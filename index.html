@@ -82,6 +82,43 @@
             font-size: 14px;
             z-index: 100;
         }
+        #stamina-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 545px;  /* Left of thirst bar */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #stamina-panel .stat-label {
+            margin-bottom: 5px;
+            color: #50e850;
+        }
+        #stamina-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2e8b2e;
+        }
+        #stamina-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #50e850, #90ff90);
+            transition: width 0.3s;
+        }
+        #stamina-bar.exhausted {
+            background: linear-gradient(to right, #cc4444, #ff6666);
+            animation: pulse-stamina 1s infinite;
+        }
+        @keyframes pulse-stamina {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
         #thirst-panel .stat-label {
             margin-bottom: 5px;
             color: #4a9eff;
@@ -577,6 +614,28 @@
         }
         .hotbar-icon {
             font-size: 24px;
+        }
+        .hotbar-cooldown {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0 0 4px 4px;
+            pointer-events: none;
+            transition: height 0.1s linear;
+        }
+        .hotbar-cooldown-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: #ff6666;
+            pointer-events: none;
+            text-shadow: 0 0 3px #000;
         }
         .hotbar-count {
             position: absolute;
@@ -2267,11 +2326,344 @@
             border: 2px solid #8888ff;
             text-shadow: 1px 1px 2px black;
         }
+
+        /* ============================================ */
+        /* PIGLET CATCHING MINIGAME                     */
+        /* ============================================ */
+        #piglet-catch-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 120px;
+        }
+        #piglet-catch-overlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #piglet-catch-title {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px black;
+            margin-bottom: 8px;
+        }
+        #piglet-catch-rarity {
+            font-size: 14px;
+            margin-bottom: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+        #piglet-catch-hint {
+            color: #cccccc;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px black;
+        }
+        #piglet-catch-bar-container {
+            position: relative;
+            width: 500px;
+            max-width: 80vw;
+            height: 40px;
+            background: #111111;
+            border: 3px solid #333333;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #piglet-catch-white-zone {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-left: 2px solid rgba(255, 255, 255, 0.6);
+            border-right: 2px solid rgba(255, 255, 255, 0.6);
+        }
+        #piglet-catch-slider {
+            position: absolute;
+            top: 0;
+            width: 6px;
+            height: 100%;
+            background: #ff2222;
+            box-shadow: 0 0 8px #ff0000, 0 0 16px #ff4444;
+            border-radius: 2px;
+            transition: none;
+        }
+        #piglet-catch-result {
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            margin-top: 20px;
+            text-shadow: 2px 2px 6px black;
+            min-height: 36px;
+        }
+
+        /* ============================================ */
+        /* EGG SHOP                                     */
+        /* ============================================ */
+        #egg-shop-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9990;
+            justify-content: center;
+            align-items: center;
+        }
+        #egg-shop-overlay.active {
+            display: flex;
+        }
+        #egg-shop-panel {
+            background: rgba(50, 30, 10, 0.95);
+            border: 3px solid #FFD700;
+            border-radius: 14px;
+            padding: 20px;
+            width: 440px;
+            max-width: 90vw;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #egg-shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        #egg-shop-header h3 {
+            color: #FFD700;
+            margin: 0;
+            font-size: 18px;
+        }
+        #egg-shop-balance {
+            color: #FFD700;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .egg-shop-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #8B6914;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .egg-shop-card:hover {
+            border-color: #FFD700;
+            background: rgba(255,204,0,0.1);
+        }
+        .egg-shop-card.too-expensive {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .egg-shop-card.too-expensive:hover {
+            border-color: #8B6914;
+            background: rgba(255,255,255,0.05);
+        }
+        .egg-shop-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        .egg-shop-info {
+            flex: 1;
+        }
+        .egg-shop-name {
+            color: #f5deb3;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .egg-shop-price {
+            color: #FFD700;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        .egg-shop-odds {
+            color: #aaa;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        .egg-shop-buy-btn {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 6px 14px;
+            border: 2px solid #FFD700;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .egg-shop-card.too-expensive .egg-shop-buy-btn {
+            color: #666;
+            border-color: #666;
+        }
+        #egg-shop-footer {
+            color: #777;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* ============================================ */
+        /* PIGLET PICKER                                */
+        /* ============================================ */
+        #piglet-picker-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9990;
+            justify-content: center;
+            align-items: center;
+        }
+        #piglet-picker-overlay.active {
+            display: flex;
+        }
+        #piglet-picker-panel {
+            background: rgba(30, 50, 30, 0.95);
+            border: 3px solid #8ab87a;
+            border-radius: 14px;
+            padding: 20px;
+            width: 420px;
+            max-width: 90vw;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #piglet-picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        #piglet-picker-header h3 {
+            color: #ffcc00;
+            margin: 0;
+            font-size: 18px;
+        }
+        #piglet-picker-count {
+            color: #aaddaa;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .piglet-picker-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .piglet-picker-card:hover {
+            border-color: #8ab87a;
+            background: rgba(255,255,255,0.1);
+        }
+        .piglet-picker-card.active {
+            border-color: #ffcc00;
+            background: rgba(255,204,0,0.1);
+        }
+        .piglet-picker-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .piglet-picker-info {
+            flex: 1;
+        }
+        .piglet-picker-name {
+            color: #f5deb3;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .piglet-picker-rarity {
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .piglet-picker-ability {
+            color: #aaa;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        .piglet-picker-btn {
+            color: #8ab87a;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 4px 10px;
+            border: 1px solid #8ab87a;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .piglet-picker-card.active .piglet-picker-btn {
+            color: #ff8888;
+            border-color: #ff8888;
+        }
+        .piglet-picker-card.knocked-out {
+            opacity: 0.7;
+            border-color: #cc3333;
+            background: rgba(80, 0, 0, 0.3);
+        }
+        .piglet-picker-btn.ko-btn {
+            color: #ff3333;
+            border-color: #ff3333;
+            background: rgba(255, 0, 0, 0.15);
+            cursor: not-allowed;
+        }
+        #piglet-picker-footer {
+            color: #777;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div id="loading">Loading game...</div>
     <div id="game-container"></div>
+
+    <!-- Piglet Catching Minigame Overlay -->
+    <div id="piglet-catch-overlay">
+        <div id="piglet-catch-title">Wild Piglet!</div>
+        <div id="piglet-catch-rarity"></div>
+        <div id="piglet-catch-hint">Press SPACE when the red line is in the white zone!</div>
+        <div id="piglet-catch-bar-container">
+            <div id="piglet-catch-white-zone"></div>
+            <div id="piglet-catch-slider"></div>
+        </div>
+        <div id="piglet-catch-result"></div>
+    </div>
+
+    <!-- Egg Shop Overlay -->
+    <div id="egg-shop-overlay">
+        <div id="egg-shop-panel">
+            <div id="egg-shop-header">
+                <h3>🥚 Larry's Mystery Eggs</h3>
+                <span id="egg-shop-balance">0 Easter Eggs</span>
+            </div>
+            <div id="egg-shop-list"></div>
+            <div id="egg-shop-footer">Click an egg to buy · Escape to close</div>
+        </div>
+    </div>
+
+    <!-- Piglet Picker Overlay -->
+    <div id="piglet-picker-overlay">
+        <div id="piglet-picker-panel">
+            <div id="piglet-picker-header">
+                <h3>🐷 Your Piglets</h3>
+                <span id="piglet-picker-count">0/3 Active</span>
+            </div>
+            <div id="piglet-picker-list"></div>
+            <div id="piglet-picker-footer">Click to summon/dismiss · P to close · Max 3 active</div>
+        </div>
+    </div>
 
     <div id="start-screen" class="hidden">
         <div class="start-hero-wrap">
@@ -2531,6 +2923,29 @@
                             <button class="spawn-btn" data-spawn="orcleton_female">Orcleton (F)</button>
                         </div>
                     </div>
+                    <!-- Easter Event -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="easter-animals">Easter Event</h4>
+                        <div class="spawn-category-content hidden" id="spawn-easter-animals">
+                            <button class="testing-action-btn" id="start-easter-btn">Start Easter</button>
+                            <button class="testing-action-btn" id="stop-easter-btn">Stop Easter</button>
+                            <button class="testing-action-btn" id="spawn-test-bunny-btn">Spawn Bunny</button>
+                            <button class="testing-action-btn" id="spawn-test-lamb-btn">Spawn Lamb (Random)</button>
+                            <button class="testing-action-btn" id="spawn-moonbeam-lamb-btn">Spawn Moonbeam Lamb (Godly!)</button>
+                            <button class="testing-action-btn" id="spawn-blossom-lamb-btn">Spawn Blossom Lamb (Easter Symbol!)</button>
+                            <button class="testing-action-btn" id="give-petals-btn">Give 30 Petals</button>
+                            <button class="testing-action-btn" id="give-choco-eggs-btn">Give 100 Choco Eggs</button>
+                            <button class="testing-action-btn" id="spawn-sheep-btn">Spawn Sheep (Random)</button>
+                            <button class="testing-action-btn" id="spawn-sheep-pair-btn">Spawn Male+Female Sheep Pair</button>
+                            <button class="testing-action-btn" id="force-lamb-grow-btn">Force Lamb → Sheep (instant)</button>
+                            <button class="testing-action-btn" id="spawn-flamingo-btn">Spawn Flamingo (Random)</button>
+                            <button class="testing-action-btn" id="spawn-blood-flamingo-btn">Spawn Blood Flamingo!</button>
+                            <button class="testing-action-btn" id="give-flamingo-license-btn">Give Flamingo License</button>
+                            <button class="testing-action-btn" id="create-easter-biome-btn">Create Easter Biome</button>
+                            <button class="testing-action-btn" id="spawn-piglet-btn">Spawn Random Piglet</button>
+                            <button class="testing-action-btn" id="spawn-celestial-piglet-btn">Spawn Celestial Piglet!</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2542,6 +2957,13 @@
         <div id="final-score">Score: 0</div>
         <p class="subtitle">The predators caught you!</p>
         <button class="game-btn" id="restart-btn">Play Again</button>
+    </div>
+
+    <div id="stamina-panel" class="hidden">
+        <div class="stat-label">⚡ Stamina</div>
+        <div id="stamina-bar-container">
+            <div id="stamina-bar"></div>
+        </div>
     </div>
 
     <div id="thirst-panel" class="hidden">
@@ -2770,6 +3192,7 @@
     <script src="js/data/memories.js"></script>
     <script src="js/data/tools.js"></script>
     <script src="js/data/skins.js"></script>
+    <script src="js/data/easter.js"></script>
 
     <!-- ================================================================== -->
     <!-- LOGIC FILES - Game behavior (load after data!) -->

@@ -341,7 +341,7 @@ window.VILLAGERS = [
                 'cookie_quest': {
                     text: "Cookies?! Oh Pedro, you're still on about that recipe! Well, any good cookie needs fresh butter and eggs — and I mean GOOD eggs, not those goose ones. Here, take some of mine! But the real secret is a special spice. I don't have it, but Bruno the blacksmith travels all over. He might know where to find it!",
                     choices: [
-                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { butter: 2, eggs: 3 }, clue: 'rosie' } },
+                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { butter: 2, eggs: 3 }, clue: 'rosie', once: 'rosie_cookie_gift' } },
                         { text: "Back to other things.", nextNode: 'greeting' }
                     ]
                 },
@@ -622,7 +622,7 @@ window.VILLAGERS = [
                 'cookie_quest': {
                     text: "A cookie recipe? Oh Pedro, you sweet thing! I used to bake the most wonderful cookies when I was younger. You need flour and sugar as a base — that much I remember. Here, take some from my pantry! But the BEST recipe? The one everyone talks about? I think Farmer Rosie knows about the fresh ingredients you'd need. She grows all sorts of things!",
                     choices: [
-                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { flour: 3, sugar: 3 }, clue: 'granny_trotter' } },
+                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { flour: 3, sugar: 3 }, clue: 'granny_trotter', once: 'granny_cookie_gift' } },
                         { text: "Back to other things.", nextNode: 'greeting' }
                     ]
                 },

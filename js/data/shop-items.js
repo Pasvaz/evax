@@ -88,25 +88,7 @@ window.SHOP_ITEMS = [
     },
 
     // ========================================================================
-    // ITEM 2: Speed Boost
-    // ========================================================================
-    // Currently gives score (speed boost not implemented yet)
-    {
-        id: 'speed_boost',
-        name: 'Speed Boost',
-        description: 'Gain 50 bonus score points',
-        price: 25,
-        icon: '⚡',
-        vendor: 'patches',
-
-        effect: {
-            type: 'give_score',
-            amount: 50
-        }
-    },
-
-    // ========================================================================
-    // ITEM 3: Super Healing Elixir
+    // ITEM 2: Super Healing Elixir
     // ========================================================================
     // Expensive but fully heals!
     {
@@ -123,32 +105,14 @@ window.SHOP_ITEMS = [
     },
 
     // ========================================================================
-    // ITEM 4: Lucky Charm
-    // ========================================================================
-    // Buy points with coins!
-    {
-        id: 'lucky_charm',
-        name: 'Lucky Charm',
-        description: 'Gain 200 score points',
-        price: 30,
-        icon: '🍀',
-        vendor: 'patches',
-
-        effect: {
-            type: 'give_score',
-            amount: 200
-        }
-    },
-
-    // ========================================================================
-    // ITEM 5: Mega Bundle (COMBO EXAMPLE)
+    // ITEM 3: Mega Bundle
     // ========================================================================
     // Shows how to give multiple rewards!
     {
         id: 'mega_bundle',
         name: 'Mega Bundle',
         description: 'Heal 50 health AND gain 100 score!',
-        price: 50,
+        price: 100,
         icon: '🎁',
         vendor: 'patches',
 
