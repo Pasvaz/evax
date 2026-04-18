@@ -96,6 +96,9 @@ window.GameState = {
     maxStamina: 100,        // Max stamina
     attackCooldown: 0,      // Time remaining before next sword swing (seconds)
     chopCooldown: 0,        // Time remaining before next axe chop (seconds)
+    swordSpinActive: false, // True while spin slash animation is playing
+    swordSpinTimer: 0,      // Time elapsed in current spin (seconds)
+    swordSpinBaseY: 0,      // Pedro's rotation.y before the spin started
 
     // Skin system
     currentSkin: 'default',
@@ -554,6 +557,8 @@ window.Game = (function() {
         GameState.stamina = 100;
         GameState.attackCooldown = 0;
         GameState.chopCooldown = 0;
+        GameState.swordSpinActive = false;
+        GameState.swordSpinTimer = 0;
         GameState.dehydrationTimer = 0;
         GameState.lastDamageSource = null;
         GameState.score = 0;
@@ -816,6 +821,19 @@ window.Game = (function() {
      * Show an on-screen message when the player is blocked from entering a biome.
      * Reuses the biome transition banner but with red border.
      */
+    var _combatHintTimeout = null;
+    function showCombatHint(text) {
+        var el = document.getElementById('combat-hint');
+        el.textContent = text;
+        el.style.display = 'block';
+        el.style.opacity = '1';
+        if (_combatHintTimeout) clearTimeout(_combatHintTimeout);
+        _combatHintTimeout = setTimeout(function() {
+            el.style.opacity = '0';
+            setTimeout(function() { el.style.display = 'none'; }, 300);
+        }, 1500);
+    }
+
     function showBlockedMessage(text) {
         const el = document.getElementById('biome-transition');
         const textEl = document.getElementById('biome-transition-text');
@@ -1319,11 +1337,9 @@ window.Game = (function() {
             );
 
             if (isSprinting) {
-                // Sprint drains stamina — about 10 seconds of sprinting empties the bar
-                GameState.stamina = Math.max(0, GameState.stamina - delta * 10);
+                GameState.stamina = Math.max(0, GameState.stamina - delta * SETTINGS.BALANCE.STAMINA_SPRINT_DRAIN);
             } else {
-                // Recharge slowly while walking (full recharge in ~8 seconds)
-                GameState.stamina = Math.min(GameState.maxStamina, GameState.stamina + delta * 20);
+                GameState.stamina = Math.min(GameState.maxStamina, GameState.stamina + delta * SETTINGS.BALANCE.STAMINA_RECOVERY_RATE);
             }
 
             // Tick down cooldowns
@@ -1334,16 +1350,34 @@ window.Game = (function() {
                 GameState.chopCooldown = Math.max(0, GameState.chopCooldown - delta);
             }
 
+            // Animate sword spin slash
+            if (GameState.swordSpinActive) {
+                var spinDuration = SETTINGS.BALANCE.SWORD_SPIN_DURATION;
+                GameState.swordSpinTimer += delta;
+                var progress = Math.min(GameState.swordSpinTimer / spinDuration, 1);
+                // Rotate Pedro 360° with easeInOut for snappy feel
+                var eased = progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                GameState.peccary.rotation.y = GameState.swordSpinBaseY + eased * Math.PI * 2;
+
+                if (progress >= 1) {
+                    // Spin complete — restore rotation and sword position
+                    GameState.peccary.rotation.y = GameState.swordSpinBaseY;
+                    GameState.swordSpinActive = false;
+                    GameState.swordSpinTimer = 0;
+                    GameState._swordInMouth = true;
+                    Player.endSwordSpin();
+                }
+            }
+
             // --- Non-testing-only: hunger/thirst drain ---
             if (!GameState.isTestingMode) {
-                // Normal mode - hunger/thirst decrease over time
-                // Hunger decreases slowly over time (about 1 point every 6 seconds)
                 var hungerMult = (GameState.pigletBuffs ? GameState.pigletBuffs.hungerDrainMultiplier : 1.0);
-                GameState.hunger = Math.max(0, GameState.hunger - delta * 0.17 * hungerMult);
+                GameState.hunger = Math.max(0, GameState.hunger - delta * SETTINGS.BALANCE.HUNGER_DRAIN_RATE * hungerMult);
 
-                // Thirst decreases slower than hunger
                 var thirstMult = (GameState.pigletBuffs ? GameState.pigletBuffs.thirstDrainMultiplier : 1.0);
-                GameState.thirst = Math.max(0, GameState.thirst - delta * 0.12 * thirstMult);
+                GameState.thirst = Math.max(0, GameState.thirst - delta * SETTINGS.BALANCE.THIRST_DRAIN_RATE * thirstMult);
 
                 // Hunger/thirst warnings (session-only cooldown)
                 if (GameState.hunger < 20 && !GameState.hungerWarned) {
@@ -1362,7 +1396,7 @@ window.Game = (function() {
                 // Dehydration damage - lose 5 health every 10 seconds when thirst is 0
                 if (GameState.thirst <= 0) {
                     GameState.dehydrationTimer += delta;
-                    if (GameState.dehydrationTimer >= 10) {
+                    if (GameState.dehydrationTimer >= SETTINGS.BALANCE.DEHYDRATION_DAMAGE_INTERVAL) {
                         GameState.dehydrationTimer = 0;
                         GameState.lastDamageSource = 'dehydration';
                         GameState.health = Math.max(0, GameState.health - 5);
@@ -1603,9 +1637,11 @@ window.Game = (function() {
             Environment.setupLighting();
             Player.createPeccary();
             Player.createBackSword();
+
             Player.createSkinSparkles();
             Player.createBackBasket();
             UI.setupMinimap();
+            UI.setupHotbar();
             Inventory.init();
             ResearchHut.init();
 
@@ -1679,7 +1715,7 @@ window.Game = (function() {
                             // Toggle roller skates on/off
                             GameState.rollerSkatesOn = !GameState.rollerSkatesOn;
                             if (GameState.rollerSkatesOn) {
-                                UI.showToast('Roller Skates ON!', 'You are zooming! Press E again to take them off.');
+                                UI.showToast('Roller Skates ON!', 'You are zooming!', 'Press <b>E</b> again to take them off.');
                             } else {
                                 UI.showToast('Roller Skates OFF', 'Back to normal speed.');
                             }
@@ -1894,6 +1930,7 @@ window.Game = (function() {
                     if (GameState.peccary) {
                         Player.rebuildPeccary();
                         Player.createBackSword();
+            
                         Player.createSkinSparkles();
                         Player.createBackBasket();
                     }
@@ -1941,6 +1978,7 @@ window.Game = (function() {
                     GameState.currentSkin = skinsPreviewState.selectedSkin;
                     Player.rebuildPeccary();
                     Player.createBackSword();
+        
                     Player.createSkinSparkles();
                     Player.createBackBasket();
 
@@ -3017,40 +3055,44 @@ window.Game = (function() {
         raycaster.setFromCamera(mouse, GameState.camera);
 
         if (isSword) {
-            // SWORD: cooldown + stamina check before allowing attack
+            // SWORD: spin slash — 360° AoE attack
+            if (GameState.swordSpinActive) return; // Already spinning
             if (GameState.attackCooldown > 0) {
-                showBlockedMessage('Sword not ready! (' + Math.ceil(GameState.attackCooldown) + 's)');
+                showCombatHint('Sword not ready! (' + Math.ceil(GameState.attackCooldown) + 's)');
                 return;
             }
-            var swingCost = GameState.maxStamina / 7; // 7 swings to empty
+            var swingCost = GameState.maxStamina / SETTINGS.BALANCE.MELEE_ATTACKS_PER_STAMINA;
             if (GameState.stamina < swingCost) {
-                showBlockedMessage('Too exhausted to swing!');
+                showCombatHint('Too exhausted to swing!');
                 return;
             }
 
+            // Start spin — costs stamina + cooldown even if nothing is hit
             var swordStats = TOOL_STATS.swords[itemId];
-            const intersects = raycaster.intersectObjects(GameState.enemies, true);
-            if (intersects.length > 0) {
-                // Walk up to the root enemy group
-                let obj = intersects[0].object;
-                while (obj.parent && !obj.userData.type) {
-                    obj = obj.parent;
-                }
+            GameState.stamina = Math.max(0, GameState.stamina - swingCost);
+            GameState.attackCooldown = SETTINGS.BALANCE.SWORD_ATTACK_COOLDOWN;
 
-                if (obj.userData && obj.userData.type) {
-                    const distance = GameState.peccary.position.distanceTo(obj.position);
-                    if (distance <= 15) {
-                        // Hit! Damage comes from the sword's stats
-                        Enemies.damageEnemy(obj, swordStats.damage);
-                        Game.playSound('hurt');
-                        // Apply cooldown and stamina cost
-                        GameState.attackCooldown = 3;
-                        GameState.stamina = Math.max(0, GameState.stamina - swingCost);
-                    } else {
-                        showBlockedMessage('Too far away to hit!');
-                    }
+            // Begin spin animation
+            GameState.swordSpinActive = true;
+            GameState.swordSpinTimer = 0;
+            GameState.swordSpinBaseY = GameState.peccary.rotation.y;
+            Player.startSwordSpin();
+
+            // Hit all enemies within spin range
+            var spinRange = SETTINGS.BALANCE.SWORD_SPIN_RANGE;
+            var hitCount = 0;
+            GameState.enemies.forEach(function(enemy) {
+                if (!enemy.parent || !enemy.userData || enemy.userData.health <= 0) return;
+                var dist = GameState.peccary.position.distanceTo(enemy.position);
+                if (dist <= spinRange) {
+                    Enemies.damageEnemy(enemy, swordStats.damage);
+                    hitCount++;
                 }
+            });
+            if (hitCount > 0) {
+                Game.playSound('hurt');
             }
+            return;
         }
         if (isAxe) {
             // AXE: cooldown check (no stamina cost for chopping)
@@ -3829,8 +3871,8 @@ function openTreasureChest() {
     var tierColor = tierColors[tier.id] || '#ffffff';
 
     UI.showToast(
-        '<span style="color:' + tierColor + '">' + tier.name + ' Opened!</span>',
-        loot.description
+        tier.name + ' Opened!',
+        '<span style="color:' + tierColor + '">' + tier.name + '</span> — ' + loot.description
     );
 
     Game.playSound('collect');
@@ -4518,9 +4560,9 @@ function updateEasterLamb(delta) {
     var distToPlayer = playerPos.distanceTo(lambPos);
     var ud = lamb.userData;
 
-    // Check 3-minute sheep transformation (180 seconds since spawn)
+    // Check sheep transformation timer
     var ageSeconds = GameState.clock.elapsedTime - ud.spawnTime;
-    if (ageSeconds >= 180 && ud.catchCount === 0) {
+    if (ageSeconds >= SETTINGS.BALANCE.LAMB_TRANSFORMATION_TIME && ud.catchCount === 0) {
         transformLambToSheep(lamb);
         return;
     }
@@ -4768,6 +4810,15 @@ function dropPetalTrail(x, z) {
         maxLife: 4 + Math.random() * 2,
         swaySpeed: 1 + Math.random() * 2
     });
+
+    // Cap petal count — remove oldest if over limit
+    var maxPetals = SETTINGS.BALANCE ? SETTINGS.BALANCE.PETAL_TRAIL_MAX : 100;
+    while (GameState.petalTrails.length > maxPetals) {
+        var oldest = GameState.petalTrails.shift();
+        GameState.scene.remove(oldest.mesh);
+        if (oldest.mesh.geometry) oldest.mesh.geometry.dispose();
+        if (oldest.mesh.material) oldest.mesh.material.dispose();
+    }
 }
 
 /**
@@ -4782,7 +4833,7 @@ function updatePetalTrails(delta) {
         var isMoving = vel && (Math.abs(vel.x) > 0.5 || Math.abs(vel.z) > 0.5);
         if (isMoving && GameState._blossomTrailTimer <= 0) {
             dropPetalTrail(GameState.peccary.position.x, GameState.peccary.position.z);
-            GameState._blossomTrailTimer = 0.2;
+            GameState._blossomTrailTimer = SETTINGS.BALANCE.PETAL_TRAIL_INTERVAL;
         }
     }
 
@@ -4791,6 +4842,8 @@ function updatePetalTrails(delta) {
         trail.life -= delta;
         if (trail.life <= 0) {
             GameState.scene.remove(trail.mesh);
+            if (trail.mesh.geometry) trail.mesh.geometry.dispose();
+            if (trail.mesh.material) trail.mesh.material.dispose();
             GameState.petalTrails.splice(i, 1);
             continue;
         }
@@ -5079,8 +5132,10 @@ function updateEasterSheep(delta) {
 
         herd.matingCooldown -= delta;
 
-        // Check mating conditions: cooldown done, has male + female, both idle
-        if (herd.matingCooldown <= 0 && herd.members.length >= 2) {
+        // Check mating conditions: cooldown done, has male + female, both idle, under pop cap
+        var sheepCap = SETTINGS.BALANCE ? SETTINGS.BALANCE.SHEEP_POPULATION_CAP : 30;
+        if (herd.matingCooldown <= 0 && herd.members.length >= 2 &&
+            (GameState.easterSheep ? GameState.easterSheep.length : 0) < sheepCap) {
             var males = [];
             var females = [];
             for (var m = 0; m < herd.members.length; m++) {
@@ -5306,9 +5361,8 @@ function updateSheepBornLambs(delta) {
         var distToPlayer = playerPos.distanceTo(lambPos);
         ud.stateTimer -= delta;
 
-        // 3-minute transformation
         var age = GameState.clock.elapsedTime - ud.spawnTime;
-        if (age >= 180 && ud.catchCount === 0) {
+        if (age >= SETTINGS.BALANCE.LAMB_TRANSFORMATION_TIME && ud.catchCount === 0) {
             GameState.easterSheepLambs.splice(i, 1);
             transformLambToSheep(lamb);
             continue;
@@ -5588,6 +5642,12 @@ function getNearestCherryTree(range) {
 function collectCherryPetals() {
     var tree = getNearestCherryTree(5);
     if (!tree) return false;
+
+    // Cooldown check
+    var now = GameState.timeElapsed || 0;
+    var cooldown = SETTINGS.BALANCE ? SETTINGS.BALANCE.CHERRY_PETAL_COOLDOWN : 2;
+    if (GameState._lastPetalCollect && (now - GameState._lastPetalCollect) < cooldown) return false;
+    GameState._lastPetalCollect = now;
 
     // Give 1-3 petals
     var amount = 1 + Math.floor(Math.random() * 3);
@@ -6928,20 +6988,20 @@ function applyBuff_passiveHeal(piglet, ud, delta) {
 }
 
 function applyBuff_hungerSlow(piglet, ud, delta) {
-    GameState.pigletBuffs.hungerDrainMultiplier *= 0.7; // 30% slower
+    GameState.pigletBuffs.hungerDrainMultiplier *= SETTINGS.BALANCE.PIGLET_HUNGER_SLOW_MULT;
 }
 
 function applyBuff_thirstSlow(piglet, ud, delta) {
-    GameState.pigletBuffs.thirstDrainMultiplier *= 0.7; // 30% slower
+    GameState.pigletBuffs.thirstDrainMultiplier *= SETTINGS.BALANCE.PIGLET_THIRST_SLOW_MULT;
 }
 
 function applyBuff_speedBoost(piglet, ud, delta) {
-    GameState.pigletBuffs.speedMultiplier *= 1.3; // 30% faster
+    GameState.pigletBuffs.speedMultiplier *= SETTINGS.BALANCE.PIGLET_SPEED_BOOST_MULT;
 }
 
 function applyBuff_softLanding(piglet, ud, delta) {
     GameState.pigletBuffs.noFallDamage = true;
-    GameState.pigletBuffs.jumpBoost = 1.2; // 20% higher jumps
+    GameState.pigletBuffs.jumpBoost = SETTINGS.BALANCE.PIGLET_JUMP_BOOST_MULT;
 }
 
 function applyBuff_bubbleShield(piglet, ud, delta) {
@@ -7036,7 +7096,7 @@ function applyCombat_hairShot(piglet, ud, delta, playerPos) {
     if (ud.hairShotTimer < 3) return;
     ud.hairShotTimer = 0;
 
-    var target = findNearestEnemy(piglet.position, 12);
+    var target = findNearestEnemy(piglet.position, SETTINGS.BALANCE.PIGLET_ABILITY_MAX_RANGE);
     if (!target) return;
 
     // Create hair projectile
@@ -7122,7 +7182,7 @@ function applyCombat_fireCharge(piglet, ud, delta, playerPos) {
     ud.fireChargeTimer += delta;
     if (ud.fireChargeTimer < 8) return;
 
-    var target = findNearestEnemy(piglet.position, 15);
+    var target = findNearestEnemy(piglet.position, SETTINGS.BALANCE.PIGLET_ABILITY_MAX_RANGE);
     if (!target) return;
     ud.fireCharging = true;
     ud.fireTarget = target;
@@ -7449,7 +7509,7 @@ function handlePigletControl() {
                 ud.spiceTimer = 5;
                 break;
             case 'fire_charge':
-                var target = findNearestEnemy(closest.position, 20);
+                var target = findNearestEnemy(closest.position, SETTINGS.BALANCE.PIGLET_ABILITY_MAX_RANGE);
                 if (target) {
                     ud.fireCharging = true;
                     ud.fireTarget = target;
@@ -7679,7 +7739,7 @@ function tryCatchPiglet() {
 
     var playerPos = GameState.peccary.position;
     var nearest = null;
-    var nearestDist = 8; // Must be within 8 units (piglets flee at 10)
+    var nearestDist = SETTINGS.BALANCE.PIGLET_CATCH_DISTANCE;
 
     console.log('[PIGLET DEBUG] Trying to catch. Piglets in world: ' + (GameState.easterPiglets ? GameState.easterPiglets.length : 0));
 
@@ -7870,7 +7930,7 @@ function endCatchMinigame() {
             'Piglet Caught!',
             'You caught a <b>' + ud.pigletName + '</b> piglet! ' +
             '<span style="color:' + rarityCol + '">(' + ud.pigletRarity + ')</span><br>' +
-            '<i>' + (ud.abilityDesc || '') + '</i><br>' +
+            '<i>' + (ud.abilityDesc || '') + '</i>',
             'Press <b>P</b> to open your piglet menu!'
         );
         console.log('Caught ' + ud.pigletName + '! Ability: ' + ud.abilityDesc);
@@ -7977,7 +8037,7 @@ function tryMountFlamingo() {
     // First check if there's even a flamingo nearby before checking license
     var playerPos = GameState.peccary.position;
     var nearest = null;
-    var nearestDist = 5; // Must be within 5 units
+    var nearestDist = SETTINGS.BALANCE.FLAMINGO_MOUNT_DISTANCE;
 
     for (var j = 0; j < GameState.easterFlamingos.length; j++) {
         var flamingo = GameState.easterFlamingos[j];
@@ -8037,7 +8097,7 @@ function mountFlamingo(flamingo) {
     });
 
     var fName = flamingo.userData.flamingoName || 'Flamingo';
-    UI.showToast('Mounted ' + fName + '!', 'WASD to fly, Space=up, Shift=down, E=dismount');
+    UI.showToast('Mounted ' + fName + '!', '', '<b>WASD</b> to fly, <b>Space</b>=up, <b>Shift</b>=down, <b>E</b>=dismount');
 
     // Show abilities
     var abilities = flamingo.userData.abilities || [];
@@ -9001,7 +9061,7 @@ window.spawnTestFlamingo = function(typeId) {
 window.giveFlamingoLicense = function() {
     GameState.hasFlamingoLicense = true;
     console.log('Flamingo riding license granted!');
-    UI.showToast('License Acquired!', 'You can now ride flamingos. Press E near one!');
+    UI.showToast('License Acquired!', 'You can now ride flamingos.', 'Press <b>E</b> near one!');
 };
 
 /**

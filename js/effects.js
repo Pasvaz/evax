@@ -154,7 +154,7 @@ window.Effects = (function() {
                     GameState.questClues.push(effect.clue);
                     Game.playSound('collect');
                     console.log('Quest clue discovered: ' + effect.clue);
-                    UI.showToast('New Quest Clue!', 'A new clue has been discovered. <div>Press <b>Q</b> to check your quest log.</div>');
+                    UI.showToast('New Quest Clue!', 'A new clue has been discovered.', 'Press <b>Q</b> to check your quest log.');
                 }
                 return true;
 
@@ -259,7 +259,7 @@ window.Effects = (function() {
                     return false;
                 }
                 // Deduct petals
-                GameState.resourceCounts.cherry_petals -= 30;
+                GameState.resourceCounts.cherry_petals = (GameState.resourceCounts.cherry_petals || 0) - 30;
                 // Set quest
                 GameState.easterQuest = {
                     id: 'catch_naughty_lamb',

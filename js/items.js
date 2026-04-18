@@ -436,19 +436,99 @@ window.Items = (function() {
     /**
      * Update resources - animations and collection.
      */
+    // Shared sparkle pool — reusable tiny meshes for resource shimmer
+    var _sparklePool = [];
+    var _sparklePoolSize = 20;
+    var _sparkleInited = false;
+
+    function initSparklePool() {
+        if (_sparkleInited) return;
+        _sparkleInited = true;
+        var geo = new THREE.SphereGeometry(0.06, 4, 4);
+        var mat = new THREE.MeshBasicMaterial({
+            color: 0xffffcc,
+            transparent: true,
+            depthWrite: false
+        });
+        for (var s = 0; s < _sparklePoolSize; s++) {
+            var spark = new THREE.Mesh(geo, mat.clone());
+            spark.visible = false;
+            spark.userData.life = 0;
+            spark.userData.maxLife = 0;
+            spark.userData.vel = new THREE.Vector3();
+            GameState.scene.add(spark);
+            _sparklePool.push(spark);
+        }
+    }
+
+    function spawnSparkle(worldPos) {
+        // Find a free sparkle
+        for (var s = 0; s < _sparklePool.length; s++) {
+            if (!_sparklePool[s].visible) {
+                var spark = _sparklePool[s];
+                spark.position.set(
+                    worldPos.x + (Math.random() - 0.5) * 0.8,
+                    worldPos.y + Math.random() * 0.5,
+                    worldPos.z + (Math.random() - 0.5) * 0.8
+                );
+                spark.userData.vel.set(
+                    (Math.random() - 0.5) * 0.3,
+                    0.5 + Math.random() * 0.5,
+                    (Math.random() - 0.5) * 0.3
+                );
+                spark.userData.life = 0;
+                spark.userData.maxLife = 0.6 + Math.random() * 0.4;
+                spark.material.opacity = 1;
+                spark.visible = true;
+                return;
+            }
+        }
+    }
+
     function updateResources(delta) {
+        initSparklePool();
+
+        var time = GameState.clock.elapsedTime;
+
         for (let i = GameState.resources.length - 1; i >= 0; i--) {
             const resource = GameState.resources[i];
 
-            resource.position.y = 0.1 + Math.sin(GameState.clock.elapsedTime * 2 + resource.userData.bobOffset) * 0.1;
+            resource.position.y = 0.5 + Math.sin(time * 2 + resource.userData.bobOffset) * 0.25;
             resource.rotation.y += delta * 0.5;
 
-            const distance = GameState.peccary.position.distanceTo(resource.position);
-            if (distance < resource.userData.radius + GameState.peccary.userData.radius) {
+            var dist = GameState.peccary.position.distanceTo(resource.position);
+            if (dist < 60) {
+                // More sparkles when far (30-60) to help spot them, normal rate when close (<30)
+                var sparkleRate = dist > 30 ? delta * 3 : delta * 1.5;
+                if (Math.random() < sparkleRate) {
+                    spawnSparkle(resource.position);
+                }
+            }
+
+            if (dist < resource.userData.radius + GameState.peccary.userData.radius) {
                 collectResource(resource);
                 GameState.scene.remove(resource);
                 GameState.resources.splice(i, 1);
             }
+        }
+
+        // Update active sparkles
+        for (var s = 0; s < _sparklePool.length; s++) {
+            var spark = _sparklePool[s];
+            if (!spark.visible) continue;
+            spark.userData.life += delta;
+            if (spark.userData.life >= spark.userData.maxLife) {
+                spark.visible = false;
+                continue;
+            }
+            // Float upward and fade out
+            spark.position.x += spark.userData.vel.x * delta;
+            spark.position.y += spark.userData.vel.y * delta;
+            spark.position.z += spark.userData.vel.z * delta;
+            spark.userData.vel.y -= delta * 0.5; // Gentle gravity
+            var progress = spark.userData.life / spark.userData.maxLife;
+            spark.material.opacity = 1 - progress;
+            spark.scale.setScalar(1 - progress * 0.5);
         }
     }
 

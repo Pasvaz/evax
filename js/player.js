@@ -289,7 +289,7 @@ window.Player = (function() {
     function findNearbyRideableGazella() {
         if (!GameState.hasSaddle) return null;
 
-        const mountDistance = 2.5;
+        const mountDistance = SETTINGS.BALANCE.MOUNT_DISTANCE;
         let nearestGazella = null;
         let nearestDist = mountDistance;
 
@@ -652,7 +652,7 @@ window.Player = (function() {
             GameState.peccary.position.y = -0.3 + Math.sin(GameState.clock.elapsedTime * 2) * 0.1;
 
             // Restore thirst when standing still in water
-            GameState.thirst = Math.min(100, GameState.thirst + delta * 8);
+            GameState.thirst = Math.min(100, GameState.thirst + delta * SETTINGS.BALANCE.WATER_THIRST_RESTORE);
 
             // Track drinking time for pee scheduling
             GameState.drinkingTime = (GameState.drinkingTime || 0) + delta;
@@ -1056,7 +1056,7 @@ window.Player = (function() {
     function findNearbyRaft() {
         if (!GameState.placedRafts || GameState.placedRafts.length === 0) return null;
 
-        var boardDistance = 5;
+        var boardDistance = SETTINGS.BALANCE.RAFT_BOARD_DISTANCE;
         var nearest = null;
         var nearestDist = boardDistance;
 
@@ -1406,6 +1406,7 @@ window.Player = (function() {
         // Position on Pedro's back — on top of the body, lying along the spine
         // Body center is at y=0.8, radius 0.6, so top is ~1.4
         swordGroup.position.set(0, 1.5, 0);
+        swordGroup.rotation.y = Math.PI; // Handle at shoulders, blade toward tail
         swordGroup.visible = false;
 
         GameState.peccary.add(swordGroup);
@@ -1417,9 +1418,57 @@ window.Player = (function() {
      */
     function updateBackSword() {
         if (!GameState.backSword) return;
+        if (GameState.swordSpinActive) return; // Don't move during spin
         var hotbarItem = GameState.hotbarSlots[GameState.selectedHotbarSlot];
         var isSword = !!(hotbarItem && TOOL_STATS.swords && TOOL_STATS.swords[hotbarItem.id]);
         GameState.backSword.visible = isSword;
+        // When cooldown just ended, snap sword back to the back
+        if (isSword && GameState.attackCooldown <= 0 && GameState._swordInMouth) {
+            GameState._swordInMouth = false;
+            returnSwordToBack();
+        }
+    }
+
+    /**
+     * DEBUG: Create a ring around Pedro showing sword spin range.
+     * Remove this once range tuning is done.
+     */
+
+    /**
+     * Move sword from back to mouth position for spin slash.
+     * Sword sticks out sideways from Pedro's snout like a dog with a stick.
+     */
+    function startSwordSpin() {
+        if (!GameState.backSword) return;
+        var sword = GameState.backSword;
+        sword.visible = true;
+        // Handle is at local x=-0.6, snout is at Pedro x=1.6
+        // So swordGroup x = 1.6 + 0.6 = 2.2 puts the handle right at the mouth
+        // Blade sticks out in front like a dog carrying a stick
+        sword.position.set(2.2, 0.8, 0);
+        sword.rotation.set(0, 0, 0);
+    }
+
+    /**
+     * After spin: if cooldown active, sword stays in mouth angled back (recovering).
+     * When cooldown ends, sword returns to back.
+     */
+    function endSwordSpin() {
+        if (!GameState.backSword) return;
+        var sword = GameState.backSword;
+        // Sword in mouth, blade angled diagonally back — "tired carry"
+        // Push further out so Pedro bites the middle of the handle
+        sword.position.set(1.4, 0.8, -0.5);
+        sword.rotation.set(0, Math.PI * 0.75, 0);
+    }
+
+    /**
+     * Return sword to back (called when cooldown reaches 0).
+     */
+    function returnSwordToBack() {
+        if (!GameState.backSword) return;
+        GameState.backSword.position.set(0, 1.5, 0);
+        GameState.backSword.rotation.set(0, Math.PI, 0);
     }
 
     // ========================================================================
@@ -1606,6 +1655,9 @@ window.Player = (function() {
         updatePlayer: updatePlayer,
         createBackSword: createBackSword,
         updateBackSword: updateBackSword,
+        startSwordSpin: startSwordSpin,
+        endSwordSpin: endSwordSpin,
+        returnSwordToBack: returnSwordToBack,
         createSkinSparkles: createSkinSparkles,
         destroySkinSparkles: destroySkinSparkles,
         updateSkinSparkles: updateSkinSparkles,

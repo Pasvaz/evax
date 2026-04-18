@@ -173,66 +173,24 @@ window.UI = (function() {
             }
         }
 
-        ctx.fillStyle = '#0a2a0a';
-        GameState.trees.forEach(tree => {
-            const tx = (tree.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-            const ty = (tree.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-            ctx.beginPath();
-            ctx.arc(tx, ty, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        });
-
+        // Draw resources — single color for normal, special color for rare
         GameState.resources.forEach(res => {
-            let color;
-            switch(res.userData.type) {
-                case 'berry': color = '#4169e1'; break;
-                case 'nut': color = '#8b4513'; break;
-                case 'mushroom': color = '#ff6347'; break;
-                case 'seaweed': color = '#2e8b57'; break;
-                case 'egg': color = '#f5f5dc'; break;
-            }
-            ctx.fillStyle = color;
+            ctx.fillStyle = res.userData.type === 'arsenic_mushroom' ? '#cc44ff' : '#e8c850';
             const rx = (res.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
             const ry = (res.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
             ctx.beginPath();
-            ctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
+            ctx.arc(rx, ry, 2, 0, Math.PI * 2);
             ctx.fill();
         });
 
-        // Draw goose nests on minimap (arboreal biome)
-        if (GameState.nests) {
-            GameState.nests.forEach(nest => {
-                const nestColor = nest.egg && nest.egg.exists ? '#ffeb3b' : '#8b7355';
-                ctx.fillStyle = nestColor;
-                const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-                const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-                ctx.beginPath();
-                ctx.arc(nx, ny, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Draw toad nests on minimap (savannah biome)
-        if (GameState.toadNests) {
-            GameState.toadNests.forEach(nest => {
-                const eggsRemaining = nest.eggs.filter(e => e.exists).length;
-                const nestColor = eggsRemaining > 0 ? '#d2b48c' : '#8b4513'; // Tan with eggs, brown without
-                ctx.fillStyle = nestColor;
-                const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-                const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-                ctx.beginPath();
-                ctx.arc(nx, ny, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
+        // Draw animals — red for hostile, neutral grey for friendly
         GameState.enemies.forEach(enemy => {
-            // Use minimap color from enemy data (set by ANIMAL_TYPES in enemies.js)
-            ctx.fillStyle = enemy.userData.minimapColor || '#ff4444';
+            var isHostile = !enemy.userData.friendly || enemy.userData.retaliating;
+            ctx.fillStyle = isHostile ? '#ff4444' : '#aaaaaa';
             const ex = (enemy.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
             const ey = (enemy.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
             ctx.beginPath();
-            ctx.arc(ex, ey, 3, 0, Math.PI * 2);
+            ctx.arc(ex, ey, isHostile ? 3 : 2, 0, Math.PI * 2);
             ctx.fill();
         });
 
@@ -833,6 +791,28 @@ window.UI = (function() {
     };
 
     /**
+     * Setup hotbar click handlers (call once after DOM is ready).
+     * Clicking a filled hotbar slot sends the item back to inventory.
+     */
+    function setupHotbar() {
+        document.querySelectorAll('.hotbar-slot').forEach(function(slot) {
+            slot.addEventListener('click', function() {
+                var index = parseInt(slot.dataset.slot);
+                var item = GameState.hotbarSlots[index];
+                if (!item) return;
+
+                // Move item back to inventory
+                Inventory.addItemToInventory(item.id, item.name, item.description, item.effect, item.count);
+                GameState.hotbarSlots[index] = null;
+                Game.playSound('collect');
+                updateHotbar();
+                Inventory.refreshInventory();
+                Player.updateBackSword();
+            });
+        });
+    }
+
+    /**
      * Update the hotbar display.
      * Shows equipped items in their slots and highlights the selected slot.
      */
@@ -935,7 +915,7 @@ window.UI = (function() {
         // Check if Memory Collector skin should unlock (3 memories)
         if (GameState.memoriesFound.length === 3 && GameState.unlockedSkins.indexOf('memory_collector') === -1) {
             GameState.unlockedSkins.push('memory_collector');
-            UI.showToast('Skin Unlocked!', 'Memory Collector — your memories light the way. Press ESC to equip it!');
+            UI.showToast('Skin Unlocked!', 'Memory Collector — your memories light the way.', 'Press <b>ESC</b> to equip it!');
         }
 
         // Track score at time of finding (for score_since_last triggers)
@@ -1026,7 +1006,7 @@ window.UI = (function() {
         titleDiv.textContent = item.title;
         var bodyDiv = document.createElement('div');
         bodyDiv.className = 'toast-body';
-        bodyDiv.textContent = item.body;
+        bodyDiv.innerHTML = item.body;
         toast.appendChild(titleDiv);
         toast.appendChild(bodyDiv);
         if (item.key) {
@@ -1193,6 +1173,7 @@ window.UI = (function() {
 
     return {
         setupMinimap: setupMinimap,
+        setupHotbar: setupHotbar,
         updateMinimap: updateMinimap,
         updateUI: updateUI,
         openShop: openShop,

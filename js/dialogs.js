@@ -142,6 +142,9 @@ window.Dialogs = (function() {
      * Create all villagers in the village.
      */
     function createVillagers() {
+        // Guard against duplicate creation (called on biome rebuild too)
+        if (GameState.villagers && GameState.villagers.length > 0) return;
+
         const vx = CONFIG.VILLAGE_CENTER.x;
         const vz = CONFIG.VILLAGE_CENTER.z;
 
@@ -409,7 +412,7 @@ window.Dialogs = (function() {
                             if (GameState.ownedPiglets[pi].id === healId && GameState.ownedPiglets[pi].knockedOut) {
                                 GameState.ownedPiglets[pi].knockedOut = false;
                                 var healedName = GameState.ownedPiglets[pi].name;
-                                UI.showToast(healedName + ' Healed!', healedName + ' is back to full health! Press P to summon it.');
+                                UI.showToast(healedName + ' Healed!', healedName + ' is back to full health!', 'Press <b>P</b> to summon it.');
                                 break;
                             }
                         }
@@ -621,8 +624,7 @@ window.Dialogs = (function() {
             if (!success) {
                 // Use specific failNode if provided, otherwise try common fail nodes
                 const failNodeId = choice.failNode ||
-                                   'trade_fail' ||
-                                   'heal_fail';
+                    (villager.userData.conversationTree.nodes['trade_fail'] ? 'trade_fail' : 'heal_fail');
                 const failNode = villager.userData.conversationTree.nodes[failNodeId];
 
                 if (failNode) {
@@ -674,6 +676,8 @@ window.Dialogs = (function() {
         GameState.isDialogOpen = false;
         GameState.currentDialogNode = null;
         GameState.currentDialogVillager = null;
+        GameState._pendingHealPigletId = null;
+        GameState._pendingHealCost = null;
         document.getElementById('dialog-box').classList.add('hidden');
         document.getElementById('dialog-options').innerHTML = '';
     }

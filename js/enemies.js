@@ -3331,15 +3331,14 @@ window.Enemies = (function() {
 
         if (animSpeed > 0.1) {
             // Running animation
-            anim.runCycle += delta * animSpeed * 12; // Cycle speed based on movement
+            anim.runCycle += delta * animSpeed * 3; // ~3-4 gallop cycles per second at full speed
 
             const cycle = anim.runCycle;
             const intensity = Math.min(animSpeed / 8, 1); // Scale with speed
 
             // ============ SPINE BENDING (Cheetah-like) ============
-            // The spine compresses and extends during the gallop - DRAMATIC BENDING!
             // Use rotation.X for up/down arching (cheetah gallop motion)
-            const spineBend = Math.sin(cycle * 2) * 0.8 * intensity; // BIG value for visible bending
+            const spineBend = Math.sin(cycle * 2) * 0.4 * intensity;
 
             // Front spine arches UP when extending (shoulders lift)
             parts.frontSpine.rotation.x = spineBend * 0.6; // UP/DOWN rotation
@@ -3385,6 +3384,13 @@ window.Enemies = (function() {
 
                 // Paw extends on push-off
                 leg.pawGroup.rotation.x = Math.sin(legCycle + 2) * 0.2 * intensity;
+
+                // Decay walk-axis (Z) residuals
+                leg.upperLegGroup.rotation.z *= 0.85;
+                leg.kneeGroup.rotation.z *= 0.85;
+                leg.lowerLegGroup.rotation.z *= 0.85;
+                leg.ankleGroup.rotation.z *= 0.85;
+                leg.pawGroup.rotation.z *= 0.85;
             });
 
             // ============ TAIL ANIMATION ============
@@ -3420,13 +3426,18 @@ window.Enemies = (function() {
             parts.headGroup.rotation.x *= 0.95;
             parts.headGroup.rotation.y = Math.sin(idleCycle * 0.5) * 0.05;
 
-            // Reset legs smoothly
+            // Reset legs smoothly (both axes)
             legs.forEach(leg => {
                 leg.upperLegGroup.rotation.x *= 0.9;
                 leg.kneeGroup.rotation.x *= 0.9;
                 leg.lowerLegGroup.rotation.x *= 0.9;
                 leg.ankleGroup.rotation.x *= 0.9;
                 leg.pawGroup.rotation.x *= 0.9;
+                leg.upperLegGroup.rotation.z *= 0.9;
+                leg.kneeGroup.rotation.z *= 0.9;
+                leg.lowerLegGroup.rotation.z *= 0.9;
+                leg.ankleGroup.rotation.z *= 0.9;
+                leg.pawGroup.rotation.z *= 0.9;
             });
 
             // Gentle tail swish
@@ -9817,6 +9828,9 @@ window.Enemies = (function() {
         if (!seal || !seal.parent) return;
         if (seal.userData.type !== 'uronin_seal') return;
 
+        // Let the universal retaliation system handle movement when angry
+        if (seal.userData.retaliating || seal.userData.retaliationFleeing) return;
+
         var state = seal.userData.lifecycleState;
         var island = GameState.oceanIslands[seal.userData.homeIslandIndex];
 
@@ -10298,6 +10312,9 @@ window.Enemies = (function() {
     function updateBakkaSealBehavior(seal, delta) {
         if (!seal || !seal.parent) return;
         if (seal.userData.type !== 'bakka_seal') return;
+
+        // Let the universal retaliation system handle movement when angry
+        if (seal.userData.retaliating || seal.userData.retaliationFleeing) return;
 
         var state = seal.userData.lifecycleState;
         seal.userData.stateTimer += delta;
@@ -11504,10 +11521,12 @@ window.Enemies = (function() {
             }
 
             // Skip enemies that manage their own Y position (tree dwellers, flying animals, etc)
-            // BUT don't skip seagulls — they use ignoreGravity for in-tree states
-            // and still need their lifecycle handler to run
+            // BUT don't skip seagulls — they need their lifecycle handler to run
+            // AND don't skip ANY animal that is retaliating — they need the retaliation code
             if (enemy.userData.ignoreGravity && enemy.userData.type !== 'pilfera_coastalis') {
-                continue;
+                if (!enemy.userData.retaliating && !enemy.userData.retaliationFleeing) {
+                    continue;
+                }
             }
 
 
@@ -18841,6 +18860,17 @@ window.Enemies = (function() {
 
         // At high speeds (hunting/chasing), use the full gallop animation
         if (moveSpeed >= 6) {
+            // Decay walk-axis (Z) rotations before galloping (gallop uses X axis)
+            var catM = cat.children[0] || cat;
+            if (catM.userData && catM.userData.legs) {
+                catM.userData.legs.forEach(function(leg) {
+                    leg.upperLegGroup.rotation.z *= 0.8;
+                    leg.kneeGroup.rotation.z *= 0.8;
+                    leg.lowerLegGroup.rotation.z *= 0.8;
+                    leg.ankleGroup.rotation.z *= 0.8;
+                    leg.pawGroup.rotation.z *= 0.8;
+                });
+            }
             var animSpeed = 2 + (moveSpeed / 10) * 6;
             animateDronglousCat(cat, delta, true, animSpeed);
             return;
@@ -19279,8 +19309,12 @@ window.Enemies = (function() {
             });
         }
 
-        // Tip it on its side (rotate 90 degrees around Z axis)
-        enemy.rotation.z = Math.PI / 2;
+        // Flip upside down — legs in the air, classic dead pose
+        // Rotate the outer group (not inner model) to avoid breaking complex skeletons
+        enemy.rotation.x = Math.PI;
+        // Height based on animal size so tall animals don't sink into the ground
+        var animalHeight = (enemy.userData.groundY || 0.3) + (enemy.userData.size || 1) * 0.5;
+        enemy.position.y = animalHeight;
 
         // Store original colors for the decay stages
         var originalColors = [];
@@ -19305,6 +19339,23 @@ window.Enemies = (function() {
         enemy.userData.carcassSinking = false;         // Has it started sinking?
         enemy.userData.carcassAge = 0;                 // How long since death
 
+        // Add buzzing flies around the carcass — orbit scales with animal size
+        var flyMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        var flyGeo = new THREE.SphereGeometry(0.03, 4, 4);
+        var animalSize = enemy.userData.size || 1;
+        var flyCount = 1 + Math.floor(Math.random() * 3);
+        var flies = [];
+        for (var f = 0; f < flyCount; f++) {
+            var fly = new THREE.Mesh(flyGeo, flyMat);
+            fly.userData.angle = Math.random() * Math.PI * 2;
+            fly.userData.speed = 3 + Math.random() * 3;
+            fly.userData.radius = (0.4 + Math.random() * 0.5) * animalSize;
+            fly.userData.heightOffset = Math.random() * 0.3 * animalSize;
+            GameState.scene.add(fly);
+            flies.push(fly);
+        }
+        enemy.userData.carcassFlies = flies;
+
         // Initialize carcasses array if needed
         if (!GameState.carcasses) GameState.carcasses = [];
         GameState.carcasses.push(enemy);
@@ -19328,8 +19379,32 @@ window.Enemies = (function() {
 
             carcass.userData.carcassAge += delta;
 
+            // Animate flies — only visible within 20 units of player
+            if (carcass.userData.carcassFlies) {
+                var flyDist = GameState.peccary.position.distanceTo(carcass.position);
+                var showFlies = flyDist < 20;
+                var cx = carcass.position.x;
+                var cz = carcass.position.z;
+                var cy = carcass.position.y + 1.0;
+                carcass.userData.carcassFlies.forEach(function(fly) {
+                    fly.visible = showFlies;
+                    if (!showFlies) return;
+                    fly.userData.angle += fly.userData.speed * delta;
+                    fly.position.x = cx + Math.cos(fly.userData.angle) * fly.userData.radius;
+                    fly.position.z = cz + Math.sin(fly.userData.angle) * fly.userData.radius;
+                    fly.position.y = cy + fly.userData.heightOffset + Math.sin(fly.userData.angle * 2) * 0.15;
+                });
+            }
+
             // === SINKING PHASE ===
             if (carcass.userData.carcassSinking) {
+                // Remove flies
+                if (carcass.userData.carcassFlies) {
+                    carcass.userData.carcassFlies.forEach(function(fly) {
+                        GameState.scene.remove(fly);
+                    });
+                    carcass.userData.carcassFlies = null;
+                }
                 // Sink into the ground over 3 seconds
                 carcass.position.y -= delta * 0.5;
                 // Fade opacity
@@ -19935,7 +20010,7 @@ window.Enemies = (function() {
             // Unlock the Egged Out skin!
             GameState.unlockedSkins.push('egged_out');
             if (typeof UI !== 'undefined' && UI.showToast) {
-                UI.showToast('Skin Unlocked!', 'Egged Out — you caught 5 naughty bunnies! Press ESC to equip it!');
+                UI.showToast('Skin Unlocked!', 'Egged Out — you caught 5 naughty bunnies!', 'Press <b>ESC</b> to equip it!');
             }
             console.log('EGGED OUT SKIN UNLOCKED!');
         } else if (typeof UI !== 'undefined' && UI.showToast) {

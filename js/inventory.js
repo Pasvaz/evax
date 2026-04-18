@@ -499,10 +499,13 @@ window.Inventory = (function() {
 
         const slot = (targetSlot !== undefined) ? targetSlot : GameState.selectedHotbarSlot;
 
-        // If something is already in this slot, put it back in inventory
+        // Save displaced item before modifying anything
         const existing = GameState.hotbarSlots[slot];
-        if (existing) {
-            addItemToInventory(existing.id, existing.name, existing.description, existing.effect, existing.count);
+
+        // Remove source item from inventory FIRST (before adding displaced back)
+        const itemIndex = GameState.inventoryItems.findIndex(i => i.id === item.id);
+        if (itemIndex !== -1) {
+            GameState.inventoryItems.splice(itemIndex, 1);
         }
 
         // Put the item in the hotbar slot
@@ -514,10 +517,9 @@ window.Inventory = (function() {
             count: item.count
         };
 
-        // Remove ALL of this item from inventory (moved to hotbar)
-        const itemIndex = GameState.inventoryItems.findIndex(i => i.id === item.id);
-        if (itemIndex !== -1) {
-            GameState.inventoryItems.splice(itemIndex, 1);
+        // Now put displaced item back in inventory (safe — source already removed)
+        if (existing) {
+            addItemToInventory(existing.id, existing.name, existing.description, existing.effect, existing.count);
         }
 
         Game.playSound('collect');
