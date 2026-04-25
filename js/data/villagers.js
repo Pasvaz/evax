@@ -341,7 +341,7 @@ window.VILLAGERS = [
                 'cookie_quest': {
                     text: "Cookies?! Oh Pedro, you're still on about that recipe! Well, any good cookie needs fresh butter and eggs — and I mean GOOD eggs, not those goose ones. Here, take some of mine! But the real secret is a special spice. I don't have it, but Bruno the blacksmith travels all over. He might know where to find it!",
                     choices: [
-                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { butter: 2, eggs: 3 }, clue: 'rosie' } },
+                        { text: "Thanks Rosie! I'll ask Bruno.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { butter: 2, eggs: 3 }, clue: 'rosie', once: 'rosie_cookie_gift' } },
                         { text: "Back to other things.", nextNode: 'greeting' }
                     ]
                 },
@@ -622,7 +622,7 @@ window.VILLAGERS = [
                 'cookie_quest': {
                     text: "A cookie recipe? Oh Pedro, you sweet thing! I used to bake the most wonderful cookies when I was younger. You need flour and sugar as a base — that much I remember. Here, take some from my pantry! But the BEST recipe? The one everyone talks about? I think Farmer Rosie knows about the fresh ingredients you'd need. She grows all sorts of things!",
                     choices: [
-                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { flour: 3, sugar: 3 }, clue: 'granny_trotter' } },
+                        { text: "Thanks Granny! I'll ask Rosie.", nextNode: 'cookie_noted', effect: { type: 'give_resource', resources: { flour: 3, sugar: 3 }, clue: 'granny_trotter', once: 'granny_cookie_gift' } },
                         { text: "Back to other things.", nextNode: 'greeting' }
                     ]
                 },
@@ -631,6 +631,68 @@ window.VILLAGERS = [
                     text: "Good luck, dearie! And Pedro... when you find that recipe, you better bake me a batch!",
                     choices: [
                         { text: "I promise!", nextNode: null }
+                    ]
+                }
+            }
+        }
+    },
+
+    // ========================================================================
+    // TIM — Wandering merchant in the southeast forest
+    // ========================================================================
+    // Tim wanders the wilds! He's not in the village — he spawns in the
+    // southeast region of the arboreal biome. Animals flee from him.
+    // He speaks in broken English and sells the legendary thunder scythe.
+    {
+        name: "Tim",
+        role: "Wandering Merchant",
+
+        skinColor: 0xd4a574,          // Tanned skin
+        outfitColor: 0x3b5e3b,        // Dark green travelling cloak
+        hatColor: 0x5c4033,            // Brown wide-brim hat
+
+        // Tim is NOT placed in the village — this position is ignored.
+        // His actual position is set by the wandering system in game.js.
+        position: { x: 0, z: 0 },
+
+        // Mark Tim as a wanderer so the game knows to handle him differently
+        wanderer: true,
+        wanderBiome: 'arboreal',
+        wanderRegion: 'southeast',     // Southeast quadrant of forest
+        fleeRadius: 15,                // Animals within 15 units run away
+
+        conversation: {
+            start: 'greeting',
+            nodes: {
+                'greeting': {
+                    text: "Ah! You is... Pedro, yes? Tim hear about you. Tim walk long time in forest. You want buy something, maybe? Tim have very special thing.",
+                    choices: [
+                        { text: "What are you selling?", nextNode: 'show_wares' },
+                        { text: "Who are you?", nextNode: 'about' },
+                        { text: "Goodbye, Tim.", nextNode: null }
+                    ]
+                },
+
+                'about': {
+                    text: "Tim is... how you say... travelling pig. Tim go everywhere. Forest, mountain, big sand place. Tim find many thing on road. Some thing Tim sell. Some thing Tim keep. Heh.",
+                    choices: [
+                        { text: "What are you selling?", nextNode: 'show_wares' },
+                        { text: "Stay safe out there.", nextNode: null }
+                    ]
+                },
+
+                'show_wares': {
+                    text: "Tim have good stuff. Very rare. Found in old ruin. You look, yes?",
+                    choices: [
+                        { text: "Show me what you've got.", nextNode: null, effectData: { type: 'open_shop', vendor: 'tim' } },
+                        { text: "Maybe later.", nextNode: null }
+                    ]
+                },
+
+                'too_poor': {
+                    text: "Is ok, is ok. Tim understand. Coin is hard to find. You come back when you have more, yes? Tim will be walking around. Tim always walking.",
+                    choices: [
+                        { text: "I'll be back.", nextNode: null }
                     ]
                 }
             }

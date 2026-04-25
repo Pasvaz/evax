@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <canvas id="board" width="400" height="400"></canvas>
+        <script>
+
+            
+
+            var canvas = document.getElementById("board")
+            var ctx = canvas.getContext("2d");
+            canvas.style.border = "2px solid black";
+
+            //our meeple center point
+            var px = 200;
+            var py = 200;
+
+
+            ctx.fillStyle = "rgba(0,0,0,0.3)"
+            ctx.beginPath();
+            ctx.ellipse(px, py + 5, 80, 30, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#8a6a3a";
+            ctx.beginPath();
+            ctx.ellipse(px, py + 2, 100, 35, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            
+            ctx.fillStyle = "green"
+            ctx.beginPath();
+            
+        ctx.ellipse(px, py, 70, 45, 0, 0, Math.PI * 2);
+        ctx.fill();
+         
+        ctx.beginPath();
+        ctx.ellipse(px + 100, py, 45, 30, 0, 0, Math.PI * 2);   
+        ctx.fill();
+        
+        ctx.fillStyle = "orange"
+        ctx.beginPath();
+        ctx.arc(px + 100, py - 15, 5, 0, Math.PI * 2);
+        ctx.fill()
+        
+        ctx.beginPath()
+        ctx.arc(px + 100, py + 15, 5, 0, Math.PI * 2);
+        ctx.fill()
+
+        ctx.strokeStyle = "green";
+        ctx.lineWidth = 25;
+        ctx.beginPath()
+        ctx.moveTo(px - 70, py)
+        ctx.lineTo(px - 190, py);
+        ctx.stroke();
+
+        </script>
+    </body>
+</html>        

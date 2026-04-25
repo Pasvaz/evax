@@ -82,6 +82,43 @@
             font-size: 14px;
             z-index: 100;
         }
+        #stamina-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 545px;  /* Left of thirst bar */
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #stamina-panel .stat-label {
+            margin-bottom: 5px;
+            color: #50e850;
+        }
+        #stamina-bar-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2e8b2e;
+        }
+        #stamina-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #50e850, #90ff90);
+            transition: width 0.3s;
+        }
+        #stamina-bar.exhausted {
+            background: linear-gradient(to right, #cc4444, #ff6666);
+            animation: pulse-stamina 1s infinite;
+        }
+        @keyframes pulse-stamina {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
         #thirst-panel .stat-label {
             margin-bottom: 5px;
             color: #4a9eff;
@@ -183,6 +220,48 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
+        #cold-meter {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(calc(-50% + 60px));
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #cold-meter .stat-label {
+            margin-bottom: 5px;
+            color: #88bbff;
+        }
+        #cold-meter-container {
+            width: 150px;
+            height: 16px;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #4466aa;
+            position: relative;
+        }
+        #cold-meter-fill {
+            width: 100%;
+            height: 100%;
+            background: #4488cc;
+            transition: width 0.3s;
+        }
+        #cold-meter-text {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: #fff; text-shadow: 1px 1px 1px #000;
+        }
+        @keyframes pulse-cold {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
         #controls-info {
             position: fixed;
             bottom: 20px;
@@ -424,8 +503,11 @@
             border: 2px solid #4a7c4a;
             border-radius: 10px;
             pointer-events: none;
+            overflow: hidden;
+            box-sizing: border-box;
         }
         #minimap-canvas {
+            display: block;
             width: 100%;
             height: 100%;
             border-radius: 8px;
@@ -577,6 +659,28 @@
         }
         .hotbar-icon {
             font-size: 24px;
+        }
+        .hotbar-cooldown {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0 0 4px 4px;
+            pointer-events: none;
+            transition: height 0.1s linear;
+        }
+        .hotbar-cooldown-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: #ff6666;
+            pointer-events: none;
+            text-shadow: 0 0 3px #000;
         }
         .hotbar-count {
             position: absolute;
@@ -738,6 +842,16 @@
         .craft-recipe.disabled:hover {
             background: rgba(60, 50, 40, 0.6);
             border-color: #8b7355;
+        }
+        .craft-recipe.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #665533;
+            filter: grayscale(30%);
+        }
+        .craft-recipe.locked:hover {
+            background: rgba(60, 50, 40, 0.6);
+            border-color: #887744;
         }
         .craft-recipe-name {
             font-size: 20px;
@@ -2267,11 +2381,545 @@
             border: 2px solid #8888ff;
             text-shadow: 1px 1px 2px black;
         }
+
+        /* ============================================ */
+        /* PIGLET CATCHING MINIGAME                     */
+        /* ============================================ */
+        #piglet-catch-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 120px;
+        }
+        #piglet-catch-overlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #piglet-catch-title {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px black;
+            margin-bottom: 8px;
+        }
+        #piglet-catch-rarity {
+            font-size: 14px;
+            margin-bottom: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+        #piglet-catch-hint {
+            color: #cccccc;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px black;
+        }
+        #piglet-catch-bar-container {
+            position: relative;
+            width: 500px;
+            max-width: 80vw;
+            height: 40px;
+            background: #111111;
+            border: 3px solid #333333;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #piglet-catch-white-zone {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-left: 2px solid rgba(255, 255, 255, 0.6);
+            border-right: 2px solid rgba(255, 255, 255, 0.6);
+        }
+        #piglet-catch-slider {
+            position: absolute;
+            top: 0;
+            width: 6px;
+            height: 100%;
+            background: #ff2222;
+            box-shadow: 0 0 8px #ff0000, 0 0 16px #ff4444;
+            border-radius: 2px;
+            transition: none;
+        }
+        #piglet-catch-result {
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            margin-top: 20px;
+            text-shadow: 2px 2px 6px black;
+            min-height: 36px;
+        }
+
+        /* ============================================ */
+        /* EGG SHOP                                     */
+        /* ============================================ */
+        #egg-shop-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9990;
+            justify-content: center;
+            align-items: center;
+        }
+        #egg-shop-overlay.active {
+            display: flex;
+        }
+        #egg-shop-panel {
+            background: rgba(50, 30, 10, 0.95);
+            border: 3px solid #FFD700;
+            border-radius: 14px;
+            padding: 20px;
+            width: 440px;
+            max-width: 90vw;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #egg-shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        #egg-shop-header h3 {
+            color: #FFD700;
+            margin: 0;
+            font-size: 18px;
+        }
+        #egg-shop-balance {
+            color: #FFD700;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .egg-shop-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #8B6914;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .egg-shop-card:hover {
+            border-color: #FFD700;
+            background: rgba(255,204,0,0.1);
+        }
+        .egg-shop-card.too-expensive {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .egg-shop-card.too-expensive:hover {
+            border-color: #8B6914;
+            background: rgba(255,255,255,0.05);
+        }
+        .egg-shop-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        .egg-shop-info {
+            flex: 1;
+        }
+        .egg-shop-name {
+            color: #f5deb3;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .egg-shop-price {
+            color: #FFD700;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        .egg-shop-odds {
+            color: #aaa;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        .egg-shop-buy-btn {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 6px 14px;
+            border: 2px solid #FFD700;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .egg-shop-card.too-expensive .egg-shop-buy-btn {
+            color: #666;
+            border-color: #666;
+        }
+        #egg-shop-footer {
+            color: #777;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* ============================================ */
+        /* PIGLET PICKER                                */
+        /* ============================================ */
+        #piglet-picker-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9990;
+            justify-content: center;
+            align-items: center;
+        }
+        #piglet-picker-overlay.active {
+            display: flex;
+        }
+        #piglet-picker-panel {
+            background: rgba(30, 50, 30, 0.95);
+            border: 3px solid #8ab87a;
+            border-radius: 14px;
+            padding: 20px;
+            width: 420px;
+            max-width: 90vw;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #piglet-picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        #piglet-picker-header h3 {
+            color: #ffcc00;
+            margin: 0;
+            font-size: 18px;
+        }
+        #piglet-picker-count {
+            color: #aaddaa;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .piglet-picker-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .piglet-picker-card:hover {
+            border-color: #8ab87a;
+            background: rgba(255,255,255,0.1);
+        }
+        .piglet-picker-card.active {
+            border-color: #ffcc00;
+            background: rgba(255,204,0,0.1);
+        }
+        .piglet-picker-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .piglet-picker-info {
+            flex: 1;
+        }
+        .piglet-picker-name {
+            color: #f5deb3;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .piglet-picker-rarity {
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .piglet-picker-ability {
+            color: #aaa;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        .piglet-picker-btn {
+            color: #8ab87a;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 4px 10px;
+            border: 1px solid #8ab87a;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .piglet-picker-card.active .piglet-picker-btn {
+            color: #ff8888;
+            border-color: #ff8888;
+        }
+        .piglet-picker-card.knocked-out {
+            opacity: 0.7;
+            border-color: #cc3333;
+            background: rgba(80, 0, 0, 0.3);
+        }
+        .piglet-picker-btn.ko-btn {
+            color: #ff3333;
+            border-color: #ff3333;
+            background: rgba(255, 0, 0, 0.15);
+            cursor: not-allowed;
+        }
+        #piglet-picker-footer {
+            color: #777;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* ============ PIGSTON'S BOARD GAME ============ */
+        #board-game-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+        }
+        #board-game-overlay.hidden { display: none; }
+
+        #board-game-container {
+            background: linear-gradient(to bottom, rgba(60, 35, 15, 0.97), rgba(40, 20, 8, 0.97));
+            border: 4px solid #a0845c;
+            border-radius: 18px;
+            padding: 24px 32px;
+            color: #f5deb3;
+            min-width: 460px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+        }
+
+        #board-game-header {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        #board-game-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        #board-game-mood {
+            font-size: 14px;
+            color: #c0a070;
+            margin-top: 4px;
+            font-style: italic;
+        }
+        #board-game-status {
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #ddd;
+            min-height: 24px;
+        }
+        #board-game-tokens {
+            font-size: 13px;
+            text-align: center;
+            color: #c0a070;
+            margin-bottom: 8px;
+        }
+
+        /* Color picker */
+        #board-game-color-picker {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        #board-game-color-picker span {
+            font-size: 16px;
+            color: #f5deb3;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .color-option {
+            display: inline-block;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            margin: 0 8px;
+            cursor: pointer;
+            border: 3px solid #555;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .color-option:hover { border-color: #ffcc00; transform: scale(1.15); }
+        .color-option.selected { border-color: #ffcc00; box-shadow: 0 0 12px rgba(255,204,0,0.5); }
+        .color-option[data-color="brown"] { background: #8B4513; }
+        .color-option[data-color="ginger"] { background: #D2691E; }
+        .color-option[data-color="black"] { background: #2a2a2a; }
+        .color-option[data-color="white"] { background: #F5F5DC; }
+
+        /* 5x5 Grid */
+        #board-game-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-template-rows: repeat(5, 60px);
+            gap: 4px;
+            justify-content: center;
+            margin: 12px auto;
+        }
+        .board-cell {
+            width: 60px; height: 60px;
+            background: rgba(80, 60, 30, 0.6);
+            border: 2px solid #6b5a3e;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            position: relative;
+        }
+        .board-cell:hover:not(.occupied):not(.blocked) {
+            background: rgba(120, 100, 50, 0.7);
+            border-color: #a0845c;
+        }
+        .board-cell.occupied {
+            cursor: default;
+        }
+        .board-cell.blocked {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+        .board-cell.last-placed {
+            box-shadow: 0 0 10px rgba(255, 255, 100, 0.5);
+        }
+        /* Occupied cell inner circle */
+        .board-cell .piece {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        /* Footer buttons */
+        #board-game-footer {
+            text-align: center;
+            margin-top: 14px;
+        }
+        .board-game-btn {
+            background: rgba(100, 80, 50, 0.7);
+            border: 2px solid #8b7355;
+            color: #f5deb3;
+            padding: 8px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin: 0 6px;
+            transition: background 0.2s;
+        }
+        .board-game-btn:hover { background: rgba(140, 110, 60, 0.8); }
+        .board-game-btn.primary { border-color: #ffcc00; color: #ffcc00; }
+
+        /* ============ PIGON'S SURVIVAL GAME ============ */
+        #pigon-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+        #pigon-overlay.hidden { display: none; }
+
+        /* ============ PIGIAS CARD GAME ============ */
+        #card-game-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 500; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+        #card-game-overlay.hidden { display: none; }
+        #card-game-container { background: linear-gradient(to bottom, #1a1520, #0d0a12); border: 2px solid #639; border-radius: 12px; padding: 20px; max-width: 700px; width: 90vw; max-height: 90vh; overflow-y: auto; }
+        @keyframes cardReveal { from { opacity: 0; transform: scale(0.5) rotateY(180deg); } to { opacity: 1; transform: scale(1) rotateY(0); } }
+        #pigon-container { display: flex; gap: 16px; max-height: 95vh; }
+
+        /* Left panel: energy + actions */
+        #pigon-left { width: 180px; display: flex; flex-direction: column; gap: 8px; }
+        .pigon-panel { background: rgba(40, 30, 20, 0.95); border: 2px solid #6b5a3e; border-radius: 10px; padding: 10px; color: #f5deb3; }
+        .pigon-panel h3 { color: #ffcc00; font-size: 14px; margin: 0 0 6px 0; text-align: center; }
+        .pigon-bar-label { font-size: 11px; color: #c0a070; margin-bottom: 2px; }
+        .pigon-bar { height: 14px; background: #333; border-radius: 4px; margin-bottom: 6px; overflow: hidden; position: relative; }
+        .pigon-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .pigon-bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 10px; line-height: 14px; color: #fff; text-shadow: 1px 1px 1px #000; }
+        .pigon-bar-fill.health { background: #cc3333; }
+        .pigon-bar-fill.hunger { background: #cc8833; }
+        .pigon-bar-fill.thirst { background: #3388cc; }
+        .pigon-bar-fill.energy { background: #33cc33; }
+
+        .pigon-btn { display: block; width: 100%; padding: 8px; margin-bottom: 4px; background: rgba(80, 60, 30, 0.7); border: 2px solid #6b5a3e; border-radius: 6px; color: #f5deb3; font-size: 13px; cursor: pointer; text-align: left; transition: background 0.15s; }
+        .pigon-btn:hover:not(:disabled) { background: rgba(120, 90, 40, 0.8); }
+        .pigon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pigon-btn.end-turn { border-color: #ffcc00; color: #ffcc00; text-align: center; margin-top: 6px; }
+
+        /* Center: the canvas board */
+        #pigon-board-wrap { position: relative; }
+        #pigon-canvas { border: 3px solid #6b5a3e; border-radius: 8px; cursor: crosshair; display: block; }
+        #pigon-turn-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: #ffcc00; font-size: 22px; font-weight: bold; padding: 12px 30px; border-radius: 10px; border: 2px solid #ffcc00; pointer-events: none; display: none; }
+
+        /* Right panel: opponent stats + meeple storage */
+        #pigon-right { width: 180px; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Meeple select screen */
+        #pigon-select { text-align: center; color: #f5deb3; max-width: 600px; }
+        #pigon-select h2 { color: #ffcc00; margin-bottom: 12px; }
+        .meeple-card { display: inline-block; width: 160px; background: rgba(40, 30, 20, 0.95); border: 2px solid #6b5a3e; border-radius: 12px; padding: 14px; margin: 8px; cursor: pointer; vertical-align: top; transition: border-color 0.2s, transform 0.2s; }
+        .meeple-card:hover { border-color: #ffcc00; transform: scale(1.05); }
+        .meeple-card.selected { border-color: #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.3); }
+        .meeple-icon { font-size: 36px; margin-bottom: 6px; }
+        .meeple-name { font-size: 16px; font-weight: bold; color: #ffcc00; }
+        .meeple-class { font-size: 11px; color: #cc8833; margin-bottom: 6px; }
+        .meeple-stats { font-size: 11px; color: #aaa; text-align: left; line-height: 1.5; }
+        #pigon-select-btn { margin-top: 16px; padding: 10px 30px; background: rgba(80, 60, 30, 0.7); border: 2px solid #ffcc00; border-radius: 8px; color: #ffcc00; font-size: 16px; cursor: pointer; }
+        #pigon-select-btn:hover { background: rgba(120, 90, 40, 0.8); }
+        #pigon-select-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Game log */
+        #pigon-log { max-height: 120px; overflow-y: auto; font-size: 11px; color: #aaa; line-height: 1.4; }
+        #pigon-log div { padding: 1px 0; }
+        #pigon-log .log-player { color: #88cc88; }
+        #pigon-log .log-pigon { color: #cc8888; }
+        #pigon-log .log-system { color: #cccc88; }
+
+        /* Quit button */
+        #pigon-quit { position: absolute; top: 8px; right: 8px; background: rgba(80, 30, 30, 0.8); border: 2px solid #aa4444; border-radius: 6px; color: #f5deb3; padding: 6px 14px; cursor: pointer; font-size: 12px; z-index: 10; }
     </style>
 </head>
 <body>
     <div id="loading">Loading game...</div>
     <div id="game-container"></div>
+
+    <!-- Piglet Catching Minigame Overlay -->
+    <div id="piglet-catch-overlay">
+        <div id="piglet-catch-title">Wild Piglet!</div>
+        <div id="piglet-catch-rarity"></div>
+        <div id="piglet-catch-hint">Press SPACE when the red line is in the white zone!</div>
+        <div id="piglet-catch-bar-container">
+            <div id="piglet-catch-white-zone"></div>
+            <div id="piglet-catch-slider"></div>
+        </div>
+        <div id="piglet-catch-result"></div>
+    </div>
+
+    <!-- Egg Shop Overlay -->
+    <div id="egg-shop-overlay">
+        <div id="egg-shop-panel">
+            <div id="egg-shop-header">
+                <h3>🥚 Larry's Mystery Eggs</h3>
+                <span id="egg-shop-balance">0 Easter Eggs</span>
+            </div>
+            <div id="egg-shop-list"></div>
+            <div id="egg-shop-footer">Click an egg to buy · Escape to close</div>
+        </div>
+    </div>
+
+    <!-- Piglet Picker Overlay -->
+    <div id="piglet-picker-overlay">
+        <div id="piglet-picker-panel">
+            <div id="piglet-picker-header">
+                <h3>🐷 Your Piglets</h3>
+                <span id="piglet-picker-count">0/3 Active</span>
+            </div>
+            <div id="piglet-picker-list"></div>
+            <div id="piglet-picker-footer">Click to summon/dismiss · P to close · Max 3 active</div>
+        </div>
+    </div>
 
     <div id="start-screen" class="hidden">
         <div class="start-hero-wrap">
@@ -2531,6 +3179,29 @@
                             <button class="spawn-btn" data-spawn="orcleton_female">Orcleton (F)</button>
                         </div>
                     </div>
+                    <!-- Easter Event -->
+                    <div class="spawn-category">
+                        <h4 class="spawn-category-header" data-category="easter-animals">Easter Event</h4>
+                        <div class="spawn-category-content hidden" id="spawn-easter-animals">
+                            <button class="testing-action-btn" id="start-easter-btn">Start Easter</button>
+                            <button class="testing-action-btn" id="stop-easter-btn">Stop Easter</button>
+                            <button class="testing-action-btn" id="spawn-test-bunny-btn">Spawn Bunny</button>
+                            <button class="testing-action-btn" id="spawn-test-lamb-btn">Spawn Lamb (Random)</button>
+                            <button class="testing-action-btn" id="spawn-moonbeam-lamb-btn">Spawn Moonbeam Lamb (Godly!)</button>
+                            <button class="testing-action-btn" id="spawn-blossom-lamb-btn">Spawn Blossom Lamb (Easter Symbol!)</button>
+                            <button class="testing-action-btn" id="give-petals-btn">Give 30 Petals</button>
+                            <button class="testing-action-btn" id="give-choco-eggs-btn">Give 100 Choco Eggs</button>
+                            <button class="testing-action-btn" id="spawn-sheep-btn">Spawn Sheep (Random)</button>
+                            <button class="testing-action-btn" id="spawn-sheep-pair-btn">Spawn Male+Female Sheep Pair</button>
+                            <button class="testing-action-btn" id="force-lamb-grow-btn">Force Lamb → Sheep (instant)</button>
+                            <button class="testing-action-btn" id="spawn-flamingo-btn">Spawn Flamingo (Random)</button>
+                            <button class="testing-action-btn" id="spawn-blood-flamingo-btn">Spawn Blood Flamingo!</button>
+                            <button class="testing-action-btn" id="give-flamingo-license-btn">Give Flamingo License</button>
+                            <button class="testing-action-btn" id="create-easter-biome-btn">Create Easter Biome</button>
+                            <button class="testing-action-btn" id="spawn-piglet-btn">Spawn Random Piglet</button>
+                            <button class="testing-action-btn" id="spawn-celestial-piglet-btn">Spawn Celestial Piglet!</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2542,6 +3213,13 @@
         <div id="final-score">Score: 0</div>
         <p class="subtitle">The predators caught you!</p>
         <button class="game-btn" id="restart-btn">Play Again</button>
+    </div>
+
+    <div id="stamina-panel" class="hidden">
+        <div class="stat-label">⚡ Stamina</div>
+        <div id="stamina-bar-container">
+            <div id="stamina-bar"></div>
+        </div>
     </div>
 
     <div id="thirst-panel" class="hidden">
@@ -2562,6 +3240,14 @@
         <div class="stat-label">🫧 Oxygen</div>
         <div id="oxygen-bar-container">
             <div id="oxygen-bar"></div>
+        </div>
+    </div>
+
+    <div id="cold-meter" class="hidden">
+        <div class="stat-label">🥶 Cold</div>
+        <div id="cold-meter-container">
+            <div id="cold-meter-fill"></div>
+            <div id="cold-meter-text">100%</div>
         </div>
     </div>
 
@@ -2628,6 +3314,9 @@
         <span id="biome-transition-text">Entering New World Savannah</span>
     </div>
 
+    <!-- Combat hint — small bottom message for cooldowns etc -->
+    <div id="combat-hint" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); font-size: 22px; color: #ff9999; text-shadow: 2px 2px 4px #000; font-weight: bold; pointer-events: none; z-index: 900; background: rgba(0,0,0,0.6); padding: 10px 24px; border-radius: 10px; opacity: 0; transition: opacity 0.3s;"></div>
+
     <!-- Goose chase warning -->
     <div id="goose-chase-warning" style="display: none; position: fixed; top: 20%; left: 50%; transform: translateX(-50%); font-size: 24px; color: #ffaa00; text-shadow: 2px 2px 4px #000; font-weight: bold; z-index: 1000; pointer-events: none;">
         ANGRY GOOSE CHASING YOU! GET TO THE VILLAGE!
@@ -2641,6 +3330,7 @@
 
     <!-- Interaction prompt -->
     <div id="interact-prompt" class="hidden">Press E to talk</div>
+    <div id="tavern-tokens-hud" class="hidden" style="position:fixed;top:80px;left:20px;background:rgba(20,40,20,0.9);border:2px solid #4a8a3a;border-radius:10px;padding:12px 24px;color:#66ff66;font-size:22px;font-weight:bold;z-index:200;font-family:monospace;">🪙 Tavern Tokens: <span id="tavern-tokens-count">0</span></div>
 
     <!-- Hotbar (Minecraft-style item slots) -->
     <div id="hotbar">
@@ -2653,6 +3343,76 @@
         <div class="hotbar-slot" data-slot="6"><span class="hotbar-key">]</span><span class="hotbar-icon"></span></div>
         <div class="hotbar-slot" data-slot="7"><span class="hotbar-key">-</span><span class="hotbar-icon"></span></div>
         <div class="hotbar-slot" data-slot="8"><span class="hotbar-key">=</span><span class="hotbar-icon"></span></div>
+    </div>
+
+    <!-- Pigon's Survival Game -->
+    <div id="pigon-overlay" class="hidden">
+        <button id="pigon-quit">Quit (ESC)</button>
+        <!-- Meeple selection (shown first) -->
+        <div id="pigon-select"></div>
+        <!-- Game board (shown during play) -->
+        <div id="pigon-container" style="display:none;">
+            <div id="pigon-left">
+                <div class="pigon-panel">
+                    <h3>Your Meeple</h3>
+                    <div id="pigon-player-icon" style="text-align:center;font-size:28px;"></div>
+                    <div id="pigon-player-name" style="text-align:center;font-size:13px;color:#ffcc00;margin-bottom:6px;"></div>
+                    <div class="pigon-bar-label">Health</div>
+                    <div class="pigon-bar"><div class="pigon-bar-fill health" id="pigon-p-health"></div><div class="pigon-bar-text" id="pigon-p-health-text"></div></div>
+                    <div class="pigon-bar-label">Hunger</div>
+                    <div class="pigon-bar"><div class="pigon-bar-fill hunger" id="pigon-p-hunger"></div><div class="pigon-bar-text" id="pigon-p-hunger-text"></div></div>
+                    <div class="pigon-bar-label">Thirst</div>
+                    <div class="pigon-bar"><div class="pigon-bar-fill thirst" id="pigon-p-thirst"></div><div class="pigon-bar-text" id="pigon-p-thirst-text"></div></div>
+                    <div class="pigon-bar-label">Energy</div>
+                    <div class="pigon-bar"><div class="pigon-bar-fill energy" id="pigon-p-energy"></div><div class="pigon-bar-text" id="pigon-p-energy-text"></div></div>
+                </div>
+                <div class="pigon-panel">
+                    <h3>Actions</h3>
+                    <div id="pigon-actions"></div>
+                    <button class="pigon-btn end-turn" id="pigon-end-turn">End Turn</button>
+                </div>
+            </div>
+            <div id="pigon-board-wrap">
+                <canvas id="pigon-canvas" width="576" height="576"></canvas>
+                <div id="pigon-turn-banner"></div>
+            </div>
+            <div id="pigon-right">
+                <div id="pigon-opponents-panel"></div>
+                <div class="pigon-panel">
+                    <h3>Game Log</h3>
+                    <div id="pigon-log"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pigias' Card Game -->
+    <div id="card-game-overlay" class="hidden">
+        <div id="card-game-container"></div>
+    </div>
+
+    <!-- Pigston's Board Game -->
+    <div id="board-game-overlay" class="hidden">
+        <div id="board-game-container">
+            <div id="board-game-header">
+                <div id="board-game-title">Pigston's Tile Game</div>
+                <div id="board-game-mood"></div>
+            </div>
+            <div id="board-game-tokens"></div>
+            <div id="board-game-color-picker">
+                <span>Choose your colour:</span>
+                <div class="color-option" data-color="brown"></div>
+                <div class="color-option" data-color="ginger"></div>
+                <div class="color-option" data-color="black"></div>
+                <div class="color-option" data-color="white"></div>
+            </div>
+            <div id="board-game-status"></div>
+            <div id="board-game-grid"></div>
+            <div id="board-game-footer">
+                <button class="board-game-btn" id="board-game-quit">Leave Table (ESC)</button>
+                <button class="board-game-btn primary hidden" id="board-game-play-again">Play Again</button>
+            </div>
+        </div>
     </div>
 
     <!-- Dialog box for villager conversations -->
@@ -2681,6 +3441,7 @@
             <button class="inventory-tab" data-tab="bestiary">Bestiary</button>
             <button class="inventory-tab" data-tab="quest">Quest</button>
             <button class="inventory-tab" data-tab="journal">Journal</button>
+            <button class="inventory-tab" data-tab="cards">Cards</button>
         </div>
         <div id="inventory-content">
             <!-- Inventory Panel -->
@@ -2729,6 +3490,10 @@
                 <div id="memories-grid"></div>
             </div>
         </div>
+        <div id="cards-panel" class="inventory-panel">
+            <h3 style="color:#ffcc00;text-align:center;margin-bottom:10px;">Card Album</h3>
+            <div id="cards-collection"></div>
+        </div>
         <div id="inventory-footer">B = Bestiary | Q = Quest | J = Journal | I = Close</div>
     </div>
 
@@ -2759,6 +3524,7 @@
     <!-- These files contain settings, villagers, recipes, etc. -->
     <!-- Edit these to customize the game without touching logic! -->
     <script src="js/data/settings.js"></script>
+    <script src="js/data/tools.js"></script>
     <script src="js/data/enemies.js"></script>
     <script src="js/data/villagers.js"></script>
     <script src="js/data/recipes.js"></script>
@@ -2768,8 +3534,9 @@
     <script src="js/data/artifacts.js"></script>
     <script src="js/data/progression.js"></script>
     <script src="js/data/memories.js"></script>
-    <script src="js/data/tools.js"></script>
     <script src="js/data/skins.js"></script>
+    <script src="js/data/easter.js"></script>
+    <script src="js/data/tavern-dialogs.js"></script>
 
     <!-- ================================================================== -->
     <!-- LOGIC FILES - Game behavior (load after data!) -->
@@ -2787,6 +3554,9 @@
     <script src="js/ui.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/research-hut.js"></script>
+    <script src="js/tavern.js"></script>
+    <script src="js/pigon-game.js"></script>
+    <script src="js/card-game.js"></script>
     <script src="js/map.js"></script>
 
     <!-- Initialize Game -->

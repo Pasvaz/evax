@@ -27,7 +27,8 @@ window.UI = (function() {
         bakka_seal_tooth:    { icon: '🦷',  name: 'Bakka Seal Tooth',    tier: 2 },
         flour:               { icon: '🌾',  name: 'Flour',               tier: 2 },
         sugar:               { icon: '🍬',  name: 'Sugar',               tier: 2 },
-        butter:              { icon: '🧈',  name: 'Butter',              tier: 2 }
+        butter:              { icon: '🧈',  name: 'Butter',              tier: 2 },
+        cherry_petals:       { icon: '🌸',  name: 'Cherry Petals',       tier: 2 }
     };
 
     // ========================================================================
@@ -172,68 +173,43 @@ window.UI = (function() {
             }
         }
 
-        ctx.fillStyle = '#0a2a0a';
-        GameState.trees.forEach(tree => {
-            const tx = (tree.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-            const ty = (tree.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-            ctx.beginPath();
-            ctx.arc(tx, ty, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        });
-
+        // Draw resources — single color for normal, special color for rare
         GameState.resources.forEach(res => {
-            let color;
-            switch(res.userData.type) {
-                case 'berry': color = '#4169e1'; break;
-                case 'nut': color = '#8b4513'; break;
-                case 'mushroom': color = '#ff6347'; break;
-                case 'seaweed': color = '#2e8b57'; break;
-                case 'egg': color = '#f5f5dc'; break;
-            }
-            ctx.fillStyle = color;
+            ctx.fillStyle = res.userData.type === 'arsenic_mushroom' ? '#cc44ff' : '#e8c850';
             const rx = (res.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
             const ry = (res.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
             ctx.beginPath();
-            ctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
+            ctx.arc(rx, ry, 2, 0, Math.PI * 2);
             ctx.fill();
         });
 
-        // Draw goose nests on minimap (arboreal biome)
-        if (GameState.nests) {
-            GameState.nests.forEach(nest => {
-                const nestColor = nest.egg && nest.egg.exists ? '#ffeb3b' : '#8b7355';
-                ctx.fillStyle = nestColor;
-                const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-                const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-                ctx.beginPath();
-                ctx.arc(nx, ny, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Draw toad nests on minimap (savannah biome)
-        if (GameState.toadNests) {
-            GameState.toadNests.forEach(nest => {
-                const eggsRemaining = nest.eggs.filter(e => e.exists).length;
-                const nestColor = eggsRemaining > 0 ? '#d2b48c' : '#8b4513'; // Tan with eggs, brown without
-                ctx.fillStyle = nestColor;
-                const nx = (nest.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
-                const ny = (nest.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
-                ctx.beginPath();
-                ctx.arc(nx, ny, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
+        // Draw animals — red for hostile, neutral grey for friendly
         GameState.enemies.forEach(enemy => {
-            // Use minimap color from enemy data (set by ANIMAL_TYPES in enemies.js)
-            ctx.fillStyle = enemy.userData.minimapColor || '#ff4444';
+            var isHostile = !enemy.userData.friendly || enemy.userData.retaliating;
+            ctx.fillStyle = isHostile ? '#ff4444' : '#aaaaaa';
             const ex = (enemy.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
             const ey = (enemy.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
             ctx.beginPath();
-            ctx.arc(ex, ey, 3, 0, Math.PI * 2);
+            ctx.arc(ex, ey, isHostile ? 3 : 2, 0, Math.PI * 2);
             ctx.fill();
         });
+
+        // Draw wandering NPCs (like Tim) — cyan dot
+        if (GameState.villagers) {
+            GameState.villagers.forEach(function(v) {
+                if (!v.userData.wanderer) return;
+                ctx.fillStyle = '#44ddff';
+                var wx = (v.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+                var wy = (v.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+                ctx.beginPath();
+                ctx.arc(wx, wy, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // Small label
+                ctx.fillStyle = '#44ddff';
+                ctx.font = '7px sans-serif';
+                ctx.fillText(v.userData.name, wx + 4, wy + 2);
+            });
+        }
 
         ctx.fillStyle = '#44ff44';
         const px = (GameState.peccary.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
@@ -311,6 +287,16 @@ window.UI = (function() {
         }
 
         document.getElementById('coins-display').textContent = '🪙 ' + GameState.pigCoins;
+
+        // Update stamina bar
+        var staminaBar = document.getElementById('stamina-bar');
+        var staminaPct = (GameState.stamina / GameState.maxStamina) * 100;
+        staminaBar.style.width = Math.max(0, staminaPct) + '%';
+        if (GameState.stamina <= 15) {
+            staminaBar.classList.add('exhausted');
+        } else {
+            staminaBar.classList.remove('exhausted');
+        }
 
         // Update hunger bar
         const hungerBar = document.getElementById('hunger-bar');
@@ -397,24 +383,36 @@ window.UI = (function() {
      * Render the shop with all items and resources.
      */
     function renderShop() {
-        document.getElementById('shop-coins-display').textContent = GameState.pigCoins;
-
         // Update shop header based on vendor
         var vendor = GameState.currentShopVendor || 'patches';
         var shopHeader = document.querySelector('#shop-header h2');
         var shopSubtitle = document.querySelector('#shop-header .shop-subtitle');
         var sellTab = document.querySelector('.shop-tab[data-tab="sell"]');
+        var balanceDisplay = document.querySelector('#shop-header .shop-balance');
 
-        if (vendor === 'bruno') {
+        if (vendor === 'tim') {
+            shopHeader.textContent = "Tim's Thunder Shop";
+            shopSubtitle.textContent = "Rare thunder gear from ze old ruin";
+            sellTab.style.display = 'none';
+            balanceDisplay.innerHTML = 'Your coins: <span id="shop-coins-display">' + GameState.pigCoins + '</span> 🪙';
+            switchShopTab('buy');
+        } else if (vendor === 'pigierre') {
+            shopHeader.textContent = "Pigierre's Emporium";
+            shopSubtitle.textContent = "Card packs, meeples, biomes, and colours";
+            sellTab.style.display = 'none';
+            balanceDisplay.innerHTML = 'Tavern Tokens: <span id="shop-coins-display">' + (GameState.tavernTokens || 0) + '</span> 🎟️';
+            switchShopTab('buy');
+        } else if (vendor === 'bruno') {
             shopHeader.textContent = "Bruno's Forge";
             shopSubtitle.textContent = "Weapons, tools, and materials";
             sellTab.style.display = 'none';
-            // Make sure buy tab is active (in case sell was active before)
+            balanceDisplay.innerHTML = 'Your coins: <span id="shop-coins-display">' + GameState.pigCoins + '</span> 🪙';
             switchShopTab('buy');
         } else {
             shopHeader.textContent = "Patches' Trading Post";
             shopSubtitle.textContent = "Buy and sell resources for pig coins";
             sellTab.style.display = '';
+            balanceDisplay.innerHTML = 'Your coins: <span id="shop-coins-display">' + GameState.pigCoins + '</span> 🪙';
         }
 
         renderShopBuyTab();
@@ -464,9 +462,10 @@ window.UI = (function() {
 
             const headerDiv = document.createElement('div');
             headerDiv.className = 'shop-item-header';
+            var currIcon = item.currency === 'tokens' ? '🎟️' : '🪙';
             headerDiv.innerHTML = `
                 <div class="shop-item-name">${item.icon} ${item.name}</div>
-                <div class="shop-item-price">${item.price} 🪙</div>
+                <div class="shop-item-price">${item.price} ${currIcon}</div>
             `;
             itemDiv.appendChild(headerDiv);
 
@@ -511,8 +510,10 @@ window.UI = (function() {
             const buyBtn = document.createElement('button');
             buyBtn.className = 'shop-buy-btn';
             const totalPrice = item.price * GameState.shopQuantities[item.id];
-            buyBtn.textContent = `Buy (${totalPrice} 🪙)`;
-            buyBtn.disabled = GameState.pigCoins < totalPrice;
+            var isTokens = item.currency === 'tokens';
+            var playerFunds = isTokens ? (GameState.tavernTokens || 0) : GameState.pigCoins;
+            buyBtn.textContent = `Buy (${totalPrice} ${isTokens ? '🎟️' : '🪙'})`;
+            buyBtn.disabled = playerFunds < totalPrice;
             buyBtn.onclick = () => buyItem(item);
             actionsDiv.appendChild(buyBtn);
 
@@ -615,15 +616,29 @@ window.UI = (function() {
     function buyItem(item) {
         const quantity = GameState.shopQuantities[item.id];
         const totalPrice = item.price * quantity;
+        var isTokens = item.currency === 'tokens';
+        var playerFunds = isTokens ? (GameState.tavernTokens || 0) : GameState.pigCoins;
 
-        if (GameState.pigCoins < totalPrice) {
+        if (playerFunds < totalPrice) {
             Game.playSound('hurt');
             return;
         }
 
-        GameState.pigCoins -= totalPrice;
+        // Try the effect first (may fail if already owned)
+        var success = item.effect();
+        if (success === false) {
+            Game.playSound('hurt');
+            return;
+        }
 
-        for (let i = 0; i < quantity; i++) {
+        if (isTokens) {
+            GameState.tavernTokens -= totalPrice;
+        } else {
+            GameState.pigCoins -= totalPrice;
+        }
+
+        // Buy additional quantities
+        for (let i = 1; i < quantity; i++) {
             item.effect();
         }
 
@@ -813,8 +828,35 @@ window.UI = (function() {
         manglecacia_axe: '🪓',
         seaspray_birch_axe: '🪓',
         basic_rook_boat: '🚣',
-        arsen_bomb: '💣'
+        arsen_bomb: '💣',
+        fishing_spear: '🔱',
+        catcher_net: '🥅',
+        chocolate_goggles: '🥽',
+        roller_skates: '⛸️',
+        flamingo_license: '🦩'
     };
+
+    /**
+     * Setup hotbar click handlers (call once after DOM is ready).
+     * Clicking a filled hotbar slot sends the item back to inventory.
+     */
+    function setupHotbar() {
+        document.querySelectorAll('.hotbar-slot').forEach(function(slot) {
+            slot.addEventListener('click', function() {
+                var index = parseInt(slot.dataset.slot);
+                var item = GameState.hotbarSlots[index];
+                if (!item) return;
+
+                // Move item back to inventory
+                Inventory.addItemToInventory(item.id, item.name, item.description, item.effect, item.count);
+                GameState.hotbarSlots[index] = null;
+                Game.playSound('collect');
+                updateHotbar();
+                Inventory.refreshInventory();
+                Player.updateBackSword();
+            });
+        });
+    }
 
     /**
      * Update the hotbar display.
@@ -848,9 +890,40 @@ window.UI = (function() {
                 } else {
                     if (countEl) countEl.remove();
                 }
+
+                // Cooldown overlay for swords and axes
+                var cooldownEl = slot.querySelector('.hotbar-cooldown');
+                var cooldownTextEl = slot.querySelector('.hotbar-cooldown-text');
+                var isSwordItem = TOOL_STATS.swords && TOOL_STATS.swords[item.id];
+                var isAxeItem = TOOL_STATS.axes && TOOL_STATS.axes[item.id];
+                var cooldown = isSwordItem ? GameState.attackCooldown : (isAxeItem ? GameState.chopCooldown : 0);
+                var maxCooldown = 3;
+
+                if (cooldown > 0 && (isSwordItem || isAxeItem)) {
+                    if (!cooldownEl) {
+                        cooldownEl = document.createElement('div');
+                        cooldownEl.className = 'hotbar-cooldown';
+                        slot.appendChild(cooldownEl);
+                    }
+                    if (!cooldownTextEl) {
+                        cooldownTextEl = document.createElement('div');
+                        cooldownTextEl.className = 'hotbar-cooldown-text';
+                        slot.appendChild(cooldownTextEl);
+                    }
+                    var pct = (cooldown / maxCooldown) * 100;
+                    cooldownEl.style.height = pct + '%';
+                    cooldownTextEl.textContent = Math.ceil(cooldown) + 's';
+                } else {
+                    if (cooldownEl) cooldownEl.remove();
+                    if (cooldownTextEl) cooldownTextEl.remove();
+                }
             } else {
                 iconEl.textContent = '';
                 if (countEl) countEl.remove();
+                var cooldownEl = slot.querySelector('.hotbar-cooldown');
+                var cooldownTextEl = slot.querySelector('.hotbar-cooldown-text');
+                if (cooldownEl) cooldownEl.remove();
+                if (cooldownTextEl) cooldownTextEl.remove();
             }
         });
     }
@@ -884,6 +957,12 @@ window.UI = (function() {
         // Record it
         if (!GameState.memoriesFound) GameState.memoriesFound = [];
         GameState.memoriesFound.push(fragmentId);
+
+        // Check if Memory Collector skin should unlock (3 memories)
+        if (GameState.memoriesFound.length === 3 && GameState.unlockedSkins.indexOf('memory_collector') === -1) {
+            GameState.unlockedSkins.push('memory_collector');
+            UI.showToast('Skin Unlocked!', 'Memory Collector — your memories light the way.', 'Press <b>ESC</b> to equip it!');
+        }
 
         // Track score at time of finding (for score_since_last triggers)
         GameState.lastMemoryScore = GameState.score;
@@ -973,7 +1052,7 @@ window.UI = (function() {
         titleDiv.textContent = item.title;
         var bodyDiv = document.createElement('div');
         bodyDiv.className = 'toast-body';
-        bodyDiv.textContent = item.body;
+        bodyDiv.innerHTML = item.body;
         toast.appendChild(titleDiv);
         toast.appendChild(bodyDiv);
         if (item.key) {
@@ -1004,8 +1083,143 @@ window.UI = (function() {
         if (container) container.innerHTML = '';
     }
 
+    // ========================================================================
+    // EASTER SHOP (Clover's Chocolate Egg Shop)
+    // ========================================================================
+
+    function openEasterShop() {
+        GameState.isShopOpen = true;
+        GameState.currentShopVendor = 'clover';
+        var shopMenu = document.getElementById('shop-menu');
+        renderEasterShop();
+        shopMenu.classList.remove('hidden');
+        Game.playSound('collect');
+    }
+
+    function renderEasterShop() {
+        document.getElementById('shop-coins-display').textContent = GameState.chocolateEggs + ' 🥚';
+
+        var shopHeader = document.querySelector('#shop-header h2');
+        var shopSubtitle = document.querySelector('#shop-header .shop-subtitle');
+        var sellTab = document.querySelector('.shop-tab[data-tab="sell"]');
+
+        shopHeader.textContent = "Clover's Easter Shop";
+        shopSubtitle.textContent = "Buy gear with chocolate eggs!";
+        sellTab.style.display = 'none';
+        switchShopTab('buy');
+
+        var buyPanel = document.getElementById('shop-buy');
+        buyPanel.innerHTML = '';
+
+        EASTER_SHOP_ITEMS.forEach(function(item) {
+            var itemDiv = document.createElement('div');
+            itemDiv.className = 'shop-item';
+
+            var headerDiv = document.createElement('div');
+            headerDiv.className = 'shop-item-header';
+            headerDiv.innerHTML =
+                '<div class="shop-item-name">' + item.icon + ' ' + item.name + '</div>' +
+                '<div class="shop-item-price">' + item.price + ' 🥚</div>';
+            itemDiv.appendChild(headerDiv);
+
+            var descDiv = document.createElement('div');
+            descDiv.className = 'shop-item-stock';
+            descDiv.textContent = item.description;
+            itemDiv.appendChild(descDiv);
+
+            var actionsDiv = document.createElement('div');
+            actionsDiv.className = 'shop-item-actions';
+
+            var buyBtn = document.createElement('button');
+            buyBtn.className = 'shop-buy-btn';
+            buyBtn.textContent = 'Buy (' + item.price + ' 🥚)';
+            buyBtn.disabled = GameState.chocolateEggs < item.price;
+            buyBtn.onclick = function() { buyEasterItem(item); };
+            actionsDiv.appendChild(buyBtn);
+
+            itemDiv.appendChild(actionsDiv);
+            buyPanel.appendChild(itemDiv);
+        });
+    }
+
+    function buyEasterItem(item) {
+        if (GameState.chocolateEggs < item.price) {
+            Game.playSound('hurt');
+            return;
+        }
+
+        GameState.chocolateEggs -= item.price;
+
+        // Add item to hotbar
+        var hotbarItem = {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            icon: item.icon,
+            count: 1,
+            isEasterItem: true
+        };
+
+        // Handle permanent unlocks (flamingo license, etc.)
+        if (item.type === 'permanent_unlock') {
+            if (item.id === 'flamingo_license') {
+                if (GameState.hasFlamingoLicense) {
+                    showToast('Already Owned!', 'You already have a Flamingo Riding License!');
+                    GameState.chocolateEggs += item.price; // Refund
+                    return;
+                }
+                GameState.hasFlamingoLicense = true;
+            }
+            // Add to inventory for tracking
+            if (!GameState.inventoryItems) GameState.inventoryItems = [];
+            GameState.inventoryItems.push({ id: item.id, name: item.name, count: 1 });
+        } else if (item.type === 'consumable') {
+            // Check if stackable consumable already in hotbar
+            var existing = GameState.hotbarSlots.find(function(slot) {
+                return slot && slot.id === item.id;
+            });
+            if (existing) {
+                existing.count++;
+            } else {
+                addToHotbar(hotbarItem);
+            }
+        } else {
+            // Equippable — check if already owned
+            var alreadyOwned = GameState.hotbarSlots.find(function(slot) {
+                return slot && slot.id === item.id;
+            });
+            if (alreadyOwned) {
+                showToast('Already Owned!', 'You already have ' + item.name + ' in your hotbar.');
+                GameState.chocolateEggs += item.price; // Refund
+                return;
+            }
+            addToHotbar(hotbarItem);
+        }
+
+        Game.playSound('collect');
+        showToast('Purchased!', item.icon + ' ' + item.name);
+        updateUI();
+        updateHotbar();
+        renderEasterShop();
+    }
+
+    function addToHotbar(item) {
+        for (var i = 0; i < GameState.hotbarSlots.length; i++) {
+            if (!GameState.hotbarSlots[i]) {
+                GameState.hotbarSlots[i] = item;
+                return true;
+            }
+        }
+        // Hotbar full — try inventory
+        if (!GameState.inventoryItems) GameState.inventoryItems = [];
+        GameState.inventoryItems.push(item);
+        showToast('Hotbar Full', item.name + ' added to inventory instead.');
+        return true;
+    }
+
     return {
         setupMinimap: setupMinimap,
+        setupHotbar: setupHotbar,
         updateMinimap: updateMinimap,
         updateUI: updateUI,
         openShop: openShop,
@@ -1022,6 +1236,7 @@ window.UI = (function() {
         showMemoryFlashback: showMemoryFlashback,
         showToast: showToast,
         clearToasts: clearToasts,
+        openEasterShop: openEasterShop,
         RESOURCE_META: RESOURCE_META
     };
 })();

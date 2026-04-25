@@ -124,9 +124,10 @@ window.CONFIG = {
             price: item.price,
             icon: item.icon,
             vendor: item.vendor || 'patches',
+            currency: item.currency || 'coins',
             // Convert data effect to executable function
             effect: function() {
-                Effects.execute(item.effect);
+                return Effects.execute(item.effect);
             }
         };
     }),
@@ -200,8 +201,10 @@ window.CONFIG = {
 
                     // If the choice has an effect, convert it
                     if (choice.effect) {
-                        // Store the effect object for the dialog system
                         newChoice.effectData = choice.effect;
+                        newChoice.failNode = choice.failNode;
+                    } else if (choice.effectData) {
+                        newChoice.effectData = choice.effectData;
                         newChoice.failNode = choice.failNode;
                     }
 
@@ -223,7 +226,11 @@ window.CONFIG = {
             outfitColor: villager.outfitColor,
             hatColor: villager.hatColor,
             position: villager.position,
-            conversationTree: conversationTree
+            conversationTree: conversationTree,
+            wanderer: villager.wanderer || false,
+            wanderBiome: villager.wanderBiome || null,
+            wanderRegion: villager.wanderRegion || null,
+            fleeRadius: villager.fleeRadius || 0
         };
     }),
 

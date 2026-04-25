@@ -142,12 +142,31 @@ window.Dialogs = (function() {
      * Create all villagers in the village.
      */
     function createVillagers() {
+        // Guard against duplicate creation (called on biome rebuild too)
+        if (GameState.villagers && GameState.villagers.length > 0) return;
+
         const vx = CONFIG.VILLAGE_CENTER.x;
         const vz = CONFIG.VILLAGE_CENTER.z;
 
         CONFIG.VILLAGER_DATA.forEach(data => {
             const villager = createPigVillager(data);
-            villager.position.set(vx + data.position.x, 0, vz + data.position.z);
+
+            if (data.wanderer) {
+                // Wanderers spawn in the wild — southeast region of the forest
+                var homeX = 200 + Math.random() * 100;
+                var homeZ = 200 + Math.random() * 100;
+                villager.position.set(homeX, 0, homeZ);
+                villager.userData.wanderer = true;
+                villager.userData.wanderTarget = { x: homeX + Math.random() * 20 - 10, z: homeZ + Math.random() * 20 - 10 };
+                villager.userData.wanderTimer = 0;
+                villager.userData.wanderHome = { x: homeX, z: homeZ };
+                villager.userData.fleeRadius = data.fleeRadius || 15;
+
+                // Build a small hut at home position
+                buildWandererHut(homeX, homeZ);
+            } else {
+                villager.position.set(vx + data.position.x, 0, vz + data.position.z);
+            }
             villager.rotation.y = Math.random() * Math.PI * 2;
             GameState.villagers.push(villager);
             GameState.scene.add(villager);
@@ -157,25 +176,164 @@ window.Dialogs = (function() {
     /**
      * Update villagers - animations and proximity check.
      */
+    function buildWandererHut(x, z) {
+        if (!GameState.scene) return;
+        var hut = new THREE.Group();
+
+        // Floor
+        var floorMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+        var floor = new THREE.Mesh(new THREE.BoxGeometry(6, 0.2, 5), floorMat);
+        floor.position.y = 0.1;
+        hut.add(floor);
+
+        // Walls (dark wood)
+        var wallMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.8 });
+        // Back wall
+        var backWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
+        backWall.position.set(0, 1.6, -2.35);
+        hut.add(backWall);
+        // Left wall
+        var leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 5), wallMat);
+        leftWall.position.set(-2.85, 1.6, 0);
+        hut.add(leftWall);
+        // Right wall
+        var rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 5), wallMat);
+        rightWall.position.set(2.85, 1.6, 0);
+        hut.add(rightWall);
+
+        // Roof (A-frame — two panels meeting at the ridge)
+        var roofMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.7 });
+        var roofLeft = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 3.5), roofMat);
+        roofLeft.position.set(0, 4.0, -1.2);
+        roofLeft.rotation.x = -0.45; // Slopes down to the left
+        hut.add(roofLeft);
+        var roofRight = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 3.5), roofMat);
+        roofRight.position.set(0, 4.0, 1.2);
+        roofRight.rotation.x = 0.45; // Slopes down to the right
+        hut.add(roofRight);
+
+        // Small sign outside
+        var signMat = new THREE.MeshStandardMaterial({ color: 0x8B6B4A });
+        var signPost = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.5, 0.15), signMat);
+        signPost.position.set(4, 0.75, 0);
+        hut.add(signPost);
+        var signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.1), signMat);
+        signBoard.position.set(4, 1.6, 0);
+        hut.add(signBoard);
+
+        // Lightning bolt decoration on sign (blue)
+        var boltMat = new THREE.MeshBasicMaterial({ color: 0x44ccff });
+        var bolt = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.15), boltMat);
+        bolt.position.set(4, 1.6, 0.05);
+        bolt.rotation.z = 0.3;
+        hut.add(bolt);
+
+        hut.position.set(x, 0, z);
+        GameState.scene.add(hut);
+    }
+
     function updateVillagers(delta) {
         GameState.nearbyVillager = null;
+        GameState.nearbyTavernNPC = null;
         const interactPrompt = document.getElementById('interact-prompt');
 
         GameState.villagers.forEach((villager, index) => {
             villager.children[0].rotation.y = Math.sin(GameState.clock.elapsedTime * 0.5 + index) * 0.1;
-            villager.position.y = Math.sin(GameState.clock.elapsedTime * 1.5 + index) * 0.05;
 
             const dist = villager.position.distanceTo(GameState.peccary.position);
 
-            if (dist < villager.userData.interactRange) {
-                GameState.nearbyVillager = villager;
-                const dx = GameState.peccary.position.x - villager.position.x;
-                const dz = GameState.peccary.position.z - villager.position.z;
-                villager.rotation.y = Math.atan2(dx, dz);
+            // Wandering NPC movement
+            if (villager.userData.wanderer) {
+                villager.userData.wanderTimer = (villager.userData.wanderTimer || 0) + delta;
+
+                // Pick a new target every 6-10 seconds
+                // Every ~30 seconds, head back home
+                villager.userData.wanderCycle = (villager.userData.wanderCycle || 0) + delta;
+                if (villager.userData.wanderTimer > 6 + Math.random() * 4) {
+                    villager.userData.wanderTimer = 0;
+                    var home = villager.userData.wanderHome;
+                    if (villager.userData.wanderCycle > 30) {
+                        // Return home
+                        villager.userData.wanderCycle = 0;
+                        villager.userData.wanderTarget = { x: home.x, z: home.z };
+                    } else {
+                        // Wander nearby
+                        villager.userData.wanderTarget = {
+                            x: home.x + Math.random() * 30 - 15,
+                            z: home.z + Math.random() * 30 - 15
+                        };
+                    }
+                }
+
+                // Move toward target
+                var tgt = villager.userData.wanderTarget;
+                if (tgt) {
+                    var tdx = tgt.x - villager.position.x;
+                    var tdz = tgt.z - villager.position.z;
+                    var tDist = Math.sqrt(tdx * tdx + tdz * tdz);
+                    if (tDist > 1) {
+                        var speed = 2.5 * delta;
+                        villager.position.x += (tdx / tDist) * speed;
+                        villager.position.z += (tdz / tDist) * speed;
+                        villager.rotation.y = Math.atan2(tdx, tdz);
+                        // Walking bob
+                        villager.position.y = Math.sin(GameState.clock.elapsedTime * 4) * 0.08;
+                    } else {
+                        villager.position.y = Math.sin(GameState.clock.elapsedTime * 1.5 + index) * 0.05;
+                    }
+                }
+
+                // Animals flee from wanderers
+                if (GameState.enemies && villager.userData.fleeRadius) {
+                    GameState.enemies.forEach(function(enemy) {
+                        if (!enemy.parent || !enemy.userData || enemy.userData.health <= 0) return;
+                        var eDist = villager.position.distanceTo(enemy.position);
+                        if (eDist < villager.userData.fleeRadius && eDist > 0.5) {
+                            // Push enemy away
+                            var fx = enemy.position.x - villager.position.x;
+                            var fz = enemy.position.z - villager.position.z;
+                            var fLen = Math.sqrt(fx * fx + fz * fz);
+                            if (fLen > 0) {
+                                var fleeSpeed = 8 * delta;
+                                enemy.position.x += (fx / fLen) * fleeSpeed;
+                                enemy.position.z += (fz / fLen) * fleeSpeed;
+                            }
+                        }
+                    });
+                }
+
+                // Stop near player to talk
+                if (dist < villager.userData.interactRange) {
+                    GameState.nearbyVillager = villager;
+                    var dx = GameState.peccary.position.x - villager.position.x;
+                    var dz = GameState.peccary.position.z - villager.position.z;
+                    villager.rotation.y = Math.atan2(dx, dz);
+                    villager.userData.wanderTarget = null; // Stop walking
+                }
+            } else {
+                // Static village NPC
+                villager.position.y = Math.sin(GameState.clock.elapsedTime * 1.5 + index) * 0.05;
+                if (dist < villager.userData.interactRange) {
+                    GameState.nearbyVillager = villager;
+                    const dx = GameState.peccary.position.x - villager.position.x;
+                    const dz = GameState.peccary.position.z - villager.position.z;
+                    villager.rotation.y = Math.atan2(dx, dz);
+                }
             }
         });
 
-        if (GameState.nearbyVillager && !GameState.isDialogOpen) {
+        // Check if near tavern door (outside)
+        if (typeof Tavern !== 'undefined' && Tavern.checkEnterTavern()) {
+            GameState.nearTavernDoor = true;
+        } else {
+            GameState.nearTavernDoor = false;
+        }
+
+        if (GameState.nearTavernDoor && !GameState.isDialogOpen) {
+            interactPrompt.classList.remove('hidden');
+            interactPrompt.classList.remove('locked-villager');
+            interactPrompt.textContent = 'Press E to enter the tavern';
+        } else if (GameState.nearbyVillager && !GameState.isDialogOpen) {
             const villagerName = GameState.nearbyVillager.userData.name;
             const requiredScore = CONFIG.VILLAGER_REQUIRED_SCORE[villagerName] || 0;
             const isUnlocked = GameState.score >= requiredScore;
@@ -267,12 +425,18 @@ window.Dialogs = (function() {
         const dialogOptions = document.getElementById('dialog-options');
         const dialogHint = document.getElementById('dialog-hint');
 
+        // Resolve dynamic dialog content
+        var resolved = resolveEasterDialog(node, villager);
+        resolved = resolveTavernDialog(resolved, villager);
+        var displayText = resolved.text;
+        var displayChoices = resolved.choices;
+
         dialogName.textContent = `${villager.userData.name} - ${villager.userData.role}`;
-        dialogText.textContent = node.text;
+        dialogText.innerHTML = displayText;
 
         dialogOptions.innerHTML = '';
 
-        node.choices.forEach((choice, index) => {
+        displayChoices.forEach((choice, index) => {
             const optionDiv = document.createElement('div');
             optionDiv.className = 'dialog-option';
             optionDiv.setAttribute('data-option-number', index + 1);
@@ -285,11 +449,394 @@ window.Dialogs = (function() {
     }
 
     /**
+     * Resolve dynamic Easter dialog text and choices.
+     * Returns { text, choices } — unmodified for non-Easter villagers.
+     */
+    function resolveEasterDialog(node, villager) {
+        var text = node.text;
+        var choices = node.choices;
+        var name = villager.userData.name;
+
+        // Not an Easter NPC or not dynamic — return as-is
+        if ((name !== 'Marshmallow' && name !== 'Clover' && name !== 'Larry') || !text.startsWith('DYNAMIC_')) {
+            return { text: text, choices: choices };
+        }
+
+        // === LARRY THE LAMB dynamic text ===
+        if (name === 'Larry') {
+            if (text === 'DYNAMIC_LARRY_BALANCE') {
+                var eggCount = GameState.easterEggs || 0;
+                return {
+                    text: "You have " + eggCount + " Easter Egg" + (eggCount !== 1 ? 's' : '') + "!" +
+                        (eggCount >= 150 ? " That's enough for a LEGENDARY egg!" :
+                         eggCount >= 75 ? " You could afford a Gold egg!" :
+                         eggCount >= 35 ? " Enough for a Silver egg!" :
+                         eggCount >= 15 ? " You can buy a Bronze egg!" :
+                         " Do some quests to earn more!"),
+                    choices: choices
+                };
+            }
+            if (text === 'DYNAMIC_LARRY_SHOP') {
+                // Open the egg shop UI
+                if (typeof openEggShop === 'function') openEggShop();
+                return { text: "*Larry opens his egg crate* Take a look!", choices: choices };
+            }
+            if (text === 'DYNAMIC_LARRY_QUEST') {
+                var qIdx = GameState.larryQuestIndex || 0;
+                var allQuests = typeof larryQuests !== 'undefined' ? larryQuests : [];
+                if (qIdx >= allQuests.length) {
+                    return {
+                        text: "*Larry wipes a tear* You've done ALL my quests! You're the best helper a chef could ask for!",
+                        choices: choices
+                    };
+                }
+                var quest = allQuests[qIdx];
+                var playerHas = (GameState.resourceCounts && GameState.resourceCounts[quest.requirement.item]) || 0;
+                var needed = quest.requirement.count;
+                if (playerHas >= needed) {
+                    // Player CAN complete — show the quest and offer to hand in
+                    return {
+                        text: "*Larry checks his recipe* " + quest.name + ": " + quest.description +
+                            "\n\nYou have " + playerHas + "/" + needed + " — that's enough!" +
+                            "\nReward: " + quest.rewardText,
+                        choices: [
+                            { text: "Hand them over!", nextNode: 'quest_complete' },
+                            { text: "Not yet, I'll keep them.", nextNode: 'greeting' }
+                        ]
+                    };
+                } else {
+                    return {
+                        text: "*Larry checks his recipe* " + quest.name + ": " + quest.description +
+                            "\n\nProgress: " + playerHas + "/" + needed +
+                            "\nReward: " + quest.rewardText,
+                        choices: [
+                            { text: "I'll go get them!", nextNode: null },
+                            { text: "Back.", nextNode: 'greeting' }
+                        ]
+                    };
+                }
+            }
+            if (text === 'DYNAMIC_LARRY_HEAL') {
+                // Show list of knocked-out piglets with heal costs
+                var koPiglets = [];
+                if (GameState.ownedPiglets) {
+                    for (var ki = 0; ki < GameState.ownedPiglets.length; ki++) {
+                        if (GameState.ownedPiglets[ki].knockedOut) {
+                            koPiglets.push(GameState.ownedPiglets[ki]);
+                        }
+                    }
+                }
+                if (koPiglets.length === 0) {
+                    return {
+                        text: "*Larry looks relieved* All your piglets are healthy! No healing needed. Take good care of them!",
+                        choices: choices
+                    };
+                }
+                var healCosts = {
+                    'Common': 5, 'Uncommon': 10, 'Rare': 20,
+                    'Ultra Rare': 35, 'Epic': 50, 'Godly': 75, 'Easter Symbol': 100
+                };
+                var healChoices = [];
+                for (var hi = 0; hi < koPiglets.length; hi++) {
+                    var kp = koPiglets[hi];
+                    var cost = healCosts[kp.rarity] || 5;
+                    var canAfford = (GameState.easterEggs || 0) >= cost;
+                    healChoices.push({
+                        text: (canAfford ? 'Heal ' : '[Need ' + cost + ' eggs] ') + kp.name + ' (' + cost + ' Easter Eggs)',
+                        nextNode: canAfford ? 'heal_confirm' : 'heal_check',
+                        healPigletId: kp.id,
+                        healCost: cost,
+                        canAfford: canAfford
+                    });
+                }
+                healChoices.push({ text: "Maybe later.", nextNode: 'greeting' });
+                return {
+                    text: "*Larry examines your piglets* Oh no, some of your little ones are hurt! I can patch them up with my special Easter medicine. You have " +
+                        (GameState.easterEggs || 0) + " Easter Eggs.",
+                    choices: healChoices
+                };
+            }
+            if (text === 'DYNAMIC_LARRY_HEAL_CONFIRM') {
+                // The dialog system passes the selected choice data — check for pending heal
+                var healId = GameState._pendingHealPigletId;
+                var healCostVal = GameState._pendingHealCost;
+                if (healId && healCostVal) {
+                    if ((GameState.easterEggs || 0) >= healCostVal) {
+                        GameState.easterEggs -= healCostVal;
+                        // Find and heal the piglet
+                        for (var pi = 0; pi < GameState.ownedPiglets.length; pi++) {
+                            if (GameState.ownedPiglets[pi].id === healId && GameState.ownedPiglets[pi].knockedOut) {
+                                GameState.ownedPiglets[pi].knockedOut = false;
+                                var healedName = GameState.ownedPiglets[pi].name;
+                                UI.showToast(healedName + ' Healed!', healedName + ' is back to full health!', 'Press <b>P</b> to summon it.');
+                                break;
+                            }
+                        }
+                        GameState._pendingHealPigletId = null;
+                        GameState._pendingHealCost = null;
+                        return {
+                            text: "*Larry applies his Easter medicine* There we go, good as new! Your piglet is all patched up and ready for adventure!",
+                            choices: [
+                                { text: "Heal another piglet", nextNode: 'heal_check' },
+                                { text: "Thanks Larry!", nextNode: 'greeting' }
+                            ]
+                        };
+                    }
+                }
+                GameState._pendingHealPigletId = null;
+                GameState._pendingHealCost = null;
+                return {
+                    text: "Hmm, something went wrong. Let's try again!",
+                    choices: [{ text: "Back.", nextNode: 'heal_check' }]
+                };
+            }
+            if (text === 'DYNAMIC_LARRY_COMPLETE') {
+                var qIdx2 = GameState.larryQuestIndex || 0;
+                var allQuests2 = typeof larryQuests !== 'undefined' ? larryQuests : [];
+                if (qIdx2 >= allQuests2.length) {
+                    return { text: "No more quests!", choices: choices };
+                }
+                var quest2 = allQuests2[qIdx2];
+                var playerHas2 = (GameState.resourceCounts && GameState.resourceCounts[quest2.requirement.item]) || 0;
+                var needed2 = quest2.requirement.count;
+                if (playerHas2 >= needed2) {
+                    // Actually complete the quest NOW
+                    GameState.resourceCounts[quest2.requirement.item] -= needed2;
+                    GameState.easterEggs = (GameState.easterEggs || 0) + quest2.reward.easterEggs;
+                    GameState.completedLarryQuests = GameState.completedLarryQuests || [];
+                    GameState.completedLarryQuests.push(quest2.id);
+                    GameState.larryQuestIndex++;
+                    if (typeof UI !== 'undefined') UI.showToast('Quest Complete! 🎉', quest2.rewardText);
+                    return {
+                        text: "*Larry does a happy dance* You did it! Here's " + quest2.reward.easterEggs + " Easter Eggs! " +
+                            (GameState.larryQuestIndex < allQuests2.length ? "I've got another quest when you're ready!" : "That was my last quest — you're amazing!"),
+                        choices: [
+                            { text: "Next quest!", nextNode: 'quest_check' },
+                            { text: "Thanks! Goodbye.", nextNode: null }
+                        ]
+                    };
+                } else {
+                    return {
+                        text: "Hmm, looks like you don't have enough anymore. Go collect more!",
+                        choices: [{ text: "OK!", nextNode: null }]
+                    };
+                }
+            }
+            return { text: text, choices: choices };
+        }
+
+        var eggs = GameState.chocolateEggs || 0;
+        var quest = GameState.easterQuest;
+
+        if (text === 'DYNAMIC_EGGS') {
+            return {
+                text: "You have " + eggs + " chocolate egg" + (eggs !== 1 ? 's' : '') + "!" + (eggs >= 30 ? " That's enough for Roller Skates from Clover!" : eggs >= 10 ? " Clover has some gear you can afford!" : " Keep doing quests to earn more!"),
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_QUEST_MENU') {
+            // If player already has a quest, redirect
+            if (quest) {
+                var progress = getEasterQuestProgress();
+                return {
+                    text: "You already have a quest: \"" + quest.name + "\" (" + quest.difficulty + ")\nProgress: " + progress + "/" + quest.goal.count + "\nFinish it first, or abandon it!",
+                    choices: [
+                        { text: "I'll keep going!", nextNode: null },
+                        { text: "Abandon quest", nextNode: 'abandon_confirm' }
+                    ]
+                };
+            }
+
+            // Build quest selection — show one quest from each difficulty
+            var questChoices = [];
+            var difficulties = ['Easy', 'Medium', 'Challenging', 'Hard', 'Almost Impossible'];
+            difficulties.forEach(function(diff) {
+                var available = EASTER_QUESTS.filter(function(q) { return q.difficulty === diff; });
+                if (available.length > 0) {
+                    var q = available[Math.floor(Math.random() * available.length)];
+                    questChoices.push({
+                        text: q.name + " (" + diff + " — " + q.reward + " eggs)",
+                        nextNode: 'quest_accepted',
+                        effectData: { type: 'easter_accept_quest', questId: q.id }
+                    });
+                }
+            });
+
+            // 5% chance of the rare LAMB QUEST appearing!
+            var petals = GameState.resourceCounts ? (GameState.resourceCounts.cherry_petals || 0) : 0;
+            if (Math.random() < 0.05 && !GameState.easterLamb) {
+                var lambText = "Catch the Naughty Lamb! (RARE — 30 eggs + skin!)";
+                if (petals < 30) {
+                    lambText += " [Need 30 cherry petals — you have " + petals + "]";
+                }
+                questChoices.unshift({
+                    text: lambText,
+                    nextNode: 'lamb_quest_info',
+                    effectData: null
+                });
+            }
+
+            questChoices.push({ text: "Back.", nextNode: 'greeting' });
+
+            return {
+                text: "Here are today's quests! Pick one based on how brave you're feeling:\n\n" +
+                    "Easy = 1 egg | Medium = 5 | Challenging = 10 | Hard = 15 | Almost Impossible = 20",
+                choices: questChoices
+            };
+        }
+
+        if (text === 'DYNAMIC_TURN_IN') {
+            if (!quest) {
+                return {
+                    text: "You don't have an active quest to turn in! Want to pick one up?",
+                    choices: [
+                        { text: "Sure!", nextNode: 'quest_menu' },
+                        { text: "Goodbye.", nextNode: null }
+                    ]
+                };
+            }
+            var progress = getEasterQuestProgress();
+            if (progress >= quest.goal.count) {
+                // Quest complete!
+                return {
+                    text: "COMPLETE! You finished \"" + quest.name + "\"! Here are your " + quest.reward + " chocolate egg" + (quest.reward !== 1 ? 's' : '') + "!",
+                    choices: [
+                        { text: "Claim reward!", nextNode: 'quest_turned_in', effectData: { type: 'easter_complete_quest' } }
+                    ]
+                };
+            } else {
+                return {
+                    text: "Not done yet! \"" + quest.name + "\" — " + progress + "/" + quest.goal.count + ". Keep going!",
+                    choices: [
+                        { text: "I'll keep at it!", nextNode: null }
+                    ]
+                };
+            }
+        }
+
+        if (text === 'DYNAMIC_QUEST_ACCEPTED') {
+            return {
+                text: "Quest accepted: \"" + (quest ? quest.name : '???') + "\"! Good luck out there, Pedro!",
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_QUEST_TURNED_IN') {
+            return {
+                text: "Wonderful! You now have " + eggs + " chocolate egg" + (eggs !== 1 ? 's' : '') + ". Spend them at Clover's shop!",
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_ALREADY_HAS_QUEST') {
+            var progress = getEasterQuestProgress();
+            return {
+                text: "You're working on: \"" + (quest ? quest.name : '???') + "\" — " + progress + "/" + (quest ? quest.goal.count : '?') + ". Keep at it!",
+                choices: choices
+            };
+        }
+
+        if (text === 'DYNAMIC_NOT_COMPLETE') {
+            var progress = getEasterQuestProgress();
+            return {
+                text: "Not done yet! " + progress + "/" + (quest ? quest.goal.count : '?') + ". You can do it!",
+                choices: choices
+            };
+        }
+
+        return { text: text, choices: choices };
+    }
+
+    /**
+     * Get progress for the current Easter quest.
+     */
+    function getEasterQuestProgress() {
+        var quest = GameState.easterQuest;
+        if (!quest) return 0;
+        if (quest.goal.type === 'catch_bunnies') return GameState.easterQuestBunnyCaught || 0;
+        if (quest.goal.type === 'collect_easter_eggs') return GameState.easterQuestEggsCollected || 0;
+        return 0;
+    }
+
+    /**
+     * Resolve dynamic tavern dialog content.
+     * Handles DYNAMIC_ prefixed text for tavern NPCs.
+     */
+    function resolveTavernDialog(node, villager) {
+        var text = node.text;
+        var choices = node.choices;
+        var name = villager.userData.name;
+
+        if (!text || !text.startsWith('DYNAMIC_')) {
+            return { text: text, choices: choices };
+        }
+
+        // Pigias challenge check
+        if (text === 'DYNAMIC_PIGIAS_CHALLENGE') {
+            var collection = GameState.cardCollection || [];
+            var creatures = collection.filter(function(c) { return !c.isEnergy; });
+            if (creatures.length >= 3) {
+                return {
+                    text: "You have " + creatures.length + " creature cards — more than enough! Ready to battle?",
+                    choices: [
+                        { text: "Let's go!", nextNode: null, effectData: { type: 'open_game', game: 'card_game' } },
+                        { text: "Not yet.", nextNode: 'greeting' }
+                    ]
+                };
+            } else {
+                return {
+                    text: "You only have " + creatures.length + " creature cards... You need at least 3 to play. Buy packs from Pigierre!",
+                    choices: [
+                        { text: "I'll go get some.", nextNode: null }
+                    ]
+                };
+            }
+        }
+
+        // Pigierre dynamic nodes — delegate to Tavern module
+        if (text === 'DYNAMIC_PIGIERRE_QUEST' || text === 'DYNAMIC_PIGIERRE_EMILIA' ||
+            text === 'DYNAMIC_PIGIERRE_GOSSIP') {
+            if (typeof Tavern.resolvePigierreDialog === 'function') {
+                return Tavern.resolvePigierreDialog(text);
+            }
+            return { text: "Hmm, I have nothing for you right now.", choices: [{ text: "OK.", nextNode: 'greeting' }] };
+        }
+
+        // Gossip NPCs — delegate to Tavern module
+        if (text === 'DYNAMIC_GRUNTON_GREETING' || text === 'DYNAMIC_TRUFFLE_GREETING' ||
+            text === 'DYNAMIC_SNICKERS_GREETING') {
+            if (typeof Tavern.resolveGossipDialog === 'function') {
+                return Tavern.resolveGossipDialog(text, name);
+            }
+            return { text: "...", choices: [{ text: "Goodbye.", nextNode: null }] };
+        }
+
+        // Snickers answer — resolve the pending question
+        if (text === 'DYNAMIC_SNICKERS_ANSWER') {
+            var question = GameState._pendingSnickersQuestion;
+            if (question) {
+                // Mark as heard
+                if (!GameState.gossipHeard) GameState.gossipHeard = [];
+                if (GameState.gossipHeard.indexOf(question.id) === -1) {
+                    GameState.gossipHeard.push(question.id);
+                }
+                GameState._pendingSnickersQuestion = null;
+                return {
+                    text: "*Snickers listens with his mouth wide open*<br><br>\"" + question.response + "\"",
+                    choices: [{ text: "Thanks, Snickers!", nextNode: null }]
+                };
+            }
+            return { text: "Thanks!", choices: [{ text: "Goodbye.", nextNode: null }] };
+        }
+
+        return { text: text, choices: choices };
+    }
+
+    /**
      * Handle selecting a dialog choice.
      *
-     * Choices can have effects defined in two ways:
-     * 1. NEW WAY: effectData object (from data files) - handled by Effects.execute()
-     * 2. OLD WAY: action string (for backwards compatibility)
+     * Choices can have effectData objects (from data files) - handled by Effects.execute().
      *
      * If an effect fails (player can't afford it), we go to failNode instead.
      */
@@ -307,8 +854,7 @@ window.Dialogs = (function() {
             if (!success) {
                 // Use specific failNode if provided, otherwise try common fail nodes
                 const failNodeId = choice.failNode ||
-                                   'trade_fail' ||
-                                   'heal_fail';
+                    (villager.userData.conversationTree.nodes['trade_fail'] ? 'trade_fail' : 'heal_fail');
                 const failNode = villager.userData.conversationTree.nodes[failNodeId];
 
                 if (failNode) {
@@ -320,21 +866,11 @@ window.Dialogs = (function() {
         }
 
         // ====================================================================
-        // OLD ACTION SYSTEM (for backwards compatibility)
+        // LARRY HEAL — store pending heal data before navigating
         // ====================================================================
-        // If choice has an action string, use the old executeDialogAction
-        if (choice.action) {
-            success = executeDialogAction(choice.action, villager);
-
-            if (!success) {
-                const failNode = villager.userData.conversationTree.nodes['trade_fail'] ||
-                                 villager.userData.conversationTree.nodes['heal_fail'];
-                if (failNode) {
-                    renderDialogNode(failNode, villager);
-                    Game.playSound('hurt');
-                    return;
-                }
-            }
+        if (choice.healPigletId && choice.canAfford) {
+            GameState._pendingHealPigletId = choice.healPigletId;
+            GameState._pendingHealCost = choice.healCost;
         }
 
         // ====================================================================
@@ -357,56 +893,6 @@ window.Dialogs = (function() {
     }
 
     /**
-     * Execute a dialog action (trading, healing, etc.)
-     */
-    function executeDialogAction(actionName, villager) {
-        switch (actionName) {
-            case 'open_shop':
-                UI.openShop();
-                return true;
-
-            case 'trade_berries':
-                if (GameState.resourceCounts.berries >= 10) {
-                    GameState.resourceCounts.berries -= 10;
-                    GameState.health = Math.min(100, GameState.health + 20);
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            case 'trade_nuts':
-                if (GameState.resourceCounts.nuts >= 5) {
-                    GameState.resourceCounts.nuts -= 5;
-                    GameState.health = Math.min(100, GameState.health + 15);
-                    GameState.score += 5;
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            case 'trade_mushrooms':
-                if (GameState.resourceCounts.mushrooms >= 3) {
-                    GameState.resourceCounts.mushrooms -= 3;
-                    GameState.health = Math.min(100, GameState.health + 30);
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            case 'heal_player':
-                if (GameState.health < 100) {
-                    GameState.health = 100;
-                    UI.updateUI();
-                    return true;
-                }
-                return false;
-
-            default:
-                return true;
-        }
-    }
-
-    /**
      * Advance dialog or close if finished.
      */
     function advanceDialog() {
@@ -420,6 +906,8 @@ window.Dialogs = (function() {
         GameState.isDialogOpen = false;
         GameState.currentDialogNode = null;
         GameState.currentDialogVillager = null;
+        GameState._pendingHealPigletId = null;
+        GameState._pendingHealCost = null;
         document.getElementById('dialog-box').classList.add('hidden');
         document.getElementById('dialog-options').innerHTML = '';
     }
@@ -432,7 +920,6 @@ window.Dialogs = (function() {
         openDialog: openDialog,
         closeDialog: closeDialog,
         advanceDialog: advanceDialog,
-        selectDialogChoice: selectDialogChoice,
-        executeDialogAction: executeDialogAction
+        selectDialogChoice: selectDialogChoice
     };
 })();

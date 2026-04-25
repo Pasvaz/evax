@@ -168,7 +168,51 @@ window.SETTINGS = {
     PLAYER_JUMP_POWER: 8,
 
     // Gravity (higher = fall faster)
-    GRAVITY: 20
+    GRAVITY: 20,
+
+    // ========================================================================
+    // BALANCE SETTINGS
+    // ========================================================================
+    // Tweak these to adjust game feel without touching code.
+
+    BALANCE: {
+        // Stamina
+        STAMINA_SPRINT_DRAIN: 10,       // Stamina lost per second while sprinting
+        STAMINA_RECOVERY_RATE: 20,      // Stamina gained per second when not sprinting
+        MELEE_ATTACKS_PER_STAMINA: 7,   // Full stamina bar = this many melee swings
+
+        // Hunger & Thirst
+        HUNGER_DRAIN_RATE: 0.17,        // Hunger lost per second
+        THIRST_DRAIN_RATE: 0.12,        // Thirst lost per second
+        WATER_THIRST_RESTORE: 8,        // Thirst restored per second when in water
+        DEHYDRATION_DAMAGE_INTERVAL: 10, // Seconds at 0 thirst before taking damage
+
+        // Piglet companion abilities
+        PIGLET_ABILITY_MAX_RANGE: 20,   // Max distance piglet abilities can reach
+        PIGLET_HUNGER_SLOW_MULT: 0.7,   // Hunger drain multiplier with Biscuit piglet
+        PIGLET_THIRST_SLOW_MULT: 0.7,   // Thirst drain multiplier with Puddle piglet
+        PIGLET_SPEED_BOOST_MULT: 1.3,   // Speed multiplier with Spark piglet
+        PIGLET_JUMP_BOOST_MULT: 1.2,    // Jump multiplier with Cotton piglet
+        PIGLET_CATCH_DISTANCE: 8,       // How close to catch a wild piglet
+
+        // Easter / seasonal
+        SHEEP_POPULATION_CAP: 30,       // Max sheep + lambs in the world
+        LAMB_TRANSFORMATION_TIME: 180,  // Seconds before uncaught lamb becomes sheep
+        CHERRY_PETAL_COOLDOWN: 2,       // Seconds between petal collections
+        PETAL_TRAIL_INTERVAL: 0.2,      // Seconds between petal trail drops
+        PETAL_TRAIL_MAX: 100,           // Max petal trail meshes before recycling
+        SNOW_PARTICLE_MAX: 500,         // Max snow particles before recycling
+
+        // Sword spin slash
+        SWORD_SPIN_RANGE: 6,           // Max distance for spin slash to hit enemies
+        SWORD_SPIN_DURATION: 0.4,      // Duration of spin animation in seconds
+        SWORD_ATTACK_COOLDOWN: 2,      // Seconds between sword swings
+
+        // Interaction distances
+        FLAMINGO_MOUNT_DISTANCE: 10,    // Max distance to mount a flamingo
+        MOUNT_DISTANCE: 2.5,            // Max distance to mount rideable animals
+        RAFT_BOARD_DISTANCE: 5          // Max distance to board the raft
+    }
 
 };
 

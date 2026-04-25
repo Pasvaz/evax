@@ -3331,15 +3331,14 @@ window.Enemies = (function() {
 
         if (animSpeed > 0.1) {
             // Running animation
-            anim.runCycle += delta * animSpeed * 12; // Cycle speed based on movement
+            anim.runCycle += delta * animSpeed * 3; // ~3-4 gallop cycles per second at full speed
 
             const cycle = anim.runCycle;
             const intensity = Math.min(animSpeed / 8, 1); // Scale with speed
 
             // ============ SPINE BENDING (Cheetah-like) ============
-            // The spine compresses and extends during the gallop - DRAMATIC BENDING!
             // Use rotation.X for up/down arching (cheetah gallop motion)
-            const spineBend = Math.sin(cycle * 2) * 0.8 * intensity; // BIG value for visible bending
+            const spineBend = Math.sin(cycle * 2) * 0.4 * intensity;
 
             // Front spine arches UP when extending (shoulders lift)
             parts.frontSpine.rotation.x = spineBend * 0.6; // UP/DOWN rotation
@@ -3385,6 +3384,13 @@ window.Enemies = (function() {
 
                 // Paw extends on push-off
                 leg.pawGroup.rotation.x = Math.sin(legCycle + 2) * 0.2 * intensity;
+
+                // Decay walk-axis (Z) residuals
+                leg.upperLegGroup.rotation.z *= 0.85;
+                leg.kneeGroup.rotation.z *= 0.85;
+                leg.lowerLegGroup.rotation.z *= 0.85;
+                leg.ankleGroup.rotation.z *= 0.85;
+                leg.pawGroup.rotation.z *= 0.85;
             });
 
             // ============ TAIL ANIMATION ============
@@ -3420,13 +3426,18 @@ window.Enemies = (function() {
             parts.headGroup.rotation.x *= 0.95;
             parts.headGroup.rotation.y = Math.sin(idleCycle * 0.5) * 0.05;
 
-            // Reset legs smoothly
+            // Reset legs smoothly (both axes)
             legs.forEach(leg => {
                 leg.upperLegGroup.rotation.x *= 0.9;
                 leg.kneeGroup.rotation.x *= 0.9;
                 leg.lowerLegGroup.rotation.x *= 0.9;
                 leg.ankleGroup.rotation.x *= 0.9;
                 leg.pawGroup.rotation.x *= 0.9;
+                leg.upperLegGroup.rotation.z *= 0.9;
+                leg.kneeGroup.rotation.z *= 0.9;
+                leg.lowerLegGroup.rotation.z *= 0.9;
+                leg.ankleGroup.rotation.z *= 0.9;
+                leg.pawGroup.rotation.z *= 0.9;
             });
 
             // Gentle tail swish
@@ -9200,6 +9211,22 @@ window.Enemies = (function() {
             GameState.resources = GameState.resources.filter(r => r !== nest.egg.mesh);
         }
 
+        // Easter egg? Spawn a naughty bunny instead of a gosling!
+        if (nest.egg.isEasterEgg && GameState.easterEventActive) {
+            spawnEasterBunny(nest.position.x, nest.position.z);
+            // Reset nest
+            nest.egg.exists = false;
+            nest.egg.isEasterEgg = false;
+            nest.egg.mesh = null;
+            nest.state = 'empty';
+            nest.ownerId = null;
+            console.log('A naughty bunny hatched from an Easter egg!');
+            if (typeof UI !== 'undefined' && UI.showToast) {
+                UI.showToast('Naughty Bunny!', 'A bunny hatched from a decorated egg! Chase it and click to catch it!');
+            }
+            return;
+        }
+
         // Find goose data for creating baby
         const gooseData = ENEMIES.find(e => e.id === 'goose');
         if (!gooseData) return;
@@ -9801,6 +9828,9 @@ window.Enemies = (function() {
         if (!seal || !seal.parent) return;
         if (seal.userData.type !== 'uronin_seal') return;
 
+        // Let the universal retaliation system handle movement when angry
+        if (seal.userData.retaliating || seal.userData.retaliationFleeing) return;
+
         var state = seal.userData.lifecycleState;
         var island = GameState.oceanIslands[seal.userData.homeIslandIndex];
 
@@ -10282,6 +10312,9 @@ window.Enemies = (function() {
     function updateBakkaSealBehavior(seal, delta) {
         if (!seal || !seal.parent) return;
         if (seal.userData.type !== 'bakka_seal') return;
+
+        // Let the universal retaliation system handle movement when angry
+        if (seal.userData.retaliating || seal.userData.retaliationFleeing) return;
 
         var state = seal.userData.lifecycleState;
         seal.userData.stateTimer += delta;
@@ -11488,10 +11521,12 @@ window.Enemies = (function() {
             }
 
             // Skip enemies that manage their own Y position (tree dwellers, flying animals, etc)
-            // BUT don't skip seagulls — they use ignoreGravity for in-tree states
-            // and still need their lifecycle handler to run
+            // BUT don't skip seagulls — they need their lifecycle handler to run
+            // AND don't skip ANY animal that is retaliating — they need the retaliation code
             if (enemy.userData.ignoreGravity && enemy.userData.type !== 'pilfera_coastalis') {
-                continue;
+                if (!enemy.userData.retaliating && !enemy.userData.retaliationFleeing) {
+                    continue;
+                }
             }
 
 
@@ -11502,6 +11537,11 @@ window.Enemies = (function() {
                 closestHostile = Math.min(closestHostile, distance);
             }
             closestDistance = Math.min(closestDistance, distance);
+
+            // PIGLET COMBAT EFFECTS — frozen enemies can't move at all
+            if (enemy.userData.frozen) {
+                continue; // Skip ALL movement/AI for frozen enemies
+            }
 
             // Check if enemy is in water
             const inWater = Environment.isInRiver(enemy.position.x, enemy.position.z);
@@ -11516,6 +11556,19 @@ window.Enemies = (function() {
 
             let direction = enemy.userData.wanderDir; // Default to wander direction
             let speed = enemy.userData.speed * 0.5;
+
+            // PIGLET SPICE EFFECT — slowed 40%, damage halved
+            if (enemy.userData.spiced) {
+                speed *= 0.6;
+            }
+
+            // PIGLET INVISIBILITY — enemies can't detect invisible player
+            if (GameState.pigletBuffs && GameState.pigletBuffs.invisible) {
+                // Hostile enemies lose track of player — revert to wandering
+                if (!enemy.userData.friendly && enemy.userData.retaliating) {
+                    enemy.userData.retaliating = false;
+                }
+            }
 
             // =================================================================
             // UNIVERSAL RETALIATION — any animal fights back when hit by player
@@ -11533,16 +11586,58 @@ window.Enemies = (function() {
                         enemy.userData.fleeDirection = null;
                     }
                 } else {
-                    // Chase player and fight back
+                    // Chase player and fight back — but NOT into the village!
+                    var playerInVillageRet = Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z);
+
+                    if (playerInVillageRet) {
+                        // Player reached safety — give up retaliation, retreat
+                        enemy.userData.retaliating = false;
+                        enemy.userData.retaliationFleeing = true;
+                        var villageCenterRet = CONFIG.VILLAGE_CENTER;
+                        enemy.userData.fleeDirection = new THREE.Vector3(
+                            enemy.position.x - villageCenterRet.x,
+                            0,
+                            enemy.position.z - villageCenterRet.z
+                        ).normalize();
+                        enemy.userData.fleeTimer = 4;
+                    } else {
                     var retDistToPlayer = enemy.position.distanceTo(GameState.peccary.position);
 
-                    if (retDistToPlayer > enemy.userData.radius + GameState.peccary.userData.radius + 0.5) {
+                    // Check if a companion piglet is closer — enemies target piglets first!
+                    var nearbyPiglet = (typeof findClosestCompanionPiglet === 'function') ?
+                        findClosestCompanionPiglet(enemy.position, retDistToPlayer) : null;
+
+                    if (nearbyPiglet) {
+                        // Attack the piglet instead of the player!
+                        var pigDist = enemy.position.distanceTo(nearbyPiglet.position);
+                        if (pigDist > 1.5) {
+                            direction = new THREE.Vector3()
+                                .subVectors(nearbyPiglet.position, enemy.position)
+                                .normalize();
+                            speed = enemy.userData.chaseSpeed || enemy.userData.speed * 1.3;
+                        } else {
+                            // Close enough — attack piglet!
+                            var dmgToPiglet = enemy.userData.damage * delta * 2;
+                            if (enemy.userData.spiced) dmgToPiglet *= 0.5; // Spice halves damage
+                            damagePiglet(nearbyPiglet, dmgToPiglet);
+                            enemy.userData.retaliationHits += delta * 2;
+                            if (enemy.userData.retaliationHits >= enemy.userData.retaliationMaxHits) {
+                                enemy.userData.retaliating = false;
+                                enemy.userData.retaliationFleeing = true;
+                                enemy.userData.fleeDirection = new THREE.Vector3()
+                                    .subVectors(enemy.position, nearbyPiglet.position)
+                                    .normalize();
+                                enemy.userData.fleeTimer = 6;
+                            }
+                            speed = 0;
+                        }
+                    } else if (retDistToPlayer > enemy.userData.radius + GameState.peccary.userData.radius + 0.5) {
                         direction = new THREE.Vector3()
                             .subVectors(GameState.peccary.position, enemy.position)
                             .normalize();
                         speed = enemy.userData.chaseSpeed || enemy.userData.speed * 1.3;
                     } else {
-                        // Close enough — attack!
+                        // Close enough — attack player (no piglets nearby)!
                         Game.takeDamage(enemy.userData.damage * delta * 2, enemy.userData.type);
                         enemy.userData.retaliationHits += delta * 2;
 
@@ -11556,6 +11651,7 @@ window.Enemies = (function() {
                         }
                         speed = 0;
                     }
+                    } // end of not-in-village else
                 }
 
                 // Apply movement for retaliating/fleeing animal
@@ -12551,15 +12647,21 @@ window.Enemies = (function() {
                         // Find the nest
                         const nest = GameState.nests.find(n => n.id === enemy.userData.nestId);
                         if (nest) {
-                            // Create egg mesh
-                            const egg = Items.createResource('egg');
+                            // Create egg mesh — 10% Easter egg when event active
+                            var isEasterEgg = GameState.easterEventActive && Math.random() < 0.1;
+                            const egg = isEasterEgg ? Items.createEasterEgg() : Items.createResource('egg');
                             egg.position.set(nest.position.x, 0, nest.position.z);
-                            egg.userData.nestId = nest.id; // Store nest ID in egg
+                            egg.userData.nestId = nest.id;
                             GameState.resources.push(egg);
                             GameState.scene.add(egg);
 
+                            if (isEasterEgg) {
+                                console.log('A decorated Easter egg has been laid!');
+                            }
+
                             // Set nest egg properties
                             nest.egg.exists = true;
+                            nest.egg.isEasterEgg = isEasterEgg;
                             nest.egg.timePlaced = currentTime;
                             nest.egg.hatchTime = currentTime + 300; // 5 minutes
                             nest.egg.mesh = egg;
@@ -15640,7 +15742,17 @@ window.Enemies = (function() {
             }
             // Hostile enemies (badgers/weasels) hunt baby geese or chase player
             else if (!enemy.userData.friendly) {
+                // Currently retreating from village? Keep walking away
+                if (enemy.userData.retreatingFromVillage) {
+                    enemy.userData.retreatTimer -= delta;
+                    if (enemy.userData.retreatTimer <= 0) {
+                        enemy.userData.retreatingFromVillage = false;
+                    }
+                    direction = enemy.userData.wanderDir;
+                    speed = enemy.userData.speed * 0.8;
+                }
                 // First check for baby geese within range
+                else {
                 let targetBaby = null;
                 let closestBabyDist = CONFIG.ENEMY_DETECTION_RANGE;
 
@@ -15677,14 +15789,44 @@ window.Enemies = (function() {
                     }
                 } else if (distance < CONFIG.ENEMY_DETECTION_RANGE) {
                     // No baby geese nearby, chase player
-                    direction = new THREE.Vector3()
-                        .subVectors(GameState.peccary.position, enemy.position)
-                        .normalize();
+                    // BUT stop if player is in the village safe zone!
+                    var playerInVillage = Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z);
 
-                    // Use chaseSpeed from enemy data
-                    speed = enemy.userData.chaseSpeed || enemy.userData.speed;
+                    if (playerInVillage) {
+                        // Frustrated retreat! Walk away from village
+                        enemy.userData.isChasing = false;
+                        enemy.userData.retreatingFromVillage = true;
+                        enemy.userData.retreatTimer = 3 + Math.random() * 2;
+                        var villageCenter = CONFIG.VILLAGE_CENTER;
+                        direction = new THREE.Vector3(
+                            enemy.position.x - villageCenter.x,
+                            0,
+                            enemy.position.z - villageCenter.z
+                        ).normalize();
+                        enemy.userData.wanderDir = direction;
+                        speed = enemy.userData.speed * 0.8;
+                    } else {
+                        // Check if a companion piglet is closer — target it first!
+                        var chasePiglet = (typeof findClosestCompanionPiglet === 'function') ?
+                            findClosestCompanionPiglet(enemy.position, distance) : null;
 
-                    enemy.userData.isChasing = true;
+                        if (chasePiglet) {
+                            direction = new THREE.Vector3()
+                                .subVectors(chasePiglet.position, enemy.position)
+                                .normalize();
+                            enemy.userData.chasingPiglet = chasePiglet;
+                        } else {
+                            direction = new THREE.Vector3()
+                                .subVectors(GameState.peccary.position, enemy.position)
+                                .normalize();
+                            enemy.userData.chasingPiglet = null;
+                        }
+
+                        // Use chaseSpeed from enemy data
+                        speed = enemy.userData.chaseSpeed || enemy.userData.speed;
+
+                        enemy.userData.isChasing = true;
+                    }
                 } else {
                     // Wander randomly
                     enemy.userData.isChasing = false;
@@ -15698,18 +15840,30 @@ window.Enemies = (function() {
 
                     direction = enemy.userData.wanderDir;
                 }
+                } // end of non-retreat else block
             } else {
-                // Wander randomly (shouldn't reach here for hostile enemies)
+                // Friendly animals — wander, BUT flee if eyepatch is equipped!
                 enemy.userData.isChasing = false;
-                enemy.userData.wanderTime += delta;
 
-                if (enemy.userData.wanderTime > 2 + Math.random() * 2) {
-                    const angle = Math.random() * Math.PI * 2;
-                    enemy.userData.wanderDir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
-                    enemy.userData.wanderTime = 0;
+                // EYEPATCH FEAR — friendly animals run away from player
+                if (GameState.eyepatchEquipped && distance < 20 &&
+                    !enemy.userData.isPiglet && !enemy.userData.isEasterBunny &&
+                    !enemy.userData.charmed) {
+                    // Flee from player!
+                    direction = new THREE.Vector3()
+                        .subVectors(enemy.position, GameState.peccary.position)
+                        .normalize();
+                    speed = enemy.userData.fleeSpeed || enemy.userData.speed * 1.8;
+                } else {
+                    // Normal wander
+                    enemy.userData.wanderTime += delta;
+                    if (enemy.userData.wanderTime > 2 + Math.random() * 2) {
+                        const angle = Math.random() * Math.PI * 2;
+                        enemy.userData.wanderDir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+                        enemy.userData.wanderTime = 0;
+                    }
+                    direction = enemy.userData.wanderDir;
                 }
-
-                direction = enemy.userData.wanderDir;
             }
 
             // Skip generic movement + bob for deer and drongulinat cats — they have custom behavior
@@ -15722,6 +15876,18 @@ window.Enemies = (function() {
                 // Move enemy
                 enemy.position.x += direction.x * speed * delta;
                 enemy.position.z += direction.z * speed * delta;
+
+                // Village boundary — push enemy back out if it wandered in
+                if (!enemy.userData.friendly && Environment.isInVillage(enemy.position.x, enemy.position.z)) {
+                    var vc = CONFIG.VILLAGE_CENTER;
+                    var awayFromVillage = new THREE.Vector3(
+                        enemy.position.x - vc.x, 0, enemy.position.z - vc.z
+                    ).normalize();
+                    enemy.position.x += awayFromVillage.x * 2;
+                    enemy.position.z += awayFromVillage.z * 2;
+                    enemy.userData.wanderDir = awayFromVillage;
+                    enemy.userData.wanderTime = 0;
+                }
 
                 // Rotate to face movement direction
                 const targetRotation = -Math.atan2(direction.z, direction.x);
@@ -15777,7 +15943,16 @@ window.Enemies = (function() {
 
             // Collision with player - only for hostile enemies (damage)
             if (!enemy.userData.friendly && distance < separationRadius) {
-                Game.takeDamage(enemy.userData.damage * delta, enemy.userData.type);
+                // Check if a piglet is between the enemy and the player
+                var shieldPiglet = (typeof findClosestCompanionPiglet === 'function') ?
+                    findClosestCompanionPiglet(enemy.position, separationRadius + 3) : null;
+                if (shieldPiglet) {
+                    var dmg = enemy.userData.damage * delta;
+                    if (enemy.userData.spiced) dmg *= 0.5;
+                    damagePiglet(shieldPiglet, dmg);
+                } else {
+                    Game.takeDamage(enemy.userData.damage * delta, enemy.userData.type);
+                }
             }
 
             // Keep enemies within world bounds
@@ -18685,6 +18860,17 @@ window.Enemies = (function() {
 
         // At high speeds (hunting/chasing), use the full gallop animation
         if (moveSpeed >= 6) {
+            // Decay walk-axis (Z) rotations before galloping (gallop uses X axis)
+            var catM = cat.children[0] || cat;
+            if (catM.userData && catM.userData.legs) {
+                catM.userData.legs.forEach(function(leg) {
+                    leg.upperLegGroup.rotation.z *= 0.8;
+                    leg.kneeGroup.rotation.z *= 0.8;
+                    leg.lowerLegGroup.rotation.z *= 0.8;
+                    leg.ankleGroup.rotation.z *= 0.8;
+                    leg.pawGroup.rotation.z *= 0.8;
+                });
+            }
             var animSpeed = 2 + (moveSpeed / 10) * 6;
             animateDronglousCat(cat, delta, true, animSpeed);
             return;
@@ -19123,8 +19309,12 @@ window.Enemies = (function() {
             });
         }
 
-        // Tip it on its side (rotate 90 degrees around Z axis)
-        enemy.rotation.z = Math.PI / 2;
+        // Flip upside down — legs in the air, classic dead pose
+        // Rotate the outer group (not inner model) to avoid breaking complex skeletons
+        enemy.rotation.x = Math.PI;
+        // Height based on animal size so tall animals don't sink into the ground
+        var animalHeight = (enemy.userData.groundY || 0.3) + (enemy.userData.size || 1) * 0.5;
+        enemy.position.y = animalHeight;
 
         // Store original colors for the decay stages
         var originalColors = [];
@@ -19149,6 +19339,23 @@ window.Enemies = (function() {
         enemy.userData.carcassSinking = false;         // Has it started sinking?
         enemy.userData.carcassAge = 0;                 // How long since death
 
+        // Add buzzing flies around the carcass — orbit scales with animal size
+        var flyMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        var flyGeo = new THREE.SphereGeometry(0.03, 4, 4);
+        var animalSize = enemy.userData.size || 1;
+        var flyCount = 1 + Math.floor(Math.random() * 3);
+        var flies = [];
+        for (var f = 0; f < flyCount; f++) {
+            var fly = new THREE.Mesh(flyGeo, flyMat);
+            fly.userData.angle = Math.random() * Math.PI * 2;
+            fly.userData.speed = 3 + Math.random() * 3;
+            fly.userData.radius = (0.4 + Math.random() * 0.5) * animalSize;
+            fly.userData.heightOffset = Math.random() * 0.3 * animalSize;
+            GameState.scene.add(fly);
+            flies.push(fly);
+        }
+        enemy.userData.carcassFlies = flies;
+
         // Initialize carcasses array if needed
         if (!GameState.carcasses) GameState.carcasses = [];
         GameState.carcasses.push(enemy);
@@ -19172,8 +19379,32 @@ window.Enemies = (function() {
 
             carcass.userData.carcassAge += delta;
 
+            // Animate flies — only visible within 20 units of player
+            if (carcass.userData.carcassFlies) {
+                var flyDist = GameState.peccary.position.distanceTo(carcass.position);
+                var showFlies = flyDist < 20;
+                var cx = carcass.position.x;
+                var cz = carcass.position.z;
+                var cy = carcass.position.y + 1.0;
+                carcass.userData.carcassFlies.forEach(function(fly) {
+                    fly.visible = showFlies;
+                    if (!showFlies) return;
+                    fly.userData.angle += fly.userData.speed * delta;
+                    fly.position.x = cx + Math.cos(fly.userData.angle) * fly.userData.radius;
+                    fly.position.z = cz + Math.sin(fly.userData.angle) * fly.userData.radius;
+                    fly.position.y = cy + fly.userData.heightOffset + Math.sin(fly.userData.angle * 2) * 0.15;
+                });
+            }
+
             // === SINKING PHASE ===
             if (carcass.userData.carcassSinking) {
+                // Remove flies
+                if (carcass.userData.carcassFlies) {
+                    carcass.userData.carcassFlies.forEach(function(fly) {
+                        GameState.scene.remove(fly);
+                    });
+                    carcass.userData.carcassFlies = null;
+                }
                 // Sink into the ground over 3 seconds
                 carcass.position.y -= delta * 0.5;
                 // Fade opacity
@@ -19325,6 +19556,12 @@ window.Enemies = (function() {
     function damageEnemy(enemy, amount) {
         if (!enemy || !enemy.userData) return;
 
+        // Easter bunny? Catch it instead of damaging!
+        if (enemy.userData.isEasterBunny) {
+            catchEasterBunny(enemy);
+            return;
+        }
+
         // Flying seagulls are only hittable when low (altitude < 8)
         if (enemy.userData.type === 'pilfera_coastalis' &&
             enemy.userData.flightState !== 'grounded' &&
@@ -19424,10 +19661,21 @@ window.Enemies = (function() {
             // Convert to carcass instead of removing
             convertToCarcass(enemy);
 
+            // Track kills by type (for quests)
+            if (!GameState.animalKills) GameState.animalKills = {};
+            var killType = enemy.userData.type;
+            GameState.animalKills[killType] = (GameState.animalKills[killType] || 0) + 1;
+
             // Item drops on death
             if (enemy.userData.type === 'bakka_seal') {
                 GameState.resourceCounts.bakka_seal_tooth = (GameState.resourceCounts.bakka_seal_tooth || 0) + 1;
                 Game.showBlockedMessage('+1 Bakka Seal Tooth!');
+            }
+
+            // Hide drops — from wild dogs, antelopes, and gazelles
+            if (enemy.userData.type === 'wild_dog' || enemy.userData.type === 'antelope' || enemy.userData.type === 'saltas_gazella') {
+                GameState.resourceCounts.hide = (GameState.resourceCounts.hide || 0) + 1;
+                Game.showBlockedMessage('+1 Hide!');
             }
 
             // Give score and coins as reward (tiered by enemy toughness)
@@ -19437,6 +19685,347 @@ window.Enemies = (function() {
             GameState.pigCoins += tier.coins;
             Game.playSound('collect');
             UI.updateUI();
+        }
+    }
+
+    // ========================================================================
+    // EASTER BUNNY SYSTEM
+    // ========================================================================
+    // Naughty bunnies hatch from decorated Easter eggs.
+    // State machine: CALM_HOP → FLEE → HIDE → (repeat)
+    // Click to catch. Catch 5 to unlock the Egged Out skin.
+    // ========================================================================
+
+    /**
+     * Build a naughty bunny 3D model.
+     * Small, colourful rabbit with big ears and a cotton tail.
+     */
+    function buildEasterBunny() {
+        var bunny = new THREE.Group();
+
+        // Pick a random pastel colour for the body
+        var bunnyColors = [0xff88aa, 0x88ccff, 0xaaffaa, 0xffdd66, 0xddaaff, 0xffaa77];
+        var bodyColor = bunnyColors[Math.floor(Math.random() * bunnyColors.length)];
+        var bellyColor = 0xffffff;
+
+        // Body — oval sphere
+        var bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor });
+        var body = new THREE.Mesh(
+            new THREE.SphereGeometry(0.35, 12, 12),
+            bodyMat
+        );
+        body.scale.set(1, 0.85, 1.2);
+        body.position.y = 0.35;
+        bunny.add(body);
+
+        // Belly — white front
+        var belly = new THREE.Mesh(
+            new THREE.SphereGeometry(0.22, 10, 10),
+            new THREE.MeshStandardMaterial({ color: bellyColor })
+        );
+        belly.position.set(0.15, 0.3, 0);
+        bunny.add(belly);
+
+        // Head — sphere
+        var head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.22, 12, 12),
+            bodyMat
+        );
+        head.position.set(0.35, 0.6, 0);
+        bunny.add(head);
+
+        // Eyes — big and cute
+        var eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        [-1, 1].forEach(function(side) {
+            var eyeWhite = new THREE.Mesh(
+                new THREE.SphereGeometry(0.06, 8, 8),
+                eyeWhiteMat
+            );
+            eyeWhite.position.set(0.45, 0.65, side * 0.1);
+            bunny.add(eyeWhite);
+            var pupil = new THREE.Mesh(
+                new THREE.SphereGeometry(0.035, 8, 8),
+                eyeMat
+            );
+            pupil.position.set(0.49, 0.66, side * 0.1);
+            bunny.add(pupil);
+        });
+
+        // Nose — pink
+        var nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.03, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xff6699 })
+        );
+        nose.position.set(0.55, 0.58, 0);
+        bunny.add(nose);
+
+        // Ears — two tall ovals
+        var earMat = bodyMat;
+        var innerEarMat = new THREE.MeshStandardMaterial({ color: 0xffaacc });
+        [-1, 1].forEach(function(side) {
+            var ear = new THREE.Mesh(
+                new THREE.SphereGeometry(0.08, 8, 12),
+                earMat
+            );
+            ear.scale.set(0.5, 2.5, 0.6);
+            ear.position.set(0.25, 0.95, side * 0.1);
+            ear.rotation.z = side * 0.15;
+            bunny.add(ear);
+            // Inner ear
+            var innerEar = new THREE.Mesh(
+                new THREE.SphereGeometry(0.05, 8, 10),
+                innerEarMat
+            );
+            innerEar.scale.set(0.4, 2.2, 0.4);
+            innerEar.position.set(0.28, 0.95, side * 0.1);
+            innerEar.rotation.z = side * 0.15;
+            bunny.add(innerEar);
+        });
+
+        // Front legs — small cylinders
+        var legMat = bodyMat;
+        [-1, 1].forEach(function(side) {
+            var frontLeg = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05, 0.04, 0.2, 8),
+                legMat
+            );
+            frontLeg.position.set(0.2, 0.1, side * 0.15);
+            bunny.add(frontLeg);
+        });
+
+        // Back legs — bigger (for hopping!)
+        [-1, 1].forEach(function(side) {
+            var backLeg = new THREE.Mesh(
+                new THREE.SphereGeometry(0.1, 8, 8),
+                legMat
+            );
+            backLeg.scale.set(0.8, 0.6, 1);
+            backLeg.position.set(-0.2, 0.15, side * 0.18);
+            bunny.add(backLeg);
+            // Foot
+            var foot = new THREE.Mesh(
+                new THREE.SphereGeometry(0.06, 8, 8),
+                legMat
+            );
+            foot.scale.set(1.5, 0.5, 1);
+            foot.position.set(-0.25, 0.05, side * 0.18);
+            bunny.add(foot);
+        });
+
+        // Cottontail — fluffy white ball at the back
+        var tail = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xffffff })
+        );
+        tail.position.set(-0.4, 0.35, 0);
+        bunny.add(tail);
+
+        return bunny;
+    }
+
+    /**
+     * Spawn a naughty Easter bunny at the given position.
+     */
+    function spawnEasterBunny(x, z) {
+        var bunny = buildEasterBunny();
+        bunny.position.set(x, 0, z);
+        bunny.scale.set(0.8, 0.8, 0.8);
+
+        bunny.userData = {
+            type: 'easter_bunny',
+            isEasterBunny: true,
+            health: 1,          // One hit to catch
+            maxHealth: 1,
+            friendly: true,     // Doesn't attack
+            speed: 8,           // Fast when fleeing!
+            detectionRange: 8,  // How close Pedro triggers flee
+
+            // State machine
+            bunnyState: 'calm_hop',  // calm_hop | flee | hide
+            stateTimer: 0,
+            hopTimer: 0,
+            hopDirection: new THREE.Vector3(
+                Math.random() - 0.5, 0, Math.random() - 0.5
+            ).normalize(),
+            fleeDirection: null,
+            fleeDuration: 0,
+            hideTimer: 0,
+            entityId: 'easter_bunny_' + Date.now() + '_' + Math.random()
+        };
+
+        GameState.scene.add(bunny);
+        GameState.enemies.push(bunny);
+        GameState.easterBunnies.push(bunny);
+    }
+
+    /**
+     * Update all Easter bunnies — state machine logic.
+     */
+    function updateEasterBunnies(delta) {
+        if (!GameState.easterEventActive && GameState.easterBunnies.length === 0) return;
+        if (!GameState.peccary) return;
+
+        var playerPos = GameState.peccary.position;
+
+        for (var i = GameState.easterBunnies.length - 1; i >= 0; i--) {
+            var bunny = GameState.easterBunnies[i];
+            if (!bunny.parent) {
+                // Already removed from scene
+                GameState.easterBunnies.splice(i, 1);
+                continue;
+            }
+
+            var ud = bunny.userData;
+            var dist = bunny.position.distanceTo(playerPos);
+            ud.stateTimer += delta;
+
+            // ---- STATE: CALM_HOP ----
+            if (ud.bunnyState === 'calm_hop') {
+                ud.hopTimer += delta;
+
+                // Hop every 1-2 seconds
+                if (ud.hopTimer > 1.2) {
+                    ud.hopTimer = 0;
+                    // Pick a new random hop direction
+                    ud.hopDirection = new THREE.Vector3(
+                        Math.random() - 0.5, 0, Math.random() - 0.5
+                    ).normalize();
+                }
+
+                // Move slowly with a hopping motion
+                var hopSpeed = 2;
+                bunny.position.x += ud.hopDirection.x * hopSpeed * delta;
+                bunny.position.z += ud.hopDirection.z * hopSpeed * delta;
+
+                // Hopping bob animation
+                bunny.position.y = Math.abs(Math.sin(ud.stateTimer * 6)) * 0.3;
+
+                // Face movement direction
+                bunny.rotation.y = Math.atan2(-ud.hopDirection.z, ud.hopDirection.x);
+
+                // TRANSITION: Pedro gets close → FLEE!
+                if (dist < ud.detectionRange) {
+                    ud.bunnyState = 'flee';
+                    ud.stateTimer = 0;
+                    // Flee away from Pedro
+                    ud.fleeDirection = new THREE.Vector3(
+                        bunny.position.x - playerPos.x,
+                        0,
+                        bunny.position.z - playerPos.z
+                    ).normalize();
+                    ud.fleeDuration = 2 + Math.random(); // Run for 2-3 seconds
+                }
+            }
+
+            // ---- STATE: FLEE ----
+            else if (ud.bunnyState === 'flee') {
+                // Sprint away from Pedro!
+                var fleeSpeed = ud.speed;
+                bunny.position.x += ud.fleeDirection.x * fleeSpeed * delta;
+                bunny.position.z += ud.fleeDirection.z * fleeSpeed * delta;
+
+                // Fast hopping animation
+                bunny.position.y = Math.abs(Math.sin(ud.stateTimer * 12)) * 0.5;
+
+                // Face flee direction
+                bunny.rotation.y = Math.atan2(-ud.fleeDirection.z, ud.fleeDirection.x);
+
+                // Add some zigzag
+                if (Math.random() < 0.02) {
+                    var angle = (Math.random() - 0.5) * 0.8;
+                    var cos = Math.cos(angle);
+                    var sin = Math.sin(angle);
+                    var fx = ud.fleeDirection.x;
+                    var fz = ud.fleeDirection.z;
+                    ud.fleeDirection.x = fx * cos - fz * sin;
+                    ud.fleeDirection.z = fx * sin + fz * cos;
+                    ud.fleeDirection.normalize();
+                }
+
+                // TRANSITION: Ran long enough → HIDE
+                if (ud.stateTimer >= ud.fleeDuration) {
+                    ud.bunnyState = 'hide';
+                    ud.stateTimer = 0;
+                    ud.hideTimer = 3 + Math.random() * 2; // Hide for 3-5 seconds
+                    bunny.position.y = 0;
+                }
+            }
+
+            // ---- STATE: HIDE ----
+            else if (ud.bunnyState === 'hide') {
+                // Freeze in place, crouched down
+                bunny.position.y = 0;
+                // Subtle ear twitch
+                bunny.rotation.z = Math.sin(ud.stateTimer * 8) * 0.03;
+
+                // TRANSITION: Pedro gets close → FLEE again!
+                if (dist < ud.detectionRange * 0.7) {
+                    ud.bunnyState = 'flee';
+                    ud.stateTimer = 0;
+                    ud.fleeDirection = new THREE.Vector3(
+                        bunny.position.x - playerPos.x,
+                        0,
+                        bunny.position.z - playerPos.z
+                    ).normalize();
+                    ud.fleeDuration = 2 + Math.random();
+                }
+                // TRANSITION: Waited long enough, go back to calm hop
+                else if (ud.stateTimer >= ud.hideTimer) {
+                    ud.bunnyState = 'calm_hop';
+                    ud.stateTimer = 0;
+                    ud.hopTimer = 0;
+                    bunny.rotation.z = 0;
+                }
+            }
+
+            // Keep bunny within world bounds
+            var worldHalf = CONFIG.WORLD_SIZE / 2 - 5;
+            bunny.position.x = Math.max(-worldHalf, Math.min(worldHalf, bunny.position.x));
+            bunny.position.z = Math.max(-worldHalf, Math.min(worldHalf, bunny.position.z));
+        }
+    }
+
+    /**
+     * Handle catching an Easter bunny (called from damageEnemy).
+     */
+    function catchEasterBunny(bunny) {
+        // Remove from scene
+        GameState.scene.remove(bunny);
+        var enemyIdx = GameState.enemies.indexOf(bunny);
+        if (enemyIdx !== -1) GameState.enemies.splice(enemyIdx, 1);
+        var bunnyIdx = GameState.easterBunnies.indexOf(bunny);
+        if (bunnyIdx !== -1) GameState.easterBunnies.splice(bunnyIdx, 1);
+
+        // Increment catch count
+        GameState.easterBunniesCaught++;
+        var caught = GameState.easterBunniesCaught;
+
+        // Track quest progress
+        if (GameState.easterQuest && GameState.easterQuest.goal.type === 'catch_bunnies') {
+            GameState.easterQuestBunnyCaught++;
+            if (GameState.easterQuestBunnyCaught >= GameState.easterQuest.goal.count) {
+                UI.showToast('Quest Ready!', 'Return to Marshmallow to claim your reward!');
+            }
+        }
+
+        console.log('Bunny caught! ' + caught + '/5');
+        Game.playSound('collect');
+
+        // Give a small reward
+        GameState.score += 25;
+        GameState.pigCoins += 10;
+        UI.updateUI();
+
+        if (caught >= 5 && GameState.unlockedSkins.indexOf('egged_out') === -1) {
+            // Unlock the Egged Out skin!
+            GameState.unlockedSkins.push('egged_out');
+            if (typeof UI !== 'undefined' && UI.showToast) {
+                UI.showToast('Skin Unlocked!', 'Egged Out — you caught 5 naughty bunnies!', 'Press <b>ESC</b> to equip it!');
+            }
+            console.log('EGGED OUT SKIN UNLOCKED!');
+        } else if (typeof UI !== 'undefined' && UI.showToast) {
+            UI.showToast('Bunny Caught!', 'You caught a naughty bunny! ' + caught + '/5');
         }
     }
 
@@ -19515,6 +20104,11 @@ window.Enemies = (function() {
 
         // Player combat
         damageEnemy: damageEnemy,
+
+        // Easter bunny system
+        spawnEasterBunny: spawnEasterBunny,
+        updateEasterBunnies: updateEasterBunnies,
+        catchEasterBunny: catchEasterBunny,
 
         // Carcass system
         updateCarcasses: updateCarcasses,

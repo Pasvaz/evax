@@ -128,6 +128,54 @@ window.Effects = (function() {
                 return true;
 
             // ----------------------------------------------------------------
+            // OPEN GAME - Open a tavern game
+            // ----------------------------------------------------------------
+            case 'open_game':
+                if (effect.game === 'board_game') BoardGame.open();
+                else if (effect.game === 'pigon_game') PigonGame.open();
+                else if (effect.game === 'card_game') CardGame.open();
+                return true;
+
+            // ----------------------------------------------------------------
+            // UNLOCK MEEPLE - Add a meeple to the player's collection
+            // ----------------------------------------------------------------
+            case 'unlock_meeple':
+                if (!GameState.unlockedMeeples) GameState.unlockedMeeples = [];
+                if (GameState.unlockedMeeples.indexOf(effect.meeple) !== -1) {
+                    Game.showBlockedMessage('Already owned!');
+                    return false;
+                }
+                GameState.unlockedMeeples.push(effect.meeple);
+                Game.showBlockedMessage('Meeple unlocked: ' + effect.meeple + '!');
+                return true;
+
+            // ----------------------------------------------------------------
+            // UNLOCK BIOME - Add a biome to the player's collection
+            // ----------------------------------------------------------------
+            case 'unlock_biome':
+                if (!GameState.unlockedBiomes) GameState.unlockedBiomes = [];
+                if (GameState.unlockedBiomes.indexOf(effect.biome) !== -1) {
+                    Game.showBlockedMessage('Already owned!');
+                    return false;
+                }
+                GameState.unlockedBiomes.push(effect.biome);
+                Game.showBlockedMessage('Biome unlocked: ' + effect.biome + '!');
+                return true;
+
+            // ----------------------------------------------------------------
+            // UNLOCK COLOUR - Add a board game colour
+            // ----------------------------------------------------------------
+            case 'unlock_colour':
+                if (!GameState.unlockedBoardColours) GameState.unlockedBoardColours = [];
+                if (GameState.unlockedBoardColours.indexOf(effect.colour) !== -1) {
+                    Game.showBlockedMessage('Already owned!');
+                    return false;
+                }
+                GameState.unlockedBoardColours.push(effect.colour);
+                Game.showBlockedMessage('Colour unlocked: ' + effect.colour + '!');
+                return true;
+
+            // ----------------------------------------------------------------
             // TRADE - Exchange resources for rewards
             // ----------------------------------------------------------------
             case 'trade':
@@ -154,7 +202,7 @@ window.Effects = (function() {
                     GameState.questClues.push(effect.clue);
                     Game.playSound('collect');
                     console.log('Quest clue discovered: ' + effect.clue);
-                    UI.showToast('New Quest Clue!', 'A new clue has been discovered. <div>Press <b>Q</b> to check your quest log.</div>');
+                    UI.showToast('New Quest Clue!', 'A new clue has been discovered.', 'Press <b>Q</b> to check your quest log.');
                 }
                 return true;
 
@@ -162,6 +210,14 @@ window.Effects = (function() {
             // GIVE RESOURCE - Add resources to player's inventory
             // ----------------------------------------------------------------
             case 'give_resource':
+                // One-time gifts: skip if already claimed
+                if (effect.once) {
+                    if (!GameState.claimedGifts) GameState.claimedGifts = [];
+                    if (GameState.claimedGifts.includes(effect.once)) {
+                        return true; // Already claimed — succeed silently
+                    }
+                    GameState.claimedGifts.push(effect.once);
+                }
                 var resources = effect.resources || {};
                 for (var resKey in resources) {
                     if (resources.hasOwnProperty(resKey)) {
@@ -189,6 +245,88 @@ window.Effects = (function() {
                         UI.showMemoryFlashback(effect.memoryId);
                     }, 500);
                 }
+                return true;
+
+            // ----------------------------------------------------------------
+            // EASTER: Accept a quest from Marshmallow
+            // ----------------------------------------------------------------
+            case 'easter_accept_quest':
+                var questDef = EASTER_QUESTS.find(function(q) { return q.id === effect.questId; });
+                if (questDef) {
+                    GameState.easterQuest = {
+                        id: questDef.id,
+                        name: questDef.name,
+                        difficulty: questDef.difficulty,
+                        reward: questDef.reward,
+                        goal: questDef.goal
+                    };
+                    GameState.easterQuestBunnyCaught = 0;
+                    GameState.easterQuestEggsCollected = 0;
+                    Game.playSound('collect');
+                    UI.showToast('Quest Accepted!', questDef.name + ' (' + questDef.difficulty + ') — ' + questDef.reward + ' chocolate eggs');
+                }
+                return true;
+
+            // ----------------------------------------------------------------
+            // EASTER: Complete a quest and claim reward
+            // ----------------------------------------------------------------
+            case 'easter_complete_quest':
+                if (GameState.easterQuest) {
+                    var reward = GameState.easterQuest.reward;
+                    GameState.chocolateEggs += reward;
+                    UI.showToast('Quest Complete!', 'You earned ' + reward + ' chocolate egg' + (reward !== 1 ? 's' : '') + '!');
+                    Game.playSound('collect');
+                    GameState.easterQuest = null;
+                    GameState.easterQuestBunnyCaught = 0;
+                    GameState.easterQuestEggsCollected = 0;
+                    UI.updateUI();
+                }
+                return true;
+
+            // ----------------------------------------------------------------
+            // EASTER: Abandon a quest
+            // ----------------------------------------------------------------
+            case 'easter_abandon_quest':
+                GameState.easterQuest = null;
+                GameState.easterQuestBunnyCaught = 0;
+                GameState.easterQuestEggsCollected = 0;
+                UI.showToast('Quest Abandoned', 'Your quest progress has been reset.');
+                return true;
+
+            // ----------------------------------------------------------------
+            // EASTER: Accept the rare lamb quest (costs 30 petals)
+            // ----------------------------------------------------------------
+            case 'easter_accept_lamb_quest':
+                var petals = GameState.resourceCounts ? (GameState.resourceCounts.cherry_petals || 0) : 0;
+                if (petals < 30) {
+                    UI.showToast('Not Enough Petals!', 'You need 30 cherry blossom petals. You have ' + petals + '.');
+                    // Route to fail node
+                    if (typeof Dialogs !== 'undefined' && Dialogs.goToNode) {
+                        Dialogs.goToNode('lamb_quest_failed');
+                    }
+                    return false;
+                }
+                // Deduct petals
+                GameState.resourceCounts.cherry_petals = (GameState.resourceCounts.cherry_petals || 0) - 30;
+                // Set quest
+                GameState.easterQuest = {
+                    id: 'catch_naughty_lamb',
+                    name: 'Catch the Naughty Lamb',
+                    difficulty: 'RARE',
+                    reward: 30,
+                    goal: { type: 'catch_lamb', count: 1 }
+                };
+                // Spawn the lamb!
+                if (typeof spawnEasterLamb === 'function') {
+                    spawnEasterLamb();
+                }
+                return true;
+
+            // ----------------------------------------------------------------
+            // EASTER: Open Clover's chocolate egg shop
+            // ----------------------------------------------------------------
+            case 'open_easter_shop':
+                UI.openEasterShop();
                 return true;
 
             // ----------------------------------------------------------------
@@ -336,6 +474,10 @@ window.Effects = (function() {
             case 'arsen_bomb':
             case 'fishing_spear':
             case 'diving_mask':
+            case 'pirate_eyepatch':
+            case 'fur_coat':
+            case 'thunder_scythe':
+            case 'thunder_armour':
                 // These go into inventory as equippable items
                 // Look up name/description from TOOL_STATS if available
                 var existing = GameState.inventoryItems.find(function(item) {
@@ -362,6 +504,14 @@ window.Effects = (function() {
                         itemName = 'Diving Mask';
                         itemDesc = 'Forged glass diving mask. Select from hotbar to swim underwater!';
                     }
+                    if (effect.item === 'pirate_eyepatch') {
+                        itemName = "Pirate's Eyepatch";
+                        itemDesc = 'A fearsome eyepatch! Equip from hotbar, press E — non-hostile animals flee in terror.';
+                    }
+                    if (effect.item === 'fur_coat') {
+                        itemName = 'Fur Coat';
+                        itemDesc = 'A warm coat made from hide. Equip from hotbar, press E — protects from the cold in Snowy Mountains!';
+                    }
                     GameState.inventoryItems.push({
                         id: effect.item,
                         name: itemName,
@@ -375,6 +525,16 @@ window.Effects = (function() {
                     Inventory.refreshInventory();
                 }
                 UI.updateUI();
+                return true;
+
+            case 'basic_pack':
+            case 'rare_pack':
+            case 'legendary_pack':
+                // Card packs go to inventory, openable later
+                var packNames = { basic_pack: 'Basic Card Pack', rare_pack: 'Rare Card Pack', legendary_pack: 'Legendary Card Pack' };
+                var packDescs = { basic_pack: '3 cards + 2 energy', rare_pack: '5 cards + 3 energy (better odds)', legendary_pack: '5 cards + 4 energy (guaranteed rare+)' };
+                Inventory.addItemToInventory(effect.item, packNames[effect.item], packDescs[effect.item], 'open_card_pack', 1);
+                Game.playSound('collect');
                 return true;
 
             default:

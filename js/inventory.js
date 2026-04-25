@@ -110,6 +110,7 @@ window.Inventory = (function() {
         document.getElementById('bestiary-panel').classList.toggle('active', tabId === 'bestiary');
         document.getElementById('quest-panel').classList.toggle('active', tabId === 'quest');
         document.getElementById('journal-panel').classList.toggle('active', tabId === 'journal');
+        document.getElementById('cards-panel').classList.toggle('active', tabId === 'cards');
         document.getElementById('bestiary-detail').classList.remove('active');
 
         // Refresh content
@@ -121,6 +122,8 @@ window.Inventory = (function() {
             refreshQuestLog();
         } else if (tabId === 'journal') {
             refreshMemories();
+        } else if (tabId === 'cards') {
+            refreshCardAlbum();
         } else {
             populateBestiaryGrid();
             showBestiaryGrid();
@@ -133,7 +136,7 @@ window.Inventory = (function() {
      * @returns {string} - The emoji icon
      */
     // Items that can be equipped to the hotbar
-    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask'];
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask', 'pirate_eyepatch', 'fur_coat', 'thunder_scythe', 'thunder_armour'];
 
     function isEquippable(itemId) {
         return EQUIPPABLE_ITEMS.includes(itemId);
@@ -157,7 +160,14 @@ window.Inventory = (function() {
             basic_rook_boat: '🚣',
             arsen_bomb: '💣',
             fishing_spear: '🔱',
-            diving_mask: '🤿'
+            diving_mask: '🤿',
+            pirate_eyepatch: '🏴‍☠️',
+            fur_coat: '🧥',
+            thunder_scythe: '⚡',
+            thunder_armour: '🛡️',
+            basic_pack: '🃏',
+            rare_pack: '🎴',
+            legendary_pack: '✨'
         };
         return icons[itemId] || '📦';
     }
@@ -367,6 +377,13 @@ window.Inventory = (function() {
             }
         }
 
+        // Card pack opening
+        if (item.effect === 'open_card_pack') {
+            close(); // close inventory
+            CardGame.showPackOpening(item.id);
+            return;
+        }
+
         // Execute the item's effect
         const success = Effects.execute(item.effect);
 
@@ -498,10 +515,13 @@ window.Inventory = (function() {
 
         const slot = (targetSlot !== undefined) ? targetSlot : GameState.selectedHotbarSlot;
 
-        // If something is already in this slot, put it back in inventory
+        // Save displaced item before modifying anything
         const existing = GameState.hotbarSlots[slot];
-        if (existing) {
-            addItemToInventory(existing.id, existing.name, existing.description, existing.effect, existing.count);
+
+        // Remove source item from inventory FIRST (before adding displaced back)
+        const itemIndex = GameState.inventoryItems.findIndex(i => i.id === item.id);
+        if (itemIndex !== -1) {
+            GameState.inventoryItems.splice(itemIndex, 1);
         }
 
         // Put the item in the hotbar slot
@@ -513,10 +533,9 @@ window.Inventory = (function() {
             count: item.count
         };
 
-        // Remove ALL of this item from inventory (moved to hotbar)
-        const itemIndex = GameState.inventoryItems.findIndex(i => i.id === item.id);
-        if (itemIndex !== -1) {
-            GameState.inventoryItems.splice(itemIndex, 1);
+        // Now put displaced item back in inventory (safe — source already removed)
+        if (existing) {
+            addItemToInventory(existing.id, existing.name, existing.description, existing.effect, existing.count);
         }
 
         Game.playSound('collect');
@@ -1449,6 +1468,12 @@ window.Inventory = (function() {
     /**
      * Refresh the Memories tab — shows found and locked memory fragments.
      */
+    function refreshCardAlbum() {
+        var container = document.getElementById('cards-collection');
+        if (!container) return;
+        container.innerHTML = CardGame.getCollectionHTML();
+    }
+
     function refreshMemories() {
         var grid = document.getElementById('memories-grid');
         if (!grid) return;
