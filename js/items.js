@@ -640,35 +640,41 @@ window.Items = (function() {
         recipesContainer.innerHTML = '';
 
         CONFIG.CRAFT_RECIPES.forEach(recipe => {
-            // Skip recipes that require a higher score
-            if (recipe.requiredScore && GameState.score < recipe.requiredScore) {
-                return;
-            }
-
             const recipeDiv = document.createElement('div');
             recipeDiv.className = 'craft-recipe';
 
+            // Check if recipe is locked by score requirement
+            var isLocked = recipe.requiredScore && GameState.score < recipe.requiredScore && !GameState.isTestingMode;
+
             // Generic affordability check — works for ALL resource types!
-            let canCraft = true;
-            for (const resource in recipe.cost) {
-                if (recipe.cost[resource] > 0 && (GameState.resourceCounts[resource] || 0) < recipe.cost[resource]) {
-                    canCraft = false;
-                    break;
+            let canCraft = !isLocked;
+            if (!isLocked) {
+                for (const resource in recipe.cost) {
+                    if (recipe.cost[resource] > 0 && (GameState.resourceCounts[resource] || 0) < recipe.cost[resource]) {
+                        canCraft = false;
+                        break;
+                    }
                 }
             }
 
             if (!canCraft) {
                 recipeDiv.classList.add('disabled');
             }
+            if (isLocked) {
+                recipeDiv.classList.add('locked');
+            }
 
             const nameDiv = document.createElement('div');
             nameDiv.className = 'craft-recipe-name';
             nameDiv.textContent = recipe.name;
+            if (isLocked) {
+                nameDiv.innerHTML += ' <span style="color:#aa6633;font-size:12px;">🔒 ' + recipe.requiredScore + ' score</span>';
+            }
             recipeDiv.appendChild(nameDiv);
 
             const descDiv = document.createElement('div');
             descDiv.className = 'craft-recipe-desc';
-            descDiv.textContent = recipe.description;
+            descDiv.textContent = isLocked ? 'Reach ' + recipe.requiredScore + ' score to unlock this recipe!' : recipe.description;
             recipeDiv.appendChild(descDiv);
 
             const costDiv = document.createElement('div');
@@ -685,7 +691,9 @@ window.Items = (function() {
                 glass: '🔮',
                 manglecacia_wood: '🪵',
                 seaspray_birch_wood: '🪵',
-                cinnamon: '🌾'
+                cinnamon: '🌾',
+                hide: '🦊',
+                bakka_seal_tooth: '🦷'
             };
 
             for (const resource in recipe.cost) {

@@ -128,6 +128,54 @@ window.Effects = (function() {
                 return true;
 
             // ----------------------------------------------------------------
+            // OPEN GAME - Open a tavern game
+            // ----------------------------------------------------------------
+            case 'open_game':
+                if (effect.game === 'board_game') BoardGame.open();
+                else if (effect.game === 'pigon_game') PigonGame.open();
+                else if (effect.game === 'card_game') CardGame.open();
+                return true;
+
+            // ----------------------------------------------------------------
+            // UNLOCK MEEPLE - Add a meeple to the player's collection
+            // ----------------------------------------------------------------
+            case 'unlock_meeple':
+                if (!GameState.unlockedMeeples) GameState.unlockedMeeples = [];
+                if (GameState.unlockedMeeples.indexOf(effect.meeple) !== -1) {
+                    Game.showBlockedMessage('Already owned!');
+                    return false;
+                }
+                GameState.unlockedMeeples.push(effect.meeple);
+                Game.showBlockedMessage('Meeple unlocked: ' + effect.meeple + '!');
+                return true;
+
+            // ----------------------------------------------------------------
+            // UNLOCK BIOME - Add a biome to the player's collection
+            // ----------------------------------------------------------------
+            case 'unlock_biome':
+                if (!GameState.unlockedBiomes) GameState.unlockedBiomes = [];
+                if (GameState.unlockedBiomes.indexOf(effect.biome) !== -1) {
+                    Game.showBlockedMessage('Already owned!');
+                    return false;
+                }
+                GameState.unlockedBiomes.push(effect.biome);
+                Game.showBlockedMessage('Biome unlocked: ' + effect.biome + '!');
+                return true;
+
+            // ----------------------------------------------------------------
+            // UNLOCK COLOUR - Add a board game colour
+            // ----------------------------------------------------------------
+            case 'unlock_colour':
+                if (!GameState.unlockedBoardColours) GameState.unlockedBoardColours = [];
+                if (GameState.unlockedBoardColours.indexOf(effect.colour) !== -1) {
+                    Game.showBlockedMessage('Already owned!');
+                    return false;
+                }
+                GameState.unlockedBoardColours.push(effect.colour);
+                Game.showBlockedMessage('Colour unlocked: ' + effect.colour + '!');
+                return true;
+
+            // ----------------------------------------------------------------
             // TRADE - Exchange resources for rewards
             // ----------------------------------------------------------------
             case 'trade':
@@ -427,6 +475,9 @@ window.Effects = (function() {
             case 'fishing_spear':
             case 'diving_mask':
             case 'pirate_eyepatch':
+            case 'fur_coat':
+            case 'thunder_scythe':
+            case 'thunder_armour':
                 // These go into inventory as equippable items
                 // Look up name/description from TOOL_STATS if available
                 var existing = GameState.inventoryItems.find(function(item) {
@@ -457,6 +508,10 @@ window.Effects = (function() {
                         itemName = "Pirate's Eyepatch";
                         itemDesc = 'A fearsome eyepatch! Equip from hotbar, press E — non-hostile animals flee in terror.';
                     }
+                    if (effect.item === 'fur_coat') {
+                        itemName = 'Fur Coat';
+                        itemDesc = 'A warm coat made from hide. Equip from hotbar, press E — protects from the cold in Snowy Mountains!';
+                    }
                     GameState.inventoryItems.push({
                         id: effect.item,
                         name: itemName,
@@ -470,6 +525,16 @@ window.Effects = (function() {
                     Inventory.refreshInventory();
                 }
                 UI.updateUI();
+                return true;
+
+            case 'basic_pack':
+            case 'rare_pack':
+            case 'legendary_pack':
+                // Card packs go to inventory, openable later
+                var packNames = { basic_pack: 'Basic Card Pack', rare_pack: 'Rare Card Pack', legendary_pack: 'Legendary Card Pack' };
+                var packDescs = { basic_pack: '3 cards + 2 energy', rare_pack: '5 cards + 3 energy (better odds)', legendary_pack: '5 cards + 4 energy (guaranteed rare+)' };
+                Inventory.addItemToInventory(effect.item, packNames[effect.item], packDescs[effect.item], 'open_card_pack', 1);
+                Game.playSound('collect');
                 return true;
 
             default:

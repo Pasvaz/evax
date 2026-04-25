@@ -72,11 +72,20 @@ window.GameState = {
     squatTimer: 0,
 
     score: 0,
-    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0, bakka_seal_tooth: 0, flour: 0, sugar: 0, butter: 0 },
+    resourceCounts: { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0, bakka_seal_tooth: 0, flour: 0, sugar: 0, butter: 0, hide: 0 },
     pinnedResources: [],
     lastResourceCounts: {},
     resourceLastChanged: {},
     pigCoins: 0,
+    tavernTokens: 0,
+    unlockedBoardColours: [], // Extra colours bought from Pigierre
+    animalKills: {},          // Kill counts by animal type (for quests)
+    tavernWins: { pigston: 0, pigon: 0 }, // Wins per tavern NPC (for lore reveals)
+    unlockedMeeples: [],     // Extra meeples bought from Pigierre
+    unlockedBiomes: [],      // Pigon game biomes purchased from Pigierre
+    gossipHeard: [],         // Snickers question IDs already answered
+    gossipDay: 0,            // Current gossip rotation day
+    cardCollection: [],      // Pigias card game collection
     timeElapsed: 0,
 
     // Progression system
@@ -175,6 +184,11 @@ window.GameState = {
     hutScene: null,              // Separate THREE.Scene for hut interior
     hutCamera: null,             // Camera for hut interior
     savedOutsidePosition: null,  // Player position before entering hut
+
+    isInsideTavern: false,       // Player is inside the Coastal Tavern
+    tavernScene: null,
+    tavernCamera: null,
+    savedTavernPosition: null,
 
     // Shop system
     isShopOpen: false,
@@ -365,6 +379,31 @@ window.Game = (function() {
             if (consumeBubbleShield()) return; // Damage fully blocked
         }
 
+        // Thunder armour damage reduction
+        if (GameState.thunderArmourEquipped && enemyType && enemyType !== 'hypothermia') {
+            amount = Math.max(1, Math.floor((amount - 1) * 0.85)); // -1 flat, then 15% less
+            // Shock attacker — find nearest enemy and damage it
+            if (GameState.enemies) {
+                var nearest = null;
+                var nearDist = Infinity;
+                GameState.enemies.forEach(function(e) {
+                    if (!e.parent || !e.userData || e.userData.health <= 0) return;
+                    var d = GameState.peccary.position.distanceTo(e.position);
+                    if (d < 8 && d < nearDist) { nearest = e; nearDist = d; }
+                });
+                if (nearest) {
+                    Enemies.damageEnemy(nearest, 2);
+                    // Thunder flash effect
+                    var flashMat = new THREE.MeshBasicMaterial({ color: 0x44ccff, transparent: true, opacity: 0.8 });
+                    var flash = new THREE.Mesh(new THREE.SphereGeometry(1, 6, 6), flashMat);
+                    flash.position.copy(nearest.position);
+                    flash.position.y += 1;
+                    GameState.scene.add(flash);
+                    setTimeout(function() { GameState.scene.remove(flash); }, 200);
+                }
+            }
+        }
+
         GameState.health -= amount;
         GameState.lastDamageSource = enemyType || 'unknown';
         playSound('hurt');
@@ -514,7 +553,7 @@ window.Game = (function() {
             // Testing mode - infinite resources, coins, and score
             GameState.pigCoins = 99999;
             GameState.score = 999999;
-            GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
+            GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999, bakka_seal_tooth: 999, flour: 999, sugar: 999, butter: 999, hide: 999 };
             GameState.hasSaddle = true;  // Give saddle for riding gazella
             // Give all artifacts
             GameState.artifacts = ARTIFACTS.map(a => a.id);
@@ -567,6 +606,10 @@ window.Game = (function() {
             CONFIG.STARTING_RESOURCES || {}
         );
         GameState.pigCoins = CONFIG.STARTING_COINS || 0;
+        GameState.tavernTokens = 0;
+        GameState.unlockedBoardColours = [];
+        GameState.animalKills = {};
+        GameState.tavernWins = { pigston: 0, pigon: 0 };
         GameState.timeElapsed = 0;
 
         // Reset progression
@@ -596,6 +639,10 @@ window.Game = (function() {
         GameState.villageNotified = false;
         GameState.hungerWarned = false;
         GameState.thirstWarned = false;
+        GameState.gossipHeard = [];
+        GameState.gossipDay = 0;
+        GameState.unlockedBiomes = [];
+        GameState.cardCollection = [];
 
         // Reset Easter event
         GameState.easterEventActive = false;
@@ -658,6 +705,10 @@ window.Game = (function() {
         GameState.nearbyChest = null;
         GameState.chestRespawnTimer = undefined;
         GameState.eyepatchEquipped = false;
+        GameState.furCoatEquipped = false;
+        GameState.thunderArmourEquipped = false;
+        GameState.furCoatMesh = null;
+        GameState.coldMeter = 100;
 
         // Clear any pending toast notifications
         UI.clearToasts();
@@ -1212,6 +1263,12 @@ window.Game = (function() {
         // Remove villagers
         GameState.villagers.forEach(v => GameState.scene.remove(v));
         GameState.villagers = [];
+
+        // Remove tavern building (NPCs are in interior scene, handled by tavern.js)
+        if (GameState.tavernBuilding) {
+            GameState.scene.remove(GameState.tavernBuilding);
+            GameState.tavernBuilding = null;
+        }
     }
 
     /**
@@ -1255,9 +1312,26 @@ window.Game = (function() {
         if (GameState.gameRunning) {
             // Check if inside research hut - pauses outside world
             if (GameState.isInsideHut) {
-                // Only update interior when inside hut
                 ResearchHut.updateInterior(delta);
                 ResearchHut.renderInterior();
+                return; // Skip normal game loop
+            }
+
+            // Time always ticks (even in tavern or minigames)
+            GameState.timeElapsed += delta;
+
+            // Update gossip day timer (5 min real time = 1 gossip day)
+            GameState.gossipDayTimer = (GameState.gossipDayTimer || 0) + delta;
+            if (GameState.gossipDayTimer >= 300) {
+                GameState.gossipDayTimer -= 300;
+                GameState.gossipDay = (GameState.gossipDay || 0) + 1;
+            }
+
+            // Check if inside tavern - pauses outside world
+            if (GameState.isInsideTavern) {
+                Tavern.updateInterior(delta);
+                Tavern.renderInterior();
+                UI.updateUI(); // Keep HUD timer ticking
                 return; // Skip normal game loop
             }
 
@@ -1267,8 +1341,6 @@ window.Game = (function() {
                 GameState.renderer.render(GameState.scene, GameState.camera);
                 return;
             }
-
-            GameState.timeElapsed += delta;
 
             // Handle become animal mode
             if (GameState.becomeAnimalMode) {
@@ -1321,7 +1393,7 @@ window.Game = (function() {
 
             // Testing mode - keep resources infinite
             if (GameState.isTestingMode) {
-                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
+                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999, bakka_seal_tooth: 999, flour: 999, sugar: 999, butter: 999, hide: 999 };
                 GameState.pigCoins = 99999;
                 GameState.score = 999999;
                 GameState.hunger = 100;
@@ -1346,13 +1418,16 @@ window.Game = (function() {
             if (GameState.attackCooldown > 0) {
                 GameState.attackCooldown = Math.max(0, GameState.attackCooldown - delta);
             }
+            if (GameState.thunderCooldown > 0) {
+                GameState.thunderCooldown = Math.max(0, GameState.thunderCooldown - delta);
+            }
             if (GameState.chopCooldown > 0) {
                 GameState.chopCooldown = Math.max(0, GameState.chopCooldown - delta);
             }
 
             // Animate sword spin slash
             if (GameState.swordSpinActive) {
-                var spinDuration = SETTINGS.BALANCE.SWORD_SPIN_DURATION;
+                var spinDuration = GameState.swordSpinDuration || 0.4;
                 GameState.swordSpinTimer += delta;
                 var progress = Math.min(GameState.swordSpinTimer / spinDuration, 1);
                 // Rotate Pedro 360° with easeInOut for snappy feel
@@ -1408,6 +1483,9 @@ window.Game = (function() {
                     GameState.dehydrationTimer = 0;  // Reset timer when not dehydrated
                 }
             }
+
+            // Cold meter — snowy biome without fur coat
+            updateColdMeter(delta);
 
             // Toad mating season timer (savannah biome only)
             if (GameState.currentBiome === 'savannah') {
@@ -1668,6 +1746,9 @@ window.Game = (function() {
                     if (GameState.isPlacingRaft) {
                         // Cancel raft placement
                         cancelRaftPlacement();
+                    } else if (GameState.isInsideTavern) {
+                        // Inside tavern - handle tavern interactions
+                        Tavern.handleInteraction();
                     } else if (GameState.isInsideHut) {
                         // Inside hut - handle hut interactions
                         ResearchHut.handleInteraction();
@@ -1681,6 +1762,9 @@ window.Game = (function() {
                         }
                     } else if (GameState.nearbyVillager) {
                         Dialogs.openDialog(GameState.nearbyVillager);
+                    } else if (Tavern.checkEnterTavern()) {
+                        // Near tavern entrance
+                        Tavern.enterTavern();
                     } else if (ResearchHut.checkEnterHut()) {
                         // Near research hut entrance
                         ResearchHut.enterHut();
@@ -1711,6 +1795,12 @@ window.Game = (function() {
                         } else if (hotbarItem && hotbarItem.id === 'pirate_eyepatch') {
                             // Toggle eyepatch on/off
                             toggleEyepatch();
+                        } else if (hotbarItem && hotbarItem.id === 'fur_coat') {
+                            // Toggle fur coat on/off
+                            toggleFurCoat();
+                        } else if (hotbarItem && hotbarItem.id === 'thunder_armour') {
+                            // Toggle thunder armour on/off
+                            toggleThunderArmour();
                         } else if (hotbarItem && hotbarItem.id === 'roller_skates') {
                             // Toggle roller skates on/off
                             GameState.rollerSkatesOn = !GameState.rollerSkatesOn;
@@ -1724,7 +1814,15 @@ window.Game = (function() {
                 }
 
                 if (e.key === 'Escape') {
-                    if (pigletPickerOpen) {
+                    if (!document.getElementById('card-game-overlay').classList.contains('hidden')) {
+                        CardGame.close();
+                    } else if (PigonGame.isOpen()) {
+                        PigonGame.close();
+                    } else if (BoardGame.isOpen()) {
+                        BoardGame.close();
+                    } else if (GameState.isInsideTavern) {
+                        Tavern.exitTavern();
+                    } else if (pigletPickerOpen) {
                         closePigletPicker();
                     } else if (document.getElementById('egg-shop-overlay').classList.contains('active')) {
                         closeEggShop();
@@ -1789,8 +1887,17 @@ window.Game = (function() {
                 var hotbarKeys = [',', '.', '/', ';', "'", '[', ']', '-', '='];
                 var hotbarIndex = hotbarKeys.indexOf(e.key);
                 if (hotbarIndex !== -1 && !GameState.isDialogOpen && !GameState.isShopOpen && !GameState.isInventoryOpen && !GameState.isCraftMenuOpen) {
+                    var prevSlot = GameState.selectedHotbarSlot;
                     GameState.selectedHotbarSlot = hotbarIndex;
                     UI.updateHotbar();
+                    // Rebuild weapon model if switching to/from thunder scythe
+                    var prevItem = GameState.hotbarSlots[prevSlot];
+                    var newItem = GameState.hotbarSlots[hotbarIndex];
+                    var prevIsThunder = prevItem && prevItem.id === 'thunder_scythe';
+                    var newIsThunder = newItem && newItem.id === 'thunder_scythe';
+                    if (prevIsThunder !== newIsThunder) {
+                        Player.createBackSword();
+                    }
                 }
 
                 if (GameState.isDialogOpen && /^[1-9]$/.test(e.key)) {
@@ -1828,6 +1935,20 @@ window.Game = (function() {
 
             window.addEventListener('mouseup', () => {
                 GameState.cameraDragging = false;
+            });
+
+            // Right-click — thunderbolt attack (and prevent context menu in game)
+            window.addEventListener('contextmenu', function(e) {
+                if (!GameState.gameRunning) return;
+                e.preventDefault(); // Always block context menu during gameplay
+
+                if (GameState.isDialogOpen || GameState.isCraftMenuOpen || GameState.isInventoryOpen) return;
+                if (GameState.isInsideTavern || GameState.isInsideHut) return;
+
+                var hotbarItem = UI.getSelectedHotbarItem();
+                if (!hotbarItem || hotbarItem.id !== 'thunder_scythe') return;
+
+                fireThunderbolt(e);
             });
 
             // Start screen buttons
@@ -3057,29 +3178,30 @@ window.Game = (function() {
         if (isSword) {
             // SWORD: spin slash — 360° AoE attack
             if (GameState.swordSpinActive) return; // Already spinning
+            var swordStats = TOOL_STATS.swords[itemId];
             if (GameState.attackCooldown > 0) {
                 showCombatHint('Sword not ready! (' + Math.ceil(GameState.attackCooldown) + 's)');
                 return;
             }
-            var swingCost = GameState.maxStamina / SETTINGS.BALANCE.MELEE_ATTACKS_PER_STAMINA;
+            var swingCost = GameState.maxStamina / (swordStats.staminaCost || 7);
             if (GameState.stamina < swingCost) {
                 showCombatHint('Too exhausted to swing!');
                 return;
             }
 
             // Start spin — costs stamina + cooldown even if nothing is hit
-            var swordStats = TOOL_STATS.swords[itemId];
             GameState.stamina = Math.max(0, GameState.stamina - swingCost);
-            GameState.attackCooldown = SETTINGS.BALANCE.SWORD_ATTACK_COOLDOWN;
+            GameState.attackCooldown = swordStats.attackCooldown || 2;
 
             // Begin spin animation
             GameState.swordSpinActive = true;
             GameState.swordSpinTimer = 0;
+            GameState.swordSpinDuration = swordStats.spinDuration || 0.4;
             GameState.swordSpinBaseY = GameState.peccary.rotation.y;
             Player.startSwordSpin();
 
             // Hit all enemies within spin range
-            var spinRange = SETTINGS.BALANCE.SWORD_SPIN_RANGE;
+            var spinRange = swordStats.spinRange || 6;
             var hitCount = 0;
             GameState.enemies.forEach(function(enemy) {
                 if (!enemy.parent || !enemy.userData || enemy.userData.health <= 0) return;
@@ -3091,6 +3213,10 @@ window.Game = (function() {
             });
             if (hitCount > 0) {
                 Game.playSound('hurt');
+            }
+            // Thunder scythe spin effect
+            if (itemId === 'thunder_scythe') {
+                createThunderSpinEffect();
             }
             return;
         }
@@ -3166,6 +3292,169 @@ window.Game = (function() {
                 }
             }
         }
+    }
+
+    // ================================================================
+    // THUNDERBOLT — Right-click ranged attack for Thunder Scythe
+    // ================================================================
+    GameState.thunderCooldown = 0; // Seconds remaining
+
+    function fireThunderbolt(event) {
+        var stats = TOOL_STATS.swords.thunder_scythe;
+        if (!stats) return;
+
+        // Cooldown check
+        if (GameState.thunderCooldown > 0) {
+            showCombatHint('Thunder not ready! (' + Math.ceil(GameState.thunderCooldown) + 's)');
+            return;
+        }
+
+        // Stamina cost (decent energy)
+        var staminaCost = GameState.maxStamina * 0.25;
+        if (GameState.stamina < staminaCost) {
+            showCombatHint('Too exhausted for thunderbolt!');
+            return;
+        }
+
+        // Raycast to find target enemy
+        var mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, GameState.camera);
+
+        var closestEnemy = null;
+        var closestDist = Infinity;
+
+        GameState.enemies.forEach(function(enemy) {
+            if (!enemy.parent || !enemy.userData || enemy.userData.health <= 0) return;
+            var dist = GameState.peccary.position.distanceTo(enemy.position);
+            if (dist > stats.thunderMaxRange) return;
+
+            // Check if enemy is roughly where the player clicked (within 8 units of ray)
+            var enemyPos = enemy.position.clone();
+            enemyPos.y += 1;
+            var toEnemy = enemyPos.clone().sub(raycaster.ray.origin);
+            var projected = toEnemy.dot(raycaster.ray.direction);
+            if (projected < 0) return;
+            var closestPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(projected));
+            var perpDist = closestPoint.distanceTo(enemyPos);
+            if (perpDist < 8 && dist < closestDist) {
+                closestDist = dist;
+                closestEnemy = enemy;
+            }
+        });
+
+        if (!closestEnemy) {
+            showCombatHint('No target in range!');
+            return;
+        }
+
+        // Apply cost
+        GameState.stamina = Math.max(0, GameState.stamina - staminaCost);
+        GameState.thunderCooldown = stats.thunderCooldown;
+
+        // Calculate damage: more distance = more damage
+        var t = Math.min(closestDist / stats.thunderMaxRange, 1);
+        var damage = Math.round(stats.thunderMinDmg + t * (stats.thunderMaxDmg - stats.thunderMinDmg));
+
+        // Create lightning bolt visual
+        createThunderboltEffect(GameState.peccary.position, closestEnemy.position);
+
+        // Apply damage
+        Enemies.damageEnemy(closestEnemy, damage);
+        Game.playSound('hurt');
+        showCombatHint('⚡ Thunderbolt! ' + damage + ' damage!');
+    }
+
+    function createThunderboltEffect(from, to) {
+        // Create a jagged lightning bolt between two points
+        var boltGroup = new THREE.Group();
+        var boltMat = new THREE.MeshBasicMaterial({ color: 0x44ccff });
+        var glowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+
+        var start = from.clone();
+        start.y += 1.5;
+        var end = to.clone();
+        end.y += 1;
+
+        var segments = 8;
+        var prev = start.clone();
+
+        for (var i = 1; i <= segments; i++) {
+            var t = i / segments;
+            var next = new THREE.Vector3().lerpVectors(start, end, t);
+            // Add random jitter (except last segment hits target exactly)
+            if (i < segments) {
+                next.x += (Math.random() - 0.5) * 3;
+                next.y += (Math.random() - 0.5) * 2;
+                next.z += (Math.random() - 0.5) * 3;
+            }
+
+            // Bolt segment
+            var dir = next.clone().sub(prev);
+            var len = dir.length();
+            var bolt = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, len), boltMat);
+            bolt.position.copy(prev.clone().add(next).multiplyScalar(0.5));
+            bolt.lookAt(next);
+            boltGroup.add(bolt);
+
+            // Glow segment
+            var glow = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, len), glowMat);
+            glow.position.copy(bolt.position);
+            glow.lookAt(next);
+            boltGroup.add(glow);
+
+            prev = next.clone();
+        }
+
+        // Impact flash at target
+        var flash = new THREE.Mesh(
+            new THREE.SphereGeometry(1.5, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.7 })
+        );
+        flash.position.copy(end);
+        boltGroup.add(flash);
+
+        // Point light at impact
+        var light = new THREE.PointLight(0x44ccff, 3, 20);
+        light.position.copy(end);
+        boltGroup.add(light);
+
+        GameState.scene.add(boltGroup);
+
+        // Remove after 0.3 seconds
+        setTimeout(function() {
+            GameState.scene.remove(boltGroup);
+        }, 300);
+    }
+
+    function createThunderSpinEffect() {
+        // Ring of small lightning sparks around Pedro during thunder scythe spin
+        var sparkGroup = new THREE.Group();
+        var sparkMat = new THREE.MeshBasicMaterial({ color: 0x44ccff });
+        var pos = GameState.peccary.position;
+
+        for (var i = 0; i < 12; i++) {
+            var angle = (i / 12) * Math.PI * 2;
+            var radius = SETTINGS.BALANCE.SWORD_SPIN_RANGE * 0.8;
+            var spark = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), sparkMat);
+            spark.position.set(
+                pos.x + Math.cos(angle) * radius,
+                pos.y + 0.5 + Math.random() * 1.5,
+                pos.z + Math.sin(angle) * radius
+            );
+            sparkGroup.add(spark);
+        }
+
+        // Blue flash light
+        var light = new THREE.PointLight(0x44ccff, 2, 15);
+        light.position.copy(pos);
+        light.position.y += 2;
+        sparkGroup.add(light);
+
+        GameState.scene.add(sparkGroup);
+        setTimeout(function() { GameState.scene.remove(sparkGroup); }, 400);
     }
 
     /**
@@ -3563,7 +3852,7 @@ window.Game = (function() {
 
         GameState.isTestingMode = true;
         GameState.pigCoins = 99999;
-        GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999 };
+        GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999, bakka_seal_tooth: 999, flour: 999, sugar: 999, butter: 999, hide: 999 };
         GameState.hasSaddle = true;
         GameState.artifacts = ARTIFACTS.map(a => a.id);
         document.getElementById('testing-indicator').classList.remove('hidden');
@@ -3997,6 +4286,197 @@ function toggleEyepatch() {
         UI.showToast("Yarr!", "Pirate's Eyepatch equipped! Animals will flee in terror!");
     } else {
         UI.showToast("Eyepatch Off", "Animals no longer fear you.");
+    }
+}
+
+// ============================================================================
+// FUR COAT — Snowy Mountains survival gear
+// ============================================================================
+
+// ============================================================================
+// THUNDER ARMOUR — Tim's enchanted armour
+// ============================================================================
+
+function toggleThunderArmour() {
+    GameState.thunderArmourEquipped = !GameState.thunderArmourEquipped;
+    attachThunderArmourToPedro();
+    if (GameState.thunderArmourEquipped) {
+        UI.showToast('Thunder Armour Equipped!', 'You crackle with electricity. Enemies will regret hitting you!');
+    } else {
+        UI.showToast('Thunder Armour Removed', 'The sparks fade away.');
+    }
+}
+
+function attachThunderArmourToPedro() {
+    if (GameState.thunderArmourMesh) {
+        GameState.thunderArmourMesh.parent.remove(GameState.thunderArmourMesh);
+        GameState.thunderArmourMesh = null;
+    }
+
+    if (!GameState.thunderArmourEquipped || !GameState.peccary) return;
+
+    var armourGroup = new THREE.Group();
+
+    // Pedro's body: cylinder at y=0.8, radius 0.6, from x=-1.2 to x=1.2
+    var plateMat = new THREE.MeshStandardMaterial({ color: 0x2266cc, metalness: 0.7, roughness: 0.3, emissive: 0x112244, emissiveIntensity: 0.2 });
+
+    // Main body wrap — cylinder matching Pedro's body shape but slightly larger
+    var bodyPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.4, 16, 1, true), plateMat);
+    bodyPlate.rotation.z = Math.PI / 2;
+    bodyPlate.position.set(0, 0.8, 0);
+    armourGroup.add(bodyPlate);
+
+    // Front cap (covers chest/face side)
+    var capMat = new THREE.MeshStandardMaterial({ color: 0x2266cc, metalness: 0.7, roughness: 0.3, emissive: 0x112244, emissiveIntensity: 0.2 });
+    var frontCap = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
+    frontCap.rotation.z = -Math.PI / 2;
+    frontCap.position.set(0.7, 0.8, 0);
+    armourGroup.add(frontCap);
+
+    // Back cap
+    var backCap = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
+    backCap.rotation.z = Math.PI / 2;
+    backCap.position.set(-0.7, 0.8, 0);
+    armourGroup.add(backCap);
+
+    // Shoulder guards (on top, slightly raised)
+    var shoulderMat = new THREE.MeshStandardMaterial({ color: 0x3388ff, metalness: 0.8, roughness: 0.2 });
+    var leftShoulder = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), shoulderMat);
+    leftShoulder.position.set(0.3, 1.3, 0.5);
+    armourGroup.add(leftShoulder);
+    var rightShoulder = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), shoulderMat);
+    rightShoulder.position.set(0.3, 1.3, -0.5);
+    armourGroup.add(rightShoulder);
+
+    // Belly guard (underneath)
+    var bellyPlate = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.9), plateMat);
+    bellyPlate.position.set(0, 0.15, 0);
+    armourGroup.add(bellyPlate);
+
+    // Electric sparks (small fizzing spheres around the armour)
+    var sparkMat = new THREE.MeshBasicMaterial({ color: 0x88ddff });
+    for (var i = 0; i < 6; i++) {
+        var spark = new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 4), sparkMat);
+        var angle = (i / 6) * Math.PI * 2;
+        spark.position.set(
+            (Math.random() - 0.5) * 1.4,
+            0.8 + Math.cos(angle) * 0.7,
+            Math.sin(angle) * 0.7
+        );
+        spark.userData.armourSpark = true;
+        armourGroup.add(spark);
+    }
+
+    GameState.peccary.add(armourGroup);
+    GameState.thunderArmourMesh = armourGroup;
+}
+
+function toggleFurCoat() {
+    GameState.furCoatEquipped = !GameState.furCoatEquipped;
+    attachFurCoatToPedro();
+    if (GameState.furCoatEquipped) {
+        UI.showToast('Fur Coat Equipped!', 'You feel warm and cozy. The Snowy Mountains await!');
+    } else {
+        UI.showToast('Fur Coat Removed', 'You take off the coat. Brrr...');
+    }
+}
+
+function attachFurCoatToPedro() {
+    // Remove existing coat mesh
+    if (GameState.furCoatMesh) {
+        GameState.furCoatMesh.parent.remove(GameState.furCoatMesh);
+        GameState.furCoatMesh = null;
+    }
+
+    if (!GameState.furCoatEquipped || !GameState.peccary) return;
+
+    // Build a visible coat around Pedro's body
+    var coatGroup = new THREE.Group();
+
+    // Main body wrap (larger than Pedro's body)
+    var coatMat = new THREE.MeshStandardMaterial({ color: 0x8B6B4A, roughness: 0.9 });
+    var coatBody = new THREE.Mesh(new THREE.SphereGeometry(0.85, 12, 12), coatMat);
+    coatBody.scale.set(1.3, 0.9, 1.1);
+    coatBody.position.set(0.4, 0.5, 0);
+    coatGroup.add(coatBody);
+
+    // Furry collar (lighter, fluffy ring around neck area)
+    var furMat = new THREE.MeshStandardMaterial({ color: 0xC4A882, roughness: 1.0 });
+    var collar = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.15, 8, 12), furMat);
+    collar.position.set(1.0, 0.6, 0);
+    collar.rotation.y = Math.PI / 2;
+    coatGroup.add(collar);
+
+    // Fur trim at bottom
+    var trimMat = new THREE.MeshStandardMaterial({ color: 0xD4C4A0, roughness: 1.0 });
+    var trim = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.1, 8, 16), trimMat);
+    trim.position.set(0.3, 0.1, 0);
+    trim.rotation.z = Math.PI / 2;
+    coatGroup.add(trim);
+
+    GameState.peccary.add(coatGroup);
+    GameState.furCoatMesh = coatGroup;
+}
+
+/**
+ * Update cold meter — called every frame when in snowy biome without coat.
+ */
+function updateColdMeter(delta) {
+    // Only active in snowy mountains
+    if (GameState.currentBiome !== 'snowy_mountains') {
+        GameState.coldMeter = 100;
+        hideColdUI();
+        return;
+    }
+
+    if (GameState.furCoatEquipped) {
+        // Wearing coat — warm! Slowly restore cold meter
+        GameState.coldMeter = Math.min(100, (GameState.coldMeter || 100) + 20 * delta);
+        hideColdUI();
+        return;
+    }
+
+    // No coat in snowy biome — cold meter drains!
+    if (GameState.coldMeter === undefined) GameState.coldMeter = 100;
+    GameState.coldMeter -= (100 / 30) * delta; // 30 seconds to freeze
+
+    showColdUI();
+    updateColdUI();
+
+    if (GameState.coldMeter <= 0) {
+        GameState.coldMeter = 0;
+        // Freeze damage — take health damage rapidly
+        Game.takeDamage(30 * delta, 'hypothermia');
+    }
+}
+
+function showColdUI() {
+    var el = document.getElementById('cold-meter');
+    if (el) el.classList.remove('hidden');
+}
+
+function hideColdUI() {
+    var el = document.getElementById('cold-meter');
+    if (el) el.classList.add('hidden');
+}
+
+function updateColdUI() {
+    var fill = document.getElementById('cold-meter-fill');
+    var text = document.getElementById('cold-meter-text');
+    if (fill) {
+        var pct = Math.max(0, GameState.coldMeter || 0);
+        fill.style.width = pct + '%';
+        // Color changes from blue to red as you get colder
+        if (pct > 50) {
+            fill.style.background = '#4488cc';
+        } else if (pct > 25) {
+            fill.style.background = '#6666cc';
+        } else {
+            fill.style.background = '#cc3333';
+        }
+    }
+    if (text) {
+        text.textContent = Math.round(GameState.coldMeter || 0) + '%';
     }
 }
 
@@ -9189,3 +9669,431 @@ window.giveEyepatch = function() {
 };
 // Test: skip chest timer
 window.skipChestTimer = function() { GameState.chestRespawnTimer = 1; };
+
+// ============================================================================
+// PIGSTON'S BOARD GAME
+// ============================================================================
+// 5x5 grid tile game. Rules:
+// - Players take turns placing tiles on the board
+// - If you place a tile adjacent (8 directions) to your own tile, you lose
+// - If you have NO safe tile to place, you lose
+// - Random who goes first, random AI difficulty (mood)
+
+var BoardGame = (function() {
+    var GRID_SIZE = 5;
+    var BASE_COLORS = {
+        brown:  '#8B4513',
+        ginger: '#D2691E',
+        black:  '#2a2a2a',
+        white:  '#F5F5DC'
+    };
+    var EXTRA_COLORS = {
+        beige:  { hex: '#D4C4A0', css: 'background: #D4C4A0;' },
+        mint:   { hex: '#A8E6CF', css: 'background: #A8E6CF;' },
+        lemon:  { hex: '#FFF44F', css: 'background: #FFF44F;' },
+        mauve:  { hex: '#9B7DB8', css: 'background: #9B7DB8;' },
+        pink:   { hex: '#E8A0B0', css: 'background: #E8A0B0;' },
+        watermelon: { hex: '#FF6B6B', css: 'background: linear-gradient(180deg, #4CAF50 0%, #4CAF50 30%, #FF6B6B 30%, #FF6B6B 100%);' },
+        zebra:  { hex: '#FFFFFF', css: 'background: repeating-linear-gradient(45deg, #222 0px, #222 4px, #fff 4px, #fff 8px);' },
+        pig_face: { hex: '#FFAAAA', css: 'background: radial-gradient(circle at 40% 40%, #FFB6C1 30%, #FF9999 70%);' },
+        blotchy_pig: { hex: '#333333', css: 'background: radial-gradient(circle at 30% 35%, #FFB6C1 8%, transparent 10%), radial-gradient(circle at 65% 25%, #F5F5F0 12%, transparent 14%), radial-gradient(circle at 50% 70%, #F5F5F0 10%, transparent 12%), radial-gradient(circle at 75% 60%, #FFB6C1 7%, transparent 9%), #2a2a2a;', rule: 'cardinal_only' },
+        pilfera_net: { hex: '#88AACC', css: 'background: radial-gradient(circle at 50% 40%, #fff 15%, #88AACC 40%, #6688AA 70%);', rule: 'diagonal_only' }
+    };
+
+    // Special rules for quest colours (player only!)
+    // 'cardinal_only' = only blocks up/down/left/right (diagonals are safe)
+    // 'diagonal_only' = only blocks diagonals (cardinal directions are safe)
+    var PIGSTON_NAMES = ['brown', 'ginger', 'black', 'white'];
+
+    // Get all available colors (base + unlocked)
+    function getAllColors() {
+        var colors = {};
+        for (var k in BASE_COLORS) colors[k] = BASE_COLORS[k];
+        var unlocked = GameState.unlockedBoardColours || [];
+        unlocked.forEach(function(id) {
+            if (EXTRA_COLORS[id]) colors[id] = EXTRA_COLORS[id].hex;
+        });
+        return colors;
+    }
+    var MOODS = [
+        { name: 'sleepy',     mistakeChance: 0.40, line: '"Yaaawn... bit drowsy after lunch..."' },
+        { name: 'relaxed',    mistakeChance: 0.25, line: '"Nice day for a game, eh?"' },
+        { name: 'focused',    mistakeChance: 0.12, line: '"I\'ve been practising this one..."' },
+        { name: 'sharp',      mistakeChance: 0.05, line: '"I\'m feeling sharp today. Watch out!"' }
+    ];
+    var TOKEN_REWARD = 3; // tokens per win
+
+    // State
+    var board = [];      // 5x5 array: null, 'player', 'pigston'
+    var playerColor = null;
+    var pigstonColor = null;
+    var mood = null;
+    var isPlayerTurn = true;
+    var gameOver = false;
+    var isOpen = false;
+
+    function init() {
+        board = [];
+        for (var r = 0; r < GRID_SIZE; r++) {
+            board[r] = [];
+            for (var c = 0; c < GRID_SIZE; c++) {
+                board[r][c] = null;
+            }
+        }
+        gameOver = false;
+        // Random mood
+        mood = MOODS[Math.floor(Math.random() * MOODS.length)];
+        // Random first turn
+        isPlayerTurn = Math.random() < 0.5;
+    }
+
+    // Get neighbors based on rule type
+    // 'all' = all 8 directions (default)
+    // 'cardinal_only' = only up/down/left/right (4 directions)
+    // 'diagonal_only' = only diagonals (4 directions)
+    function getNeighbors(row, col, rule) {
+        var neighbors = [];
+        for (var dr = -1; dr <= 1; dr++) {
+            for (var dc = -1; dc <= 1; dc++) {
+                if (dr === 0 && dc === 0) continue;
+                var isDiagonal = (dr !== 0 && dc !== 0);
+                var isCardinal = !isDiagonal;
+
+                // Filter by rule
+                if (rule === 'cardinal_only' && isDiagonal) continue;  // Skip diagonals
+                if (rule === 'diagonal_only' && isCardinal) continue;  // Skip cardinals
+
+                var nr = row + dr;
+                var nc = col + dc;
+                if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                    neighbors.push({ r: nr, c: nc });
+                }
+            }
+        }
+        return neighbors;
+    }
+
+    // Get the adjacency rule for a given owner
+    function getRuleForOwner(owner) {
+        if (owner === 'player' && playerColor && EXTRA_COLORS[playerColor] && EXTRA_COLORS[playerColor].rule) {
+            return EXTRA_COLORS[playerColor].rule;
+        }
+        return 'all'; // Pigston always uses normal 8-direction rules
+    }
+
+    // Check if placing at (row, col) is safe for a given owner
+    function isSafe(row, col, owner) {
+        if (board[row][col] !== null) return false;
+        var rule = getRuleForOwner(owner);
+        var neighbors = getNeighbors(row, col, rule);
+        for (var i = 0; i < neighbors.length; i++) {
+            if (board[neighbors[i].r][neighbors[i].c] === owner) return false;
+        }
+        return true;
+    }
+
+    // Get all safe moves for an owner
+    function getSafeMoves(owner) {
+        var moves = [];
+        for (var r = 0; r < GRID_SIZE; r++) {
+            for (var c = 0; c < GRID_SIZE; c++) {
+                if (isSafe(r, c, owner)) moves.push({ r: r, c: c });
+            }
+        }
+        return moves;
+    }
+
+    // Count how many safe moves the opponent would have if we place at (r,c)
+    function countOpponentMovesAfter(r, c, myOwner, oppOwner) {
+        board[r][c] = myOwner;
+        var oppMoves = getSafeMoves(oppOwner);
+        board[r][c] = null;
+        return oppMoves.length;
+    }
+
+    // Count how many safe moves I would still have if I place at (r,c)
+    function countMyMovesAfter(r, c, owner) {
+        board[r][c] = owner;
+        var myMoves = getSafeMoves(owner);
+        board[r][c] = null;
+        return myMoves.length;
+    }
+
+    // AI: pick a move for Pigston
+    function pigstonPickMove() {
+        var safeMoves = getSafeMoves('pigston');
+        if (safeMoves.length === 0) return null;
+
+        // Mistake chance based on mood
+        if (Math.random() < mood.mistakeChance) {
+            // Bad move: pick the WORST safe move (minimizes own future moves)
+            var worst = safeMoves.slice();
+            worst.sort(function(a, b) {
+                return countMyMovesAfter(a.r, a.c, 'pigston') - countMyMovesAfter(b.r, b.c, 'pigston');
+            });
+            return worst[0];
+        }
+
+        // Smart move: maximize own future moves while minimizing opponent's
+        var scored = safeMoves.map(function(m) {
+            var myFuture = countMyMovesAfter(m.r, m.c, 'pigston');
+            var oppFuture = countOpponentMovesAfter(m.r, m.c, 'pigston', 'player');
+            return { move: m, score: myFuture * 2 - oppFuture };
+        });
+        scored.sort(function(a, b) { return b.score - a.score; });
+
+        // Pick from top 3 to add some variety
+        var topN = Math.min(3, scored.length);
+        var pick = Math.floor(Math.random() * topN);
+        return scored[pick].move;
+    }
+
+    // Render the board
+    function render() {
+        var grid = document.getElementById('board-game-grid');
+        grid.innerHTML = '';
+
+        var playerSafeMoves = getSafeMoves('player');
+        var playerSafeSet = {};
+        playerSafeMoves.forEach(function(m) { playerSafeSet[m.r + ',' + m.c] = true; });
+
+        for (var r = 0; r < GRID_SIZE; r++) {
+            for (var c = 0; c < GRID_SIZE; c++) {
+                var cell = document.createElement('div');
+                cell.className = 'board-cell';
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+
+                if (board[r][c] !== null) {
+                    cell.classList.add('occupied');
+                    var piece = document.createElement('div');
+                    piece.className = 'piece';
+                    var allC = getAllColors();
+                    piece.style.background = board[r][c] === 'player' ? allC[playerColor] : allC[pigstonColor];
+                    // Special CSS for pattern colours
+                    var cId = board[r][c] === 'player' ? playerColor : pigstonColor;
+                    if (EXTRA_COLORS[cId]) piece.style.cssText += EXTRA_COLORS[cId].css;
+                    cell.appendChild(piece);
+                } else if (!gameOver && isPlayerTurn) {
+                    if (playerSafeSet[r + ',' + c]) {
+                        cell.addEventListener('click', (function(row, col) {
+                            return function() { playerPlace(row, col); };
+                        })(r, c));
+                    } else {
+                        cell.classList.add('blocked');
+                    }
+                }
+
+                grid.appendChild(cell);
+            }
+        }
+
+        // Update token display
+        document.getElementById('board-game-tokens').textContent =
+            'Tavern Tokens: ' + (GameState.tavernTokens || 0);
+    }
+
+    // Player places a tile
+    function playerPlace(row, col) {
+        if (gameOver || !isPlayerTurn) return;
+        if (!isSafe(row, col, 'player')) return;
+
+        board[row][col] = 'player';
+        isPlayerTurn = false;
+        render();
+
+        // Check if Pigston has any safe moves
+        var pigstonMoves = getSafeMoves('pigston');
+        if (pigstonMoves.length === 0) {
+            endGame('player');
+            return;
+        }
+
+        // Pigston's turn after a short delay
+        document.getElementById('board-game-status').textContent = 'Pigston is thinking...';
+        setTimeout(function() {
+            pigstonTurn();
+        }, 600 + Math.random() * 800);
+    }
+
+    // Pigston places a tile
+    function pigstonTurn() {
+        if (gameOver) return;
+
+        var move = pigstonPickMove();
+        if (!move) {
+            endGame('player');
+            return;
+        }
+
+        board[move.r][move.c] = 'pigston';
+        isPlayerTurn = true;
+
+        // Check if player has any safe moves
+        var playerMoves = getSafeMoves('player');
+        if (playerMoves.length === 0) {
+            endGame('pigston');
+            render();
+            return;
+        }
+
+        document.getElementById('board-game-status').textContent = 'Your turn! Pick a tile.';
+        render();
+    }
+
+    // End the game
+    function endGame(winner) {
+        gameOver = true;
+        var statusEl = document.getElementById('board-game-status');
+        var playAgainBtn = document.getElementById('board-game-play-again');
+
+        if (winner === 'player') {
+            GameState.tavernTokens = (GameState.tavernTokens || 0) + TOKEN_REWARD;
+            statusEl.innerHTML = 'You win! Pigston ran out of moves. <b>+' + TOKEN_REWARD + ' Tavern Tokens!</b>';
+            UI.showToast('Board Game Won!', 'You beat Pigston! +' + TOKEN_REWARD + ' Tavern Tokens.');
+            // Show progressive lore reveal
+            if (typeof Tavern !== 'undefined') Tavern.showWinLore('pigston');
+        } else {
+            statusEl.textContent = 'You lose! No safe tiles left for you. Pigston grins.';
+        }
+
+        playAgainBtn.classList.remove('hidden');
+        render();
+    }
+
+    // Open the board game UI
+    function open() {
+        if (isOpen) return;
+        isOpen = true;
+        GameState.gameRunning = false;
+
+        init();
+
+        var overlay = document.getElementById('board-game-overlay');
+        overlay.classList.remove('hidden');
+
+        // Show mood
+        document.getElementById('board-game-mood').textContent =
+            'Pigston says: ' + mood.line;
+
+        // Show color picker, hide grid until color is chosen
+        document.getElementById('board-game-color-picker').style.display = 'block';
+        document.getElementById('board-game-grid').style.display = 'none';
+        document.getElementById('board-game-status').textContent = '';
+        document.getElementById('board-game-play-again').classList.add('hidden');
+
+        // Build color picker dynamically (base + unlocked)
+        var pickerDiv = document.getElementById('board-game-color-picker');
+        // Keep the label, rebuild the options
+        pickerDiv.innerHTML = '<span>Choose your colour:</span>';
+        var allColorIds = Object.keys(BASE_COLORS);
+        var unlocked = GameState.unlockedBoardColours || [];
+        unlocked.forEach(function(id) { if (allColorIds.indexOf(id) === -1) allColorIds.push(id); });
+
+        allColorIds.forEach(function(id) {
+            var opt = document.createElement('div');
+            opt.className = 'color-option';
+            opt.dataset.color = id;
+            if (BASE_COLORS[id]) {
+                opt.style.background = BASE_COLORS[id];
+            } else if (EXTRA_COLORS[id]) {
+                opt.style.cssText = EXTRA_COLORS[id].css + ' display: inline-block; width: 40px; height: 40px; border-radius: 50%; margin: 0 8px; cursor: pointer; border: 3px solid #555;';
+            }
+            opt.onclick = function() { chooseColor(id); };
+            pickerDiv.appendChild(opt);
+        });
+    }
+
+    function chooseColor(color) {
+        playerColor = color;
+        // Pigston picks a different color
+        var available = PIGSTON_NAMES.filter(function(c) { return c !== color; });
+        pigstonColor = available[Math.floor(Math.random() * available.length)];
+
+        // Highlight selected
+        document.querySelectorAll('.color-option').forEach(function(opt) {
+            opt.classList.toggle('selected', opt.dataset.color === color);
+        });
+
+        // Hide color picker, show grid
+        document.getElementById('board-game-color-picker').style.display = 'none';
+        document.getElementById('board-game-grid').style.display = 'grid';
+
+        if (isPlayerTurn) {
+            document.getElementById('board-game-status').textContent = 'You go first! Pick a tile.';
+        } else {
+            document.getElementById('board-game-status').textContent = 'Pigston goes first...';
+            setTimeout(function() { pigstonTurn(); }, 800);
+        }
+
+        render();
+    }
+
+    // Close the board game
+    function close() {
+        if (!isOpen) return;
+        isOpen = false;
+        document.getElementById('board-game-overlay').classList.add('hidden');
+        GameState.gameRunning = true;
+    }
+
+    // Play again (reset board, keep colors, new mood)
+    function playAgain() {
+        init();
+        document.getElementById('board-game-mood').textContent =
+            'Pigston says: ' + mood.line;
+        document.getElementById('board-game-play-again').classList.add('hidden');
+
+        // Rebuild color picker (may have new unlocked colours)
+        document.getElementById('board-game-grid').style.display = 'none';
+        document.getElementById('board-game-status').textContent = '';
+
+        var pickerDiv = document.getElementById('board-game-color-picker');
+        pickerDiv.innerHTML = '<span>Choose your colour:</span>';
+        pickerDiv.style.display = 'block';
+        var allColorIds = Object.keys(BASE_COLORS);
+        var unlocked = GameState.unlockedBoardColours || [];
+        unlocked.forEach(function(id) { if (allColorIds.indexOf(id) === -1) allColorIds.push(id); });
+        allColorIds.forEach(function(id) {
+            var opt = document.createElement('div');
+            opt.className = 'color-option';
+            opt.dataset.color = id;
+            if (BASE_COLORS[id]) {
+                opt.style.background = BASE_COLORS[id];
+            } else if (EXTRA_COLORS[id]) {
+                opt.style.cssText = EXTRA_COLORS[id].css + ' display: inline-block; width: 40px; height: 40px; border-radius: 50%; margin: 0 8px; cursor: pointer; border: 3px solid #555;';
+            }
+            opt.onclick = function() { chooseColor(id); };
+            pickerDiv.appendChild(opt);
+        });
+    }
+
+    // Setup button listeners
+    function setup() {
+        document.getElementById('board-game-quit').addEventListener('click', close);
+        document.getElementById('board-game-play-again').addEventListener('click', playAgain);
+
+        // ESC to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isOpen) {
+                close();
+            }
+        });
+    }
+
+    // Run setup when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setup);
+    } else {
+        setup();
+    }
+
+    return {
+        open: open,
+        close: close,
+        isOpen: function() { return isOpen; }
+    };
+})();
+
+// Test: open the board game directly from console
+window.playBoardGame = function() { BoardGame.open(); };

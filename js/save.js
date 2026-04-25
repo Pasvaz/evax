@@ -63,6 +63,12 @@ window.SaveSystem = (function() {
             thirst: GameState.thirst,
             score: GameState.score,
             pigCoins: GameState.pigCoins,
+            tavernTokens: GameState.tavernTokens || 0,
+            unlockedBoardColours: (GameState.unlockedBoardColours || []).slice(),
+            animalKills: Object.assign({}, GameState.animalKills || {}),
+            tavernWins: Object.assign({}, GameState.tavernWins || { pigston: 0, pigon: 0 }),
+            unlockedMeeples: (GameState.unlockedMeeples || []).slice(),
+            unlockedBiomes: (GameState.unlockedBiomes || []).slice(),
             timeElapsed: GameState.timeElapsed,
 
             // Position & biome
@@ -116,6 +122,8 @@ window.SaveSystem = (function() {
             discoveredResources: (GameState.discoveredResources || []).slice(),
             discoveredBiomes: (GameState.discoveredBiomes || []).slice(),
             villageNotified: GameState.villageNotified || false,
+            gossipHeard: (GameState.gossipHeard || []).slice(),
+            gossipDay: GameState.gossipDay || 0,
 
             // Skin system
             currentSkin: GameState.currentSkin || 'default',
@@ -133,7 +141,12 @@ window.SaveSystem = (function() {
 
             // Coastal chests & eyepatch
             eyepatchEquipped: GameState.eyepatchEquipped || false,
+            furCoatEquipped: GameState.furCoatEquipped || false,
+            thunderArmourEquipped: GameState.thunderArmourEquipped || false,
             chestRespawnTimer: GameState.chestRespawnTimer || undefined,
+
+            // Card collection
+            cardCollection: (GameState.cardCollection || []).slice(),
 
             // Bathroom deltas
             poopQueue: poopDeltas,
@@ -267,6 +280,12 @@ window.SaveSystem = (function() {
         GameState.thirst = saveData.thirst;
         GameState.score = saveData.score;
         GameState.pigCoins = saveData.pigCoins;
+        GameState.tavernTokens = saveData.tavernTokens || 0;
+        GameState.unlockedBoardColours = saveData.unlockedBoardColours || [];
+        GameState.animalKills = saveData.animalKills || {};
+        GameState.tavernWins = saveData.tavernWins || { pigston: 0, pigon: 0 };
+        GameState.unlockedMeeples = saveData.unlockedMeeples || [];
+        GameState.unlockedBiomes = saveData.unlockedBiomes || [];
         GameState.timeElapsed = saveData.timeElapsed;
         GameState.resourceCounts = mergedResources;
         GameState.inventoryItems = validInventory;
@@ -288,6 +307,9 @@ window.SaveSystem = (function() {
         GameState.discoveredResources = saveData.discoveredResources || [];
         GameState.discoveredBiomes = saveData.discoveredBiomes || [];
         GameState.villageNotified = saveData.villageNotified || false;
+        GameState.gossipHeard = saveData.gossipHeard || [];
+        GameState.gossipDay = saveData.gossipDay || 0;
+        GameState.cardCollection = saveData.cardCollection || [];
         GameState.currentSkin = saveData.currentSkin || 'default';
         GameState.unlockedSkins = saveData.unlockedSkins || ['default'];
         GameState.arsenBombsUsed = saveData.arsenBombsUsed || 0;
@@ -299,6 +321,9 @@ window.SaveSystem = (function() {
         GameState.larryQuestIndex = saveData.larryQuestIndex || 0;
         GameState.completedLarryQuests = saveData.completedLarryQuests || [];
         GameState.eyepatchEquipped = saveData.eyepatchEquipped || false;
+        GameState.furCoatEquipped = saveData.furCoatEquipped || false;
+        GameState.thunderArmourEquipped = saveData.thunderArmourEquipped || false;
+        if (GameState.furCoatEquipped) attachFurCoatToPedro();
         GameState.chestRespawnTimer = saveData.chestRespawnTimer || undefined;
         GameState.dehydrationTimer = 0;
 

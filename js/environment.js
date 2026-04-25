@@ -892,6 +892,9 @@ window.Environment = (function() {
         GameState.scene.add(hut5);
         trackObject(hut5);
 
+        // The Tavern — bigger building at the edge of the village
+        createTavern(vx - 30, vz + 30);
+
         const well = createWell(vx + 5, vz + 8);
         GameState.scene.add(well);
         trackObject(well);
@@ -1633,6 +1636,192 @@ window.Environment = (function() {
         }
 
         console.log('Created coastal biome with ' + numTrees + ' birch trees');
+    }
+
+    /**
+     * Create the village tavern building.
+     * NPCs are inside the tavern interior (see tavern.js).
+     */
+    function createTavern(posX, posZ) {
+        var tavern = new THREE.Group();
+        var s = 1.5; // Bigger than regular huts
+
+        // Materials
+        var wallMat = new THREE.MeshStandardMaterial({ color: 0x8B6B4A, roughness: 0.9 });
+        var wallDarkMat = new THREE.MeshStandardMaterial({ color: 0x7A5C3D, roughness: 0.9 });
+        var roofMat = new THREE.MeshStandardMaterial({ color: 0x4a2a18, roughness: 0.85, side: THREE.DoubleSide });
+        var beamMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
+        var doorMat = new THREE.MeshStandardMaterial({ color: 0x3a2010, roughness: 0.7 });
+        var windowMat = new THREE.MeshStandardMaterial({ color: 0xffcc66, emissive: 0xffaa22, emissiveIntensity: 0.4 });
+        var stoneMat = new THREE.MeshStandardMaterial({ color: 0x707065, roughness: 1.0 });
+        var signMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+        var signTextMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
+
+        // Stone foundation
+        var foundGeo = new THREE.BoxGeometry(10 * s, 0.6, 8 * s);
+        var foundation = new THREE.Mesh(foundGeo, stoneMat);
+        foundation.position.y = 0.3;
+        foundation.receiveShadow = true;
+        tavern.add(foundation);
+
+        // Walls
+        var wallH = 4 * s;
+        var wallBase = 0.6;
+
+        // Front wall
+        var wallFrontGeo = new THREE.BoxGeometry(10 * s, wallH, 0.3);
+        var wallFront = new THREE.Mesh(wallFrontGeo, wallMat);
+        wallFront.position.set(0, wallBase + wallH / 2, 4 * s);
+        wallFront.castShadow = true;
+        tavern.add(wallFront);
+
+        // Back wall
+        var wallBack = new THREE.Mesh(wallFrontGeo, wallDarkMat);
+        wallBack.position.set(0, wallBase + wallH / 2, -4 * s);
+        wallBack.castShadow = true;
+        tavern.add(wallBack);
+
+        // Side walls
+        var wallSideGeo = new THREE.BoxGeometry(0.3, wallH, 8 * s);
+        var wallLeft = new THREE.Mesh(wallSideGeo, wallDarkMat);
+        wallLeft.position.set(-5 * s, wallBase + wallH / 2, 0);
+        wallLeft.castShadow = true;
+        tavern.add(wallLeft);
+
+        var wallRight = new THREE.Mesh(wallSideGeo, wallMat);
+        wallRight.position.set(5 * s, wallBase + wallH / 2, 0);
+        wallRight.castShadow = true;
+        tavern.add(wallRight);
+
+        // Timber frame - corner beams
+        var beamThick = 0.25;
+        var cornerGeo = new THREE.BoxGeometry(beamThick, wallH + 0.2, beamThick);
+        [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(function(pair) {
+            var corner = new THREE.Mesh(cornerGeo, beamMat);
+            corner.position.set(pair[0] * 5 * s, wallBase + wallH / 2, pair[1] * 4 * s);
+            tavern.add(corner);
+        });
+
+        // Horizontal top beams
+        var hBeamFrontGeo = new THREE.BoxGeometry(10 * s + beamThick, beamThick, beamThick);
+        var hBeamFront = new THREE.Mesh(hBeamFrontGeo, beamMat);
+        hBeamFront.position.set(0, wallBase + wallH, 4 * s);
+        tavern.add(hBeamFront);
+        var hBeamBack = hBeamFront.clone();
+        hBeamBack.position.z = -4 * s;
+        tavern.add(hBeamBack);
+
+        // Mid-height beam across front (decorative)
+        var midBeam = new THREE.Mesh(hBeamFrontGeo, beamMat);
+        midBeam.position.set(0, wallBase + wallH * 0.45, 4 * s + 0.05);
+        tavern.add(midBeam);
+
+        // Door (front center)
+        var doorGeo = new THREE.BoxGeometry(2 * s, 3 * s, 0.15);
+        var door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, wallBase + 1.5 * s, 4 * s + 0.1);
+        tavern.add(door);
+
+        // Door handle
+        var handleMat = new THREE.MeshStandardMaterial({ color: 0xccaa44, metalness: 0.6 });
+        var handle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), handleMat);
+        handle.position.set(0.6 * s, wallBase + 1.5 * s, 4 * s + 0.2);
+        tavern.add(handle);
+
+        // Windows (warm glow) - two on each side of door
+        var windowGeo = new THREE.BoxGeometry(1.2 * s, 1.2 * s, 0.1);
+        [-3, 3].forEach(function(xOff) {
+            var win = new THREE.Mesh(windowGeo, windowMat);
+            win.position.set(xOff * s, wallBase + wallH * 0.55, 4 * s + 0.15);
+            tavern.add(win);
+            // Window frame
+            var frameMat = beamMat;
+            var frameH = new THREE.Mesh(new THREE.BoxGeometry(1.4 * s, 0.1, 0.12), frameMat);
+            frameH.position.set(xOff * s, wallBase + wallH * 0.55 + 0.6 * s, 4 * s + 0.16);
+            tavern.add(frameH);
+            var frameH2 = frameH.clone();
+            frameH2.position.y = wallBase + wallH * 0.55 - 0.6 * s;
+            tavern.add(frameH2);
+        });
+
+        // Side windows
+        [-2, 2].forEach(function(zOff) {
+            var win = new THREE.Mesh(windowGeo, windowMat);
+            win.position.set(5 * s + 0.15, wallBase + wallH * 0.55, zOff * s);
+            win.rotation.y = Math.PI / 2;
+            tavern.add(win);
+
+            var win2 = new THREE.Mesh(windowGeo, windowMat);
+            win2.position.set(-5 * s - 0.15, wallBase + wallH * 0.55, zOff * s);
+            win2.rotation.y = Math.PI / 2;
+            tavern.add(win2);
+        });
+
+        // Roof - larger sloped roof
+        var roofH = 3.5 * s;
+        var roofY = wallBase + wallH;
+        var roofRadius = 7 * s;
+        var roofGeo = new THREE.ConeGeometry(roofRadius, roofH, 4);
+        var roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = roofY + roofH / 2;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        tavern.add(roof);
+
+        // Chimney
+        var chimneyMat = new THREE.MeshStandardMaterial({ color: 0x666055 });
+        var chimney = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 1), chimneyMat);
+        chimney.position.set(3 * s, roofY + roofH * 0.7, -2 * s);
+        chimney.castShadow = true;
+        tavern.add(chimney);
+
+        // Hanging sign - "TAVERN" sign on a post
+        var signPost = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4, 8), beamMat);
+        signPost.position.set(2.5 * s, wallBase + 2, 4 * s + 1.5);
+        tavern.add(signPost);
+
+        var signArm = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 0.1), beamMat);
+        signArm.position.set(2.5 * s + 0.5, wallBase + 3.8, 4 * s + 1.5);
+        tavern.add(signArm);
+
+        var signBoard = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 0.1), signMat);
+        signBoard.position.set(2.5 * s + 0.5, wallBase + 3, 4 * s + 1.5);
+        tavern.add(signBoard);
+
+        // Sign text (gold rectangle to represent "TAVERN" text)
+        var signLabel = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 0.12), signTextMat);
+        signLabel.position.set(2.5 * s + 0.5, wallBase + 3, 4 * s + 1.55);
+        tavern.add(signLabel);
+
+        // Barrel decorations outside
+        var barrelMat = new THREE.MeshStandardMaterial({ color: 0x6B4226 });
+        var barrelBandMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.3 });
+        [-3.5, -2.5].forEach(function(xOff) {
+            var barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.45, 1.2, 12), barrelMat);
+            barrel.position.set(xOff * s, wallBase + 0.6, 4 * s + 1.2);
+            tavern.add(barrel);
+            // Metal band
+            var band = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.04, 8, 16), barrelBandMat);
+            band.position.set(xOff * s, wallBase + 0.8, 4 * s + 1.2);
+            band.rotation.x = Math.PI / 2;
+            tavern.add(band);
+        });
+
+        // Lantern by the door (warm light)
+        var lanternMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.8 });
+        var lantern = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), lanternMat);
+        lantern.position.set(-1.5 * s, wallBase + 3.5, 4 * s + 0.3);
+        tavern.add(lantern);
+
+        // Place tavern at the given position
+        var tavernX = posX || 40;
+        var tavernZ = posZ || -80;
+        tavern.position.set(tavernX, 0, tavernZ);
+        tavern.rotation.y = 0; // Front faces positive Z
+        GameState.scene.add(tavern);
+        GameState.tavernBuilding = tavern;
+
+        // Pigston and other NPCs are inside the tavern (see tavern.js)
     }
 
     /**

@@ -194,6 +194,23 @@ window.UI = (function() {
             ctx.fill();
         });
 
+        // Draw wandering NPCs (like Tim) — cyan dot
+        if (GameState.villagers) {
+            GameState.villagers.forEach(function(v) {
+                if (!v.userData.wanderer) return;
+                ctx.fillStyle = '#44ddff';
+                var wx = (v.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
+                var wy = (v.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
+                ctx.beginPath();
+                ctx.arc(wx, wy, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // Small label
+                ctx.fillStyle = '#44ddff';
+                ctx.font = '7px sans-serif';
+                ctx.fillText(v.userData.name, wx + 4, wy + 2);
+            });
+        }
+
         ctx.fillStyle = '#44ff44';
         const px = (GameState.peccary.position.x + CONFIG.WORLD_SIZE * 0.7) * scale;
         const py = (GameState.peccary.position.z + CONFIG.WORLD_SIZE * 0.7) * scale;
@@ -366,24 +383,36 @@ window.UI = (function() {
      * Render the shop with all items and resources.
      */
     function renderShop() {
-        document.getElementById('shop-coins-display').textContent = GameState.pigCoins;
-
         // Update shop header based on vendor
         var vendor = GameState.currentShopVendor || 'patches';
         var shopHeader = document.querySelector('#shop-header h2');
         var shopSubtitle = document.querySelector('#shop-header .shop-subtitle');
         var sellTab = document.querySelector('.shop-tab[data-tab="sell"]');
+        var balanceDisplay = document.querySelector('#shop-header .shop-balance');
 
-        if (vendor === 'bruno') {
+        if (vendor === 'tim') {
+            shopHeader.textContent = "Tim's Thunder Shop";
+            shopSubtitle.textContent = "Rare thunder gear from ze old ruin";
+            sellTab.style.display = 'none';
+            balanceDisplay.innerHTML = 'Your coins: <span id="shop-coins-display">' + GameState.pigCoins + '</span> 🪙';
+            switchShopTab('buy');
+        } else if (vendor === 'pigierre') {
+            shopHeader.textContent = "Pigierre's Emporium";
+            shopSubtitle.textContent = "Card packs, meeples, biomes, and colours";
+            sellTab.style.display = 'none';
+            balanceDisplay.innerHTML = 'Tavern Tokens: <span id="shop-coins-display">' + (GameState.tavernTokens || 0) + '</span> 🎟️';
+            switchShopTab('buy');
+        } else if (vendor === 'bruno') {
             shopHeader.textContent = "Bruno's Forge";
             shopSubtitle.textContent = "Weapons, tools, and materials";
             sellTab.style.display = 'none';
-            // Make sure buy tab is active (in case sell was active before)
+            balanceDisplay.innerHTML = 'Your coins: <span id="shop-coins-display">' + GameState.pigCoins + '</span> 🪙';
             switchShopTab('buy');
         } else {
             shopHeader.textContent = "Patches' Trading Post";
             shopSubtitle.textContent = "Buy and sell resources for pig coins";
             sellTab.style.display = '';
+            balanceDisplay.innerHTML = 'Your coins: <span id="shop-coins-display">' + GameState.pigCoins + '</span> 🪙';
         }
 
         renderShopBuyTab();
@@ -433,9 +462,10 @@ window.UI = (function() {
 
             const headerDiv = document.createElement('div');
             headerDiv.className = 'shop-item-header';
+            var currIcon = item.currency === 'tokens' ? '🎟️' : '🪙';
             headerDiv.innerHTML = `
                 <div class="shop-item-name">${item.icon} ${item.name}</div>
-                <div class="shop-item-price">${item.price} 🪙</div>
+                <div class="shop-item-price">${item.price} ${currIcon}</div>
             `;
             itemDiv.appendChild(headerDiv);
 
@@ -480,8 +510,10 @@ window.UI = (function() {
             const buyBtn = document.createElement('button');
             buyBtn.className = 'shop-buy-btn';
             const totalPrice = item.price * GameState.shopQuantities[item.id];
-            buyBtn.textContent = `Buy (${totalPrice} 🪙)`;
-            buyBtn.disabled = GameState.pigCoins < totalPrice;
+            var isTokens = item.currency === 'tokens';
+            var playerFunds = isTokens ? (GameState.tavernTokens || 0) : GameState.pigCoins;
+            buyBtn.textContent = `Buy (${totalPrice} ${isTokens ? '🎟️' : '🪙'})`;
+            buyBtn.disabled = playerFunds < totalPrice;
             buyBtn.onclick = () => buyItem(item);
             actionsDiv.appendChild(buyBtn);
 
@@ -584,15 +616,29 @@ window.UI = (function() {
     function buyItem(item) {
         const quantity = GameState.shopQuantities[item.id];
         const totalPrice = item.price * quantity;
+        var isTokens = item.currency === 'tokens';
+        var playerFunds = isTokens ? (GameState.tavernTokens || 0) : GameState.pigCoins;
 
-        if (GameState.pigCoins < totalPrice) {
+        if (playerFunds < totalPrice) {
             Game.playSound('hurt');
             return;
         }
 
-        GameState.pigCoins -= totalPrice;
+        // Try the effect first (may fail if already owned)
+        var success = item.effect();
+        if (success === false) {
+            Game.playSound('hurt');
+            return;
+        }
 
-        for (let i = 0; i < quantity; i++) {
+        if (isTokens) {
+            GameState.tavernTokens -= totalPrice;
+        } else {
+            GameState.pigCoins -= totalPrice;
+        }
+
+        // Buy additional quantities
+        for (let i = 1; i < quantity; i++) {
             item.effect();
         }
 

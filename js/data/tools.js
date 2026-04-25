@@ -78,25 +78,60 @@ window.TOOL_STATS = {
             name: 'Wood Sword',
             description: 'A sturdy wooden sword. Equip from hotbar to fight!',
             icon: '🗡️',
-            damage: 2
+            price: 30,             // Pig coins
+            damage: 2,
+            spinRange: 6,          // Max distance to hit enemies
+            spinDuration: 0.4,     // Spin animation length (seconds)
+            attackCooldown: 2,     // Seconds between swings
+            staminaCost: 7         // Attacks per full stamina bar
         },
         manglecacia_sword: {
             name: 'Manglecacia Sword',
             description: 'A strong sword carved from manglecacia wood! Does 5 damage.',
             icon: '🗡️',
-            damage: 5
+            price: 80,
+            damage: 5,
+            spinRange: 7,
+            spinDuration: 0.35,
+            attackCooldown: 1.8,
+            staminaCost: 7
         },
         seaspray_birch_sword: {
             name: 'Seaspray Birch Sword',
             description: 'A mighty sword made from seaspray birch wood! Does 8 damage.',
             icon: '🗡️',
-            damage: 8
+            price: 150,
+            damage: 8,
+            spinRange: 8,
+            spinDuration: 0.3,
+            attackCooldown: 1.5,
+            staminaCost: 6
         },
         fishing_spear: {
             name: 'Fishing Spear',
             description: 'A spear for catching fish. Equip from hotbar, click on fish to spear them!',
             icon: '🔱',
-            damage: 3
+            price: 40,
+            damage: 3,
+            spinRange: 5,
+            spinDuration: 0.4,
+            attackCooldown: 2,
+            staminaCost: 8
+        },
+        thunder_scythe: {
+            name: 'Super Thunder Scythe Hammer',
+            description: 'A legendary blue fizzing hammer-scythe! Left click: 15 dmg spin. Right click: thunderbolt (6-25 dmg, 5s cooldown).',
+            icon: '⚡',
+            price: 1000,
+            damage: 15,
+            spinRange: 9,
+            spinDuration: 0.5,
+            attackCooldown: 2.5,
+            staminaCost: 5,
+            thunderMinDmg: 6,
+            thunderMaxDmg: 25,
+            thunderMaxRange: 50,
+            thunderCooldown: 5
         }
     },
 

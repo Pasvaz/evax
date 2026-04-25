@@ -1373,40 +1373,76 @@ window.Player = (function() {
             GameState.backSword = null;
         }
 
+        // Check if equipped weapon is the thunder scythe
+        var hotbarItem = GameState.hotbarSlots ? GameState.hotbarSlots[GameState.selectedHotbarSlot] : null;
+        var isThunder = hotbarItem && hotbarItem.id === 'thunder_scythe';
+
         var swordGroup = new THREE.Group();
 
-        // Blade — long silver rectangle lying along Pedro's back
-        var bladeMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.6, roughness: 0.3 });
-        var blade = new THREE.Mesh(
-            new THREE.BoxGeometry(1.4, 0.08, 0.18),
-            bladeMat
-        );
-        blade.position.set(0.2, 0, 0);
-        blade.castShadow = true;
-        swordGroup.add(blade);
+        if (isThunder) {
+            // === SUPER THUNDER SCYTHE HAMMER ===
+            // Hammer head — blue metallic block
+            var hammerMat = new THREE.MeshStandardMaterial({ color: 0x2266cc, metalness: 0.8, roughness: 0.2, emissive: 0x1144aa, emissiveIntensity: 0.3 });
+            var hammerHead = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.35), hammerMat);
+            hammerHead.position.set(0.7, 0, 0);
+            hammerHead.castShadow = true;
+            swordGroup.add(hammerHead);
 
-        // Handle — brown wood grip
-        var handleMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-        var handle = new THREE.Mesh(
-            new THREE.BoxGeometry(0.45, 0.12, 0.12),
-            handleMat
-        );
-        handle.position.set(-0.6, 0, 0);
-        swordGroup.add(handle);
+            // Scythe blade — curved blue blade on top
+            var bladeMat = new THREE.MeshStandardMaterial({ color: 0x3388ff, metalness: 0.7, roughness: 0.2, emissive: 0x2266cc, emissiveIntensity: 0.2 });
+            var scytheBlade = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.06, 0.2), bladeMat);
+            scytheBlade.position.set(0.7, 0.22, 0);
+            scytheBlade.rotation.z = -0.3;
+            swordGroup.add(scytheBlade);
 
-        // Guard — gold crossbar
-        var guardMat = new THREE.MeshStandardMaterial({ color: 0xDAA520, metalness: 0.5 });
-        var guard = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 0.1, 0.4),
-            guardMat
-        );
-        guard.position.set(-0.3, 0, 0);
-        swordGroup.add(guard);
+            // Handle — dark grey
+            var handleMat = new THREE.MeshStandardMaterial({ color: 0x333344 });
+            var handle = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.1), handleMat);
+            handle.position.set(-0.1, 0, 0);
+            swordGroup.add(handle);
+
+            // Fizzing sparks — small emissive spheres
+            var fizzMat = new THREE.MeshBasicMaterial({ color: 0x88ddff });
+            for (var i = 0; i < 4; i++) {
+                var spark = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), fizzMat);
+                spark.position.set(0.5 + Math.random() * 0.4, Math.random() * 0.3 - 0.1, Math.random() * 0.2 - 0.1);
+                spark.userData.fizzSpark = true;
+                swordGroup.add(spark);
+            }
+        } else {
+            // === REGULAR SWORD ===
+            // Blade — long silver rectangle lying along Pedro's back
+            var bladeMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.6, roughness: 0.3 });
+            var blade = new THREE.Mesh(
+                new THREE.BoxGeometry(1.4, 0.08, 0.18),
+                bladeMat
+            );
+            blade.position.set(0.2, 0, 0);
+            blade.castShadow = true;
+            swordGroup.add(blade);
+
+            // Handle — brown wood grip
+            var handleMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+            var handle = new THREE.Mesh(
+                new THREE.BoxGeometry(0.45, 0.12, 0.12),
+                handleMat
+            );
+            handle.position.set(-0.6, 0, 0);
+            swordGroup.add(handle);
+
+            // Guard — gold crossbar
+            var guardMat = new THREE.MeshStandardMaterial({ color: 0xDAA520, metalness: 0.5 });
+            var guard = new THREE.Mesh(
+                new THREE.BoxGeometry(0.08, 0.1, 0.4),
+                guardMat
+            );
+            guard.position.set(-0.3, 0, 0);
+            swordGroup.add(guard);
+        }
 
         // Position on Pedro's back — on top of the body, lying along the spine
-        // Body center is at y=0.8, radius 0.6, so top is ~1.4
         swordGroup.position.set(0, 1.5, 0);
-        swordGroup.rotation.y = Math.PI; // Handle at shoulders, blade toward tail
+        swordGroup.rotation.y = Math.PI;
         swordGroup.visible = false;
 
         GameState.peccary.add(swordGroup);
@@ -1422,6 +1458,26 @@ window.Player = (function() {
         var hotbarItem = GameState.hotbarSlots[GameState.selectedHotbarSlot];
         var isSword = !!(hotbarItem && TOOL_STATS.swords && TOOL_STATS.swords[hotbarItem.id]);
         GameState.backSword.visible = isSword;
+
+        // Rebuild model if weapon type changed (e.g. switched to/from thunder scythe)
+        var currentWeaponId = (hotbarItem && isSword) ? hotbarItem.id : null;
+        if (currentWeaponId !== GameState._lastSwordModelId) {
+            GameState._lastSwordModelId = currentWeaponId;
+            createBackSword();
+            if (GameState.backSword) GameState.backSword.visible = isSword;
+            return;
+        }
+
+        // Animate thunder scythe fizzing sparks
+        if (isSword && hotbarItem.id === 'thunder_scythe') {
+            var time = GameState.clock ? GameState.clock.elapsedTime : 0;
+            GameState.backSword.children.forEach(function(child) {
+                if (child.userData && child.userData.fizzSpark) {
+                    child.position.y = Math.sin(time * 8 + child.id) * 0.15;
+                    child.visible = Math.random() > 0.3; // Flicker
+                }
+            });
+        }
         // When cooldown just ended, snap sword back to the back
         if (isSword && GameState.attackCooldown <= 0 && GameState._swordInMouth) {
             GameState._swordInMouth = false;

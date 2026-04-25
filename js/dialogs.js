@@ -150,7 +150,23 @@ window.Dialogs = (function() {
 
         CONFIG.VILLAGER_DATA.forEach(data => {
             const villager = createPigVillager(data);
-            villager.position.set(vx + data.position.x, 0, vz + data.position.z);
+
+            if (data.wanderer) {
+                // Wanderers spawn in the wild — southeast region of the forest
+                var homeX = 200 + Math.random() * 100;
+                var homeZ = 200 + Math.random() * 100;
+                villager.position.set(homeX, 0, homeZ);
+                villager.userData.wanderer = true;
+                villager.userData.wanderTarget = { x: homeX + Math.random() * 20 - 10, z: homeZ + Math.random() * 20 - 10 };
+                villager.userData.wanderTimer = 0;
+                villager.userData.wanderHome = { x: homeX, z: homeZ };
+                villager.userData.fleeRadius = data.fleeRadius || 15;
+
+                // Build a small hut at home position
+                buildWandererHut(homeX, homeZ);
+            } else {
+                villager.position.set(vx + data.position.x, 0, vz + data.position.z);
+            }
             villager.rotation.y = Math.random() * Math.PI * 2;
             GameState.villagers.push(villager);
             GameState.scene.add(villager);
@@ -160,25 +176,164 @@ window.Dialogs = (function() {
     /**
      * Update villagers - animations and proximity check.
      */
+    function buildWandererHut(x, z) {
+        if (!GameState.scene) return;
+        var hut = new THREE.Group();
+
+        // Floor
+        var floorMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+        var floor = new THREE.Mesh(new THREE.BoxGeometry(6, 0.2, 5), floorMat);
+        floor.position.y = 0.1;
+        hut.add(floor);
+
+        // Walls (dark wood)
+        var wallMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.8 });
+        // Back wall
+        var backWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
+        backWall.position.set(0, 1.6, -2.35);
+        hut.add(backWall);
+        // Left wall
+        var leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 5), wallMat);
+        leftWall.position.set(-2.85, 1.6, 0);
+        hut.add(leftWall);
+        // Right wall
+        var rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 5), wallMat);
+        rightWall.position.set(2.85, 1.6, 0);
+        hut.add(rightWall);
+
+        // Roof (A-frame — two panels meeting at the ridge)
+        var roofMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.7 });
+        var roofLeft = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 3.5), roofMat);
+        roofLeft.position.set(0, 4.0, -1.2);
+        roofLeft.rotation.x = -0.45; // Slopes down to the left
+        hut.add(roofLeft);
+        var roofRight = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.2, 3.5), roofMat);
+        roofRight.position.set(0, 4.0, 1.2);
+        roofRight.rotation.x = 0.45; // Slopes down to the right
+        hut.add(roofRight);
+
+        // Small sign outside
+        var signMat = new THREE.MeshStandardMaterial({ color: 0x8B6B4A });
+        var signPost = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.5, 0.15), signMat);
+        signPost.position.set(4, 0.75, 0);
+        hut.add(signPost);
+        var signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.1), signMat);
+        signBoard.position.set(4, 1.6, 0);
+        hut.add(signBoard);
+
+        // Lightning bolt decoration on sign (blue)
+        var boltMat = new THREE.MeshBasicMaterial({ color: 0x44ccff });
+        var bolt = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.15), boltMat);
+        bolt.position.set(4, 1.6, 0.05);
+        bolt.rotation.z = 0.3;
+        hut.add(bolt);
+
+        hut.position.set(x, 0, z);
+        GameState.scene.add(hut);
+    }
+
     function updateVillagers(delta) {
         GameState.nearbyVillager = null;
+        GameState.nearbyTavernNPC = null;
         const interactPrompt = document.getElementById('interact-prompt');
 
         GameState.villagers.forEach((villager, index) => {
             villager.children[0].rotation.y = Math.sin(GameState.clock.elapsedTime * 0.5 + index) * 0.1;
-            villager.position.y = Math.sin(GameState.clock.elapsedTime * 1.5 + index) * 0.05;
 
             const dist = villager.position.distanceTo(GameState.peccary.position);
 
-            if (dist < villager.userData.interactRange) {
-                GameState.nearbyVillager = villager;
-                const dx = GameState.peccary.position.x - villager.position.x;
-                const dz = GameState.peccary.position.z - villager.position.z;
-                villager.rotation.y = Math.atan2(dx, dz);
+            // Wandering NPC movement
+            if (villager.userData.wanderer) {
+                villager.userData.wanderTimer = (villager.userData.wanderTimer || 0) + delta;
+
+                // Pick a new target every 6-10 seconds
+                // Every ~30 seconds, head back home
+                villager.userData.wanderCycle = (villager.userData.wanderCycle || 0) + delta;
+                if (villager.userData.wanderTimer > 6 + Math.random() * 4) {
+                    villager.userData.wanderTimer = 0;
+                    var home = villager.userData.wanderHome;
+                    if (villager.userData.wanderCycle > 30) {
+                        // Return home
+                        villager.userData.wanderCycle = 0;
+                        villager.userData.wanderTarget = { x: home.x, z: home.z };
+                    } else {
+                        // Wander nearby
+                        villager.userData.wanderTarget = {
+                            x: home.x + Math.random() * 30 - 15,
+                            z: home.z + Math.random() * 30 - 15
+                        };
+                    }
+                }
+
+                // Move toward target
+                var tgt = villager.userData.wanderTarget;
+                if (tgt) {
+                    var tdx = tgt.x - villager.position.x;
+                    var tdz = tgt.z - villager.position.z;
+                    var tDist = Math.sqrt(tdx * tdx + tdz * tdz);
+                    if (tDist > 1) {
+                        var speed = 2.5 * delta;
+                        villager.position.x += (tdx / tDist) * speed;
+                        villager.position.z += (tdz / tDist) * speed;
+                        villager.rotation.y = Math.atan2(tdx, tdz);
+                        // Walking bob
+                        villager.position.y = Math.sin(GameState.clock.elapsedTime * 4) * 0.08;
+                    } else {
+                        villager.position.y = Math.sin(GameState.clock.elapsedTime * 1.5 + index) * 0.05;
+                    }
+                }
+
+                // Animals flee from wanderers
+                if (GameState.enemies && villager.userData.fleeRadius) {
+                    GameState.enemies.forEach(function(enemy) {
+                        if (!enemy.parent || !enemy.userData || enemy.userData.health <= 0) return;
+                        var eDist = villager.position.distanceTo(enemy.position);
+                        if (eDist < villager.userData.fleeRadius && eDist > 0.5) {
+                            // Push enemy away
+                            var fx = enemy.position.x - villager.position.x;
+                            var fz = enemy.position.z - villager.position.z;
+                            var fLen = Math.sqrt(fx * fx + fz * fz);
+                            if (fLen > 0) {
+                                var fleeSpeed = 8 * delta;
+                                enemy.position.x += (fx / fLen) * fleeSpeed;
+                                enemy.position.z += (fz / fLen) * fleeSpeed;
+                            }
+                        }
+                    });
+                }
+
+                // Stop near player to talk
+                if (dist < villager.userData.interactRange) {
+                    GameState.nearbyVillager = villager;
+                    var dx = GameState.peccary.position.x - villager.position.x;
+                    var dz = GameState.peccary.position.z - villager.position.z;
+                    villager.rotation.y = Math.atan2(dx, dz);
+                    villager.userData.wanderTarget = null; // Stop walking
+                }
+            } else {
+                // Static village NPC
+                villager.position.y = Math.sin(GameState.clock.elapsedTime * 1.5 + index) * 0.05;
+                if (dist < villager.userData.interactRange) {
+                    GameState.nearbyVillager = villager;
+                    const dx = GameState.peccary.position.x - villager.position.x;
+                    const dz = GameState.peccary.position.z - villager.position.z;
+                    villager.rotation.y = Math.atan2(dx, dz);
+                }
             }
         });
 
-        if (GameState.nearbyVillager && !GameState.isDialogOpen) {
+        // Check if near tavern door (outside)
+        if (typeof Tavern !== 'undefined' && Tavern.checkEnterTavern()) {
+            GameState.nearTavernDoor = true;
+        } else {
+            GameState.nearTavernDoor = false;
+        }
+
+        if (GameState.nearTavernDoor && !GameState.isDialogOpen) {
+            interactPrompt.classList.remove('hidden');
+            interactPrompt.classList.remove('locked-villager');
+            interactPrompt.textContent = 'Press E to enter the tavern';
+        } else if (GameState.nearbyVillager && !GameState.isDialogOpen) {
             const villagerName = GameState.nearbyVillager.userData.name;
             const requiredScore = CONFIG.VILLAGER_REQUIRED_SCORE[villagerName] || 0;
             const isUnlocked = GameState.score >= requiredScore;
@@ -270,13 +425,14 @@ window.Dialogs = (function() {
         const dialogOptions = document.getElementById('dialog-options');
         const dialogHint = document.getElementById('dialog-hint');
 
-        // Resolve dynamic Easter dialog content
+        // Resolve dynamic dialog content
         var resolved = resolveEasterDialog(node, villager);
+        resolved = resolveTavernDialog(resolved, villager);
         var displayText = resolved.text;
         var displayChoices = resolved.choices;
 
         dialogName.textContent = `${villager.userData.name} - ${villager.userData.role}`;
-        dialogText.textContent = displayText;
+        dialogText.innerHTML = displayText;
 
         dialogOptions.innerHTML = '';
 
@@ -601,6 +757,80 @@ window.Dialogs = (function() {
         if (quest.goal.type === 'catch_bunnies') return GameState.easterQuestBunnyCaught || 0;
         if (quest.goal.type === 'collect_easter_eggs') return GameState.easterQuestEggsCollected || 0;
         return 0;
+    }
+
+    /**
+     * Resolve dynamic tavern dialog content.
+     * Handles DYNAMIC_ prefixed text for tavern NPCs.
+     */
+    function resolveTavernDialog(node, villager) {
+        var text = node.text;
+        var choices = node.choices;
+        var name = villager.userData.name;
+
+        if (!text || !text.startsWith('DYNAMIC_')) {
+            return { text: text, choices: choices };
+        }
+
+        // Pigias challenge check
+        if (text === 'DYNAMIC_PIGIAS_CHALLENGE') {
+            var collection = GameState.cardCollection || [];
+            var creatures = collection.filter(function(c) { return !c.isEnergy; });
+            if (creatures.length >= 3) {
+                return {
+                    text: "You have " + creatures.length + " creature cards — more than enough! Ready to battle?",
+                    choices: [
+                        { text: "Let's go!", nextNode: null, effectData: { type: 'open_game', game: 'card_game' } },
+                        { text: "Not yet.", nextNode: 'greeting' }
+                    ]
+                };
+            } else {
+                return {
+                    text: "You only have " + creatures.length + " creature cards... You need at least 3 to play. Buy packs from Pigierre!",
+                    choices: [
+                        { text: "I'll go get some.", nextNode: null }
+                    ]
+                };
+            }
+        }
+
+        // Pigierre dynamic nodes — delegate to Tavern module
+        if (text === 'DYNAMIC_PIGIERRE_QUEST' || text === 'DYNAMIC_PIGIERRE_EMILIA' ||
+            text === 'DYNAMIC_PIGIERRE_GOSSIP') {
+            if (typeof Tavern.resolvePigierreDialog === 'function') {
+                return Tavern.resolvePigierreDialog(text);
+            }
+            return { text: "Hmm, I have nothing for you right now.", choices: [{ text: "OK.", nextNode: 'greeting' }] };
+        }
+
+        // Gossip NPCs — delegate to Tavern module
+        if (text === 'DYNAMIC_GRUNTON_GREETING' || text === 'DYNAMIC_TRUFFLE_GREETING' ||
+            text === 'DYNAMIC_SNICKERS_GREETING') {
+            if (typeof Tavern.resolveGossipDialog === 'function') {
+                return Tavern.resolveGossipDialog(text, name);
+            }
+            return { text: "...", choices: [{ text: "Goodbye.", nextNode: null }] };
+        }
+
+        // Snickers answer — resolve the pending question
+        if (text === 'DYNAMIC_SNICKERS_ANSWER') {
+            var question = GameState._pendingSnickersQuestion;
+            if (question) {
+                // Mark as heard
+                if (!GameState.gossipHeard) GameState.gossipHeard = [];
+                if (GameState.gossipHeard.indexOf(question.id) === -1) {
+                    GameState.gossipHeard.push(question.id);
+                }
+                GameState._pendingSnickersQuestion = null;
+                return {
+                    text: "*Snickers listens with his mouth wide open*<br><br>\"" + question.response + "\"",
+                    choices: [{ text: "Thanks, Snickers!", nextNode: null }]
+                };
+            }
+            return { text: "Thanks!", choices: [{ text: "Goodbye.", nextNode: null }] };
+        }
+
+        return { text: text, choices: choices };
     }
 
     /**

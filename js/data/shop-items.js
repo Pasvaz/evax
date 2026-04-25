@@ -201,11 +201,317 @@ window.SHOP_ITEMS = [
     }
 
     // ========================================================================
+    // PIGIERRE'S EMPORIUM — Card packs, meeples, biomes, colours
+    // ========================================================================
+    // Uses tavern tokens (currency: 'tokens')
+
+    ,{
+        id: 'basic_pack',
+        name: 'Basic Card Pack',
+        description: '3 random cards + 2 energy. Good for starting out!',
+        price: 3,
+        icon: '🃏',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'item', item: 'basic_pack' }
+    },
+
+    {
+        id: 'rare_pack',
+        name: 'Rare Card Pack',
+        description: '5 cards with better odds for rares + 3 energy.',
+        price: 8,
+        icon: '🎴',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'item', item: 'rare_pack' }
+    },
+
+    {
+        id: 'legendary_pack',
+        name: 'Legendary Card Pack',
+        description: 'Guaranteed 1 rare or legendary + 4 cards + 4 energy!',
+        price: 15,
+        icon: '✨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'item', item: 'legendary_pack' }
+    },
+
+    {
+        id: 'meeple_rabbit',
+        name: 'Rabbit Meeple',
+        description: "A quick little lapin! Fast on land, free hop, but fragile.",
+        price: 5,
+        icon: '🐇',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'rabbit' }
+    },
+
+    {
+        id: 'meeple_green_mamba',
+        name: 'Green Mamba Meeple',
+        description: "Venomous snake! Paralysing bite stuns victims. Slow hunger drain.",
+        price: 10,
+        icon: '🐍',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'green_mamba' }
+    },
+
+    {
+        id: 'meeple_sleepy_mouse',
+        name: 'Sleepy Mouse Meeple',
+        description: "Tiny granivore! Eats grain for bonus food. Sleep to conserve energy.",
+        price: 4,
+        icon: '🐭',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'sleepy_mouse' }
+    },
+
+    {
+        id: 'meeple_stripy_falcon',
+        name: 'Stripy Falcon Meeple',
+        description: "Aerial predator! Fly to avoid attacks. Ancient Prairie biome.",
+        price: 8,
+        icon: '🦅',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'stripy_falcon' }
+    },
+
+    {
+        id: 'meeple_hopping_terbal',
+        name: 'Hopping Terbal Meeple',
+        description: "Mountain predator! Powerful bleeder, but watch out for bone breaks!",
+        price: 15,
+        icon: '🐺',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'hopping_terbal' }
+    },
+
+    {
+        id: 'meeple_squirrel',
+        name: 'Squirrel Meeple',
+        description: "A clever squirrel for Pigon's game! Climbs trees.",
+        price: 5,
+        icon: '🐿️',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'squirrel' }
+    },
+
+    {
+        id: 'meeple_camelopin',
+        name: 'Camelopin Meeple',
+        description: "Desert tank! 14 HP, eats cacti safely. Needs Sandstone Valley.",
+        price: 8,
+        icon: '🐪',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'small_camelopin' }
+    },
+
+    {
+        id: 'meeple_felinidon',
+        name: 'Felinidon Meeple',
+        description: "Lightning predator! Huge damage, can't enter water. Needs Sandstone Valley.",
+        price: 10,
+        icon: '🐆',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'desert_felinidon' }
+    },
+
+    {
+        id: 'meeple_desert_fox',
+        name: 'Desert Fox Meeple',
+        description: "Hit and run! Free dash, attacks bleed. Needs Sandstone Valley.",
+        price: 5,
+        icon: '🦊',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'desert_fox' }
+    },
+
+    {
+        id: 'meeple_chinchinol',
+        name: 'Chinchinol Meeple',
+        description: "Tiny dodger! 35% dodge. Needs Ancient Prairie.",
+        price: 5,
+        icon: '🐁',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'field_chinchinol' }
+    },
+
+    {
+        id: 'meeple_coyoteya',
+        name: 'Coyoteya Meeple',
+        description: "Apex predator! Fast, powerful, bleeds prey. Needs Ancient Prairie.",
+        price: 13,
+        icon: '🐺',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_meeple', meeple: 'field_coyoteya' }
+    },
+
+    {
+        id: 'biome_sandstone',
+        name: 'Sandstone Valley Biome',
+        description: "Unlock the desert biome for Pigon's game!",
+        price: 10,
+        icon: '🏜️',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_biome', biome: 'sandstone_valley' }
+    },
+
+    {
+        id: 'biome_prairie',
+        name: 'Ancient Prairie Biome',
+        description: "Unlock the grassland biome for Pigon's game!",
+        price: 15,
+        icon: '🌾',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_biome', biome: 'ancient_prairie' }
+    },
+
+    {
+        id: 'biome_mountains',
+        name: 'Great Mountains Biome',
+        description: "Unlock the snowy mountain biome! Rocky mounds, pine trees, bone-breaking falls!",
+        price: 20,
+        icon: '🏔️',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_biome', biome: 'great_mountains' }
+    },
+
+    // Board game colours
+    {
+        id: 'colour_beige',
+        name: 'Beige Colour',
+        description: "A warm, neutral tone for Pigston's board game.",
+        price: 3,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'beige' }
+    },
+
+    {
+        id: 'colour_mint',
+        name: 'Menthe Colour',
+        description: "Cool and fresh, like a breeze through ze Alps!",
+        price: 3,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'mint' }
+    },
+
+    {
+        id: 'colour_lemon',
+        name: 'Citron Colour',
+        description: "Bright and zesty! Like sunshine on ze Riviera!",
+        price: 4,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'lemon' }
+    },
+
+    {
+        id: 'colour_mauve',
+        name: 'Mauve Colour',
+        description: "The colour of lavender fields in Provence!",
+        price: 5,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'mauve' }
+    },
+
+    {
+        id: 'colour_pink',
+        name: 'Rose Clair Colour',
+        description: "A bright, soft pink. Magnifique!",
+        price: 5,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'pink' }
+    },
+
+    {
+        id: 'colour_watermelon',
+        name: 'Pastèque Colour',
+        description: "Green on ze outside, pink on ze inside!",
+        price: 5,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'watermelon' }
+    },
+
+    {
+        id: 'colour_zebra',
+        name: 'Zebra Stripes Colour',
+        description: "Bold stripes! Not for ze faint of heart.",
+        price: 9,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'zebra' }
+    },
+
+    {
+        id: 'colour_pig_face',
+        name: 'Le Cochon Colour',
+        description: "A pig face pattern! Ze ultimate flex, oui?",
+        price: 15,
+        icon: '🎨',
+        vendor: 'pigierre',
+        currency: 'tokens',
+        effect: { type: 'unlock_colour', colour: 'pig_face' }
+    }
+
+    // ========================================================================
+    // TIM'S THUNDER SHOP — Wandering merchant in the southeast forest
+    // ========================================================================
+
+    ,{
+        id: 'shop_thunder_scythe',
+        name: 'Super Thunder Scythe Hammer',
+        description: 'Blue fizzing hammer-scythe! Spin slash + ranged thunderbolt.',
+        price: TOOL_STATS.swords.thunder_scythe.price,
+        icon: '⚡',
+        vendor: 'tim',
+        effect: { type: 'item', item: 'thunder_scythe' }
+    },
+
+    {
+        id: 'shop_thunder_armour',
+        name: 'Thunder Armour',
+        description: 'Reduces damage (-1 flat, -15%) and shocks attackers for 2 damage!',
+        price: 800,
+        icon: '🛡️',
+        vendor: 'tim',
+        effect: { type: 'item', item: 'thunder_armour' }
+    }
+
+    // ========================================================================
     // ADD MORE SHOP ITEMS HERE!
     // ========================================================================
     //
-    // Each item needs a 'vendor' field: 'patches' or 'bruno'
+    // Each item needs a 'vendor' field: 'patches', 'bruno', 'pigierre', or 'tim'
     // This determines which NPC's shop shows the item.
+    // For pigierre items, add: currency: 'tokens'
     //
     // Remember to add a comma after the last item if you add more!
 

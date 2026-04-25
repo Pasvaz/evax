@@ -19661,10 +19661,21 @@ window.Enemies = (function() {
             // Convert to carcass instead of removing
             convertToCarcass(enemy);
 
+            // Track kills by type (for quests)
+            if (!GameState.animalKills) GameState.animalKills = {};
+            var killType = enemy.userData.type;
+            GameState.animalKills[killType] = (GameState.animalKills[killType] || 0) + 1;
+
             // Item drops on death
             if (enemy.userData.type === 'bakka_seal') {
                 GameState.resourceCounts.bakka_seal_tooth = (GameState.resourceCounts.bakka_seal_tooth || 0) + 1;
                 Game.showBlockedMessage('+1 Bakka Seal Tooth!');
+            }
+
+            // Hide drops — from wild dogs, antelopes, and gazelles
+            if (enemy.userData.type === 'wild_dog' || enemy.userData.type === 'antelope' || enemy.userData.type === 'saltas_gazella') {
+                GameState.resourceCounts.hide = (GameState.resourceCounts.hide || 0) + 1;
+                Game.showBlockedMessage('+1 Hide!');
             }
 
             // Give score and coins as reward (tiered by enemy toughness)

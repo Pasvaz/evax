@@ -635,6 +635,68 @@ window.VILLAGERS = [
                 }
             }
         }
+    },
+
+    // ========================================================================
+    // TIM — Wandering merchant in the southeast forest
+    // ========================================================================
+    // Tim wanders the wilds! He's not in the village — he spawns in the
+    // southeast region of the arboreal biome. Animals flee from him.
+    // He speaks in broken English and sells the legendary thunder scythe.
+    {
+        name: "Tim",
+        role: "Wandering Merchant",
+
+        skinColor: 0xd4a574,          // Tanned skin
+        outfitColor: 0x3b5e3b,        // Dark green travelling cloak
+        hatColor: 0x5c4033,            // Brown wide-brim hat
+
+        // Tim is NOT placed in the village — this position is ignored.
+        // His actual position is set by the wandering system in game.js.
+        position: { x: 0, z: 0 },
+
+        // Mark Tim as a wanderer so the game knows to handle him differently
+        wanderer: true,
+        wanderBiome: 'arboreal',
+        wanderRegion: 'southeast',     // Southeast quadrant of forest
+        fleeRadius: 15,                // Animals within 15 units run away
+
+        conversation: {
+            start: 'greeting',
+            nodes: {
+                'greeting': {
+                    text: "Ah! You is... Pedro, yes? Tim hear about you. Tim walk long time in forest. You want buy something, maybe? Tim have very special thing.",
+                    choices: [
+                        { text: "What are you selling?", nextNode: 'show_wares' },
+                        { text: "Who are you?", nextNode: 'about' },
+                        { text: "Goodbye, Tim.", nextNode: null }
+                    ]
+                },
+
+                'about': {
+                    text: "Tim is... how you say... travelling pig. Tim go everywhere. Forest, mountain, big sand place. Tim find many thing on road. Some thing Tim sell. Some thing Tim keep. Heh.",
+                    choices: [
+                        { text: "What are you selling?", nextNode: 'show_wares' },
+                        { text: "Stay safe out there.", nextNode: null }
+                    ]
+                },
+
+                'show_wares': {
+                    text: "Tim have good stuff. Very rare. Found in old ruin. You look, yes?",
+                    choices: [
+                        { text: "Show me what you've got.", nextNode: null, effectData: { type: 'open_shop', vendor: 'tim' } },
+                        { text: "Maybe later.", nextNode: null }
+                    ]
+                },
+
+                'too_poor': {
+                    text: "Is ok, is ok. Tim understand. Coin is hard to find. You come back when you have more, yes? Tim will be walking around. Tim always walking.",
+                    choices: [
+                        { text: "I'll be back.", nextNode: null }
+                    ]
+                }
+            }
+        }
     }
 
     // ========================================================================

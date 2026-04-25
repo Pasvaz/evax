@@ -110,6 +110,7 @@ window.Inventory = (function() {
         document.getElementById('bestiary-panel').classList.toggle('active', tabId === 'bestiary');
         document.getElementById('quest-panel').classList.toggle('active', tabId === 'quest');
         document.getElementById('journal-panel').classList.toggle('active', tabId === 'journal');
+        document.getElementById('cards-panel').classList.toggle('active', tabId === 'cards');
         document.getElementById('bestiary-detail').classList.remove('active');
 
         // Refresh content
@@ -121,6 +122,8 @@ window.Inventory = (function() {
             refreshQuestLog();
         } else if (tabId === 'journal') {
             refreshMemories();
+        } else if (tabId === 'cards') {
+            refreshCardAlbum();
         } else {
             populateBestiaryGrid();
             showBestiaryGrid();
@@ -133,7 +136,7 @@ window.Inventory = (function() {
      * @returns {string} - The emoji icon
      */
     // Items that can be equipped to the hotbar
-    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask', 'pirate_eyepatch'];
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask', 'pirate_eyepatch', 'fur_coat', 'thunder_scythe', 'thunder_armour'];
 
     function isEquippable(itemId) {
         return EQUIPPABLE_ITEMS.includes(itemId);
@@ -158,7 +161,13 @@ window.Inventory = (function() {
             arsen_bomb: '💣',
             fishing_spear: '🔱',
             diving_mask: '🤿',
-            pirate_eyepatch: '🏴‍☠️'
+            pirate_eyepatch: '🏴‍☠️',
+            fur_coat: '🧥',
+            thunder_scythe: '⚡',
+            thunder_armour: '🛡️',
+            basic_pack: '🃏',
+            rare_pack: '🎴',
+            legendary_pack: '✨'
         };
         return icons[itemId] || '📦';
     }
@@ -366,6 +375,13 @@ window.Inventory = (function() {
                 UI.updateUI();
                 return; // Food gone — no healing!
             }
+        }
+
+        // Card pack opening
+        if (item.effect === 'open_card_pack') {
+            close(); // close inventory
+            CardGame.showPackOpening(item.id);
+            return;
         }
 
         // Execute the item's effect
@@ -1452,6 +1468,12 @@ window.Inventory = (function() {
     /**
      * Refresh the Memories tab — shows found and locked memory fragments.
      */
+    function refreshCardAlbum() {
+        var container = document.getElementById('cards-collection');
+        if (!container) return;
+        container.innerHTML = CardGame.getCollectionHTML();
+    }
+
     function refreshMemories() {
         var grid = document.getElementById('memories-grid');
         if (!grid) return;
