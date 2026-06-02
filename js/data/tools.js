@@ -132,6 +132,22 @@ window.TOOL_STATS = {
             thunderMaxDmg: 25,
             thunderMaxRange: 50,
             thunderCooldown: 5
+        },
+        electric_crossbow: {
+            name: 'Electric Crossbow',
+            description: 'A rapid-fire crossbow crackling with energy! Right click to shoot chain lightning bolts. Fast but drains stamina when running.',
+            icon: '🏹',
+            price: 600,
+            damage: 3,              // Melee spin is weak — not designed for close range
+            spinRange: 4,
+            spinDuration: 0.3,
+            attackCooldown: 2,
+            staminaCost: 8,
+            boltMinDmg: 4,          // Ranged bolt damage
+            boltMaxDmg: 6,
+            boltMaxRange: 65,       // Longer range than thunder scythe (50)
+            boltCooldown: 1,        // Very fast — 1 second
+            runStaminaMultiplier: 2  // 2x stamina drain while running
         }
     },
 

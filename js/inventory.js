@@ -136,7 +136,7 @@ window.Inventory = (function() {
      * @returns {string} - The emoji icon
      */
     // Items that can be equipped to the hotbar
-    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask', 'pirate_eyepatch', 'fur_coat', 'thunder_scythe', 'thunder_armour'];
+    const EQUIPPABLE_ITEMS = ['wood_sword', 'wood_axe', 'barbanit_axe', 'manglecacia_axe', 'seaspray_birch_axe', 'manglecacia_sword', 'seaspray_birch_sword', 'basic_rook_boat', 'arsen_bomb', 'fishing_spear', 'diving_mask', 'pirate_eyepatch', 'fur_coat', 'thunder_scythe', 'thunder_armour', 'electric_crossbow'];
 
     function isEquippable(itemId) {
         return EQUIPPABLE_ITEMS.includes(itemId);
@@ -165,6 +165,7 @@ window.Inventory = (function() {
             fur_coat: '🧥',
             thunder_scythe: '⚡',
             thunder_armour: '🛡️',
+            electric_crossbow: '🏹',
             basic_pack: '🃏',
             rare_pack: '🎴',
             legendary_pack: '✨'

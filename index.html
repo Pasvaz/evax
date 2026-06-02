@@ -3177,6 +3177,41 @@
                             <button class="spawn-btn" data-spawn="slitted_sardine_female">Sardine (F)</button>
                             <button class="spawn-btn" data-spawn="orcleton_male">Orcleton (M)</button>
                             <button class="spawn-btn" data-spawn="orcleton_female">Orcleton (F)</button>
+                            <button class="spawn-btn" data-spawn="jet_crab_male">Jet Crab (M)</button>
+                            <button class="spawn-btn" data-spawn="jet_crab_female">Jet Crab (F)</button>
+                            <button class="spawn-btn" data-spawn="slackpinch_crab_male">Slackpinch (M)</button>
+                            <button class="spawn-btn" data-spawn="slackpinch_crab_female">Slackpinch (F)</button>
+                            <button class="spawn-btn" data-spawn="basicuslin_amphipod">Amphipod</button>
+                            <button class="spawn-btn" data-spawn="beach_weasel_male">Beach Weasel (M)</button>
+                            <button class="spawn-btn" data-spawn="beach_weasel_female">Beach Weasel (F)</button>
+                            <button class="spawn-btn" data-spawn="beach_murgaya_male">Murgaya (M)</button>
+                            <button class="spawn-btn" data-spawn="beach_murgaya_female">Murgaya (F)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_male">GCF Deer (M)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_female">GCF Deer (F)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_fawn_male">GCF Fawn (M)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_fawn_female">GCF Fawn (F)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_hipperlet_male">Hipperlet (M)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_hipperlet_female">Hipperlet (F)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_stfumbler_male">Stfumbler (M)</button>
+                            <button class="spawn-btn" data-spawn="gcf_deer_stfumbler_female">Stfumbler (F)</button>
+                            <button class="spawn-btn" data-spawn="lb_bird_male">LB Bird (M)</button>
+                            <button class="spawn-btn" data-spawn="lb_bird_female">LB Bird (F)</button>
+                            <button class="spawn-btn" data-spawn="lb_bird_chick">LB Bird Chick</button>
+                            <button class="spawn-btn" data-spawn="lb_bird_fledgling">LB Bird Fledgling</button>
+                            <button class="testing-action-btn" id="trigger-lb-mating-btn">LB Bird Mating</button>
+                            <button class="spawn-btn" data-spawn="whispering_snake_mini">Snake (Mini)</button>
+                            <button class="spawn-btn" data-spawn="whispering_snake_small">Snake (Small)</button>
+                            <button class="spawn-btn" data-spawn="whispering_snake_decent">Snake (Decent)</button>
+                            <button class="spawn-btn" data-spawn="whispering_snake_large">Snake (Large)</button>
+                            <button class="spawn-btn" data-spawn="whispering_snake_monstrous">Snake (Monstrous)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_hatchling">Dreadmaw (Hatchling)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_juvenile">Dreadmaw (Juvenile)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_adolescent">Dreadmaw (Adolescent)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_subadult">Dreadmaw (Sub-adult)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_adult">Dreadmaw (Adult M)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_adult_female">Dreadmaw (Adult F)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_elder">Dreadmaw (Elder)</button>
+                            <button class="spawn-btn" data-spawn="dreadmaw_ocean_king">Dreadmaw (Ocean King)</button>
                         </div>
                     </div>
                     <!-- Easter Event -->
@@ -3207,6 +3242,24 @@
         </div>
         <div class="testing-footer">Press T to close</div>
     </div>
+
+    <!-- Snake Constriction Mini-Game Overlay -->
+    <div id="snake-constrict-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; flex-direction:column; align-items:center; justify-content:center; font-family:monospace;">
+        <div style="color:#ff4444; font-size:28px; font-weight:bold; text-shadow:0 0 20px #ff0000; margin-bottom:8px;">
+            CONSTRICTED BY <span id="snake-constrict-stage">LARGE</span> SNAKE!
+        </div>
+        <div style="color:#ffcc00; font-size:22px; margin-bottom:20px; animation: pulse 0.5s infinite alternate;">
+            MASH [SPACE] TO BREAK FREE!
+        </div>
+        <div style="width:400px; height:35px; border:3px solid #fff; border-radius:8px; background:#333; overflow:hidden; position:relative;">
+            <div id="snake-strength-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #44ff44, #00ff88); transition:width 0.05s; border-radius:5px;"></div>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-weight:bold; font-size:14px; text-shadow:0 0 4px #000;">STRENGTH</div>
+        </div>
+        <div style="color:#aaa; font-size:14px; margin-top:12px;">The snake is crushing you... your health is draining!</div>
+    </div>
+    <style>
+        @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+    </style>
 
     <div id="game-over-screen" class="hidden">
         <h1>Game Over!</h1>

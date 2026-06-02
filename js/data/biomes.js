@@ -249,6 +249,43 @@ window.BIOMES = {
         sardineShoals: 3,
         orcletons: 5,
 
+        // Crabs on the beach
+        spawnCrabs: true,
+        jetCrabs: 20,
+        slackpinchCrabs: 10,
+
+        // Amphipods in the sand
+        spawnAmphipods: true,
+        amphipods: 15,
+
+        // Beach weasels
+        spawnBeachWeasels: true,
+        beachWeasels: 6,
+
+        // Beach Murgaya packs
+        spawnMurgayaPacks: true,
+        murgayaPacks: 2,
+
+        // Flangert berry bushes — spread across the whole forest
+        spawnBerryBushes: true,
+        berryBushes: 18,
+
+        // GCF Deer (Lesser Costantine Flangert Deer)
+        spawnGcfDeer: true,
+        gcfDeerCount: 10,
+
+        // Langarts Blitting Birds (birds of paradise)
+        spawnLBBirds: true,
+        lbBirdCount: 24,
+
+        // Coastal Whispering Tree Snakes
+        spawnWhisperingSnakes: true,
+        whisperingSnakeCount: 4,
+
+        // Coastal Dreadmaws — apex crocodilian
+        spawnDreadmaws: true,
+        dreadmawCount: 2,
+
         // Requirements
         requiresArtifact: 'uronal_seal_tooth'
     }

@@ -478,6 +478,7 @@ window.Effects = (function() {
             case 'fur_coat':
             case 'thunder_scythe':
             case 'thunder_armour':
+            case 'electric_crossbow':
                 // These go into inventory as equippable items
                 // Look up name/description from TOOL_STATS if available
                 var existing = GameState.inventoryItems.find(function(item) {

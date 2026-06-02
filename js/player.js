@@ -1373,13 +1373,81 @@ window.Player = (function() {
             GameState.backSword = null;
         }
 
-        // Check if equipped weapon is the thunder scythe
+        // Check which weapon is equipped
         var hotbarItem = GameState.hotbarSlots ? GameState.hotbarSlots[GameState.selectedHotbarSlot] : null;
         var isThunder = hotbarItem && hotbarItem.id === 'thunder_scythe';
+        var isCrossbow = hotbarItem && hotbarItem.id === 'electric_crossbow';
 
         var swordGroup = new THREE.Group();
 
-        if (isThunder) {
+        if (isCrossbow) {
+            // === ELECTRIC CROSSBOW (big and chunky!) ===
+            var bowMat = new THREE.MeshStandardMaterial({ color: 0x2255bb, metalness: 0.6, roughness: 0.3, emissive: 0x112266, emissiveIntensity: 0.3 });
+
+            // Main body/stock — long horizontal bar
+            var stock = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.25, 0.2), bowMat);
+            stock.position.set(0, 0, 0);
+            swordGroup.add(stock);
+
+            // Reinforced front block
+            var frontBlock = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.3, 0.3), bowMat);
+            frontBlock.position.set(0.75, 0, 0);
+            swordGroup.add(frontBlock);
+
+            // Bow arms — thick angled pieces forming the cross shape
+            var armMat = new THREE.MeshStandardMaterial({ color: 0x3377dd, metalness: 0.5, roughness: 0.3, emissive: 0x1144aa, emissiveIntensity: 0.2 });
+            var leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 1.0), armMat);
+            leftArm.position.set(0.75, 0, 0);
+            leftArm.rotation.x = 0.25;
+            swordGroup.add(leftArm);
+            var rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 1.0), armMat);
+            rightArm.position.set(0.75, 0, 0);
+            rightArm.rotation.x = -0.25;
+            swordGroup.add(rightArm);
+
+            // Arm tips (blue caps)
+            var tipMat = new THREE.MeshStandardMaterial({ color: 0x44aaff, metalness: 0.7, roughness: 0.2, emissive: 0x2266cc, emissiveIntensity: 0.3 });
+            var tipL = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), tipMat);
+            tipL.position.set(0.75, 0.12, 0.48);
+            swordGroup.add(tipL);
+            var tipR = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), tipMat);
+            tipR.position.set(0.75, -0.12, -0.48);
+            swordGroup.add(tipR);
+
+            // Bowstring — glowing line connecting arm tips
+            var stringMat = new THREE.MeshBasicMaterial({ color: 0x88ddff });
+            var bowstring = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.9), stringMat);
+            bowstring.position.set(0.75, 0.08, 0);
+            swordGroup.add(bowstring);
+
+            // Grip/trigger section — darker block underneath
+            var gripMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
+            var grip = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.35, 0.18), gripMat);
+            grip.position.set(-0.2, -0.2, 0);
+            swordGroup.add(grip);
+
+            // Rear stock pad
+            var padMat = new THREE.MeshStandardMaterial({ color: 0x1a1a33 });
+            var pad = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.25), padMat);
+            pad.position.set(-0.85, 0, 0);
+            swordGroup.add(pad);
+
+            // Electric glow orb at the front
+            var glowMat = new THREE.MeshBasicMaterial({ color: 0x44ccff });
+            var glow = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), glowMat);
+            glow.position.set(0.9, 0, 0);
+            glow.userData.fizzSpark = true;
+            swordGroup.add(glow);
+
+            // Fizzing sparks along the arms
+            var fizzMat = new THREE.MeshBasicMaterial({ color: 0x88ddff });
+            for (var i = 0; i < 5; i++) {
+                var spark = new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 4), fizzMat);
+                spark.position.set(0.5 + Math.random() * 0.4, Math.random() * 0.2 - 0.1, Math.random() * 0.8 - 0.4);
+                spark.userData.fizzSpark = true;
+                swordGroup.add(spark);
+            }
+        } else if (isThunder) {
             // === SUPER THUNDER SCYTHE HAMMER ===
             // Hammer head — blue metallic block
             var hammerMat = new THREE.MeshStandardMaterial({ color: 0x2266cc, metalness: 0.8, roughness: 0.2, emissive: 0x1144aa, emissiveIntensity: 0.3 });

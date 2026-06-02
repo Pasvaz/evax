@@ -503,6 +503,16 @@ window.SHOP_ITEMS = [
         icon: '🛡️',
         vendor: 'tim',
         effect: { type: 'item', item: 'thunder_armour' }
+    },
+
+    {
+        id: 'shop_electric_crossbow',
+        name: 'Electric Crossbow',
+        description: 'Rapid-fire chain lightning bolts! Long range, 1s cooldown. 2x stamina drain while running.',
+        price: TOOL_STATS.swords.electric_crossbow.price,
+        icon: '🏹',
+        vendor: 'tim',
+        effect: { type: 'item', item: 'electric_crossbow' }
     }
 
     // ========================================================================

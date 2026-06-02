@@ -626,6 +626,315 @@ window.BESTIARY = [
             mating: 'Males fight rivals; winner mates with female',
             babies: '4 pups per mating (2 male, 2 female)'
         }
+    },
+
+    // ========================================================================
+    {
+        id: 'jet_crab',
+        name: 'Jet Crab',
+        type: 'Beach Crustacean',
+        icon: '🦀',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male', gender: 'male' },
+            { id: 'female', name: 'Female (larger)', gender: 'female' }
+        ],
+        animations: ['scuttle', 'claw_click'],
+        stats: {
+            health: '1',
+            speed: 'Fast',
+            damage: 'None',
+            diet: 'Scavenger'
+        },
+        description: 'Tiny jet-black ghost crabs that scuttle sideways across the beach at surprising speed. Females are slightly larger than males. They are prey for seagulls, seals, and orcletons.',
+        behavior: 'Jet crabs scuttle sideways across the sand. When Pedro approaches, they flee in a rapid sideways dash. Males click their claws during mating season to attract females.',
+        habitat: 'Found all over the sandy beach. Sometimes venture into shallow water.',
+        tips: 'Walk over them to squish and eat! They restore a small amount of food. They are at the bottom of the coastal food chain.',
+        special: {
+            mating: 'Males click claws → females approach → 60% approval → 15 eggs in sand hole',
+            hatchTime: '2 minutes',
+            foodValue: '+5 food when stomped'
+        }
+    },
+
+    // ========================================================================
+    {
+        id: 'slackpinch_crab',
+        name: 'Slackpinch Crab',
+        type: 'Beach Crustacean',
+        icon: '🦀',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male (yellow, blue pincers)', gender: 'male' },
+            { id: 'female', name: 'Female (white)', gender: 'female' }
+        ],
+        animations: ['scuttle', 'claw_clack'],
+        stats: {
+            health: '3',
+            speed: 'Medium',
+            damage: '1 (pinch)',
+            diet: 'Scavenger'
+        },
+        description: 'A larger, colourful crab species. Males are yellow with striking blue pincers and orange moving claw parts. Females are white with smaller claws. Tougher than jet crabs but still stompable.',
+        behavior: 'Slackpinch crabs are slower but hardier than jet crabs. Males clack their oversized pincers to attract white females. They take a few stomps to squish.',
+        habitat: 'Found on the sandy beach alongside jet crabs.',
+        tips: 'Takes more stomps than a jet crab. Watch out for the pinch! Worth more food than jet crabs.',
+        special: {
+            mating: 'Males clack pincers → females approach → 60% approval → 15 eggs',
+            hatchTime: '2 minutes',
+            foodValue: '+8 food when stomped'
+        }
+    },
+
+    // ========================================================================
+    {
+        id: 'basicuslin_amphipod',
+        name: 'Basicuslin Amphipod',
+        type: 'Sand Crustacean',
+        icon: '🦐',
+        biome: 'Coastal',
+        variants: [],
+        animations: ['buried', 'wander'],
+        stats: {
+            health: '1',
+            speed: 'Very Slow',
+            damage: 'None',
+            diet: 'Detritivore — decaying wood and debris'
+        },
+        description: 'A tiny white amphipod that lives half-buried in the sand with only its antennae sticking out. No gender differences — they reproduce asexually by laying eggs.',
+        behavior: 'Amphipods spend most of their time buried in the sand. Occasionally they emerge and wander slowly, eating decaying wood and organic debris. They re-bury themselves after a while.',
+        habitat: 'Buried in the sandy beach of the Coastal Biome. Look for antennae poking out of the sand!',
+        tips: 'Easy to miss! Walk over the antennae to squish and eat. Worth a tiny amount of food.',
+        special: {
+            reproduction: 'Lays eggs solo (no mating needed)',
+            hatchTime: '3 minutes',
+            foodValue: '+3 food when stomped'
+        }
+    },
+
+    // ========================================================================
+    {
+        id: 'beach_weasel',
+        name: 'Beach Weasel',
+        type: 'Coastal Predator',
+        icon: '🦦',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male (slightly larger)', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' }
+        ],
+        animations: ['gallop', 'paw_swipe', 'sleep_curl'],
+        stats: {
+            health: '10-12',
+            speed: 'Fast (galloping)',
+            damage: '6 (vicious paw swipe)',
+            diet: 'Carnivore'
+        },
+        description: 'An annoying little coastal predator with sandy fur. Beach weasels flee from Pedro with a distinctive galloping run, bending their body and bouncing. But if attacked, they turn and fight back with devastating paw swipes!',
+        behavior: 'Runs away from Pedro with a unique galloping animation. If you hit one, it turns aggressive and chases you, swiping with its paws for 6 damage. Males fight viciously over mated females. Females dig burrows and raise 4 pups.',
+        habitat: 'Found near the edge of the beach where sand meets grass. Females dig burrows away from the shoreline.',
+        tips: 'DO NOT attack these unless you are well equipped! 6 damage per swipe is brutal. Leave them alone and they will leave you alone.',
+        special: {
+            mating: 'Males find females every 5 min. If female is mated, males fight (loser flees hurt)',
+            burrow: 'Females dig burrows with 4 pups. Press E to peek inside!',
+            funFact: 'They sleep curled up with their tail wrapped around them and head resting on it'
+        }
+    },
+
+    // ========================================================================
+    {
+        id: 'beach_murgaya',
+        name: 'Beach Murgaya',
+        type: 'Coastal Pack Predator',
+        icon: '🐕',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male (grey, larger)', gender: 'male' },
+            { id: 'female', name: 'Female (brown, smaller)', gender: 'female' }
+        ],
+        animations: ['jaw_snap', 'stalk', 'gallop', 'swim', 'lie_down'],
+        stats: {
+            health: '20-25',
+            speed: 'Fast (pack hunter)',
+            damage: '10 (jaw bite!)',
+            diet: 'Carnivore — seals, weasels, seagulls, crabs, fish, Pedro!'
+        },
+        description: 'The apex predator of the coast. Beach Murgayas are pack-hunting canines with powerful jaws that snap open and closed to deliver devastating 10-damage bites. Males are grey and larger; females are brown and slightly faster. They hunt in coordinated packs of 2-4, stalking prey before launching a group chase.',
+        behavior: 'Packs stalk prey from 40 units, then burst into a full-speed chase. They can swim (doggy paddle) and will follow Pedro into the water or rest on islands. Each pack has a complex lifecycle: females build surface dens in the forest and raise young through 6 growth stages over 17 minutes.',
+        habitat: 'Pack territories range from the coastal forest to the beach. Dens are built in the middle of the forest. Adolescents can be found swimming to islands.',
+        tips: 'EXTREMELY DANGEROUS. A pack of 4 can deal 40 damage per attack cycle. Do not approach without thunder armour or strong weapons. Even water is not safe — they swim! Run to the village or fight with the electric crossbow from range.',
+        special: {
+            packSize: '2-4 members',
+            lifecycle: 'Infant (2m) → Snifflet (3m) → Pup (7m with beach excursion) → Adolescent (5m) → Adult',
+            hunting: 'Special tactics per prey: stalking, hit-and-run, pack coordination',
+            swimming: 'Can doggy paddle, rest on islands, hunt in water',
+            funFact: 'Inspired by the wolves of Vancouver Island who swim between islands to hunt!'
+        }
+    },
+    // ========================================================================
+    // GCF DEER (Lesser Costantine Flangert Deer)
+    // ========================================================================
+    {
+        id: 'gcf_deer',
+        name: 'Lesser Costantine Flangert Deer',
+        type: 'Coastal Herbivore',
+        icon: '🦌',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male (horned)', gender: 'male' },
+            { id: 'female', name: 'Female', gender: 'female' },
+            { id: 'fawn_male', name: 'Fawn (Male)', gender: 'male', isBaby: true },
+            { id: 'fawn_female', name: 'Fawn (Female)', gender: 'female', isBaby: true },
+            { id: 'hipperlet_male', name: 'Hipperlet (Male)', gender: 'male' },
+            { id: 'hipperlet_female', name: 'Hipperlet (Female)', gender: 'female' },
+            { id: 'stfumbler_male', name: 'Stfumbler (Male)', gender: 'male' },
+            { id: 'stfumbler_female', name: 'Stfumbler (Female)', gender: 'female' }
+        ],
+        animations: ['idle', 'walk', 'run', 'graze', 'flee'],
+        stats: {
+            health: '14 (male) / 12 (female)',
+            speed: 'Fast (fleeSpeed: 12)',
+            damage: 'None (herbivore)',
+            diet: 'Herbivore — Flangert Berries'
+        },
+        description: 'The Lesser Costantine Flangert Deer (GCF Deer) is a solitary coastal herbivore that feeds exclusively on Flangert Berry Bushes. Males have small branching horns, white spots on brown fur, and shiny reflective eyes. Females are slightly smaller without horns. They go through 4 growth stages: Fawn → Hipperlet → Stfumbler → Adult.',
+        behavior: 'GCF Deer are solitary and skittish. They wander the coastal forest seeking berry bushes, pausing to eat berries one at a time. They have excellent awareness (detectionRange: 18) and flee at high speed when Pedro approaches. However, while eating from a bush, they become distracted — their detection range drops dramatically, making them vulnerable to sneak attacks. Fawns hide inside berry bushes for safety.',
+        habitat: 'Found in the coastal birch forest, always near Flangert Berry Bushes. They never venture onto the beach or into the ocean.',
+        tips: 'Sneak up while they are eating from a bush — their guard is down! Killing one drops hide and meat. Meat is a very filling food (+15 health, +35 hunger). Beach Murgayas also hunt GCF Deer and bring scraps back to their pups.',
+        special: {
+            growthStages: 'Fawn (2 min) → Hipperlet (3 min) → Stfumbler (3 min) → Adult',
+            sneakAttack: 'Detection drops to 4 while eating (normally 18)',
+            drops: '2 Hide',
+            predator: 'Beach Murgaya',
+            diet: 'Flangert Berries only'
+        }
+    },
+    // ========================================================================
+    // LANGARTS BLITTING BIRD (LB Bird)
+    // ========================================================================
+    {
+        id: 'lb_bird',
+        name: 'Langarts Blitting Bird',
+        type: 'Coastal Omnivore',
+        icon: '🐦',
+        biome: 'Coastal',
+        variants: [
+            { id: 'male', name: 'Male (yellow + emerald collar)', gender: 'male' },
+            { id: 'female', name: 'Female (starling-dark)', gender: 'female' },
+            { id: 'chick', name: 'Chick (grey)', isBaby: true },
+            { id: 'fledgling', name: 'Fledgling (grey, hopping)', isBaby: true }
+        ],
+        animations: ['idle', 'walk', 'fly', 'peck', 'display', 'hop'],
+        stats: {
+            health: '8 (male) / 7 (female)',
+            speed: 'Medium-Fast (fleeSpeed: 9-10)',
+            damage: '3 (male) / 2 (female) — males peck when provoked',
+            diet: 'Omnivore — Flangert Berries, Amphipods, Debris'
+        },
+        description: 'A magnificent bird of paradise found throughout the coastal biome. ' +
+            'Females resemble starlings with dark iridescent plumage — subtle and practical. ' +
+            'Males, however, are dazzling: sunflower yellow bodies crowned with a collar of deep emerald feathers. ' +
+            'These birds have long legs built for running and zygodactyl feet (two toes forward, two back) ' +
+            'that let them cling to tree trunks — yes, the TRUNK, not the branches! ' +
+            'They forage on the forest floor, peck berries from bushes, hunt amphipods on the beach, ' +
+            'and even fly out to rest on ocean islands. They sleep perched on bushes at night.',
+        behavior: {
+            foraging: 'Pecks forest floor, eats berries from bushes, hunts amphipods on beach',
+            perching: 'Rests on tree trunks (zygodactyl grip) and on top of bushes',
+            islands: 'Flies out to ocean islands to rest, then returns to the forest',
+            territory: 'Roams freely across forest, beach, and islands',
+            combat: 'Males peck attackers briefly then flee. Females and young just flee.',
+            mating: 'Males perch on tree trunk and call. When a female approaches, the male raises his ' +
+                'emerald collar to cover his face, head almost disappearing into his body with just the beak ' +
+                'poking out. He then sways side-to-side with jittering movements. 70% success rate — ' +
+                'if he fails, the female flies away unimpressed!',
+            nesting: 'After successful display, female dives into a bush to collect twigs, ' +
+                'flies to the trunk, and pecks a nest into the tree over 6 seconds.',
+            lifecycle: 'Eggs hatch after 1 minute into grey chicks that wander near the nest. ' +
+                'After 3 minutes they become fledglings that hop around. After 4 more minutes ' +
+                'they mature into adults (50/50 male or female).',
+            funFact: 'Named after Professor Langarts who first documented their extraordinary mating displays. ' +
+                'The "blitting" refers to the rapid jittering motion of their dance!'
+        }
+    },
+    // ========================================================================
+    // COASTAL WHISPERING TREE SNAKE
+    // ========================================================================
+    {
+        id: 'whispering_snake',
+        name: 'Coastal Whispering Tree Snake',
+        type: 'Coastal Predator',
+        icon: '🐍',
+        biome: 'Coastal',
+        variants: [
+            { id: 'mini', name: 'Mini (hatchling)' },
+            { id: 'small', name: 'Small' },
+            { id: 'decent', name: 'Decent' },
+            { id: 'large', name: 'Large' },
+            { id: 'monstrous', name: 'Monstrous' }
+        ],
+        animations: ['coil', 'slither', 'strike', 'constrict', 'shush', 'tongue_flick'],
+        stats: {
+            health: '5 (mini) to 35 (monstrous)',
+            speed: 'Slow-Medium (3-5)',
+            damage: '1 (mini) to 8 (monstrous) — constriction damage',
+            diet: 'Carnivore — amphipods, eggs, chicks, weasels, deer, even Pedro!'
+        },
+        description: 'A ghostly predator that matches the white bark of the coastal birch trees perfectly. ' +
+            'The Whispering Tree Snake coils around branches, nearly invisible, watching with piercing yellow-green eyes. ' +
+            'It gets its name from a chilling behavior: before striking, it raises its forked tongue to its lips ' +
+            'in a "shushing" gesture, as if whispering "shhh" to its prey before ending their life. ' +
+            'These snakes grow through 5 size stages by eating — the more they consume, the larger and more ' +
+            'dangerous they become. The largest specimens can constrict adult deer and even ambush Pedro!',
+        behavior: {
+            camouflage: 'Black and white colouring matches birch bark — nearly invisible on tree trunks',
+            hunting: 'Coils on branches watching for prey below. Shushes, then drops from the tree to strike.',
+            constriction: 'Wraps around prey and crushes. Smaller prey has no chance. ' +
+                'Adult deer have a 50% survival rate. Pedro must mash SPACE to fill a strength bar and break free!',
+            growth: 'Grows by eating: Mini (3 meals) → Small (4) → Decent (5) → Large (6) → Monstrous (max). ' +
+                'Each stage unlocks larger prey. Large+ can attack Pedro!',
+            preyList: 'Mini: amphipods. Small: + chicks. Decent: + fledglings, pups. ' +
+                'Large: + weasels, murgayas, deer fawns. Monstrous: + adult deer, Pedro.',
+            shushing: 'The tongue-to-lips "whisper" is a 2-second warning before a strike. ' +
+                'If you see a snake shush, RUN!',
+            funFact: 'The birch-bark camouflage is so effective that researchers counted zero snakes on their first ' +
+                'survey of the coastal forest — despite there being four in the very trees they were standing under.'
+        }
+    },
+    // ========================================================================
+    // COASTAL DREADMAW
+    // ========================================================================
+    {
+        id: 'dreadmaw',
+        name: 'Coastal Dreadmaw',
+        type: 'Apex Crocodilian',
+        icon: '🐊',
+        biome: 'Coastal',
+        variants: [
+            { id: 'hatchling', name: 'Hatchling' },
+            { id: 'juvenile', name: 'Juvenile' },
+            { id: 'adolescent', name: 'Adolescent' },
+            { id: 'subadult', name: 'Sub-adult' },
+            { id: 'adult', name: 'Adult Male', gender: 'male' },
+            { id: 'adult_female', name: 'Adult Female', gender: 'female' },
+            { id: 'elder', name: 'Elder' },
+            { id: 'ocean_king', name: 'Ocean King' }
+        ],
+        animations: ['swim', 'gallop', 'ambush', 'strike', 'death_roll', 'bask', 'carry'],
+        stats: {
+            health: '5 (hatchling) to 175 (Ocean King)',
+            speed: 'Slow on land, FAST in water (up to 16!)',
+            damage: '20 (adult+) — devastating jaw bite',
+            diet: 'Carnivore — EVERYTHING'
+        },
+        description: 'The Coastal Dreadmaw is the undisputed apex predator of the coastal biome. Inspired by the ancient Deinosuchus, this massive crocodilian has a broad V-shaped skull, rows of armoured back plates, and a powerful paddle tail. Its sandy-brown colouring darkens with age. Males are larger with a distinctive bony head ridge.',
+        behavior: 'Goes semi-transparent to ambush from shallows or sand. Grabs prey and drags it to the ocean for a devastating death roll. Pedro must mash SPACE to escape. Adults are nearly impossible to break free from. The legendary Ocean King holds the key to a prehistoric secret.',
+        habitat: 'Patrols the ocean, basks on beaches and islands. Females nest on islands with 10 eggs.',
+        tips: 'EXTREMELY DANGEROUS. The jawbone sword dropped by adults lets you dive and breathe underwater. The Ocean King is connected to the deep lore — the age of DINOSAURS.',
+        special: {
+            drops: 'Jawbone Sword — 20 dmg, snap attack, underwater breathing',
+            oceanKing: 'Gateway to the prehistoric era'
+        }
     }
 ];
 

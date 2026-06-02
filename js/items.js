@@ -63,6 +63,14 @@ window.Items = (function() {
                     hungerAmount = foodHunger.eggs;
                 }
                 break;
+            case 'meat':
+                if (GameState.resourceCounts.meat > 0) {
+                    GameState.resourceCounts.meat--;
+                    hasResource = true;
+                    healAmount = 15;
+                    hungerAmount = 35; // Very satiating!
+                }
+                break;
             case 'arsenic_mushroom':
                 if (GameState.resourceCounts.arsenic_mushrooms > 0) {
                     GameState.resourceCounts.arsenic_mushrooms--;
@@ -940,6 +948,157 @@ window.Items = (function() {
         return artifactsInWorld;
     }
 
+    // ========================================================================
+    // FLANGERT BERRY BUSHES — Coastal berry source
+    // ========================================================================
+    // Big green bush with 7 blue berries. Press E to pick one at a time.
+
+    var berryBushes = [];
+
+    function createBerryBush(x, z) {
+        var bush = new THREE.Group();
+
+        // Main bush body — large green sphere
+        var bushMat = new THREE.MeshStandardMaterial({ color: 0x2d6b2d, roughness: 0.8 });
+        var body = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 10), bushMat);
+        body.position.y = 1.0;
+        body.scale.set(1.2, 0.9, 1.1);
+        body.castShadow = true;
+        bush.add(body);
+
+        // Secondary foliage lumps for fullness
+        var lumpMat = new THREE.MeshStandardMaterial({ color: 0x337733, roughness: 0.8 });
+        [[-0.5, 1.3, 0.4], [0.6, 1.1, -0.3], [0, 1.5, 0.5], [-0.4, 0.8, -0.5], [0.5, 0.9, 0.4]].forEach(function(pos) {
+            var lump = new THREE.Mesh(new THREE.SphereGeometry(0.5 + Math.random() * 0.3, 8, 6), lumpMat);
+            lump.position.set(pos[0], pos[1], pos[2]);
+            bush.add(lump);
+        });
+
+        // Darker inner foliage
+        var innerMat = new THREE.MeshStandardMaterial({ color: 0x1a4a1a, roughness: 0.9 });
+        var inner = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), innerMat);
+        inner.position.set(0, 0.8, 0);
+        bush.add(inner);
+
+        // Short trunk/base
+        var trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.9 });
+        var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.5, 6), trunkMat);
+        trunk.position.y = 0.25;
+        bush.add(trunk);
+
+        // Berries — 7 blue berries scattered on the surface
+        var berryMeshes = [];
+        var berryMat = new THREE.MeshStandardMaterial({ color: 0x4466dd, roughness: 0.3, metalness: 0.1 });
+        var berryPositions = [
+            [0.8, 1.2, 0.5], [-0.7, 1.3, 0.4], [0.3, 1.6, -0.4],
+            [-0.5, 1.0, -0.6], [0.9, 0.9, -0.2], [-0.2, 1.5, 0.7],
+            [0.5, 1.4, 0.3]
+        ];
+        berryPositions.forEach(function(pos) {
+            var berry = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), berryMat);
+            berry.position.set(pos[0], pos[1], pos[2]);
+            berry.castShadow = true;
+            bush.add(berry);
+            berryMeshes.push(berry);
+        });
+
+        var terrainY = Environment.getTerrainHeight(x, z);
+        bush.position.set(x, terrainY, z);
+
+        bush.userData = {
+            isBerryBush: true,
+            berriesLeft: 7,
+            maxBerries: 7,
+            berryMeshes: berryMeshes,
+            berryPositions: berryPositions,
+            interactRange: 3.5,
+            regrowTimer: 0
+        };
+
+        GameState.scene.add(bush);
+        berryBushes.push(bush);
+        return bush;
+    }
+
+    function spawnBerryBushes(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        // Spawn spread across the entire forest, not just near the beach
+        for (var i = 0; i < count; i++) {
+            var bx = (Math.random() - 0.5) * worldSize * 0.85;
+            var bz = -15 - Math.random() * 350; // Deep into the forest
+            createBerryBush(bx, bz);
+        }
+        console.log('Spawned ' + count + ' flangert berry bushes');
+    }
+
+    // Update berry bush regrowth — empty bushes regrow berries after 60 seconds
+    function updateBerryBushRegrowth(delta) {
+        for (var i = 0; i < berryBushes.length; i++) {
+            var bush = berryBushes[i];
+            if (!bush || !bush.userData) continue;
+
+            if (bush.userData.berriesLeft < bush.userData.maxBerries) {
+                bush.userData.regrowTimer += delta;
+
+                // Regrow one berry every 60 seconds
+                if (bush.userData.regrowTimer >= 60) {
+                    bush.userData.regrowTimer = 0;
+                    // Add a berry back
+                    var idx = bush.userData.berriesLeft;
+                    if (idx < bush.userData.maxBerries && bush.userData.berryPositions) {
+                        var pos = bush.userData.berryPositions[idx];
+                        var berryMat = new THREE.MeshStandardMaterial({ color: 0x4466dd, roughness: 0.3, metalness: 0.1 });
+                        var berry = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), berryMat);
+                        berry.position.set(pos[0], pos[1], pos[2]);
+                        berry.castShadow = true;
+                        bush.add(berry);
+                        bush.userData.berryMeshes[idx] = berry;
+                        bush.userData.berriesLeft++;
+                    }
+                }
+            }
+        }
+    }
+
+    function checkNearbyBerryBush() {
+        if (!GameState.peccary) return null;
+        for (var i = 0; i < berryBushes.length; i++) {
+            var bush = berryBushes[i];
+            if (bush.userData.berriesLeft <= 0) continue;
+            var dist = GameState.peccary.position.distanceTo(bush.position);
+            if (dist < bush.userData.interactRange) {
+                return bush;
+            }
+        }
+        return null;
+    }
+
+    function collectBerryFromBush(bush) {
+        if (!bush || bush.userData.berriesLeft <= 0) return false;
+
+        bush.userData.berriesLeft--;
+
+        // Remove one berry mesh visually
+        var berryMesh = bush.userData.berryMeshes[bush.userData.berriesLeft];
+        if (berryMesh) {
+            bush.remove(berryMesh);
+        }
+
+        // Give the player a normal berry
+        GameState.resourceCounts.berries = (GameState.resourceCounts.berries || 0) + 1;
+        GameState.score += 2;
+        Game.playSound('collect');
+        UI.showToast('Berry Picked!', 'Collected a flangert berry! (' + bush.userData.berriesLeft + ' left on bush)');
+        UI.updateUI();
+
+        return true;
+    }
+
+    function clearBerryBushes() {
+        berryBushes.forEach(function(b) { GameState.scene.remove(b); });
+        berryBushes = [];
+    }
+
     // Public API
     return {
         createResource: createResource,
@@ -957,6 +1116,12 @@ window.Items = (function() {
         updateArtifacts: updateArtifacts,
         clearArtifacts: clearArtifacts,
         getArtifactsInWorld: getArtifactsInWorld,
-        trackArtifact: trackArtifact
+        trackArtifact: trackArtifact,
+        // Berry bushes
+        spawnBerryBushes: spawnBerryBushes,
+        checkNearbyBerryBush: checkNearbyBerryBush,
+        collectBerryFromBush: collectBerryFromBush,
+        clearBerryBushes: clearBerryBushes,
+        updateBerryBushRegrowth: updateBerryBushRegrowth
     };
 })();

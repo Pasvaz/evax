@@ -2971,6 +2971,37 @@ window.Environment = (function() {
                 height: def.height,
                 style: def.style
             });
+
+            // Add trees and bushes to medium/large islands (radius >= 15)
+            if (def.radius >= 15) {
+                // 1-3 birch trees
+                var numTrees = 1 + Math.floor(Math.random() * 3);
+                for (var ti = 0; ti < numTrees; ti++) {
+                    var tAngle = Math.random() * Math.PI * 2;
+                    var tDist = Math.random() * def.radius * 0.5;
+                    var tx = def.x + Math.cos(tAngle) * tDist;
+                    var tz = def.z + Math.sin(tAngle) * tDist;
+                    var tree = createSeasprayBirchTree(tx, tz);
+                    // Raise tree to island surface
+                    tree.position.y = def.height * 0.5;
+                    GameState.trees.push(tree);
+                    GameState.scene.add(tree);
+                }
+                // 1-2 small decorative bushes
+                var numBushes = 1 + Math.floor(Math.random() * 2);
+                for (var bi = 0; bi < numBushes; bi++) {
+                    var bAngle = Math.random() * Math.PI * 2;
+                    var bDist = Math.random() * def.radius * 0.4;
+                    var bx = def.x + Math.cos(bAngle) * bDist;
+                    var bz = def.z + Math.sin(bAngle) * bDist;
+                    var bushMat = new THREE.MeshStandardMaterial({ color: 0x2d6b2d, roughness: 0.8 });
+                    var bushMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8 + Math.random() * 0.4, 8, 6), bushMat);
+                    bushMesh.scale.set(1.1, 0.7, 1.0);
+                    bushMesh.position.set(bx, def.height * 0.5 + 0.5, bz);
+                    bushMesh.castShadow = true;
+                    GameState.scene.add(bushMesh);
+                }
+            }
         });
 
         console.log('Created ' + biomeData.islands.length + ' ocean islands');

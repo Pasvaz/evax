@@ -4197,6 +4197,1269 @@ window.Enemies = (function() {
     }
 
     // ========================================================================
+    // JET CRAB MODEL — Tiny realistic ghost crab
+    // ========================================================================
+    function buildJetCrabModel(colors, isBaby) {
+        const model = new THREE.Group();
+
+        const shellMat = new THREE.MeshStandardMaterial({ color: colors.shell, roughness: 0.6 });
+        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        const clawMat = new THREE.MeshStandardMaterial({ color: colors.claws });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+        const stalkMat = new THREE.MeshStandardMaterial({ color: colors.eyeStalks });
+
+        // Carapace (shell) — flattened wide oval
+        const shell = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), shellMat);
+        shell.scale.set(1.0, 0.4, 1.3);
+        shell.position.set(0, 0.06, 0);
+        shell.castShadow = true;
+        model.add(shell);
+
+        // 8 legs — 4 per side, thin and jointed
+        for (var side = -1; side <= 1; side += 2) {
+            for (var li = 0; li < 4; li++) {
+                var angle = (li / 4) * 0.8 - 0.2;
+                // Upper leg segment
+                var upper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.012, 0.012), legMat);
+                upper.position.set(angle * 0.1, 0.04, side * 0.13);
+                upper.rotation.y = side * (0.4 + li * 0.25);
+                upper.rotation.z = -side * 0.3;
+                model.add(upper);
+                // Lower leg segment (angled down to ground)
+                var lower = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.01), legMat);
+                lower.position.set(
+                    angle * 0.1 + Math.cos(side * (0.4 + li * 0.25)) * 0.1,
+                    0.01,
+                    side * 0.13 + Math.sin(side * (0.4 + li * 0.25)) * 0.1
+                );
+                lower.rotation.y = side * (0.4 + li * 0.25);
+                lower.rotation.z = side * 0.6;
+                model.add(lower);
+            }
+        }
+
+        // Claws — two front pincers (facing +X)
+        [-0.08, 0.08].forEach(function(zOff) {
+            // Claw arm
+            var arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), clawMat);
+            arm.position.set(0.14, 0.05, zOff);
+            arm.rotation.y = zOff > 0 ? -0.3 : 0.3;
+            model.add(arm);
+            // Pincer — fixed part
+            var fixed = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.015), clawMat);
+            fixed.position.set(0.2, 0.055, zOff);
+            model.add(fixed);
+            // Pincer — moving part (slightly angled open)
+            var moving = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.01, 0.012), clawMat);
+            moving.position.set(0.2, 0.04, zOff);
+            moving.rotation.z = 0.3;
+            moving.userData.isClawMoving = true;
+            model.add(moving);
+        });
+
+        // Eye stalks
+        [-0.04, 0.04].forEach(function(zOff) {
+            var stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 4), stalkMat);
+            stalk.position.set(0.1, 0.1, zOff);
+            model.add(stalk);
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), eyeMat);
+            eye.position.set(0.1, 0.13, zOff);
+            model.add(eye);
+        });
+
+        return model;
+    }
+
+    // ========================================================================
+    // SLACKPINCH CRAB MODEL — Larger crab with colourful pincers
+    // ========================================================================
+    function buildSlackpinchCrabModel(colors, isBaby) {
+        const model = new THREE.Group();
+
+        const shellMat = new THREE.MeshStandardMaterial({ color: colors.shell, roughness: 0.5 });
+        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        const clawMat = new THREE.MeshStandardMaterial({ color: colors.claws });
+        const clawTipMat = new THREE.MeshStandardMaterial({ color: colors.clawTips || colors.claws });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+        const stalkMat = new THREE.MeshStandardMaterial({ color: colors.eyeStalks });
+
+        // Carapace — wider and chunkier than jet crab
+        const shell = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), shellMat);
+        shell.scale.set(1.0, 0.45, 1.4);
+        shell.position.set(0, 0.08, 0);
+        shell.castShadow = true;
+        model.add(shell);
+
+        // Texture ridges on shell
+        for (var ri = 0; ri < 3; ri++) {
+            var ridge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.25), shellMat);
+            ridge.position.set(-0.04 + ri * 0.04, 0.13, 0);
+            model.add(ridge);
+        }
+
+        // 8 legs — thicker than jet crab
+        for (var side = -1; side <= 1; side += 2) {
+            for (var li = 0; li < 4; li++) {
+                var angle = (li / 4) * 0.8 - 0.2;
+                var upper = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.018, 0.018), legMat);
+                upper.position.set(angle * 0.12, 0.05, side * 0.18);
+                upper.rotation.y = side * (0.35 + li * 0.25);
+                upper.rotation.z = -side * 0.25;
+                model.add(upper);
+                var lower = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.015, 0.015), legMat);
+                lower.position.set(
+                    angle * 0.12 + Math.cos(side * (0.35 + li * 0.25)) * 0.13,
+                    0.015,
+                    side * 0.18 + Math.sin(side * (0.35 + li * 0.25)) * 0.13
+                );
+                lower.rotation.y = side * (0.35 + li * 0.25);
+                lower.rotation.z = side * 0.5;
+                model.add(lower);
+            }
+        }
+
+        // BIG claws — the signature feature
+        [-0.12, 0.12].forEach(function(zOff) {
+            // Claw arm (thick)
+            var arm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.04), clawMat);
+            arm.position.set(0.2, 0.07, zOff);
+            arm.rotation.y = zOff > 0 ? -0.25 : 0.25;
+            model.add(arm);
+            // Pincer fixed part (blue)
+            var fixed = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.035, 0.03), clawMat);
+            fixed.position.set(0.3, 0.075, zOff);
+            model.add(fixed);
+            // Pincer moving part (orange tip)
+            var moving = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.025, 0.025), clawTipMat);
+            moving.position.set(0.3, 0.05, zOff);
+            moving.rotation.z = 0.25;
+            moving.userData.isClawMoving = true;
+            model.add(moving);
+        });
+
+        // Eye stalks (taller than jet crab)
+        [-0.06, 0.06].forEach(function(zOff) {
+            var stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.07, 4), stalkMat);
+            stalk.position.set(0.14, 0.14, zOff);
+            model.add(stalk);
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 6), eyeMat);
+            eye.position.set(0.14, 0.18, zOff);
+            model.add(eye);
+        });
+
+        return model;
+    }
+
+    // ========================================================================
+    // BASICUSLIN AMPHIPOD MODEL — Tiny white sand crustacean
+    // ========================================================================
+    function buildBasicuslinAmphipodModel(colors) {
+        const model = new THREE.Group();
+
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.7 });
+        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        const antMat = new THREE.MeshStandardMaterial({ color: colors.antennae });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+
+        // Body — curved segmented shape (like a shrimp/pill bug)
+        // Main body segment
+        var body = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), bodyMat);
+        body.scale.set(1.8, 0.7, 0.9);
+        body.position.set(0, 0.03, 0);
+        model.add(body);
+
+        // Tail segments (3 smaller ones curving down)
+        for (var si = 1; si <= 3; si++) {
+            var seg = new THREE.Mesh(new THREE.SphereGeometry(0.06 - si * 0.012, 6, 5), bodyMat);
+            seg.scale.set(0.8, 0.6, 0.8);
+            seg.position.set(-0.05 * si, 0.025 - si * 0.005, 0);
+            model.add(seg);
+        }
+
+        // Legs — 5 pairs, very thin
+        for (var side = -1; side <= 1; side += 2) {
+            for (var li = 0; li < 5; li++) {
+                var leg = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.025, 0.005), legMat);
+                leg.position.set(0.03 - li * 0.02, 0.005, side * 0.04);
+                model.add(leg);
+            }
+        }
+
+        // Antennae — two long thin sticks poking forward and up
+        [-0.02, 0.02].forEach(function(zOff) {
+            var ant = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.004, 0.004), antMat);
+            ant.position.set(0.12, 0.06, zOff);
+            ant.rotation.z = 0.5;
+            ant.rotation.y = zOff > 0 ? -0.2 : 0.2;
+            model.add(ant);
+        });
+
+        // Tiny eyes
+        [-0.015, 0.015].forEach(function(zOff) {
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(0.006, 4, 4), eyeMat);
+            eye.position.set(0.08, 0.04, zOff);
+            model.add(eye);
+        });
+
+        return model;
+    }
+
+    // ========================================================================
+    // BEACH WEASEL MODEL — Reuses weasel body shape with coastal colouring
+    // ========================================================================
+    function buildBeachWeaselModel(colors, isBaby) {
+        // Same body plan as the forest weasel / grass viper weasel
+        const model = new THREE.Group();
+
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.body });
+        const snoutMat = new THREE.MeshStandardMaterial({ color: colors.snout });
+        const noseMat = new THREE.MeshStandardMaterial({ color: colors.nose });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes });
+        const earMat = new THREE.MeshStandardMaterial({ color: colors.ears });
+        const legMat = new THREE.MeshStandardMaterial({ color: colors.legs });
+        const bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly || colors.body });
+
+        // Long sinuous body (weasel shape — cylinder along X)
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.7, 8), bodyMat);
+        body.rotation.z = Math.PI / 2;
+        body.position.set(0, 0.2, 0);
+        body.castShadow = true;
+        model.add(body);
+
+        // Belly (lighter underside)
+        const belly = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8, 1, true, Math.PI * 0.5, Math.PI), bellyMat);
+        belly.rotation.z = Math.PI / 2;
+        belly.position.set(0, 0.14, 0);
+        model.add(belly);
+
+        // Head (sphere at front)
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), bodyMat);
+        head.position.set(0.4, 0.25, 0);
+        model.add(head);
+
+        // Snout (smaller sphere)
+        const snout = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 6), snoutMat);
+        snout.position.set(0.52, 0.22, 0);
+        model.add(snout);
+
+        // Nose
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.025, 4, 4), noseMat);
+        nose.position.set(0.58, 0.22, 0);
+        model.add(nose);
+
+        // Eyes
+        [-0.07, 0.07].forEach(function(zOff) {
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), eyeMat);
+            eye.position.set(0.48, 0.3, zOff);
+            model.add(eye);
+        });
+
+        // Ears (small triangular bumps)
+        [-0.08, 0.08].forEach(function(zOff) {
+            var ear = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), earMat);
+            ear.scale.set(0.5, 1.2, 0.8);
+            ear.position.set(0.35, 0.36, zOff);
+            model.add(ear);
+        });
+
+        // Legs — 4 short legs
+        [[-0.15, -0.08], [-0.15, 0.08], [0.15, -0.08], [0.15, 0.08]].forEach(function(off) {
+            var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.025, 0.15, 6), legMat);
+            leg.position.set(off[0], 0.08, off[1]);
+            model.add(leg);
+            // Paw
+            var paw = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 4), legMat);
+            paw.scale.set(1.2, 0.5, 1);
+            paw.position.set(off[0], 0.01, off[1]);
+            model.add(paw);
+        });
+
+        // Tail — long and bushy
+        var tail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.02, 0.4, 6), bodyMat);
+        tail.rotation.z = Math.PI / 2 + 0.4; // Angled up slightly
+        tail.position.set(-0.5, 0.25, 0);
+        tail.userData.isTail = true;
+        model.add(tail);
+
+        return model;
+    }
+
+    // ========================================================================
+    // BEACH MURGAYA MODEL — Detailed canine with articulated jaw
+    // ========================================================================
+    function buildBeachMurgayaModel(colors, isBaby) {
+        const model = new THREE.Group();
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.7 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.7 });
+        var snoutMat = new THREE.MeshStandardMaterial({ color: colors.snout, roughness: 0.6 });
+        var noseMat = new THREE.MeshStandardMaterial({ color: colors.nose });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, emissive: colors.eyeGlow || 0x000000, emissiveIntensity: 0.3 });
+        var earMat = new THREE.MeshStandardMaterial({ color: colors.ears, roughness: 0.8 });
+        var legMat = new THREE.MeshStandardMaterial({ color: colors.legs, roughness: 0.7 });
+        var jawMat = new THREE.MeshStandardMaterial({ color: colors.jaw || colors.body, roughness: 0.6 });
+        var teethMat = new THREE.MeshStandardMaterial({ color: colors.teeth || 0xeeeeee });
+        var tongueMat = new THREE.MeshStandardMaterial({ color: colors.tongue || 0xcc5555 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail || colors.body, roughness: 0.8 });
+
+        // === TORSO — tapered cylinder, muscular ===
+        // Front (chest) wider, rear narrower
+        var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.9, 10), bodyMat);
+        torso.rotation.z = Math.PI / 2;
+        torso.position.set(0, 0.35, 0);
+        torso.castShadow = true;
+        model.add(torso);
+
+        // Belly underside
+        var belly = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.7, 10, 1, true, Math.PI * 0.4, Math.PI * 1.2), bellyMat);
+        belly.rotation.z = Math.PI / 2;
+        belly.position.set(0, 0.28, 0);
+        model.add(belly);
+
+        // Chest bump (front of torso, slightly wider)
+        var chest = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), bodyMat);
+        chest.scale.set(0.8, 0.9, 1);
+        chest.position.set(0.35, 0.38, 0);
+        model.add(chest);
+
+        // Rear haunch
+        var haunch = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), bodyMat);
+        haunch.scale.set(0.9, 0.95, 1.05);
+        haunch.position.set(-0.35, 0.36, 0);
+        model.add(haunch);
+
+        // === NECK — angled upward ===
+        var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.3, 8), bodyMat);
+        neck.rotation.z = Math.PI / 2 - 0.4; // Angled up
+        neck.position.set(0.52, 0.48, 0);
+        model.add(neck);
+
+        // === HEAD — proper canine skull shape ===
+        var skull = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), bodyMat);
+        skull.scale.set(1.2, 0.9, 0.95);
+        skull.position.set(0.65, 0.55, 0);
+        model.add(skull);
+
+        // Brow ridge (makes it look fierce)
+        var brow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.28), bodyMat);
+        brow.position.set(0.7, 0.63, 0);
+        model.add(brow);
+
+        // === SNOUT — elongated, tapered ===
+        var snout = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.25, 8), snoutMat);
+        snout.rotation.z = Math.PI / 2;
+        snout.position.set(0.85, 0.53, 0);
+        model.add(snout);
+
+        // Nose
+        var nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), noseMat);
+        nose.position.set(0.97, 0.53, 0);
+        model.add(nose);
+
+        // === JAW — articulated, opens and closes ===
+        var jawGroup = new THREE.Group();
+        // Jaw pivot point (at the back of the mouth)
+        jawGroup.position.set(0.72, 0.47, 0);
+
+        // Lower jaw bone
+        var jawBone = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.07, 0.22, 6), jawMat);
+        jawBone.rotation.z = Math.PI / 2;
+        jawBone.position.set(0.1, -0.02, 0);
+        jawGroup.add(jawBone);
+
+        // Lower teeth (small triangles along the jaw)
+        for (var ti = 0; ti < 4; ti++) {
+            var tooth = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.03, 4), teethMat);
+            tooth.position.set(0.04 + ti * 0.05, 0.02, 0);
+            jawGroup.add(tooth);
+        }
+
+        // Tongue (inside mouth, visible when jaw opens)
+        var tongue = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.015, 0.06), tongueMat);
+        tongue.position.set(0.08, 0, 0);
+        jawGroup.add(tongue);
+
+        jawGroup.userData.isJaw = true;
+        jawGroup.userData.jawOpen = 0; // 0 = closed, 1 = fully open
+        model.add(jawGroup);
+
+        // Upper teeth (on the snout)
+        for (var ut = 0; ut < 4; ut++) {
+            var uTooth = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.03, 4), teethMat);
+            uTooth.rotation.x = Math.PI;
+            uTooth.position.set(0.78 + ut * 0.05, 0.46, 0);
+            model.add(uTooth);
+        }
+
+        // Canine fangs (larger, on the sides)
+        [-0.06, 0.06].forEach(function(zOff) {
+            var fang = new THREE.Mesh(new THREE.ConeGeometry(0.015, 0.045, 4), teethMat);
+            fang.rotation.x = Math.PI;
+            fang.position.set(0.8, 0.44, zOff);
+            model.add(fang);
+        });
+
+        // === EYES — predator forward-facing ===
+        [-0.09, 0.09].forEach(function(zOff) {
+            var eyeSocket = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            eyeSocket.position.set(0.72, 0.59, zOff);
+            model.add(eyeSocket);
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(0.028, 6, 6), eyeMat);
+            eye.position.set(0.74, 0.59, zOff);
+            model.add(eye);
+            // Pupil
+            var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.014, 4, 4), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+            pupil.position.set(0.76, 0.59, zOff);
+            model.add(pupil);
+        });
+
+        // === EARS — pointed, upright ===
+        [-0.1, 0.1].forEach(function(zOff) {
+            var ear = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 4), earMat);
+            ear.position.set(0.6, 0.7, zOff);
+            ear.rotation.z = zOff > 0 ? -0.15 : 0.15; // Slightly outward
+            model.add(ear);
+            // Inner ear (lighter)
+            var innerEar = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.07, 4), snoutMat);
+            innerEar.position.set(0.6, 0.69, zOff * 0.95);
+            innerEar.rotation.z = zOff > 0 ? -0.15 : 0.15;
+            model.add(innerEar);
+        });
+
+        // === LEGS — 4 legs with joints ===
+        var legPositions = [
+            { x: 0.25, z: 0.14, front: true },
+            { x: 0.25, z: -0.14, front: true },
+            { x: -0.3, z: 0.14, front: false },
+            { x: -0.3, z: -0.14, front: false }
+        ];
+
+        var legs = [];
+        legPositions.forEach(function(lp) {
+            var legGroup = new THREE.Group();
+            legGroup.position.set(lp.x, 0.3, lp.z);
+
+            // Upper leg
+            var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.2, 6), legMat);
+            upper.position.y = -0.1;
+            legGroup.add(upper);
+
+            // Lower leg (thinner)
+            var lowerGroup = new THREE.Group();
+            lowerGroup.position.set(0, -0.2, 0);
+
+            var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.18, 6), legMat);
+            lower.position.y = -0.09;
+            lowerGroup.add(lower);
+
+            // Paw
+            var paw = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 4), legMat);
+            paw.scale.set(1.1, 0.5, 1.2);
+            paw.position.y = -0.18;
+            lowerGroup.add(paw);
+
+            legGroup.add(lowerGroup);
+            model.add(legGroup);
+
+            legs.push({
+                group: legGroup,
+                lowerLegGroup: lowerGroup,
+                front: lp.front,
+                diagonalPair: (lp.front && lp.z > 0) || (!lp.front && lp.z < 0) ? 'A' : 'B'
+            });
+        });
+
+        model.userData.legs = legs;
+
+        // === TAIL — curved upward ===
+        var tailGroup = new THREE.Group();
+        tailGroup.position.set(-0.5, 0.4, 0);
+
+        var tailBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.2, 6), tailMat);
+        tailBase.rotation.z = Math.PI / 2 + 0.6;
+        tailGroup.add(tailBase);
+
+        var tailTip = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.04, 0.15, 6), tailMat);
+        tailTip.rotation.z = Math.PI / 2 + 1.0;
+        tailTip.position.set(-0.12, 0.15, 0);
+        tailGroup.add(tailTip);
+
+        tailGroup.userData.isTail = true;
+        model.add(tailGroup);
+
+        // Store jaw reference for animation
+        model.userData.jawGroup = jawGroup;
+
+        return model;
+    }
+
+    // ========================================================================
+    // GCF DEER MODEL — Detailed musk deer with horns + spots
+    // ========================================================================
+    function buildGcfDeerModel(colors, isBaby) {
+        const model = new THREE.Group();
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.7 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.7 });
+        var neckMat = new THREE.MeshStandardMaterial({ color: colors.neck || colors.body, roughness: 0.7 });
+        var headMat = new THREE.MeshStandardMaterial({ color: colors.head || colors.body, roughness: 0.6 });
+        var snoutMat = new THREE.MeshStandardMaterial({ color: colors.snout || colors.head, roughness: 0.6 });
+        var noseMat = new THREE.MeshStandardMaterial({ color: colors.nose });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.1, metalness: 0.3 });
+        var eyeRingMat = new THREE.MeshStandardMaterial({ color: colors.eyeRing || 0x222222 });
+        var earMat = new THREE.MeshStandardMaterial({ color: colors.ears || colors.body, roughness: 0.8 });
+        var earInnerMat = new THREE.MeshStandardMaterial({ color: colors.earInner || 0xccaa99, roughness: 0.8 });
+        var legMat = new THREE.MeshStandardMaterial({ color: colors.legs, roughness: 0.7 });
+        var hoofMat = new THREE.MeshStandardMaterial({ color: colors.hooves || 0x333333 });
+        var hornMat = new THREE.MeshStandardMaterial({ color: colors.horns, roughness: 0.5, metalness: 0.1 });
+        var hornTipMat = new THREE.MeshStandardMaterial({ color: colors.hornTips || colors.horns, roughness: 0.4 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail || colors.body, roughness: 0.8 });
+        var spotMat = new THREE.MeshStandardMaterial({ color: colors.spots, roughness: 0.6 });
+
+        // === TORSO — elegant, slightly arched back ===
+        var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.18, 0.85, 10), bodyMat);
+        torso.rotation.z = Math.PI / 2;
+        torso.position.set(0, 0.55, 0);
+        torso.castShadow = true;
+        model.add(torso);
+
+        // Belly
+        var belly = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.14, 0.65, 10, 1, true, Math.PI * 0.4, Math.PI * 1.2), bellyMat);
+        belly.rotation.z = Math.PI / 2;
+        belly.position.set(0, 0.47, 0);
+        model.add(belly);
+
+        // Chest (front)
+        var chest = new THREE.Mesh(new THREE.SphereGeometry(0.19, 8, 6), bodyMat);
+        chest.scale.set(0.8, 0.95, 0.9);
+        chest.position.set(0.32, 0.58, 0);
+        model.add(chest);
+
+        // Rump (rear, slightly raised)
+        var rump = new THREE.Mesh(new THREE.SphereGeometry(0.19, 8, 6), bodyMat);
+        rump.scale.set(0.85, 1.0, 1.0);
+        rump.position.set(-0.35, 0.57, 0);
+        model.add(rump);
+
+        // === NECK — graceful, slightly forward-angled like a real deer ===
+        var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 0.5, 8), neckMat);
+        neck.rotation.z = Math.PI / 2 - 0.95;   // more upright, natural deer posture
+        neck.position.set(0.42, 0.78, 0);
+        model.add(neck);
+
+        // === HEAD — delicate deer skull ===
+        var skull = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), headMat);
+        skull.scale.set(1.3, 0.9, 0.95);
+        skull.position.set(0.48, 1.02, 0);
+        model.add(skull);
+
+        // Snout — tapered, elegant
+        var snout = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.07, 0.18, 8), snoutMat);
+        snout.rotation.z = Math.PI / 2 + 0.1;
+        snout.position.set(0.62, 0.99, 0);
+        model.add(snout);
+
+        // Nose
+        var nose = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), noseMat);
+        nose.position.set(0.71, 0.97, 0);
+        model.add(nose);
+
+        // Mouth line
+        var mouthMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        var mouth = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.005, 0.04), mouthMat);
+        mouth.position.set(0.66, 0.95, 0);
+        model.add(mouth);
+
+        // === EYES — large, expressive ===
+        var isYoung = isBaby;
+        var eyeSize = isYoung ? 0.035 : 0.025;
+        var eyeShine = isYoung ? 0.6 : 0.1;
+        [-0.07, 0.07].forEach(function(zOff) {
+            // Eye socket/ring
+            var ring = new THREE.Mesh(new THREE.SphereGeometry(eyeSize + 0.008, 6, 6), eyeRingMat);
+            ring.position.set(0.54, 1.05, zOff);
+            model.add(ring);
+            // Eye
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(eyeSize, 8, 8),
+                new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.05, metalness: eyeShine }));
+            eye.position.set(0.55, 1.05, zOff);
+            model.add(eye);
+            // Highlight (shiny glint)
+            if (isYoung) {
+                var glint = new THREE.Mesh(new THREE.SphereGeometry(0.01, 4, 4),
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                glint.position.set(0.565, 1.065, zOff * 0.8);
+                model.add(glint);
+            }
+            // Pupil
+            var pupil = new THREE.Mesh(new THREE.SphereGeometry(eyeSize * 0.5, 4, 4),
+                new THREE.MeshBasicMaterial({ color: 0x000000 }));
+            pupil.position.set(0.56, 1.05, zOff);
+            model.add(pupil);
+        });
+
+        // === EARS — large, leaf-shaped, slightly back ===
+        [-0.08, 0.08].forEach(function(zOff) {
+            // Outer ear
+            var ear = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 4), earMat);
+            ear.position.set(0.43, 1.14, zOff);
+            ear.rotation.z = zOff > 0 ? -0.3 : 0.3;
+            ear.rotation.x = zOff > 0 ? 0.15 : -0.15;
+            model.add(ear);
+            // Inner ear
+            var inner = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.08, 4), earInnerMat);
+            inner.position.set(0.43, 1.13, zOff * 0.9);
+            inner.rotation.z = zOff > 0 ? -0.3 : 0.3;
+            inner.rotation.x = zOff > 0 ? 0.15 : -0.15;
+            model.add(inner);
+        });
+
+        // === HORNS — size varies by growth stage ===
+        // Adults have full horns, stfumblers have stubs, fawns/hipperlet-females have none
+        // Detect horn size from color comparison (horns same as body = no horns)
+        var hasHorns = colors.horns !== colors.body;
+        var isStub = colors.hornTips === colors.horns && hasHorns; // Stubs have same tip/base color
+
+        if (hasHorns) {
+            var hornLen = isStub ? 0.08 : 0.18;
+            var hornRad = isStub ? 0.015 : 0.02;
+            [-0.04, 0.04].forEach(function(zOff) {
+                // Horn base
+                var horn = new THREE.Mesh(new THREE.CylinderGeometry(hornRad * 0.6, hornRad, hornLen, 6), hornMat);
+                horn.position.set(0.45, 1.14 + hornLen / 2, zOff);
+                horn.rotation.z = zOff > 0 ? -0.15 : 0.15; // Slight outward angle
+                model.add(horn);
+                // Horn tip (slightly different color, curved forward)
+                if (!isStub) {
+                    var tip = new THREE.Mesh(new THREE.CylinderGeometry(0.005, hornRad * 0.6, hornLen * 0.5, 6), hornTipMat);
+                    tip.position.set(0.46, 1.14 + hornLen * 1.1, zOff);
+                    tip.rotation.z = zOff > 0 ? -0.1 : 0.1;
+                    tip.rotation.x = -0.2; // Curve forward slightly
+                    model.add(tip);
+                }
+            });
+        }
+
+        // === LEGS — 4 slender legs with knees and hooves ===
+        var legPositions = [
+            { x: 0.22, z: 0.1, front: true },
+            { x: 0.22, z: -0.1, front: true },
+            { x: -0.28, z: 0.1, front: false },
+            { x: -0.28, z: -0.1, front: false }
+        ];
+
+        var legs = [];
+        legPositions.forEach(function(lp) {
+            var legGroup = new THREE.Group();
+            legGroup.position.set(lp.x, 0.5, lp.z);
+
+            // Upper leg (thicker)
+            var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.25, 6), legMat);
+            upper.position.y = -0.12;
+            legGroup.add(upper);
+
+            // Lower leg (thinner)
+            var lowerGroup = new THREE.Group();
+            lowerGroup.position.set(0, -0.25, 0);
+
+            var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.22, 6), legMat);
+            lower.position.y = -0.11;
+            lowerGroup.add(lower);
+
+            // Hoof
+            var hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.04, 6), hoofMat);
+            hoof.position.y = -0.23;
+            lowerGroup.add(hoof);
+
+            legGroup.add(lowerGroup);
+            model.add(legGroup);
+
+            legs.push({
+                group: legGroup,
+                lowerLegGroup: lowerGroup,
+                front: lp.front,
+                diagonalPair: (lp.front && lp.z > 0) || (!lp.front && lp.z < 0) ? 'A' : 'B'
+            });
+        });
+
+        model.userData.legs = legs;
+
+        // === TAIL — short, upright ===
+        var tail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.12, 6), tailMat);
+        tail.position.set(-0.42, 0.65, 0);
+        tail.rotation.z = 0.8;
+        tail.userData.isTail = true;
+        model.add(tail);
+
+        // === SPOTS — scattered on body (fawns have white, hipperlet males have grey, etc.) ===
+        if (colors.spots !== colors.body) {
+            // Random spot pattern — unique per deer!
+            var spotCount = isBaby ? 8 + Math.floor(Math.random() * 5) : 3;
+            for (var si = 0; si < spotCount; si++) {
+                var spot = new THREE.Mesh(new THREE.SphereGeometry(0.02 + Math.random() * 0.015, 4, 4), spotMat);
+                spot.position.set(
+                    (Math.random() - 0.5) * 0.6,
+                    0.45 + Math.random() * 0.2,
+                    (Math.random() - 0.5) * 0.2
+                );
+                spot.scale.set(1, 0.3, 1); // Flat spots
+                model.add(spot);
+            }
+        }
+
+        return model;
+    }
+
+    // ========================================================================
+    // LANGARTS BLITTING BIRD (LB BIRD) — Model Builder
+    // ========================================================================
+    function buildLBBirdModel(colors, isBaby) {
+        var model = new THREE.Group();
+        model.userData.parts = {};
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.6 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.5 });
+        var headMat = new THREE.MeshStandardMaterial({ color: colors.head, roughness: 0.5 });
+        var beakMat = new THREE.MeshStandardMaterial({ color: colors.beak, roughness: 0.8 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.1, metalness: 0.4 });
+        var wingMat = new THREE.MeshStandardMaterial({ color: colors.wings, roughness: 0.5 });
+        var wingTipMat = new THREE.MeshStandardMaterial({ color: colors.wingTips, roughness: 0.5 });
+        var tailMat = new THREE.MeshStandardMaterial({ color: colors.tail, roughness: 0.6 });
+        var legMat = new THREE.MeshStandardMaterial({ color: colors.legs, roughness: 0.8 });
+        var toeMat = new THREE.MeshStandardMaterial({ color: colors.toes, roughness: 0.8 });
+
+        // === CHICK — small grey fluffball ===
+        if (isBaby) {
+            var fluff = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), bodyMat);
+            fluff.scale.set(1.0, 0.85, 0.85);
+            fluff.position.y = 0.25;
+            model.add(fluff);
+
+            var chickHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), headMat);
+            chickHead.position.set(0.12, 0.4, 0);
+            model.add(chickHead);
+            model.userData.parts.head = chickHead;
+
+            // Stubby beak
+            var chickBeak = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.08, 5), beakMat);
+            chickBeak.rotation.z = -Math.PI / 2;
+            chickBeak.position.set(0.24, 0.39, 0);
+            model.add(chickBeak);
+            model.userData.parts.beak = chickBeak;
+
+            // Eyes
+            [-0.05, 0.05].forEach(function(z) {
+                var eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), eyeMat);
+                eye.position.set(0.2, 0.43, z);
+                model.add(eye);
+            });
+
+            // Tiny legs
+            var chickLegs = [];
+            [-0.06, 0.06].forEach(function(z) {
+                var legGroup = new THREE.Group();
+                legGroup.position.set(0, 0.12, z);
+                var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.01, 0.12, 4), legMat);
+                legGroup.add(leg);
+                model.add(legGroup);
+                chickLegs.push(legGroup);
+            });
+            model.userData.legs = chickLegs;
+
+            return model;
+        }
+
+        // === ADULT / FLEDGLING MODEL ===
+
+        // Body — elongated oval
+        var body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), bodyMat);
+        body.scale.set(1.4, 0.9, 0.85);
+        body.position.set(0, 0.55, 0);
+        body.castShadow = true;
+        model.add(body);
+        model.userData.parts.body = body;
+
+        // Belly — lighter underside
+        var belly = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), bellyMat);
+        belly.scale.set(1.2, 0.6, 0.7);
+        belly.position.set(0, 0.48, 0);
+        model.add(belly);
+
+        // Neck
+        var neckMat = new THREE.MeshStandardMaterial({ color: colors.neck, roughness: 0.5 });
+        var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.18, 7), neckMat);
+        neck.rotation.z = Math.PI / 2 - 0.8;
+        neck.position.set(0.22, 0.68, 0);
+        model.add(neck);
+
+        // Head
+        var head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), headMat);
+        head.scale.set(1.2, 0.95, 0.95);
+        head.position.set(0.28, 0.78, 0);
+        model.add(head);
+        model.userData.parts.head = head;
+
+        // Beak — long, pointed, clearly visible (facing +X)
+        var beakUpper = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.22, 6), beakMat);
+        beakUpper.rotation.z = -Math.PI / 2;
+        beakUpper.position.set(0.42, 0.79, 0);
+        model.add(beakUpper);
+        model.userData.parts.beak = beakUpper;
+
+        // Lower beak
+        var beakLower = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.18, 5), beakMat);
+        beakLower.rotation.z = -Math.PI / 2;
+        beakLower.position.set(0.40, 0.75, 0);
+        model.add(beakLower);
+
+        // Eyes
+        [-0.06, 0.06].forEach(function(z) {
+            var eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6),
+                new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            eyeWhite.position.set(0.34, 0.81, z);
+            model.add(eyeWhite);
+            var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.013, 5, 5), eyeMat);
+            pupil.position.set(0.01, 0, 0);
+            eyeWhite.add(pupil);
+        });
+
+        // === COLLAR — male only, emerald feather ruff ===
+        var collarGroup = new THREE.Group();
+        collarGroup.position.set(0.22, 0.68, 0);
+        model.add(collarGroup);
+        model.userData.parts.collar = collarGroup;
+
+        var hasCollar = colors.collar !== colors.body;
+        if (hasCollar) {
+            var collarMat = new THREE.MeshStandardMaterial({
+                color: colors.collar, roughness: 0.3, metalness: 0.2
+            });
+            var collarSheenMat = new THREE.MeshStandardMaterial({
+                color: colors.collarSheen, roughness: 0.2, metalness: 0.3
+            });
+            // Ring of feather plumes around neck
+            for (var ci = 0; ci < 10; ci++) {
+                var cAngle = (ci / 10) * Math.PI * 2;
+                var featherGrp = new THREE.Group();
+                featherGrp.rotation.x = cAngle;
+                collarGroup.add(featherGrp);
+
+                var feather = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.08, 0.14),
+                    ci % 2 === 0 ? collarMat : collarSheenMat
+                );
+                feather.position.set(0, 0.07, 0.08);
+                feather.rotation.x = -0.3; // Angled outward slightly
+                featherGrp.add(feather);
+            }
+        }
+        model.userData.parts.collarRaised = 0; // 0 = down, 1 = fully raised
+
+        // === TAIL — fan of feathers ===
+        var tailGroup = new THREE.Group();
+        tailGroup.position.set(-0.25, 0.55, 0);
+        model.add(tailGroup);
+        model.userData.parts.tail = tailGroup;
+
+        for (var ti = -2; ti <= 2; ti++) {
+            var tf = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.15), tailMat);
+            tf.position.set(-0.05, 0.02, ti * 0.025);
+            tf.rotation.z = 0.6; // Angled up
+            tf.rotation.y = ti * 0.1;
+            tailGroup.add(tf);
+        }
+
+        // === WINGS — solid 3D, folded against body ===
+        var wingParts = [];
+        [-1, 1].forEach(function(side) {
+            var wingPivot = new THREE.Group();
+            wingPivot.position.set(-0.04, 0.57, side * 0.16);
+            model.add(wingPivot);
+
+            // Inner wing — thick, solid
+            var wing = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, 0.14), wingMat);
+            wing.position.set(-0.06, 0, side * 0.04);
+            wing.rotation.x = side * 0.15;
+            wingPivot.add(wing);
+
+            // Outer wing — tapered
+            var outer = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.1), wingTipMat);
+            outer.position.set(-0.22, -0.01, side * 0.06);
+            outer.rotation.x = side * 0.2;
+            wingPivot.add(outer);
+
+            // Wing feather tip
+            var featherTip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 4), wingTipMat);
+            featherTip.rotation.z = Math.PI / 2;
+            featherTip.position.set(-0.34, -0.02, side * 0.06);
+            wingPivot.add(featherTip);
+
+            wingParts.push(wingPivot);
+        });
+        model.userData.parts.leftWing = wingParts[0];
+        model.userData.parts.rightWing = wingParts[1];
+
+        // === LEGS — long with zygodactyl toes ===
+        var legs = [];
+        [-0.06, 0.06].forEach(function(zPos, idx) {
+            var legGroup = new THREE.Group();
+            legGroup.position.set(0.02, 0.3, zPos);
+            model.add(legGroup);
+
+            // Upper leg
+            var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.018, 0.18, 5), legMat);
+            upper.position.y = -0.02;
+            legGroup.add(upper);
+
+            // Lower leg (knee joint)
+            var lowerGroup = new THREE.Group();
+            lowerGroup.position.y = -0.11;
+            legGroup.add(lowerGroup);
+
+            var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.014, 0.16, 5), legMat);
+            lower.position.y = -0.06;
+            lowerGroup.add(lower);
+
+            // Zygodactyl feet — 2 toes forward, 2 toes back
+            var footY = -0.14;
+            // Forward toes
+            [-0.015, 0.015].forEach(function(tz) {
+                var toe = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.004, 0.06, 4), toeMat);
+                toe.rotation.z = Math.PI / 2 - 0.3;
+                toe.position.set(0.025, footY, tz);
+                lowerGroup.add(toe);
+            });
+            // Back toes
+            [-0.015, 0.015].forEach(function(tz) {
+                var toe = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.004, 0.05, 4), toeMat);
+                toe.rotation.z = Math.PI / 2 + 0.3;
+                toe.position.set(-0.02, footY, tz);
+                lowerGroup.add(toe);
+            });
+
+            legs.push({ group: legGroup, lowerGroup: lowerGroup, diag: idx === 0 ? 'A' : 'B' });
+        });
+        model.userData.legs = legs;
+
+        return model;
+    }
+
+    // ========================================================================
+    // ========================================================================
+    // COASTAL WHISPERING TREE SNAKE — Model Builder
+    // ========================================================================
+    function buildWhisperingSnakeModel(colors) {
+        var model = new THREE.Group();
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.35, metalness: 0.05 });
+        var markingMat = new THREE.MeshStandardMaterial({ color: colors.markings, roughness: 0.4 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.3 });
+        var headMat = new THREE.MeshStandardMaterial({ color: colors.head, roughness: 0.35 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.1, metalness: 0.5, emissive: colors.eyes, emissiveIntensity: 0.3 });
+        var tongueMat = new THREE.MeshStandardMaterial({ color: colors.tongue, roughness: 0.4 });
+        var nostrilMat = new THREE.MeshStandardMaterial({ color: colors.nostrils, roughness: 0.8 });
+
+        var segments = [];
+        var numSegments = 12;
+        var segRadius = 0.12;
+
+        // === HEAD ===
+        var headGroup = new THREE.Group();
+        headGroup.position.set(0, 0, 0);
+        model.add(headGroup);
+
+        // Skull — elongated, slightly flattened
+        var skull = new THREE.Mesh(new THREE.SphereGeometry(segRadius * 1.6, 8, 6), headMat);
+        skull.scale.set(1.8, 0.7, 1.1);
+        headGroup.add(skull);
+
+        // Snout — triangular front
+        var snout = new THREE.Mesh(new THREE.ConeGeometry(segRadius * 0.9, segRadius * 2.5, 6), headMat);
+        snout.rotation.z = -Math.PI / 2;
+        snout.position.set(segRadius * 2.2, -0.005, 0);
+        headGroup.add(snout);
+
+        // Eyes — piercing yellow-green, glowing
+        [-1, 1].forEach(function(side) {
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(segRadius * 0.4, 6, 6), eyeMat);
+            eye.position.set(segRadius * 0.5, segRadius * 0.5, side * segRadius * 0.9);
+            headGroup.add(eye);
+            // Slit pupil
+            var pupil = new THREE.Mesh(new THREE.BoxGeometry(segRadius * 0.1, segRadius * 0.6, segRadius * 0.15),
+                new THREE.MeshBasicMaterial({ color: 0x000000 }));
+            pupil.position.set(segRadius * 0.08, 0, 0);
+            eye.add(pupil);
+        });
+
+        // Nostrils
+        [-1, 1].forEach(function(side) {
+            var nostril = new THREE.Mesh(new THREE.SphereGeometry(segRadius * 0.15, 4, 4), nostrilMat);
+            nostril.position.set(segRadius * 2.8, segRadius * 0.1, side * segRadius * 0.4);
+            headGroup.add(nostril);
+        });
+
+        // Simple black tongue — slides in and out from snout
+        var blackTongueMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
+        var tongue = new THREE.Mesh(new THREE.BoxGeometry(segRadius * 1.5, 0.01, 0.015), blackTongueMat);
+        tongue.position.set(segRadius * 3.2, -0.01, 0);
+        headGroup.add(tongue);
+        model.userData.tongue = tongue;
+        model.userData.tongueOut = 0; // 0 = retracted, 1 = extended
+
+        segments.push(headGroup);
+
+        // === BODY SEGMENTS — chain of spheres with markings ===
+        for (var i = 1; i <= numSegments; i++) {
+            var segGroup = new THREE.Group();
+            var x = -i * segRadius * 1.6;
+            segGroup.position.set(x, 0, 0);
+
+            // Main body segment
+            var mat = (i % 3 === 0 || i % 4 === 1) ? markingMat : bodyMat;
+            var seg = new THREE.Mesh(new THREE.SphereGeometry(segRadius, 7, 5), mat);
+            seg.scale.set(1.3, 0.75, 1.0);
+            segGroup.add(seg);
+
+            // Belly highlight (bottom half)
+            var bellyPiece = new THREE.Mesh(new THREE.SphereGeometry(segRadius * 0.85, 6, 4), bellyMat);
+            bellyPiece.scale.set(1.2, 0.4, 0.9);
+            bellyPiece.position.y = -segRadius * 0.3;
+            segGroup.add(bellyPiece);
+
+            model.add(segGroup);
+            segments.push(segGroup);
+        }
+
+        // === TAIL TIP — tapered end ===
+        var tailTip = new THREE.Mesh(new THREE.ConeGeometry(segRadius * 0.5, segRadius * 2.5, 5), bodyMat);
+        tailTip.rotation.z = Math.PI / 2;
+        var tailX = -(numSegments + 1) * segRadius * 1.6;
+        tailTip.position.set(tailX, 0, 0);
+        model.add(tailTip);
+        segments.push(tailTip);
+
+        model.userData.segments = segments;
+        model.userData.numSegments = numSegments;
+        model.userData.segRadius = segRadius;
+        model.userData.headGroup = headGroup;
+
+        return model;
+    }
+
+    // ========================================================================
+    // COASTAL DREADMAW — Model Builder (Deinosuchus-inspired)
+    // ========================================================================
+    function buildDreadmawModel(colors) {
+        var model = new THREE.Group();
+        model.userData.parts = {};
+
+        var bodyMat = new THREE.MeshStandardMaterial({ color: colors.body, roughness: 0.85 });
+        var bellyMat = new THREE.MeshStandardMaterial({ color: colors.belly, roughness: 0.7 });
+        var plateMat = new THREE.MeshStandardMaterial({ color: colors.plates, roughness: 0.9 });
+        var headMat = new THREE.MeshStandardMaterial({ color: colors.head, roughness: 0.8 });
+        var jawMat = new THREE.MeshStandardMaterial({ color: colors.jaw, roughness: 0.75 });
+        var eyeMat = new THREE.MeshStandardMaterial({ color: colors.eyes, roughness: 0.2, emissive: colors.eyes, emissiveIntensity: 0.2 });
+        var toothMat = new THREE.MeshStandardMaterial({ color: colors.teeth, roughness: 0.4 });
+        var ridgeMat = new THREE.MeshStandardMaterial({ color: colors.ridgeCrest, roughness: 0.85 });
+
+        // === BODY — massive barrel torso, low to the ground ===
+        var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.3, 1.6, 10), bodyMat);
+        torso.rotation.z = Math.PI / 2;
+        torso.position.set(0, 0.3, 0);
+        torso.castShadow = true;
+        model.add(torso);
+
+        // Belly — lighter underside
+        var belly = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.25, 1.5, 8), bellyMat);
+        belly.rotation.z = Math.PI / 2;
+        belly.position.set(0, 0.18, 0);
+        model.add(belly);
+
+        // Shoulder hump — powerful front end
+        var shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), bodyMat);
+        shoulder.scale.set(1.0, 0.85, 1.1);
+        shoulder.position.set(0.4, 0.38, 0);
+        model.add(shoulder);
+
+        // === ARMOURED BACK PLATES — rows of bony scutes ===
+        for (var pi = -4; pi <= 4; pi++) {
+            // Center row — larger
+            var plate = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.1), plateMat);
+            plate.position.set(pi * 0.16, 0.55, 0);
+            plate.rotation.z = (Math.random() - 0.5) * 0.1;
+            model.add(plate);
+            // Side rows — smaller, angled
+            [-1, 1].forEach(function(side) {
+                var sPlate = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.08), plateMat);
+                sPlate.position.set(pi * 0.16, 0.48, side * 0.22);
+                sPlate.rotation.x = side * 0.3;
+                model.add(sPlate);
+            });
+        }
+
+        // === HEAD — massive, broad Deinosuchus skull ===
+        var headGroup = new THREE.Group();
+        headGroup.position.set(0.9, 0.3, 0);
+        model.add(headGroup);
+        model.userData.parts.headGroup = headGroup;
+
+        // Skull — wide, flat, powerful
+        var skull = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.5), headMat);
+        skull.position.set(0.15, 0.08, 0);
+        skull.castShadow = true;
+        headGroup.add(skull);
+
+        // Snout — V-shaped, extends forward
+        var snout = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.38), headMat);
+        snout.position.set(0.55, 0.03, 0);
+        headGroup.add(snout);
+
+        // Snout tip — slightly rounded
+        var snoutTip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 5), headMat);
+        snoutTip.scale.set(1.2, 0.65, 1.3);
+        snoutTip.position.set(0.82, 0.01, 0);
+        headGroup.add(snoutTip);
+
+        // Nostrils — bumps on top of snout
+        [-1, 1].forEach(function(side) {
+            var nostril = new THREE.Mesh(new THREE.SphereGeometry(0.04, 5, 4),
+                new THREE.MeshStandardMaterial({ color: 0x222222 }));
+            nostril.position.set(0.78, 0.12, side * 0.06);
+            headGroup.add(nostril);
+        });
+
+        // Eyes — raised bumps on top of skull (croc style — see above water)
+        [-1, 1].forEach(function(side) {
+            var eyeBump = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), headMat);
+            eyeBump.position.set(0.05, 0.2, side * 0.18);
+            headGroup.add(eyeBump);
+
+            var eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), eyeMat);
+            eye.position.set(0.07, 0.22, side * 0.18);
+            headGroup.add(eye);
+
+            var pupil = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.06, 0.03),
+                new THREE.MeshBasicMaterial({ color: 0x000000 }));
+            eye.add(pupil);
+        });
+
+        // === JAW — lower jaw, can open for death roll ===
+        var jawGroup = new THREE.Group();
+        jawGroup.position.set(0.2, -0.03, 0);
+        headGroup.add(jawGroup);
+        model.userData.parts.jawGroup = jawGroup;
+
+        var jaw = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.1, 0.34), jawMat);
+        jaw.position.set(0.3, -0.05, 0);
+        jawGroup.add(jaw);
+
+        var jawTip = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 4), jawMat);
+        jawTip.scale.set(1.1, 0.5, 1.2);
+        jawTip.position.set(0.64, -0.05, 0);
+        jawGroup.add(jawTip);
+
+        // Teeth — chunky croc teeth inside the jaw edges
+        for (var ti = 0; ti < 7; ti++) {
+            var tx = 0.08 + ti * 0.09;
+            var tSize = 1.0 - ti * 0.08;
+            [-1, 1].forEach(function(side) {
+                // Upper teeth — point downward, inside the jaw
+                var uTooth = new THREE.Mesh(new THREE.ConeGeometry(0.02 * tSize, 0.05 * tSize, 5), toothMat);
+                uTooth.position.set(tx + 0.7, -0.05, side * 0.12);
+                uTooth.rotation.x = Math.PI;
+                headGroup.add(uTooth);
+
+                // Lower teeth — point upward
+                var lTooth = new THREE.Mesh(new THREE.ConeGeometry(0.018 * tSize, 0.04 * tSize, 5), toothMat);
+                lTooth.position.set(tx, 0.03, side * 0.1);
+                jawGroup.add(lTooth);
+            });
+        }
+
+        // === BONY HEAD RIDGE (males only — set visible/invisible per gender) ===
+        var ridgeGroup = new THREE.Group();
+        for (var ri = 0; ri < 5; ri++) {
+            var ridge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.45), ridgeMat);
+            ridge.position.set(-0.1 + ri * 0.1, 0.22, 0);
+            ridgeGroup.add(ridge);
+        }
+        ridgeGroup.position.set(0, 0.02, 0);
+        headGroup.add(ridgeGroup);
+        model.userData.parts.ridgeGroup = ridgeGroup;
+
+        // === LEGS — four thick, short croc legs ===
+        var legPositions = [
+            { x: 0.35, z: 0.3, front: true, side: 'right' },
+            { x: 0.35, z: -0.3, front: true, side: 'left' },
+            { x: -0.45, z: 0.3, front: false, side: 'right' },
+            { x: -0.45, z: -0.3, front: false, side: 'left' }
+        ];
+        model.userData.legs = [];
+
+        legPositions.forEach(function(pos) {
+            var legGroup = new THREE.Group();
+            legGroup.position.set(pos.x, 0.15, pos.z);
+            model.add(legGroup);
+
+            // Upper leg
+            var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.2, 6), bodyMat);
+            upper.position.y = -0.1;
+            legGroup.add(upper);
+
+            // Lower leg
+            var lowerGroup = new THREE.Group();
+            lowerGroup.position.y = -0.2;
+            legGroup.add(lowerGroup);
+
+            var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.15, 6), bodyMat);
+            lower.position.y = -0.075;
+            lowerGroup.add(lower);
+
+            // Foot — flat, webbed
+            var foot = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.12), bodyMat);
+            foot.position.y = -0.16;
+            lowerGroup.add(foot);
+
+            model.userData.legs.push({
+                group: legGroup,
+                lowerLegGroup: lowerGroup,
+                isFront: pos.front,
+                side: pos.side
+            });
+        });
+
+        // === TAIL — long, thick, paddle-shaped (flattened sides) ===
+        var tailGroup = new THREE.Group();
+        tailGroup.position.set(-0.85, 0.28, 0);
+        model.add(tailGroup);
+        model.userData.parts.tailGroup = tailGroup;
+
+        // Tail base — thick
+        var tailBase = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.15, 0.5, 8), bodyMat);
+        tailBase.rotation.z = Math.PI / 2;
+        tailBase.position.set(-0.2, 0, 0);
+        tailGroup.add(tailBase);
+
+        // Tail mid — flattened paddle shape
+        var tailMid = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.08), bodyMat);
+        tailMid.position.set(-0.65, -0.02, 0);
+        tailGroup.add(tailMid);
+
+        // Tail tip
+        var tailTip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 5), bodyMat);
+        tailTip.rotation.z = Math.PI / 2;
+        tailTip.position.set(-0.95, -0.03, 0);
+        tailGroup.add(tailTip);
+
+        // Tail plates
+        for (var tpi = 0; tpi < 4; tpi++) {
+            var tPlate = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.06), plateMat);
+            tPlate.position.set(-0.1 - tpi * 0.18, 0.12, 0);
+            tailGroup.add(tPlate);
+        }
+
+        return model;
+    }
+
     // MODEL BUILDERS REGISTRY
     // ========================================================================
     // Maps animal type names to their builder functions.
@@ -4222,7 +5485,16 @@ window.Enemies = (function() {
         slitted_sardine: buildSlittedSardineModel,
         orcleton: buildOrcletonModel,
         bakka_seal: buildBakkaSealModel,
-        pilfera_coastalis: buildPilferaCoastalisModel
+        pilfera_coastalis: buildPilferaCoastalisModel,
+        jet_crab: buildJetCrabModel,
+        slackpinch_crab: buildSlackpinchCrabModel,
+        basicuslin_amphipod: buildBasicuslinAmphipodModel,
+        beach_weasel: buildBeachWeaselModel,
+        beach_murgaya: buildBeachMurgayaModel,
+        gcf_deer: buildGcfDeerModel,
+        lb_bird: buildLBBirdModel,
+        whispering_snake: buildWhisperingSnakeModel,
+        dreadmaw: buildDreadmawModel
     };
 
     // ========================================================================
@@ -4332,10 +5604,12 @@ window.Enemies = (function() {
      * @returns {Object} - An enemy definition from ENEMIES
      */
     function pickRandomEnemy() {
-        // Filter enemies that can actually spawn (spawnWeight > 0)
+        // Filter enemies that can actually spawn (spawnWeight > 0) AND match current biome
         // Enemies with spawnWeight: 0 are spawned by special functions, not randomly
+        var currentBiome = GameState.currentBiome || 'arboreal';
         const spawnableEnemies = ENEMIES.filter(e =>
-            e.spawnWeight !== undefined && e.spawnWeight > 0
+            e.spawnWeight !== undefined && e.spawnWeight > 0 &&
+            (!e.biome || e.biome === currentBiome)
         );
 
         if (spawnableEnemies.length === 0) {
@@ -7809,9 +9083,9 @@ window.Enemies = (function() {
 
         if (!ox.userData._walkCycle) ox.userData._walkCycle = 0;
 
-        if (moveSpeed > 0.3) {
-            // Walking — slow, heavy gait
-            ox.userData._walkCycle += delta * moveSpeed * 2.0;
+        if (moveSpeed > 0.2) {
+            // Walking — slow, heavy gait with visible leg movement
+            ox.userData._walkCycle += delta * moveSpeed * 3.5;
             var cycle = ox.userData._walkCycle;
 
             legs.forEach(function(leg) {
@@ -7820,14 +9094,15 @@ window.Enemies = (function() {
                 var legCycle = cycle + phase + sidePhase;
 
                 // Forward/backward swing on Z axis (faces +X)
-                leg.group.rotation.z = Math.sin(legCycle) * 0.2; // Smaller swing for heavy animal
+                var swingAmount = Math.min(0.4, 0.25 + moveSpeed * 0.03); // Scales with speed
+                leg.group.rotation.z = Math.sin(legCycle) * swingAmount;
                 if (leg.lowerLegGroup) {
-                    leg.lowerLegGroup.rotation.z = Math.max(0, Math.sin(legCycle + 0.5)) * 0.15;
+                    leg.lowerLegGroup.rotation.z = Math.max(0, Math.sin(legCycle + 0.5)) * (swingAmount * 0.6);
                 }
             });
 
-            // Heavy body bob
-            oxModel.position.y = Math.sin(ox.userData._walkCycle * 2) * 0.01;
+            // Heavy body bob — noticeable sway
+            oxModel.position.y = Math.sin(ox.userData._walkCycle * 2) * 0.025;
         } else {
             // Idle — return to neutral
             legs.forEach(function(leg) {
@@ -11491,6 +12766,4101 @@ window.Enemies = (function() {
     // fleeSpeed: N           — Sprint speed when fleeing
     // attackRange: N         — Detection range for defendsNest animals
     // ----------------------------------------------------------------
+
+    // ========================================================================
+    // COASTAL FAUNA SPAWNING
+    // ========================================================================
+
+    function spawnJetCrabs(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var sandStartZ = 0;
+        var sandEndZ = 200;
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'jet_crab_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'jet_crab_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < count; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            var sx = (Math.random() - 0.5) * worldSize * 0.8;
+            var sz = sandStartZ + Math.random() * (sandEndZ - sandStartZ);
+            var crab = createEnemy(data, sx, sz);
+            if (!crab) continue;
+            crab.userData.gender = data.gender;
+            crab.userData.scuttleDir = Math.random() > 0.5 ? 1 : -1; // Sideways scuttle direction
+            crab.userData.scuttleTimer = Math.random() * 5;
+            crab.userData.beachMinZ = sandStartZ - 10;
+            crab.userData.beachMaxZ = sandEndZ + 5;
+            crab.userData.stomped = false;
+            GameState.enemies.push(crab);
+            GameState.scene.add(crab);
+        }
+        console.log('Spawned ' + count + ' jet crabs on the beach');
+    }
+
+    function spawnSlackpinchCrabs(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var sandStartZ = 0;
+        var sandEndZ = 200;
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'slackpinch_crab_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'slackpinch_crab_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < count; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            var sx = (Math.random() - 0.5) * worldSize * 0.8;
+            var sz = sandStartZ + Math.random() * (sandEndZ - sandStartZ);
+            var crab = createEnemy(data, sx, sz);
+            if (!crab) continue;
+            crab.userData.gender = data.gender;
+            crab.userData.scuttleDir = Math.random() > 0.5 ? 1 : -1;
+            crab.userData.scuttleTimer = Math.random() * 5;
+            crab.userData.beachMinZ = sandStartZ - 10;
+            crab.userData.beachMaxZ = sandEndZ + 5;
+            crab.userData.stomped = false;
+            GameState.enemies.push(crab);
+            GameState.scene.add(crab);
+        }
+        console.log('Spawned ' + count + ' slackpinch crabs on the beach');
+    }
+
+    function spawnAmphipods(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var sandStartZ = 0;
+        var sandEndZ = 200;
+        var ampData = window.ENEMIES.find(function(e) { return e.id === 'basicuslin_amphipod'; });
+        if (!ampData) return;
+
+        for (var i = 0; i < count; i++) {
+            var sx = (Math.random() - 0.5) * worldSize * 0.8;
+            var sz = sandStartZ + Math.random() * (sandEndZ - sandStartZ);
+            var amp = createEnemy(ampData, sx, sz);
+            if (!amp) continue;
+            amp.userData.buried = Math.random() > 0.3; // 70% start buried
+            amp.userData.buriedTimer = Math.random() * 60;
+            amp.userData.wanderTimer = 0;
+            amp.userData.beachMinZ = sandStartZ - 10;
+            amp.userData.beachMaxZ = sandEndZ + 5;
+            amp.userData.eggTimer = 120 + Math.random() * 120; // Lay egg every 2-4 min
+            amp.userData.stomped = false;
+            // Buried amphipods are mostly underground
+            if (amp.userData.buried) {
+                amp.position.y = -0.05;
+            }
+            GameState.enemies.push(amp);
+            GameState.scene.add(amp);
+        }
+        console.log('Spawned ' + count + ' basicuslin amphipods');
+    }
+
+    function spawnBeachWeasels(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var sandStartZ = 0;
+        var sandEndZ = 200;
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'beach_weasel_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'beach_weasel_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < count; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            // Weasels live in the coastal forest (negative Z) and come to the beach for food
+            var sx = (Math.random() - 0.5) * worldSize * 0.8;
+            var sz = -20 - Math.random() * 80; // In the forest, behind the beach
+            var weasel = createEnemy(data, sx, sz);
+            if (!weasel) continue;
+            weasel.userData.gender = data.gender;
+            weasel.userData.homeZ = sz; // Remember forest home
+            weasel.userData.beachMinZ = -100;
+            weasel.userData.beachMaxZ = sandEndZ * 0.7; // Don't go too far into the sand
+            weasel.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            weasel.userData.wanderTimer = Math.random() * 8;
+            weasel.userData.fleeingFrom = null;
+            weasel.userData.retaliating = false;
+            weasel.userData.gallopPhase = 0;
+            weasel.userData.mated = false;
+            weasel.userData.mateTimer = 0;
+            weasel.userData.burrow = null;
+            GameState.enemies.push(weasel);
+            GameState.scene.add(weasel);
+        }
+        console.log('Spawned ' + count + ' beach weasels');
+    }
+
+    // ========================================================================
+    // CRAB MATING SYSTEM
+    // ========================================================================
+    // Works for both jet crabs and slackpinch crabs.
+    // 1. Timer triggers mating season
+    // 2. A random male starts "displaying" (claws raised)
+    // 3. Nearest female approaches
+    // 4. 60% approval → mate → female digs hole → 15 eggs → hatch in 2 min
+    // 5. If rejected, male goes back to wandering
+
+    var crabEggs = []; // Active egg clutches on the beach
+
+    function triggerCrabMating(crabType) {
+        var males = GameState.enemies.filter(function(e) {
+            return e.userData.type === crabType && e.userData.gender === 'male' &&
+                   !e.userData.displaying && !e.userData.stomped && e.userData.health > 0;
+        });
+        var females = GameState.enemies.filter(function(e) {
+            return e.userData.type === crabType && e.userData.gender === 'female' &&
+                   !e.userData.matingState && !e.userData.stomped && e.userData.health > 0;
+        });
+
+        if (males.length === 0 || females.length === 0) return;
+
+        // Pick a random male to display
+        var male = males[Math.floor(Math.random() * males.length)];
+        male.userData.displaying = true;
+        male.userData.displayTimer = 0;
+        male.userData.displayDuration = 4 + Math.random() * 3; // Display for 4-7 seconds
+
+        // Find nearest female
+        var nearestFemale = null;
+        var nearestDist = Infinity;
+        females.forEach(function(f) {
+            var dist = male.position.distanceTo(f.position);
+            if (dist < nearestDist && dist < 30) {
+                nearestDist = dist;
+                nearestFemale = f;
+            }
+        });
+
+        if (!nearestFemale) {
+            male.userData.displaying = false;
+            return;
+        }
+
+        // Female starts approaching
+        nearestFemale.userData.matingState = 'approaching';
+        nearestFemale.userData.targetMale = male;
+        male.userData.targetFemale = nearestFemale;
+
+        console.log(crabType + ' mating: male displaying, female approaching from ' + nearestDist.toFixed(1) + ' units');
+    }
+
+    function updateCrabMating(delta) {
+        // Update displaying males — raise claws animation
+        GameState.enemies.forEach(function(crab) {
+            if ((crab.userData.type !== 'jet_crab' && crab.userData.type !== 'slackpinch_crab') ||
+                crab.userData.stomped || crab.userData.health <= 0) return;
+
+            // Male display — claws raised up
+            if (crab.userData.displaying) {
+                crab.userData.displayTimer += delta;
+                // Animate claws raising up
+                crab.traverse(function(child) {
+                    if (child.userData && child.userData.isClawMoving) {
+                        // Rapid open/close snapping while raised
+                        child.rotation.z = 0.5 + Math.sin(GameState.clock.elapsedTime * 8) * 0.4;
+                        child.position.y += 0.001 * Math.sin(GameState.clock.elapsedTime * 2); // Slight raise
+                    }
+                });
+                // Bob up and down excitedly
+                crab.position.y += Math.sin(GameState.clock.elapsedTime * 6) * 0.003;
+
+                // Display finished without female arriving? Give up
+                if (crab.userData.displayTimer > crab.userData.displayDuration && !crab.userData.targetFemale) {
+                    crab.userData.displaying = false;
+                }
+                return; // Don't move while displaying
+            }
+
+            // Female approaching male
+            if (crab.userData.matingState === 'approaching') {
+                var target = crab.userData.targetMale;
+                if (!target || !target.parent || target.userData.health <= 0 || target.userData.stomped) {
+                    crab.userData.matingState = null;
+                    crab.userData.targetMale = null;
+                    return;
+                }
+
+                var dx = target.position.x - crab.position.x;
+                var dz = target.position.z - crab.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+
+                if (dist < 0.8) {
+                    // Arrived — 60% chance of approval
+                    if (Math.random() < 0.6) {
+                        // Approved! Mate
+                        crab.userData.matingState = 'mating';
+                        crab.userData.matingTimer = 2; // 2 seconds mating
+                        target.userData.displaying = false;
+                        console.log(crab.userData.type + ': female approved! Mating...');
+                    } else {
+                        // Rejected
+                        crab.userData.matingState = null;
+                        crab.userData.targetMale = null;
+                        target.userData.displaying = false;
+                        target.userData.targetFemale = null;
+                        console.log(crab.userData.type + ': female rejected the male');
+                    }
+                } else {
+                    // Walk toward male
+                    var spd = (crab.userData.speed || 2) * delta * 0.8;
+                    crab.position.x += (dx / dist) * spd;
+                    crab.position.z += (dz / dist) * spd;
+                    crab.rotation.y = -Math.atan2(dz, dx) + Math.PI / 2;
+                }
+                return;
+            }
+
+            // Mating in progress
+            if (crab.userData.matingState === 'mating') {
+                crab.userData.matingTimer -= delta;
+                if (crab.userData.matingTimer <= 0) {
+                    // Done mating — dig hole and lay eggs
+                    crab.userData.matingState = 'digging';
+                    crab.userData.digTimer = 1.5; // 1.5 seconds digging
+                    // Release the male
+                    if (crab.userData.targetMale) {
+                        crab.userData.targetMale.userData.targetFemale = null;
+                        crab.userData.targetMale = null;
+                    }
+                }
+                return;
+            }
+
+            // Digging hole for eggs
+            if (crab.userData.matingState === 'digging') {
+                crab.userData.digTimer -= delta;
+                // Small digging animation — bob rapidly
+                crab.position.y = -0.02 + Math.sin(GameState.clock.elapsedTime * 15) * 0.01;
+
+                if (crab.userData.digTimer <= 0) {
+                    // Lay eggs!
+                    createCrabEggClutch(crab.position.x, crab.position.z, crab.userData.type);
+                    crab.userData.matingState = null;
+                    crab.position.y = 0;
+                    console.log(crab.userData.type + ': 15 eggs laid!');
+                }
+                return;
+            }
+        });
+
+        // Update egg clutches — hatch after 2 minutes
+        for (var i = crabEggs.length - 1; i >= 0; i--) {
+            var clutch = crabEggs[i];
+            clutch.timer -= delta;
+
+            // Eggs start twitching near hatching
+            if (clutch.timer < 15 && clutch.mesh) {
+                clutch.mesh.rotation.z = Math.sin(GameState.clock.elapsedTime * 10) * 0.05;
+            }
+
+            if (clutch.timer <= 0) {
+                // Hatch! Spawn 15 baby crabs
+                hatchCrabEggs(clutch);
+                // Remove egg mesh
+                if (clutch.mesh) GameState.scene.remove(clutch.mesh);
+                crabEggs.splice(i, 1);
+            }
+        }
+    }
+
+    function createCrabEggClutch(x, z, crabType) {
+        // Visual: a small sandy mound with tiny dots
+        var eggGroup = new THREE.Group();
+        var moundMat = new THREE.MeshStandardMaterial({ color: 0xc2b280, roughness: 0.9 }); // Sandy
+        var mound = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), moundMat);
+        mound.scale.set(1, 0.3, 1);
+        mound.position.y = 0.05;
+        eggGroup.add(mound);
+
+        // Tiny egg dots on top
+        var eggMat = new THREE.MeshStandardMaterial({ color: crabType === 'jet_crab' ? 0x333333 : 0xeedd88 });
+        for (var i = 0; i < 6; i++) {
+            var dot = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 4), eggMat);
+            dot.position.set((Math.random() - 0.5) * 0.2, 0.12, (Math.random() - 0.5) * 0.2);
+            eggGroup.add(dot);
+        }
+
+        var terrainY = Environment.getTerrainHeight(x, z);
+        eggGroup.position.set(x, terrainY, z);
+        GameState.scene.add(eggGroup);
+
+        crabEggs.push({
+            x: x,
+            z: z,
+            type: crabType,
+            timer: 120, // 2 minutes
+            mesh: eggGroup
+        });
+    }
+
+    function hatchCrabEggs(clutch) {
+        var maleData = window.ENEMIES.find(function(e) {
+            return e.id === clutch.type + '_male';
+        });
+        var femaleData = window.ENEMIES.find(function(e) {
+            return e.id === clutch.type + '_female';
+        });
+        if (!maleData || !femaleData) return;
+
+        var hatched = 0;
+        for (var i = 0; i < 15; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            var sx = clutch.x + (Math.random() - 0.5) * 2;
+            var sz = clutch.z + (Math.random() - 0.5) * 2;
+            var baby = createEnemy(data, sx, sz);
+            if (!baby) continue;
+            baby.userData.gender = data.gender;
+            baby.userData.scuttleDir = Math.random() > 0.5 ? 1 : -1;
+            baby.userData.scuttleTimer = Math.random() * 5;
+            baby.userData.beachMinZ = -10;
+            baby.userData.beachMaxZ = 205;
+            baby.userData.stomped = false;
+            GameState.enemies.push(baby);
+            GameState.scene.add(baby);
+            hatched++;
+        }
+
+        UI.showToast('Crabs Hatched!', hatched + ' ' + clutch.type.replace('_', ' ') + 's emerged from the sand!');
+        console.log(hatched + ' ' + clutch.type + 's hatched');
+    }
+
+    // ========================================================================
+    // BEACH WEASEL MATING + BURROW SYSTEM
+    // ========================================================================
+    // Every 5 min: male finds a female.
+    // If she already has a mate → males fight (loser flees hurt).
+    // After mating: female digs burrow in forest, raises 4 pups.
+    // Pups emerge as adults after 5 min.
+    // Player can peek inside with E (50% chance mother is sleeping).
+
+    var weaselBurrows = [];
+
+    function triggerBeachWeaselMating() {
+        var males = GameState.enemies.filter(function(e) {
+            return e.userData.type === 'beach_weasel' && e.userData.gender === 'male' &&
+                   !e.userData.mated && !e.userData.fighting && !e.userData.stomped &&
+                   e.userData.health > 0;
+        });
+        var females = GameState.enemies.filter(function(e) {
+            return e.userData.type === 'beach_weasel' && e.userData.gender === 'female' &&
+                   !e.userData.stomped && e.userData.health > 0;
+        });
+
+        if (males.length === 0 || females.length === 0) return;
+
+        // Pick a random male
+        var male = males[Math.floor(Math.random() * males.length)];
+
+        // Find nearest female
+        var nearestFemale = null;
+        var nearestDist = Infinity;
+        females.forEach(function(f) {
+            var dist = male.position.distanceTo(f.position);
+            if (dist < nearestDist && dist < 60) {
+                nearestDist = dist;
+                nearestFemale = f;
+            }
+        });
+
+        if (!nearestFemale) return;
+
+        // Check if female already has a mate
+        if (nearestFemale.userData.mated && nearestFemale.userData.currentMate) {
+            var rival = nearestFemale.userData.currentMate;
+            if (rival.parent && rival.userData.health > 0) {
+                // RIVALRY FIGHT!
+                male.userData.fighting = true;
+                male.userData.fightTarget = rival;
+                rival.userData.fighting = true;
+                rival.userData.fightTarget = male;
+                console.log('Beach weasel rivalry fight!');
+                return;
+            }
+        }
+
+        // Female is available — male approaches
+        male.userData.seekingMate = true;
+        male.userData.targetFemale = nearestFemale;
+        console.log('Beach weasel: male seeking female at ' + nearestDist.toFixed(1) + ' units');
+    }
+
+    function updateBeachWeaselMating(delta) {
+        GameState.enemies.forEach(function(weasel) {
+            if (weasel.userData.type !== 'beach_weasel' || weasel.userData.stomped || weasel.userData.health <= 0) return;
+
+            // === MALE SEEKING FEMALE ===
+            if (weasel.userData.seekingMate && weasel.userData.targetFemale) {
+                var target = weasel.userData.targetFemale;
+                if (!target.parent || target.userData.health <= 0) {
+                    weasel.userData.seekingMate = false;
+                    weasel.userData.targetFemale = null;
+                    return;
+                }
+
+                var dx = target.position.x - weasel.position.x;
+                var dz = target.position.z - weasel.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+
+                if (dist < 1.5) {
+                    // Reached her — mate!
+                    weasel.userData.seekingMate = false;
+                    weasel.userData.mated = true;
+                    target.userData.mated = true;
+                    target.userData.currentMate = weasel;
+                    target.userData.pregnantTimer = 3; // 3 seconds before she goes to dig
+                    console.log('Beach weasels mated!');
+                } else {
+                    // Walk toward female
+                    var spd = weasel.userData.speed * delta;
+                    weasel.position.x += (dx / dist) * spd;
+                    weasel.position.z += (dz / dist) * spd;
+                    weasel.rotation.y = -Math.atan2(dz, dx);
+                }
+                return;
+            }
+
+            // === RIVALRY FIGHT ===
+            if (weasel.userData.fighting && weasel.userData.fightTarget) {
+                var rival = weasel.userData.fightTarget;
+                if (!rival.parent || rival.userData.health <= 0) {
+                    weasel.userData.fighting = false;
+                    weasel.userData.fightTarget = null;
+                    return;
+                }
+
+                var fx = rival.position.x - weasel.position.x;
+                var fz = rival.position.z - weasel.position.z;
+                var fDist = Math.sqrt(fx * fx + fz * fz);
+
+                if (fDist < 1.5) {
+                    // Close enough — exchange blows
+                    weasel.userData.fightTimer = (weasel.userData.fightTimer || 0) - delta;
+                    if (weasel.userData.fightTimer <= 0) {
+                        weasel.userData.fightTimer = 0.8; // Hit every 0.8s
+                        // Both take damage
+                        var dmg = 2 + Math.floor(Math.random() * 2);
+                        weasel.userData.health -= dmg;
+                        rival.userData.health -= dmg;
+
+                        // Check if someone lost (health < 3)
+                        if (weasel.userData.health < 3) {
+                            // This weasel lost — flee!
+                            weasel.userData.fighting = false;
+                            weasel.userData.fightTarget = null;
+                            weasel.userData.retaliating = false;
+                            rival.userData.fighting = false;
+                            rival.userData.fightTarget = null;
+                            // Loser flees hurt
+                            var fleeAngle = Math.atan2(weasel.position.z - rival.position.z, weasel.position.x - rival.position.x);
+                            weasel.userData.wanderDir = new THREE.Vector3(Math.cos(fleeAngle), 0, Math.sin(fleeAngle));
+                            weasel.userData.wanderTimer = 8; // Flee for 8 seconds
+                            console.log('Weasel fight: loser flees with ' + weasel.userData.health + ' HP');
+                        } else if (rival.userData.health < 3) {
+                            // Rival lost
+                            rival.userData.fighting = false;
+                            rival.userData.fightTarget = null;
+                            rival.userData.retaliating = false;
+                            weasel.userData.fighting = false;
+                            weasel.userData.fightTarget = null;
+                            var rivalFleeAngle = Math.atan2(rival.position.z - weasel.position.z, rival.position.x - weasel.position.x);
+                            rival.userData.wanderDir = new THREE.Vector3(Math.cos(rivalFleeAngle), 0, Math.sin(rivalFleeAngle));
+                            rival.userData.wanderTimer = 8;
+                            console.log('Weasel fight: rival flees with ' + rival.userData.health + ' HP');
+                        }
+                    }
+                    // Fight animation — rapid bob and spin
+                    weasel.position.y += Math.sin(GameState.clock.elapsedTime * 12) * 0.02;
+                } else {
+                    // Approach rival
+                    var fSpd = weasel.userData.speed * delta * 1.2;
+                    weasel.position.x += (fx / fDist) * fSpd;
+                    weasel.position.z += (fz / fDist) * fSpd;
+                    weasel.rotation.y = -Math.atan2(fz, fx);
+                }
+                return;
+            }
+
+            // === PREGNANT FEMALE — goes to dig burrow ===
+            if (weasel.userData.gender === 'female' && weasel.userData.pregnantTimer !== undefined && weasel.userData.pregnantTimer > 0) {
+                weasel.userData.pregnantTimer -= delta;
+                if (weasel.userData.pregnantTimer <= 0) {
+                    // Head into the forest to dig
+                    weasel.userData.digging = true;
+                    weasel.userData.digTarget = {
+                        x: weasel.position.x + (Math.random() - 0.5) * 20,
+                        z: -30 - Math.random() * 40 // In the forest (negative Z)
+                    };
+                    weasel.userData.pregnantTimer = undefined;
+                }
+                return;
+            }
+
+            // === DIGGING BURROW ===
+            if (weasel.userData.digging && weasel.userData.digTarget) {
+                var tgt = weasel.userData.digTarget;
+                var tdx = tgt.x - weasel.position.x;
+                var tdz = tgt.z - weasel.position.z;
+                var tDist = Math.sqrt(tdx * tdx + tdz * tdz);
+
+                if (tDist < 2) {
+                    // Arrived — dig the burrow
+                    weasel.userData.digging = false;
+                    weasel.userData.digTarget = null;
+                    var burrow = createWeaselBurrow(weasel.position.x, weasel.position.z, weasel);
+                    weasel.userData.burrow = burrow;
+                    weasel.userData.atBurrow = true;
+                    console.log('Beach weasel dug a burrow at ' + weasel.position.x.toFixed(0) + ', ' + weasel.position.z.toFixed(0));
+                } else {
+                    // Walk to dig spot
+                    var dSpd = weasel.userData.speed * delta;
+                    weasel.position.x += (tdx / tDist) * dSpd;
+                    weasel.position.z += (tdz / tDist) * dSpd;
+                    weasel.rotation.y = -Math.atan2(tdz, tdx);
+                }
+                return;
+            }
+        });
+
+        // === UPDATE BURROWS — pup growth + emergence ===
+        for (var i = weaselBurrows.length - 1; i >= 0; i--) {
+            var burrow = weaselBurrows[i];
+            burrow.timer -= delta;
+
+            if (burrow.timer <= 0) {
+                // Pups emerge as adults!
+                for (var p = 0; p < 4; p++) {
+                    var data = Math.random() < 0.5 ?
+                        window.ENEMIES.find(function(e) { return e.id === 'beach_weasel_male'; }) :
+                        window.ENEMIES.find(function(e) { return e.id === 'beach_weasel_female'; });
+                    if (!data) continue;
+                    var sx = burrow.x + (Math.random() - 0.5) * 3;
+                    var sz = burrow.z + (Math.random() - 0.5) * 3;
+                    var baby = createEnemy(data, sx, sz);
+                    if (!baby) continue;
+                    baby.userData.gender = data.gender;
+                    baby.userData.beachMinZ = -100;
+                    baby.userData.beachMaxZ = 140;
+                    baby.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    baby.userData.wanderTimer = Math.random() * 8;
+                    baby.userData.retaliating = false;
+                    baby.userData.gallopPhase = 0;
+                    baby.userData.mated = false;
+                    GameState.enemies.push(baby);
+                    GameState.scene.add(baby);
+                }
+
+                // Release mother
+                if (burrow.mother && burrow.mother.parent) {
+                    burrow.mother.userData.atBurrow = false;
+                    burrow.mother.userData.mated = false;
+                    burrow.mother.userData.burrow = null;
+                }
+
+                // Remove burrow mesh
+                if (burrow.mesh) GameState.scene.remove(burrow.mesh);
+                weaselBurrows.splice(i, 1);
+
+                UI.showToast('Weasel Pups!', '4 beach weasels emerged from a burrow!');
+                console.log('4 beach weasel pups emerged as adults');
+            }
+        }
+    }
+
+    function createWeaselBurrow(x, z, mother) {
+        var burrowGroup = new THREE.Group();
+
+        // Hole in the ground — dark circle
+        var holeMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 1.0 });
+        var hole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.1, 12), holeMat);
+        hole.position.y = 0.01;
+        burrowGroup.add(hole);
+
+        // Dirt mound around the entrance
+        var dirtMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.9 });
+        var rim = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.15, 6, 12), dirtMat);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = 0.08;
+        burrowGroup.add(rim);
+
+        // Small scratches/claw marks near entrance
+        for (var s = 0; s < 3; s++) {
+            var scratch = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.01, 0.03), holeMat);
+            scratch.position.set(0.3 + Math.random() * 0.4, 0.01, (Math.random() - 0.5) * 0.6);
+            scratch.rotation.y = Math.random() * 0.5 - 0.25;
+            burrowGroup.add(scratch);
+        }
+
+        var terrainY = Environment.getTerrainHeight(x, z);
+        burrowGroup.position.set(x, terrainY, z);
+        burrowGroup.userData.isBurrow = true;
+        burrowGroup.userData.interactRange = 3;
+        GameState.scene.add(burrowGroup);
+
+        var burrowData = {
+            x: x,
+            z: z,
+            timer: 300, // 5 minutes
+            mesh: burrowGroup,
+            mother: mother,
+            motherSleeping: Math.random() < 0.5, // 50% chance mother is sleeping
+            pups: [
+                { state: 'sleeping' }, { state: 'sleeping' },
+                { state: 'playing' }, { state: 'playing' }
+            ]
+        };
+        weaselBurrows.push(burrowData);
+        return burrowData;
+    }
+
+    // === BURROW PEEK SYSTEM ===
+
+    var burrowPeekActive = false;
+    var burrowPeekCamera = null;
+    var burrowPeekScene = null;
+    var burrowPeekData = null;
+
+    function checkBurrowInteraction() {
+        if (!GameState.peccary || GameState.isInsideTavern || GameState.isInsideHut || GameState.isInsideTimShop) return null;
+        for (var i = 0; i < weaselBurrows.length; i++) {
+            var b = weaselBurrows[i];
+            var dx = GameState.peccary.position.x - b.x;
+            var dz = GameState.peccary.position.z - b.z;
+            if (Math.sqrt(dx * dx + dz * dz) < 3) {
+                return b;
+            }
+        }
+        return null;
+    }
+
+    function peekIntoBurrow(burrow) {
+        if (burrowPeekActive) return;
+
+        // Check if mother is awake — she attacks!
+        if (!burrow.motherSleeping && burrow.mother && burrow.mother.parent && burrow.mother.userData.health > 0) {
+            Game.takeDamage(6, 'beach_weasel');
+            UI.showToast('Mama Weasel!', 'The mother weasel swiped at you! -6 HP');
+            // Mother starts retaliating
+            burrow.mother.userData.retaliating = true;
+            burrow.mother.userData.attackTimer = 0;
+            return;
+        }
+
+        burrowPeekActive = true;
+        burrowPeekData = burrow;
+
+        // Create a mini scene showing the burrow interior
+        burrowPeekScene = new THREE.Scene();
+        burrowPeekScene.background = new THREE.Color(0x1a0e05);
+
+        // Warm dim light inside
+        var warm = new THREE.AmbientLight(0xaa8866, 0.4);
+        burrowPeekScene.add(warm);
+        var spot = new THREE.PointLight(0xffcc88, 0.8, 8);
+        spot.position.set(0, 2, 2);
+        burrowPeekScene.add(spot);
+
+        // Dirt walls (curved)
+        var dirtMat = new THREE.MeshStandardMaterial({ color: 0x5c3d1e, roughness: 1.0 });
+        var walls = new THREE.Mesh(new THREE.SphereGeometry(2.5, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), dirtMat);
+        walls.position.y = -0.5;
+        walls.scale.set(1, 0.6, 1);
+        burrowPeekScene.add(walls);
+
+        // Dirt floor
+        var floor = new THREE.Mesh(new THREE.CircleGeometry(2, 12), dirtMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.3;
+        burrowPeekScene.add(floor);
+
+        // Soft bedding
+        var beddingMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.9 });
+        var bedding = new THREE.Mesh(new THREE.CircleGeometry(1.2, 10), beddingMat);
+        bedding.rotation.x = -Math.PI / 2;
+        bedding.position.y = -0.25;
+        burrowPeekScene.add(bedding);
+
+        // Create 4 pups
+        var pupMat = new THREE.MeshStandardMaterial({ color: 0xC4A060 });
+        var darkMat = new THREE.MeshStandardMaterial({ color: 0xA08040 });
+
+        burrow.pups.forEach(function(pup, idx) {
+            var pupGroup = new THREE.Group();
+            var angle = (idx / 4) * Math.PI * 2 + Math.random() * 0.5;
+            var rad = 0.4 + Math.random() * 0.3;
+
+            if (pup.state === 'sleeping') {
+                // Curled up — body is a flattened sphere with tail wrapped around
+                var body = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), pupMat);
+                body.scale.set(1.2, 0.6, 1);
+                pupGroup.add(body);
+                // Tail curled around
+                var tail = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 6, 12, Math.PI * 1.5), darkMat);
+                tail.rotation.x = Math.PI / 2;
+                tail.position.y = 0.02;
+                pupGroup.add(tail);
+                // Head resting on tail
+                var head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), pupMat);
+                head.position.set(0.15, 0.05, 0.12);
+                pupGroup.add(head);
+                // Closed eyes
+                var eyeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+                var eye = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.01, 0.02), eyeMat);
+                eye.position.set(0.22, 0.07, 0.15);
+                pupGroup.add(eye);
+                // Gentle breathing animation
+                pupGroup.userData.sleeping = true;
+            } else {
+                // Playing — standing up, slightly bouncy
+                var body = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.25, 6), pupMat);
+                body.rotation.z = Math.PI / 2;
+                body.position.y = 0.12;
+                pupGroup.add(body);
+                // Head
+                var head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), pupMat);
+                head.position.set(0.15, 0.15, 0);
+                pupGroup.add(head);
+                // Eyes (open)
+                var eyeMat = new THREE.MeshBasicMaterial({ color: 0x443300 });
+                [-0.04, 0.04].forEach(function(zo) {
+                    var eye = new THREE.Mesh(new THREE.SphereGeometry(0.02, 4, 4), eyeMat);
+                    eye.position.set(0.2, 0.17, zo);
+                    pupGroup.add(eye);
+                });
+                // Tail up
+                var tail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.015, 0.15, 4), darkMat);
+                tail.position.set(-0.15, 0.18, 0);
+                tail.rotation.z = Math.PI / 2 + 0.5;
+                pupGroup.add(tail);
+                // Little legs
+                [[-0.05, -0.04], [-0.05, 0.04], [0.05, -0.04], [0.05, 0.04]].forEach(function(off) {
+                    var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 4), darkMat);
+                    leg.position.set(off[0], 0.03, off[1]);
+                    pupGroup.add(leg);
+                });
+                pupGroup.userData.playing = true;
+            }
+
+            pupGroup.position.set(Math.cos(angle) * rad, -0.2, Math.sin(angle) * rad);
+            pupGroup.rotation.y = angle + Math.PI;
+            burrowPeekScene.add(pupGroup);
+        });
+
+        // Mother sleeping in the corner (if asleep)
+        if (burrow.motherSleeping) {
+            var momGroup = new THREE.Group();
+            var momBody = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), pupMat);
+            momBody.scale.set(1.3, 0.5, 1);
+            momGroup.add(momBody);
+            var momTail = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.05, 6, 12, Math.PI * 1.5), darkMat);
+            momTail.rotation.x = Math.PI / 2;
+            momTail.position.y = 0.02;
+            momGroup.add(momTail);
+            var momHead = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), pupMat);
+            momHead.position.set(0.25, 0.08, 0.2);
+            momGroup.add(momHead);
+            momGroup.position.set(-0.8, -0.2, -0.5);
+            momGroup.rotation.y = Math.PI * 0.7;
+            burrowPeekScene.add(momGroup);
+        }
+
+        // Camera looking into the burrow
+        burrowPeekCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20);
+        burrowPeekCamera.position.set(0, 0.8, 3);
+        burrowPeekCamera.lookAt(0, -0.1, 0);
+
+        // Store for rendering
+        GameState.burrowPeekScene = burrowPeekScene;
+        GameState.burrowPeekCamera = burrowPeekCamera;
+        GameState.burrowPeekActive = true;
+
+        var sleepMsg = burrow.motherSleeping ? 'Mother is sleeping peacefully.' : '';
+        UI.showToast('Weasel Burrow', '2 pups sleeping, 2 pups playing. ' + sleepMsg, 'Press E to leave.');
+    }
+
+    function exitBurrowPeek() {
+        burrowPeekActive = false;
+        burrowPeekData = null;
+        GameState.burrowPeekScene = null;
+        GameState.burrowPeekCamera = null;
+        GameState.burrowPeekActive = false;
+    }
+
+    function renderBurrowPeek() {
+        if (!burrowPeekActive || !burrowPeekScene || !burrowPeekCamera) return;
+
+        // Animate pups
+        var time = Date.now() * 0.001;
+        burrowPeekScene.traverse(function(obj) {
+            if (obj.userData.sleeping) {
+                // Gentle breathing
+                obj.scale.y = 1 + Math.sin(time * 1.5) * 0.05;
+            }
+            if (obj.userData.playing) {
+                // Bouncing and tumbling
+                obj.position.y += Math.sin(time * 4 + obj.position.x * 10) * 0.001;
+                obj.rotation.y += 0.016 * 0.5; // ~60fps approx
+            }
+        });
+
+        GameState.renderer.render(burrowPeekScene, burrowPeekCamera);
+    }
+
+    // ========================================================================
+    // BEACH MURGAYA — PACK SYSTEM + FULL LIFECYCLE
+    // ========================================================================
+
+    var murgayaPacks = [];
+    var murgayaDens = [];
+
+    function spawnMurgayaPack(packIdx) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        // Packs spawn spread across the coastal forest
+        var packX = (Math.random() - 0.5) * worldSize * 0.7;
+        var packZ = -30 - Math.random() * 250;
+
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'beach_murgaya_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'beach_murgaya_female'; });
+        if (!maleData || !femaleData) return;
+
+        var packSize = 2 + Math.floor(Math.random() * 3); // 2-4
+        var pack = {
+            id: 'murgaya_pack_' + packIdx,
+            members: [],
+            hasPups: false,
+            den: null,
+            excursionActive: false,
+            excursionTimer: 0,
+            pups: []
+        };
+
+        for (var i = 0; i < packSize; i++) {
+            var data = i === 0 ? maleData : (Math.random() < 0.4 ? maleData : femaleData);
+            var sx = packX + (Math.random() - 0.5) * 8;
+            var sz = packZ + (Math.random() - 0.5) * 8;
+            var murg = createEnemy(data, sx, sz);
+            if (!murg) continue;
+            murg.userData.gender = data.gender;
+            murg.userData.packId = pack.id;
+            murg.userData.jawOpen = 0;
+            murg.userData.biteTimer = 0;
+            murg.userData.huntTarget = null;
+            murg.userData.huntState = 'idle'; // idle, stalking, chasing, biting
+            murg.userData.gallopPhase = 0;
+            murg.userData.swimming = false;
+            pack.members.push(murg);
+            GameState.enemies.push(murg);
+            GameState.scene.add(murg);
+        }
+
+        murgayaPacks.push(pack);
+        console.log('Spawned Murgaya pack #' + packIdx + ' with ' + pack.members.length + ' members');
+    }
+
+    function triggerMurgayaMating() {
+        murgayaPacks.forEach(function(pack) {
+            // No mating while pups exist
+            if (pack.hasPups) return;
+
+            var females = pack.members.filter(function(m) {
+                return m.parent && m.userData.health > 0 && m.userData.gender === 'female' && !m.userData.pregnant;
+            });
+            var males = pack.members.filter(function(m) {
+                return m.parent && m.userData.health > 0 && m.userData.gender === 'male';
+            });
+
+            if (females.length === 0 || males.length === 0) return;
+
+            // One female mates
+            var female = females[0];
+            female.userData.pregnant = true;
+            female.userData.pregnancyTimer = 5; // 5 seconds before she goes to build den
+            pack.hasPups = true;
+            console.log('Murgaya mating! Female is pregnant in pack ' + pack.id);
+        });
+    }
+
+    function updateMurgayaBehavior(delta) {
+        // === UPDATE PACKS ===
+        murgayaPacks.forEach(function(pack) {
+            // Clean dead members
+            pack.members = pack.members.filter(function(m) { return m.parent && m.userData.health > 0; });
+
+            // === PREGNANT FEMALE — goes to build den ===
+            pack.members.forEach(function(murg) {
+                if (murg.userData.pregnant && murg.userData.pregnancyTimer !== undefined) {
+                    murg.userData.pregnancyTimer -= delta;
+                    if (murg.userData.pregnancyTimer <= 0) {
+                        // Go build den in the forest
+                        murg.userData.pregnancyTimer = undefined;
+                        murg.userData.buildingDen = true;
+                        murg.userData.denTarget = {
+                            x: murg.position.x + (Math.random() - 0.5) * 20,
+                            z: -40 - Math.random() * 40
+                        };
+                    }
+                }
+
+                // Walk to den target
+                if (murg.userData.buildingDen && murg.userData.denTarget) {
+                    var dx = murg.userData.denTarget.x - murg.position.x;
+                    var dz = murg.userData.denTarget.z - murg.position.z;
+                    var dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist < 2) {
+                        // Build den
+                        murg.userData.buildingDen = false;
+                        var den = createMurgayaDen(murg.position.x, murg.position.z, pack, murg);
+                        pack.den = den;
+                        murg.userData.atDen = true;
+                        murg.userData.lyingDown = true;
+                        // Birth 4 infants
+                        birthMurgayaInfants(den, pack);
+                    } else {
+                        var spd = murg.userData.speed * delta;
+                        murg.position.x += (dx / dist) * spd;
+                        murg.position.z += (dz / dist) * spd;
+                        murg.rotation.y = -Math.atan2(dz, dx);
+                    }
+                    return;
+                }
+            });
+
+            // === HUNT AI — pack hunts together ===
+            if (!pack.excursionActive) {
+                var packCenter = getPackCenter(pack);
+                if (!packCenter) return;
+
+                // Find nearest huntable target (Pedro, seals, weasels, seagulls)
+                var nearestTarget = null;
+                var nearestDist = 40; // Detection range
+
+                // Check Pedro
+                if (GameState.peccary) {
+                    var pedroDist = GameState.peccary.position.distanceTo(new THREE.Vector3(packCenter.x, 0, packCenter.z));
+                    if (pedroDist < nearestDist) {
+                        nearestDist = pedroDist;
+                        nearestTarget = GameState.peccary;
+                    }
+                }
+
+                // Check other prey animals
+                GameState.enemies.forEach(function(e) {
+                    if (!e.parent || e.userData.health <= 0) return;
+                    if (e.userData.packId === pack.id) return; // Don't hunt packmates
+                    var isPrey = (e.userData.type === 'beach_weasel' ||
+                                  e.userData.type === 'pilfera_coastalis' ||
+                                  e.userData.type === 'uronin_seal' ||
+                                  e.userData.type === 'bakka_seal');
+                    if (!isPrey) return;
+                    var d = e.position.distanceTo(new THREE.Vector3(packCenter.x, 0, packCenter.z));
+                    if (d < nearestDist) {
+                        nearestDist = d;
+                        nearestTarget = e;
+                    }
+                });
+
+                // Direct pack to hunt
+                if (nearestTarget) {
+                    pack.members.forEach(function(m) {
+                        if (m.userData.atDen || m.userData.buildingDen || m.userData.pregnant) return;
+                        m.userData.huntTarget = nearestTarget;
+                        m.userData.huntState = nearestDist < 15 ? 'chasing' : 'stalking';
+                    });
+                }
+            }
+        });
+
+        // === UPDATE INDIVIDUAL MURGAYAS ===
+        GameState.enemies.forEach(function(murg) {
+            if (murg.userData.type !== 'beach_murgaya' || murg.userData.health <= 0) return;
+
+            var model = murg.children[0];
+            var time = GameState.clock.elapsedTime;
+
+            // Jaw animation
+            if (model && model.userData.jawGroup) {
+                var jawTarget = murg.userData.jawOpen || 0;
+                var jaw = model.userData.jawGroup;
+                jaw.rotation.z = jawTarget * -0.5; // Open downward
+            }
+
+            // Leg animation
+            if (model && model.userData.legs) {
+                var isMoving = murg.userData.huntState === 'chasing' || murg.userData.swimming || murg.userData.seekingMate;
+                var cycleSpeed = isMoving ? 14 : 6;
+                var swingAngle = isMoving ? Math.PI / 3.5 : Math.PI / 6;
+                var walkCycle = time * cycleSpeed;
+
+                model.userData.legs.forEach(function(leg) {
+                    var phase = leg.diagonalPair === 'A' ? 0 : Math.PI;
+                    leg.group.rotation.z = Math.sin(walkCycle + phase) * swingAngle;
+                    var kneeBend = Math.max(0, Math.sin(walkCycle + phase + 0.5)) * (isMoving ? 0.5 : 0.2);
+                    leg.lowerLegGroup.rotation.z = -kneeBend;
+                });
+            }
+
+            // === MOTHER AT DEN — lying down ===
+            if (murg.userData.lyingDown) {
+                if (model) {
+                    model.rotation.z = 0.3; // Lean to the side
+                    model.position.y = -0.1; // Lower to ground
+                }
+                return;
+            }
+
+            // === STALKING — slow, crouched approach ===
+            if (murg.userData.huntState === 'stalking' && murg.userData.huntTarget) {
+                var target = murg.userData.huntTarget;
+                if (!target.parent && target !== GameState.peccary) {
+                    murg.userData.huntState = 'idle';
+                    murg.userData.huntTarget = null;
+                    return;
+                }
+                var targetPos = target.position || target;
+                var sdx = targetPos.x - murg.position.x;
+                var sdz = targetPos.z - murg.position.z;
+                var sDist = Math.sqrt(sdx * sdx + sdz * sdz);
+
+                if (sDist < 12) {
+                    murg.userData.huntState = 'chasing';
+                } else {
+                    // Creep toward target slowly
+                    var sSpd = murg.userData.speed * 0.4 * delta;
+                    murg.position.x += (sdx / sDist) * sSpd;
+                    murg.position.z += (sdz / sDist) * sSpd;
+                    murg.rotation.y = -Math.atan2(sdz, sdx);
+                    // Crouched posture
+                    if (model) model.position.y = -0.08;
+                }
+                return;
+            }
+
+            // === CHASING — full speed pursuit ===
+            if (murg.userData.huntState === 'chasing' && murg.userData.huntTarget) {
+                var target = murg.userData.huntTarget;
+                var tAlive = target === GameState.peccary ? true : (target.parent && target.userData.health > 0);
+                if (!tAlive) {
+                    murg.userData.huntState = 'idle';
+                    murg.userData.huntTarget = null;
+                    if (model) model.position.y = 0;
+                    return;
+                }
+
+                var cdx = target.position.x - murg.position.x;
+                var cdz = target.position.z - murg.position.z;
+                var cDist = Math.sqrt(cdx * cdx + cdz * cdz);
+
+                if (cDist > 50) {
+                    // Too far, give up
+                    murg.userData.huntState = 'idle';
+                    murg.userData.huntTarget = null;
+                    if (model) model.position.y = 0;
+                    return;
+                }
+
+                if (cDist < 1.5) {
+                    // BITE!
+                    murg.userData.biteTimer -= delta;
+                    if (murg.userData.biteTimer <= 0) {
+                        murg.userData.biteTimer = 1.2;
+                        murg.userData.jawOpen = 1; // Open jaw
+                        setTimeout(function() { murg.userData.jawOpen = 0; }, 300); // Snap shut
+
+                        if (target === GameState.peccary) {
+                            Game.takeDamage(murg.userData.damage, 'beach_murgaya');
+                        } else if (target.userData) {
+                            damageEnemy(target, murg.userData.damage);
+                            if (target.userData.health <= 0) {
+                                murg.userData.huntState = 'idle';
+                                murg.userData.huntTarget = null;
+                            }
+                        }
+                    }
+                } else {
+                    // Run toward target
+                    var cSpd = (murg.userData.chaseSpeed || 8) * delta;
+                    murg.position.x += (cdx / cDist) * cSpd;
+                    murg.position.z += (cdz / cDist) * cSpd;
+                    murg.rotation.y = -Math.atan2(cdz, cdx);
+
+                    // Running bob
+                    murg.userData.gallopPhase += delta * 12;
+                    var bob = Math.abs(Math.sin(murg.userData.gallopPhase)) * 0.08;
+                    var terrainY = Environment.getTerrainHeight(murg.position.x, murg.position.z);
+                    murg.position.y = terrainY + (murg.userData.groundY || 0.3) + bob;
+                }
+                if (model) model.position.y = 0; // Normal height when chasing
+                return;
+            }
+
+            // === IDLE — wander with pack ===
+            if (murg.userData.huntState === 'idle' || !murg.userData.huntState) {
+                murg.userData.wanderTimer = (murg.userData.wanderTimer || 0) - delta;
+                if (murg.userData.wanderTimer <= 0) {
+                    murg.userData.wanderTimer = 3 + Math.random() * 5;
+                    var wAngle = Math.random() * Math.PI * 2;
+                    murg.userData.wanderDir = new THREE.Vector3(Math.cos(wAngle), 0, Math.sin(wAngle));
+                }
+                var wd = murg.userData.wanderDir;
+                if (wd) {
+                    murg.position.x += wd.x * murg.userData.speed * 0.3 * delta;
+                    murg.position.z += wd.z * murg.userData.speed * 0.3 * delta;
+                    murg.rotation.y = -Math.atan2(wd.z, wd.x);
+                }
+
+                // Keep in bounds
+                var worldHalf = (CONFIG.WORLD_SIZE || 500) / 2 - 5;
+                murg.position.x = Math.max(-worldHalf, Math.min(worldHalf, murg.position.x));
+                murg.position.z = Math.max(-100, Math.min(200, murg.position.z));
+
+                // Ground height
+                var terrainY = Environment.getTerrainHeight(murg.position.x, murg.position.z);
+                murg.position.y = terrainY + (murg.userData.groundY || 0.3);
+
+                // Swimming detection
+                var inWater = Environment.isInRiver(murg.position.x, murg.position.z);
+                murg.userData.swimming = inWater;
+                if (inWater) {
+                    murg.position.y = 0.1; // Float level
+                }
+            }
+        });
+
+        // === UPDATE DENS — lifecycle stages ===
+        for (var di = murgayaDens.length - 1; di >= 0; di--) {
+            var den = murgayaDens[di];
+            den.stageTimer -= delta;
+
+            if (den.stageTimer <= 0) {
+                advanceMurgayaStage(den);
+            }
+
+            // === EXCURSION — pups move to the beach and play ===
+            if (den.stage === 'excursion' && den.excursionTarget) {
+                var et = den.excursionTarget;
+                den.young.forEach(function(young) {
+                    if (!young.parent || young.userData.health <= 0) return;
+                    var edx = et.x - young.position.x;
+                    var edz = et.z - young.position.z;
+                    var eDist = Math.sqrt(edx * edx + edz * edz);
+
+                    if (eDist > 5) {
+                        // Walk toward excursion spot
+                        var eSpd = young.userData.speed * delta * 1.2;
+                        young.position.x += (edx / eDist) * eSpd;
+                        young.position.z += (edz / eDist) * eSpd;
+                        young.rotation.y = -Math.atan2(edz, edx);
+                    } else {
+                        // At the beach — play! Hop around, dash, explore
+                        young.userData.pupWanderTimer = (young.userData.pupWanderTimer || 0) - delta;
+                        if (young.userData.pupWanderTimer <= 0) {
+                            young.userData.pupWanderTimer = 0.5 + Math.random() * 2; // Quick direction changes
+                            var playAngle = Math.random() * Math.PI * 2;
+                            young.userData.pupDir = new THREE.Vector3(Math.cos(playAngle), 0, Math.sin(playAngle));
+                        }
+                        var ppd = young.userData.pupDir;
+                        if (ppd) {
+                            // Playful dashing — faster than normal wander
+                            young.position.x += ppd.x * young.userData.speed * delta;
+                            young.position.z += ppd.z * young.userData.speed * delta;
+                            young.rotation.y = -Math.atan2(ppd.z, ppd.x);
+                        }
+                        // Keep near excursion area
+                        var backDx = et.x - young.position.x;
+                        var backDz = et.z - young.position.z;
+                        if (Math.sqrt(backDx * backDx + backDz * backDz) > 12) {
+                            young.position.x += backDx * 0.02;
+                            young.position.z += backDz * 0.02;
+                        }
+                        // Playful hop animation
+                        young.position.y += Math.abs(Math.sin(GameState.clock.elapsedTime * 6 + young.position.x)) * 0.03;
+                    }
+                    // Ground height
+                    var ty = Environment.getTerrainHeight(young.position.x, young.position.z);
+                    young.position.y = Math.max(young.position.y, ty + (young.userData.groundY || 0.1));
+                });
+            }
+
+            // Keep young near den (non-excursion stages)
+            if (den.stage !== 'excursion' && den.stage !== 'adolescent') {
+                den.young.forEach(function(young) {
+                    if (!young.parent || young.userData.health <= 0) return;
+                    var dx = den.x - young.position.x;
+                    var dz = den.z - young.position.z;
+                    var dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist > 6) {
+                        // Wander back toward den
+                        young.position.x += (dx / dist) * 1.5 * delta;
+                        young.position.z += (dz / dist) * 1.5 * delta;
+                    } else {
+                        // Random wander within den
+                        young.userData.pupWanderTimer = (young.userData.pupWanderTimer || 0) - delta;
+                        if (young.userData.pupWanderTimer <= 0) {
+                            young.userData.pupWanderTimer = 1 + Math.random() * 3;
+                            young.userData.pupDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                        }
+                        var pd = young.userData.pupDir;
+                        if (pd) {
+                            young.position.x += pd.x * young.userData.speed * delta * 0.5;
+                            young.position.z += pd.z * young.userData.speed * delta * 0.5;
+                            young.rotation.y = -Math.atan2(pd.z, pd.x);
+                        }
+                    }
+                    // Ground height
+                    var ty = Environment.getTerrainHeight(young.position.x, young.position.z);
+                    young.position.y = ty + (young.userData.groundY || 0.1);
+                });
+            }
+        }
+    }
+
+    function getPackCenter(pack) {
+        var alive = pack.members.filter(function(m) { return m.parent && m.userData.health > 0 && !m.userData.atDen; });
+        if (alive.length === 0) return null;
+        var cx = 0, cz = 0;
+        alive.forEach(function(m) { cx += m.position.x; cz += m.position.z; });
+        return { x: cx / alive.length, z: cz / alive.length };
+    }
+
+    function createMurgayaDen(x, z, pack, mother) {
+        var denGroup = new THREE.Group();
+
+        // Surface nest — twigs and leaves in a circle
+        var nestMat = new THREE.MeshStandardMaterial({ color: 0x6B4423, roughness: 0.9 });
+        var base = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.4, 0.15, 12), nestMat);
+        base.position.y = 0.08;
+        denGroup.add(base);
+
+        // Rim of sticks
+        var stickMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a });
+        var rim = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.1, 6, 16), stickMat);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = 0.15;
+        denGroup.add(rim);
+
+        // Leaf bedding
+        var leafMat = new THREE.MeshStandardMaterial({ color: 0x4a6a2a, roughness: 0.9 });
+        for (var li = 0; li < 6; li++) {
+            var leaf = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.15), leafMat);
+            leaf.position.set((Math.random() - 0.5) * 1.5, 0.12, (Math.random() - 0.5) * 1.5);
+            leaf.rotation.y = Math.random() * Math.PI;
+            denGroup.add(leaf);
+        }
+
+        var terrainY = Environment.getTerrainHeight(x, z);
+        denGroup.position.set(x, terrainY, z);
+        GameState.scene.add(denGroup);
+
+        var denData = {
+            x: x, z: z,
+            mesh: denGroup,
+            pack: pack,
+            mother: mother,
+            stage: 'infant', // infant → snifflet → pup → excursion → rest → adolescent
+            stageTimer: 120, // 2 minutes for infant stage
+            young: []
+        };
+
+        murgayaDens.push(denData);
+        return denData;
+    }
+
+    function birthMurgayaInfants(den, pack) {
+        var infantData = window.ENEMIES.find(function(e) { return e.id === 'beach_murgaya_infant'; });
+        if (!infantData) return;
+
+        for (var i = 0; i < 4; i++) {
+            var sx = den.x + (Math.random() - 0.5) * 1.5;
+            var sz = den.z + (Math.random() - 0.5) * 1.5;
+            var infant = createEnemy(infantData, sx, sz);
+            if (!infant) continue;
+            infant.userData.denId = den;
+            infant.userData.lifecycleStage = 'infant';
+            infant.userData.pupWanderTimer = 0;
+            den.young.push(infant);
+            GameState.enemies.push(infant);
+            GameState.scene.add(infant);
+        }
+        console.log('4 Murgaya infants born!');
+    }
+
+    function advanceMurgayaStage(den) {
+        var oldStage = den.stage;
+
+        if (oldStage === 'infant') {
+            // → Snifflet (3 min)
+            den.stage = 'snifflet';
+            den.stageTimer = 180;
+            upgradeMurgayaYoung(den, 'beach_murgaya_snifflet');
+            UI.showToast('Murgaya Growth', 'The infants have grown fur! They are now snifflets.');
+        } else if (oldStage === 'snifflet') {
+            // → Pup (1 min of play then excursion)
+            den.stage = 'pup';
+            den.stageTimer = 60; // 1 min play at den
+            upgradeMurgayaYoung(den, 'beach_murgaya_pup');
+            UI.showToast('Murgaya Growth', 'The snifflets have become playful pups!');
+        } else if (oldStage === 'pup') {
+            // → Beach excursion (4 min)
+            den.stage = 'excursion';
+            den.stageTimer = 240;
+            startMurgayaExcursion(den);
+            UI.showToast('Beach Excursion!', 'A Murgaya pack member is taking the pups to the beach!');
+        } else if (oldStage === 'excursion') {
+            // → Rest at den (2 min)
+            den.stage = 'rest';
+            den.stageTimer = 120;
+            endMurgayaExcursion(den);
+            UI.showToast('Pups Resting', 'The Murgaya pups are back at the den, sleeping.');
+        } else if (oldStage === 'rest') {
+            // → Adolescent (5 min then adult)
+            den.stage = 'adolescent';
+            den.stageTimer = 300;
+            upgradeMurgayaYoung(den, 'beach_murgaya_adolescent');
+            // Adolescents leave the den and form their own pack
+            releaseMurgayaAdolescents(den);
+            UI.showToast('Adolescents!', 'The Murgaya pups are now adolescents! They formed their own pack.');
+        }
+
+        console.log('Murgaya den stage: ' + oldStage + ' → ' + den.stage);
+    }
+
+    function upgradeMurgayaYoung(den, newId) {
+        var newData = window.ENEMIES.find(function(e) { return e.id === newId; });
+        if (!newData) return;
+
+        // Remove old young, spawn new ones
+        var positions = [];
+        den.young.forEach(function(y) {
+            if (y.parent && y.userData.health > 0) {
+                positions.push({ x: y.position.x, z: y.position.z });
+            }
+            GameState.scene.remove(y);
+            var idx = GameState.enemies.indexOf(y);
+            if (idx !== -1) GameState.enemies.splice(idx, 1);
+        });
+        den.young = [];
+
+        positions.forEach(function(pos) {
+            var young = createEnemy(newData, pos.x, pos.z);
+            if (!young) return;
+            young.userData.denId = den;
+            young.userData.lifecycleStage = den.stage;
+            young.userData.pupWanderTimer = 0;
+            den.young.push(young);
+            GameState.enemies.push(young);
+            GameState.scene.add(young);
+        });
+    }
+
+    function startMurgayaExcursion(den) {
+        // A pack member escorts the pups to the beach
+        den.pack.excursionActive = true;
+        den.excursionTarget = { x: den.x + (Math.random() - 0.5) * 30, z: 20 + Math.random() * 80 }; // Beach zone
+
+        // Mother rests
+        if (den.mother && den.mother.parent) {
+            den.mother.userData.lyingDown = true;
+        }
+    }
+
+    function endMurgayaExcursion(den) {
+        den.pack.excursionActive = false;
+        // Move pups back near den
+        den.young.forEach(function(y) {
+            if (y.parent && y.userData.health > 0) {
+                y.position.x = den.x + (Math.random() - 0.5) * 2;
+                y.position.z = den.z + (Math.random() - 0.5) * 2;
+            }
+        });
+    }
+
+    function releaseMurgayaAdolescents(den) {
+        // Adolescents form their own pack
+        var newPack = {
+            id: 'murgaya_pack_adolescent_' + Date.now(),
+            members: [],
+            hasPups: false,
+            den: null,
+            excursionActive: false
+        };
+
+        den.young.forEach(function(y) {
+            if (y.parent && y.userData.health > 0) {
+                y.userData.packId = newPack.id;
+                y.userData.huntState = 'idle';
+                y.userData.gallopPhase = 0;
+                y.userData.jawOpen = 0;
+                y.userData.biteTimer = 0;
+                y.userData.swimming = false;
+                newPack.members.push(y);
+            }
+        });
+
+        if (newPack.members.length > 0) {
+            murgayaPacks.push(newPack);
+        }
+
+        // Clean up den
+        den.young = [];
+        if (den.mother && den.mother.parent) {
+            den.mother.userData.lyingDown = false;
+            den.mother.userData.atDen = false;
+            den.mother.userData.pregnant = false;
+        }
+        den.pack.hasPups = false;
+
+        // Remove den mesh after a delay
+        setTimeout(function() {
+            if (den.mesh) GameState.scene.remove(den.mesh);
+            var idx = murgayaDens.indexOf(den);
+            if (idx !== -1) murgayaDens.splice(idx, 1);
+        }, 5000);
+
+        // After adolescent timer (5 min), they become adults
+        // This is handled by the den stageTimer — but since they left the den,
+        // we set a timer on each adolescent
+        newPack.members.forEach(function(m) {
+            m.userData.adultTimer = 300; // 5 minutes
+        });
+    }
+
+    // Update adolescent → adult transition
+    function updateMurgayaAdolescents(delta) {
+        GameState.enemies.forEach(function(murg) {
+            if (murg.userData.type !== 'beach_murgaya' || !murg.userData.adultTimer) return;
+            murg.userData.adultTimer -= delta;
+            if (murg.userData.adultTimer <= 0) {
+                // Upgrade to adult
+                var adultData = Math.random() < 0.5 ?
+                    window.ENEMIES.find(function(e) { return e.id === 'beach_murgaya_male'; }) :
+                    window.ENEMIES.find(function(e) { return e.id === 'beach_murgaya_female'; });
+                if (!adultData) return;
+
+                var pos = { x: murg.position.x, z: murg.position.z };
+                var packId = murg.userData.packId;
+
+                // Remove adolescent
+                GameState.scene.remove(murg);
+                var idx = GameState.enemies.indexOf(murg);
+                if (idx !== -1) GameState.enemies.splice(idx, 1);
+
+                // Spawn adult
+                var adult = createEnemy(adultData, pos.x, pos.z);
+                if (!adult) return;
+                adult.userData.gender = adultData.gender;
+                adult.userData.packId = packId;
+                adult.userData.jawOpen = 0;
+                adult.userData.biteTimer = 0;
+                adult.userData.huntState = 'idle';
+                adult.userData.gallopPhase = 0;
+                adult.userData.swimming = false;
+                GameState.enemies.push(adult);
+                GameState.scene.add(adult);
+
+                // Add to pack
+                var pack = murgayaPacks.find(function(p) { return p.id === packId; });
+                if (pack) pack.members.push(adult);
+
+                murg.userData.adultTimer = undefined;
+            }
+        });
+    }
+
+    // ========================================================================
+    // GCF DEER — FULL BEHAVIOR SYSTEM
+    // ========================================================================
+
+    var gcfDeerYoung = []; // Track deer with growth timers
+
+    function spawnGcfDeer(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'gcf_deer_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'gcf_deer_female'; });
+        if (!maleData || !femaleData) return;
+
+        var spawnedPositions = [];
+        var minDistance = 30; // Minimum 30 units between each deer
+
+        for (var i = 0; i < count; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            // Spawn spread across the entire forest — from tree line (z=-10) deep into forest (z=-400)
+            var sx, sz;
+            var attempts = 0;
+            do {
+                sx = (Math.random() - 0.5) * worldSize * 0.85;
+                sz = -10 - Math.random() * 390;
+                // Check minimum distance from all previously spawned deer
+                var tooClose = false;
+                for (var j = 0; j < spawnedPositions.length; j++) {
+                    var dx = sx - spawnedPositions[j].x;
+                    var dz = sz - spawnedPositions[j].z;
+                    if (Math.sqrt(dx * dx + dz * dz) < minDistance) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                attempts++;
+            } while (tooClose && attempts < 20);
+
+            var deer = createEnemy(data, sx, sz);
+            if (!deer) continue;
+            spawnedPositions.push({ x: sx, z: sz });
+            deer.userData.gender = data.gender;
+            deer.userData.deerState = 'wandering'; // wandering, seeking_bush, eating, fleeing
+            deer.userData.targetBush = null;
+            deer.userData.eatTimer = 0;
+            deer.userData.wanderTimer = Math.random() * 8;
+            deer.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            deer.userData.pregnant = false;
+            deer.userData.pregnancyTimer = 0;
+            deer.userData.motherOf = null;
+            GameState.enemies.push(deer);
+            GameState.scene.add(deer);
+        }
+        console.log('Spawned ' + count + ' GCF deer (spread across forest)');
+    }
+
+    function updateGcfDeerBehavior(delta) {
+        GameState.enemies.forEach(function(deer) {
+            if (deer.userData.type !== 'gcf_deer' || deer.userData.health <= 0) return;
+
+            // Initialize state for test-spawned deer
+            if (!deer.userData.deerState) {
+                deer.userData.gender = deer.userData.gender || (Math.random() < 0.5 ? 'male' : 'female');
+                deer.userData.deerState = 'wandering';
+                deer.userData.targetBush = null;
+                deer.userData.eatTimer = 0;
+                deer.userData.wanderTimer = Math.random() * 8;
+                deer.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                deer.userData.pregnant = false;
+                deer.userData.pregnancyTimer = 0;
+                deer.userData.motherOf = null;
+                deer.userData.fleeTimer = 0;
+            }
+
+            var model = deer.children[0];
+            var time = GameState.clock.elapsedTime;
+
+            // === LEG ANIMATION ===
+            if (model && model.userData.legs) {
+                var isMoving = deer.userData.deerState === 'fleeing' ||
+                               deer.userData.deerState === 'seeking_bush' ||
+                               deer.userData.deerState === 'wandering' ||
+                               deer.userData.retaliating;
+                var isFleeing = deer.userData.deerState === 'fleeing' || deer.userData.retaliating;
+                var cycleSpeed = isFleeing ? 16 : (isMoving ? 8 : 0);
+                var swingAngle = isFleeing ? Math.PI / 3 : Math.PI / 5;
+                var walkCycle = time * cycleSpeed;
+
+                if (cycleSpeed > 0) {
+                    model.userData.legs.forEach(function(leg) {
+                        var phase = leg.diagonalPair === 'A' ? 0 : Math.PI;
+                        leg.group.rotation.z = Math.sin(walkCycle + phase) * swingAngle;
+                        var kneeBend = Math.max(0, Math.sin(walkCycle + phase + 0.5)) * (isFleeing ? 0.6 : 0.3);
+                        leg.lowerLegGroup.rotation.z = -kneeBend;
+                    });
+                }
+            }
+
+            // === RETALIATION — adults kick back when hit, young just run ===
+            if (deer.userData.retaliating && !deer.userData.isBaby) {
+                var retDist = deer.position.distanceTo(GameState.peccary.position);
+
+                // Give up if player reaches village
+                if (Environment.isInVillage(GameState.peccary.position.x, GameState.peccary.position.z)) {
+                    deer.userData.retaliating = false;
+                    deer.userData.deerState = 'fleeing';
+                    deer.userData.fleeTimer = 4;
+                } else if (retDist > 1.5 + (deer.userData.radius || 1)) {
+                    // Chase player
+                    var cx = GameState.peccary.position.x - deer.position.x;
+                    var cz = GameState.peccary.position.z - deer.position.z;
+                    var cLen = Math.sqrt(cx * cx + cz * cz);
+                    var cSpd = (deer.userData.chaseSpeed || 9) * delta;
+                    deer.position.x += (cx / cLen) * cSpd;
+                    deer.position.z += (cz / cLen) * cSpd;
+                    deer.rotation.y = -Math.atan2(cz, cx);
+                } else {
+                    // Close enough — kick!
+                    Game.takeDamage(deer.userData.damage * delta * 2, 'gcf_deer');
+                    deer.userData.retaliationHits = (deer.userData.retaliationHits || 0) + delta * 2;
+                    if (deer.userData.retaliationHits >= (deer.userData.retaliationMaxHits || 3)) {
+                        // Done fighting — flee!
+                        deer.userData.retaliating = false;
+                        deer.userData.retaliationHits = 0;
+                        deer.userData.deerState = 'fleeing';
+                        deer.userData.fleeTimer = 5;
+                    }
+                }
+                // Running bob while retaliating
+                deer.position.y = Environment.getTerrainHeight(deer.position.x, deer.position.z) +
+                    (deer.userData.groundY || 0.3) + Math.abs(Math.sin(time * 14)) * 0.08;
+                return;
+            }
+
+            // If retaliating but is a baby — just flee instead
+            if (deer.userData.retaliating && deer.userData.isBaby) {
+                deer.userData.retaliating = false;
+                deer.userData.deerState = 'fleeing';
+                deer.userData.fleeTimer = 4 + Math.random() * 2;
+            }
+
+            // === FLEE FROM PEDRO ===
+            var distToPedro = deer.position.distanceTo(GameState.peccary.position);
+            var detRange = deer.userData.detectionRange || 18;
+
+            // Don't flee while eating (sneak attack vulnerability!)
+            if (deer.userData.deerState !== 'eating' && distToPedro < detRange) {
+                deer.userData.deerState = 'fleeing';
+                deer.userData.fleeTimer = 3 + Math.random() * 2;
+            }
+
+            // === FLEEING ===
+            if (deer.userData.deerState === 'fleeing') {
+                deer.userData.fleeTimer -= delta;
+                var fx = deer.position.x - GameState.peccary.position.x;
+                var fz = deer.position.z - GameState.peccary.position.z;
+                var fLen = Math.sqrt(fx * fx + fz * fz);
+                if (fLen > 0) {
+                    var fSpd = (deer.userData.fleeSpeed || 12) * delta;
+                    deer.position.x += (fx / fLen) * fSpd;
+                    deer.position.z += (fz / fLen) * fSpd;
+                    deer.rotation.y = -Math.atan2(fz, fx);
+                }
+                // Running bob
+                deer.position.y = Environment.getTerrainHeight(deer.position.x, deer.position.z) +
+                    (deer.userData.groundY || 0.3) + Math.abs(Math.sin(time * 14)) * 0.1;
+
+                if (deer.userData.fleeTimer <= 0 && distToPedro > detRange * 1.5) {
+                    deer.userData.deerState = 'wandering';
+                }
+                return;
+            }
+
+            // === EATING FROM BERRY BUSH ===
+            if (deer.userData.deerState === 'eating') {
+                // Head bobbing down (eating animation)
+                if (model) {
+                    model.position.y = -0.05 + Math.sin(time * 3) * 0.02;
+                }
+                deer.userData.eatTimer -= delta;
+                if (deer.userData.eatTimer <= 0) {
+                    // Eat a berry from the target bush
+                    var bush = deer.userData.targetBush;
+                    if (bush && bush.userData && bush.userData.berriesLeft > 0) {
+                        bush.userData.berriesLeft--;
+                        var berryMesh = bush.userData.berryMeshes[bush.userData.berriesLeft];
+                        if (berryMesh) bush.remove(berryMesh);
+                        deer.userData.eatTimer = 2 + Math.random() * 2; // Eat every 2-4 seconds
+                    }
+                    // Bush empty or gone? Go wander
+                    if (!bush || !bush.userData || bush.userData.berriesLeft <= 0) {
+                        deer.userData.deerState = 'wandering';
+                        deer.userData.targetBush = null;
+                        if (model) model.position.y = 0;
+                    }
+                }
+                // Still check Pedro — but DON'T flee (sneak attack window!)
+                // Only flee if Pedro is VERY close (within 4 units) while eating
+                if (distToPedro < 4) {
+                    deer.userData.deerState = 'fleeing';
+                    deer.userData.fleeTimer = 3;
+                    deer.userData.targetBush = null;
+                    if (model) model.position.y = 0;
+                }
+                return;
+            }
+
+            // === SEEKING BERRY BUSH ===
+            if (deer.userData.deerState === 'seeking_bush' && deer.userData.targetBush) {
+                var bush = deer.userData.targetBush;
+                if (!bush.parent || !bush.userData || bush.userData.berriesLeft <= 0) {
+                    deer.userData.deerState = 'wandering';
+                    deer.userData.targetBush = null;
+                    return;
+                }
+                var bdx = bush.position.x - deer.position.x;
+                var bdz = bush.position.z - deer.position.z;
+                var bDist = Math.sqrt(bdx * bdx + bdz * bdz);
+
+                if (bDist < 2.5) {
+                    // Arrived — start eating!
+                    deer.userData.deerState = 'eating';
+                    deer.userData.eatTimer = 1 + Math.random();
+                } else {
+                    var bSpd = deer.userData.speed * delta;
+                    deer.position.x += (bdx / bDist) * bSpd;
+                    deer.position.z += (bdz / bDist) * bSpd;
+                    deer.rotation.y = -Math.atan2(bdz, bdx);
+                }
+
+                var terrainY = Environment.getTerrainHeight(deer.position.x, deer.position.z);
+                deer.position.y = terrainY + (deer.userData.groundY || 0.3);
+                return;
+            }
+
+            // === PREGNANT FEMALE ===
+            if (deer.userData.pregnant) {
+                deer.userData.pregnancyTimer -= delta;
+                if (deer.userData.pregnancyTimer <= 0) {
+                    deer.userData.pregnant = false;
+                    // Birth a fawn!
+                    birthGcfFawn(deer);
+                }
+            }
+
+            // === WANDERING ===
+            deer.userData.wanderTimer -= delta;
+            if (deer.userData.wanderTimer <= 0) {
+                deer.userData.wanderTimer = 4 + Math.random() * 6;
+
+                // 40% chance to look for a berry bush
+                if (Math.random() < 0.4) {
+                    var nearestBush = findNearestBerryBush(deer.position);
+                    if (nearestBush) {
+                        deer.userData.deerState = 'seeking_bush';
+                        deer.userData.targetBush = nearestBush;
+                        return;
+                    }
+                }
+
+                var wAngle = Math.random() * Math.PI * 2;
+                deer.userData.wanderDir = new THREE.Vector3(Math.cos(wAngle), 0, Math.sin(wAngle));
+            }
+
+            var wd = deer.userData.wanderDir;
+            if (wd) {
+                deer.position.x += wd.x * deer.userData.speed * 0.3 * delta;
+                deer.position.z += wd.z * deer.userData.speed * 0.3 * delta;
+                deer.rotation.y = -Math.atan2(wd.z, wd.x);
+            }
+
+            // Keep in forest area
+            var worldHalf = (CONFIG.WORLD_SIZE || 500) / 2 - 5;
+            deer.position.x = Math.max(-worldHalf, Math.min(worldHalf, deer.position.x));
+            deer.position.z = Math.max(-100, Math.min(50, deer.position.z)); // Stay mostly in forest
+
+            var terrainY = Environment.getTerrainHeight(deer.position.x, deer.position.z);
+            deer.position.y = terrainY + (deer.userData.groundY || 0.3);
+        });
+
+        // === MATING — male within 35 units of female ===
+        var adultMales = GameState.enemies.filter(function(e) {
+            return e.userData.type === 'gcf_deer' && e.userData.gender === 'male' &&
+                   !e.userData.isBaby && e.userData.health > 0;
+        });
+        var adultFemales = GameState.enemies.filter(function(e) {
+            return e.userData.type === 'gcf_deer' && e.userData.gender === 'female' &&
+                   !e.userData.isBaby && !e.userData.pregnant && e.userData.health > 0;
+        });
+
+        adultMales.forEach(function(male) {
+            if (male.userData.mateCooldown > 0) {
+                male.userData.mateCooldown -= delta;
+                return;
+            }
+            adultFemales.forEach(function(female) {
+                if (female.userData.pregnant) return;
+                var dist = male.position.distanceTo(female.position);
+                if (dist < 35 && dist > 0) {
+                    // Walk toward each other
+                    var mdx = female.position.x - male.position.x;
+                    var mdz = female.position.z - male.position.z;
+                    var mLen = Math.sqrt(mdx * mdx + mdz * mdz);
+                    male.position.x += (mdx / mLen) * male.userData.speed * 0.5 * delta;
+                    male.position.z += (mdz / mLen) * male.userData.speed * 0.5 * delta;
+                    male.rotation.y = -Math.atan2(mdz, mdx);
+
+                    female.position.x -= (mdx / mLen) * female.userData.speed * 0.5 * delta;
+                    female.position.z -= (mdz / mLen) * female.userData.speed * 0.5 * delta;
+                    female.rotation.y = -Math.atan2(-mdz, -mdx);
+
+                    if (dist < 2) {
+                        // Mated!
+                        female.userData.pregnant = true;
+                        female.userData.pregnancyTimer = 90; // 1.5 minutes
+                        male.userData.mateCooldown = 300; // 5 min cooldown
+                        console.log('GCF deer mated!');
+                    }
+                }
+            });
+        });
+
+        // === YOUNG DEER — growth stages ===
+        for (var yi = gcfDeerYoung.length - 1; yi >= 0; yi--) {
+            var entry = gcfDeerYoung[yi];
+            if (!entry.deer.parent || entry.deer.userData.health <= 0) {
+                gcfDeerYoung.splice(yi, 1);
+                continue;
+            }
+            entry.timer -= delta;
+            if (entry.timer <= 0) {
+                advanceGcfDeerStage(entry, yi);
+            }
+        }
+    }
+
+    function findNearestBerryBush(position) {
+        // Access berry bushes from Items module
+        var nearestBush = null;
+        var nearestDist = 40;
+        // Check all objects in the scene for berry bushes
+        if (typeof Items !== 'undefined' && Items.checkNearbyBerryBush) {
+            // Use a manual search through scene children
+            GameState.scene.children.forEach(function(child) {
+                if (child.userData && child.userData.isBerryBush && child.userData.berriesLeft > 0) {
+                    var dist = position.distanceTo(child.position);
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestBush = child;
+                    }
+                }
+            });
+        }
+        return nearestBush;
+    }
+
+    function birthGcfFawn(mother) {
+        var fawnMaleData = window.ENEMIES.find(function(e) { return e.id === 'gcf_deer_fawn_male'; });
+        var fawnFemaleData = window.ENEMIES.find(function(e) { return e.id === 'gcf_deer_fawn_female'; });
+        if (!fawnMaleData || !fawnFemaleData) return;
+
+        var data = Math.random() < 0.5 ? fawnMaleData : fawnFemaleData;
+        var fawn = createEnemy(data, mother.position.x + (Math.random() - 0.5) * 2, mother.position.z + (Math.random() - 0.5) * 2);
+        if (!fawn) return;
+
+        fawn.userData.gender = data.gender;
+        fawn.userData.deerState = 'wandering';
+        fawn.userData.mother = mother;
+        fawn.userData.wanderTimer = 0;
+        fawn.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+        fawn.userData.hiddenInBush = false;
+        mother.userData.motherOf = fawn;
+
+        GameState.enemies.push(fawn);
+        GameState.scene.add(fawn);
+
+        // Track for growth
+        gcfDeerYoung.push({
+            deer: fawn,
+            gender: data.gender,
+            stage: 'fawn',
+            timer: 120, // 2 minutes
+            mother: mother
+        });
+
+        UI.showToast('New Fawn!', 'A GCF deer gave birth to a fawn!');
+        console.log('GCF deer fawn born (' + data.gender + ')');
+    }
+
+    function advanceGcfDeerStage(entry, index) {
+        var oldStage = entry.stage;
+        var newId;
+        var newTimer;
+
+        if (oldStage === 'fawn') {
+            newId = 'gcf_deer_hipperlet_' + entry.gender;
+            entry.stage = 'hipperlet';
+            newTimer = 180; // 3 minutes
+        } else if (oldStage === 'hipperlet') {
+            newId = 'gcf_deer_stfumbler_' + entry.gender;
+            entry.stage = 'stfumbler';
+            newTimer = 240; // 4 minutes
+        } else if (oldStage === 'stfumbler') {
+            newId = 'gcf_deer_' + entry.gender;
+            entry.stage = 'adult';
+            newTimer = 0;
+        }
+
+        var newData = window.ENEMIES.find(function(e) { return e.id === newId; });
+        if (!newData) return;
+
+        var pos = { x: entry.deer.position.x, z: entry.deer.position.z };
+        var mother = entry.mother;
+
+        // Remove old
+        GameState.scene.remove(entry.deer);
+        var idx = GameState.enemies.indexOf(entry.deer);
+        if (idx !== -1) GameState.enemies.splice(idx, 1);
+
+        // Spawn upgraded
+        var upgraded = createEnemy(newData, pos.x, pos.z);
+        if (!upgraded) {
+            gcfDeerYoung.splice(index, 1);
+            return;
+        }
+
+        upgraded.userData.gender = entry.gender;
+        upgraded.userData.deerState = 'wandering';
+        upgraded.userData.wanderTimer = 0;
+        upgraded.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+
+        if (entry.stage !== 'adult') {
+            upgraded.userData.mother = mother;
+            upgraded.userData.isBaby = true;
+        }
+
+        GameState.enemies.push(upgraded);
+        GameState.scene.add(upgraded);
+
+        entry.deer = upgraded;
+        entry.timer = newTimer;
+
+        if (entry.stage === 'adult') {
+            // Remove from tracking
+            gcfDeerYoung.splice(index, 1);
+            if (mother) mother.userData.motherOf = null;
+            UI.showToast('GCF Deer Grown!', 'A ' + entry.gender + ' deer has reached adulthood!');
+        } else {
+            UI.showToast('GCF Deer Growth', 'A deer fawn became a ' + entry.stage + '!');
+        }
+
+        console.log('GCF deer: ' + oldStage + ' → ' + entry.stage);
+    }
+
+    // ========================================================================
+    // LANGARTS BLITTING BIRD (LB BIRD) — Spawn + Behavior
+    // ========================================================================
+
+    function spawnLBBirds(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'lb_bird_male'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'lb_bird_female'; });
+        if (!maleData || !femaleData) return;
+
+        var spawnedPositions = [];
+
+        for (var i = 0; i < count; i++) {
+            var data = Math.random() < 0.5 ? maleData : femaleData;
+            var sx, sz, attempts = 0;
+            do {
+                sx = (Math.random() - 0.5) * worldSize * 0.9;
+                // Mostly forest but sometimes near beach
+                sz = Math.random() < 0.8 ? (-10 - Math.random() * 390) : (Math.random() * 150);
+                var tooClose = false;
+                for (var j = 0; j < spawnedPositions.length; j++) {
+                    var dx = sx - spawnedPositions[j].x;
+                    var dz = sz - spawnedPositions[j].z;
+                    if (Math.sqrt(dx * dx + dz * dz) < 15) { tooClose = true; break; }
+                }
+                attempts++;
+            } while (tooClose && attempts < 20);
+
+            var bird = createEnemy(data, sx, sz);
+            if (!bird) continue;
+            spawnedPositions.push({ x: sx, z: sz });
+
+            bird.userData.gender = data.gender;
+            bird.userData.ignoreGravity = true;
+            bird.userData.birdState = 'wandering';
+            bird.userData.stateTimer = 3 + Math.random() * 8;
+            bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            bird.userData.flightState = 'grounded';
+            bird.userData.flightAltitude = 0;
+            bird.userData.targetPos = null;
+            bird.userData.perchTree = null;
+            bird.userData.perchBush = null;
+            bird.userData.targetBush = null;
+            bird.userData._walkCycle = Math.random() * 10;
+            bird.userData._wingFlap = 0;
+            // Mating
+            bird.userData.matingCooldown = 30 + Math.random() * 60;
+            bird.userData.displayTimer = 0;
+            bird.userData.displayPartner = null;
+            bird.userData.displaySuccess = false;
+            // Nesting
+            bird.userData.nestTree = null;
+            bird.userData.nest = null;
+            bird.userData.eggs = 0;
+            bird.userData.eggTimer = 0;
+            bird.userData.chickEntries = [];
+
+            GameState.enemies.push(bird);
+            GameState.scene.add(bird);
+        }
+        console.log('Spawned ' + count + ' Langarts Blitting Birds');
+    }
+
+    // --- LB Bird helper: find a random birch tree ---
+    function findRandomBirchTree(bird) {
+        if (!GameState.trees || GameState.trees.length === 0) return null;
+        var candidates = [];
+        for (var i = 0; i < GameState.trees.length; i++) {
+            var t = GameState.trees[i];
+            var dist = bird.position.distanceTo(t.position);
+            if (dist < 80) candidates.push(t);
+        }
+        if (candidates.length === 0) return null;
+        return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    // --- LB Bird helper: find a berry bush with berries ---
+    function findBerryBushForBird(bird) {
+        var bushes = GameState.scene.children.filter(function(obj) {
+            return obj.userData && obj.userData.isBerryBush && obj.userData.berriesLeft > 0;
+        });
+        if (bushes.length === 0) return null;
+        // Pick closest-ish bush (from top 5 nearest)
+        bushes.sort(function(a, b) {
+            return a.position.distanceTo(bird.position) - b.position.distanceTo(bird.position);
+        });
+        var top = Math.min(5, bushes.length);
+        return bushes[Math.floor(Math.random() * top)];
+    }
+
+    // --- LB Bird helper: find an amphipod on the beach ---
+    function findAmphipodForBird(bird) {
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            var e = GameState.enemies[i];
+            if (e.userData.type === 'basicuslin_amphipod' && e.userData.health > 0 &&
+                e.position.distanceTo(bird.position) < 60) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    // --- LB Bird: main behavior update ---
+    function updateLBBirdBehavior(delta) {
+        var time = GameState.clock ? GameState.clock.elapsedTime : 0;
+
+        GameState.enemies.forEach(function(bird) {
+            if (bird.userData.type !== 'lb_bird' || bird.userData.health <= 0) return;
+
+            var model = bird.children[0];
+            var distToPedro = bird.position.distanceTo(GameState.peccary.position);
+            var detRange = bird.userData.detectionRange || 14;
+
+            // --- LEG ANIMATION (when grounded and moving) ---
+            if (model && model.userData.legs && bird.userData.flightState === 'grounded') {
+                var isMoving = bird.userData.birdState === 'wandering' ||
+                               bird.userData.birdState === 'fleeing' ||
+                               bird.userData.birdState === 'foraging_beach' ||
+                               bird.userData.birdState === 'going_to_target';
+                if (isMoving) {
+                    bird.userData._walkCycle += delta * 10;
+                    model.userData.legs.forEach(function(leg) {
+                        var phase = leg.diag === 'A' ? 0 : Math.PI;
+                        leg.group.rotation.z = Math.sin(bird.userData._walkCycle + phase) * 0.4;
+                        if (leg.lowerGroup) {
+                            leg.lowerGroup.rotation.z = Math.max(0, Math.sin(bird.userData._walkCycle + phase + 0.5)) * 0.3;
+                        }
+                    });
+                } else {
+                    // Standing still — reset legs
+                    model.userData.legs.forEach(function(leg) {
+                        leg.group.rotation.z *= 0.9;
+                    });
+                }
+            }
+
+            // --- WING ANIMATION (when flying) ---
+            if (model && model.userData.parts && bird.userData.flightState === 'flying') {
+                bird.userData._wingFlap += delta * 12;
+                var flapAngle = Math.sin(bird.userData._wingFlap) * 0.7;
+                // Flap up/down using rotation.x — left wing (-Z side) and right wing (+Z side)
+                if (model.userData.parts.leftWing) model.userData.parts.leftWing.rotation.x = flapAngle;
+                if (model.userData.parts.rightWing) model.userData.parts.rightWing.rotation.x = -flapAngle;
+            } else if (model && model.userData.parts) {
+                // Fold wings back against body
+                if (model.userData.parts.leftWing) model.userData.parts.leftWing.rotation.x *= 0.9;
+                if (model.userData.parts.rightWing) model.userData.parts.rightWing.rotation.x *= 0.9;
+            }
+
+            // --- RETALIATION (adults only — males fight, females flee) ---
+            if (bird.userData.retaliating && !bird.userData.isBaby) {
+                if (bird.userData.gender === 'male') {
+                    // Males peck at you then flee
+                    if (distToPedro > 1.5) {
+                        var cx = GameState.peccary.position.x - bird.position.x;
+                        var cz = GameState.peccary.position.z - bird.position.z;
+                        var cLen = Math.sqrt(cx * cx + cz * cz);
+                        var cSpd = (bird.userData.chaseSpeed || 7) * delta;
+                        bird.position.x += (cx / cLen) * cSpd;
+                        bird.position.z += (cz / cLen) * cSpd;
+                        bird.rotation.y = -Math.atan2(cz, cx);
+                    } else {
+                        Game.takeDamage(bird.userData.damage * delta * 2, 'lb_bird');
+                        bird.userData.retaliationHits = (bird.userData.retaliationHits || 0) + delta * 2;
+                        if (bird.userData.retaliationHits >= 2) {
+                            bird.userData.retaliating = false;
+                            bird.userData.retaliationHits = 0;
+                            bird.userData.birdState = 'fleeing';
+                            bird.userData.stateTimer = 4;
+                        }
+                    }
+                } else {
+                    // Females just flee
+                    bird.userData.retaliating = false;
+                    bird.userData.birdState = 'fleeing';
+                    bird.userData.stateTimer = 5;
+                }
+                bird.userData.flightState = 'grounded';
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                bird.position.y = gy + (bird.userData.groundY || 0.2);
+                return;
+            }
+            // Babies just flee
+            if (bird.userData.retaliating && bird.userData.isBaby) {
+                bird.userData.retaliating = false;
+                bird.userData.birdState = 'fleeing';
+                bird.userData.stateTimer = 4;
+            }
+
+            // --- FLEE from Pedro ---
+            if (bird.userData.birdState !== 'displaying' && bird.userData.birdState !== 'display_watching' &&
+                bird.userData.birdState !== 'incubating' && bird.userData.birdState !== 'building_nest' &&
+                distToPedro < detRange && bird.userData.birdState !== 'fleeing') {
+                bird.userData.birdState = 'fleeing';
+                bird.userData.stateTimer = 3 + Math.random() * 2;
+                // Interrupt perching
+                bird.userData.perchTree = null;
+                bird.userData.perchBush = null;
+            }
+
+            // === STATE MACHINE ===
+            bird.userData.stateTimer -= delta;
+            bird.userData.matingCooldown -= delta;
+
+            // --- FLEEING ---
+            if (bird.userData.birdState === 'fleeing') {
+                // Fly away!
+                bird.userData.flightState = 'flying';
+                var fx = bird.position.x - GameState.peccary.position.x;
+                var fz = bird.position.z - GameState.peccary.position.z;
+                var fLen = Math.sqrt(fx * fx + fz * fz);
+                if (fLen > 0) {
+                    var fSpd = (bird.userData.fleeSpeed || 9) * delta;
+                    bird.position.x += (fx / fLen) * fSpd;
+                    bird.position.z += (fz / fLen) * fSpd;
+                    bird.position.y += delta * 3; // Gain altitude
+                    if (bird.position.y > 12) bird.position.y = 12;
+                    bird.rotation.y = -Math.atan2(fz, fx);
+                }
+                if (bird.userData.stateTimer <= 0 && distToPedro > detRange * 2) {
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 5 + Math.random() * 10;
+                    bird.userData.flightState = 'descending';
+                }
+                return;
+            }
+
+            // --- DESCENDING (landing after flight) ---
+            if (bird.userData.flightState === 'descending') {
+                var groundY = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                var targetY = groundY + (bird.userData.groundY || 0.2);
+                bird.position.y -= delta * 4;
+                if (bird.position.y <= targetY) {
+                    bird.position.y = targetY;
+                    bird.userData.flightState = 'grounded';
+                }
+                return;
+            }
+
+            // --- FLYING TO TARGET ---
+            if (bird.userData.birdState === 'flying_to_target' && bird.userData.targetPos) {
+                bird.userData.flightState = 'flying';
+                var tp = bird.userData.targetPos;
+                var tdx = tp.x - bird.position.x;
+                var tdz = tp.z - bird.position.z;
+                var tDist = Math.sqrt(tdx * tdx + tdz * tdz);
+
+                // Maintain altitude
+                var flyHeight = tp.y || 8;
+                if (bird.position.y < flyHeight) bird.position.y += delta * 4;
+
+                if (tDist > 2) {
+                    var fSpeed = 10 * delta;
+                    bird.position.x += (tdx / tDist) * fSpeed;
+                    bird.position.z += (tdz / tDist) * fSpeed;
+                    bird.rotation.y = -Math.atan2(tdz, tdx);
+                } else {
+                    // Arrived — transition to next state
+                    bird.userData.flightState = 'descending';
+                    bird.userData.birdState = bird.userData.nextState || 'wandering';
+                    bird.userData.stateTimer = bird.userData.nextStateTimer || 5;
+                    bird.userData.targetPos = null;
+                }
+                return;
+            }
+
+            // --- WANDERING (pecking on forest floor) ---
+            if (bird.userData.birdState === 'wandering') {
+                bird.userData.flightState = 'grounded';
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                bird.position.y = gy + (bird.userData.groundY || 0.2);
+
+                // Walk around pecking
+                var wSpd = (bird.userData.speed || 5) * 0.4 * delta;
+                bird.position.x += bird.userData.wanderDir.x * wSpd;
+                bird.position.z += bird.userData.wanderDir.z * wSpd;
+                bird.rotation.y = -Math.atan2(bird.userData.wanderDir.z, bird.userData.wanderDir.x);
+
+                // Pecking animation — head bobs down
+                if (model && model.userData.parts && model.userData.parts.head) {
+                    model.userData.parts.head.position.y = 0.78 + Math.sin(time * 6) * 0.03;
+                }
+
+                // Change direction sometimes
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    bird.userData.stateTimer = 3 + Math.random() * 5;
+
+                    // Decide next activity (weighted random)
+                    var roll = Math.random();
+                    if (roll < 0.15) {
+                        // Fly to a berry bush
+                        var bush = findBerryBushForBird(bird);
+                        if (bush) {
+                            bird.userData.targetBush = bush;
+                            bird.userData.targetPos = { x: bush.position.x, y: 6, z: bush.position.z };
+                            bird.userData.birdState = 'flying_to_target';
+                            bird.userData.nextState = 'eating_berries';
+                            bird.userData.nextStateTimer = 8;
+                        }
+                    } else if (roll < 0.25) {
+                        // Fly to beach for amphipods
+                        bird.userData.targetPos = {
+                            x: (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.6,
+                            y: 5,
+                            z: 20 + Math.random() * 120
+                        };
+                        bird.userData.birdState = 'flying_to_target';
+                        bird.userData.nextState = 'foraging_beach';
+                        bird.userData.nextStateTimer = 8 + Math.random() * 5;
+                    } else if (roll < 0.35) {
+                        // Perch on tree trunk
+                        var tree = findRandomBirchTree(bird);
+                        if (tree) {
+                            bird.userData.perchTree = tree;
+                            bird.userData.targetPos = {
+                                x: tree.position.x + 1.5,
+                                y: 2 + Math.random() * 3,
+                                z: tree.position.z
+                            };
+                            bird.userData.birdState = 'flying_to_target';
+                            bird.userData.nextState = 'perching_trunk';
+                            bird.userData.nextStateTimer = 10 + Math.random() * 15;
+                        }
+                    } else if (roll < 0.42) {
+                        // Rest on bush
+                        var rBush = findBerryBushForBird(bird);
+                        if (rBush) {
+                            bird.userData.perchBush = rBush;
+                            bird.userData.targetPos = {
+                                x: rBush.position.x,
+                                y: rBush.position.y + 2.5,
+                                z: rBush.position.z
+                            };
+                            bird.userData.birdState = 'flying_to_target';
+                            bird.userData.nextState = 'resting_bush';
+                            bird.userData.nextStateTimer = 10 + Math.random() * 10;
+                        }
+                    } else if (roll < 0.48 && GameState.oceanIslands && GameState.oceanIslands.length > 0) {
+                        // Fly to an island
+                        var island = GameState.oceanIslands[Math.floor(Math.random() * GameState.oceanIslands.length)];
+                        bird.userData.targetPos = { x: island.x, y: 8, z: island.z };
+                        bird.userData.birdState = 'flying_to_target';
+                        bird.userData.nextState = 'resting_island';
+                        bird.userData.nextStateTimer = 15 + Math.random() * 20;
+                    } else if (roll < 0.55 && bird.userData.gender === 'male' &&
+                               !bird.userData.isBaby && bird.userData.matingCooldown <= 0) {
+                        // Male: go to tree to start calling
+                        var mTree = findRandomBirchTree(bird);
+                        if (mTree) {
+                            bird.userData.perchTree = mTree;
+                            bird.userData.targetPos = {
+                                x: mTree.position.x + 1.5,
+                                y: 2 + Math.random() * 2,
+                                z: mTree.position.z
+                            };
+                            bird.userData.birdState = 'flying_to_target';
+                            bird.userData.nextState = 'calling';
+                            bird.userData.nextStateTimer = 12;
+                        }
+                    }
+                }
+
+                // Keep in bounds
+                var ws = CONFIG.WORLD_SIZE;
+                if (Math.abs(bird.position.x) > ws * 0.6 || bird.position.z > 200 || bird.position.z < -ws * 0.5) {
+                    bird.userData.wanderDir = new THREE.Vector3(-bird.position.x, 0, -bird.position.z).normalize();
+                }
+                return;
+            }
+
+            // --- EATING BERRIES from bush ---
+            if (bird.userData.birdState === 'eating_berries') {
+                bird.userData.flightState = 'grounded';
+                var bush = bird.userData.targetBush;
+                if (!bush || !bush.userData || bush.userData.berriesLeft <= 0) {
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 5;
+                    bird.userData.targetBush = null;
+                    return;
+                }
+                // Stay near bush
+                var bDist = bird.position.distanceTo(bush.position);
+                if (bDist > 3) {
+                    var bx = bush.position.x - bird.position.x;
+                    var bz = bush.position.z - bird.position.z;
+                    var bLen = Math.sqrt(bx * bx + bz * bz);
+                    bird.position.x += (bx / bLen) * 3 * delta;
+                    bird.position.z += (bz / bLen) * 3 * delta;
+                }
+                // Peck animation
+                if (model && model.userData.parts && model.userData.parts.head) {
+                    model.userData.parts.head.position.y = 0.78 + Math.sin(time * 8) * 0.05;
+                }
+                // Eat a berry every 3-4 seconds
+                bird.userData.stateTimer -= delta;
+                if (bird.userData.stateTimer <= 0) {
+                    bush.userData.berriesLeft--;
+                    var berryMesh = bush.userData.berryMeshes[bush.userData.berriesLeft];
+                    if (berryMesh) bush.remove(berryMesh);
+                    bird.userData.stateTimer = 3 + Math.random();
+                    if (bush.userData.berriesLeft <= 0 || Math.random() < 0.3) {
+                        bird.userData.birdState = 'wandering';
+                        bird.userData.stateTimer = 5;
+                        bird.userData.targetBush = null;
+                    }
+                }
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                bird.position.y = gy + (bird.userData.groundY || 0.2);
+                return;
+            }
+
+            // --- FORAGING ON BEACH (eating amphipods and debris) ---
+            if (bird.userData.birdState === 'foraging_beach') {
+                bird.userData.flightState = 'grounded';
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                bird.position.y = gy + (bird.userData.groundY || 0.2);
+
+                // Walk around on beach pecking
+                var bSpd = (bird.userData.speed || 5) * 0.35 * delta;
+                bird.position.x += bird.userData.wanderDir.x * bSpd;
+                bird.position.z += bird.userData.wanderDir.z * bSpd;
+                bird.rotation.y = -Math.atan2(bird.userData.wanderDir.z, bird.userData.wanderDir.x);
+
+                // Peck animation
+                if (model && model.userData.parts && model.userData.parts.head) {
+                    model.userData.parts.head.position.y = 0.78 + Math.sin(time * 7) * 0.04;
+                }
+
+                // Stay on beach (Z between 0 and 200)
+                if (bird.position.z < 5 || bird.position.z > 190) {
+                    bird.userData.wanderDir.z = -bird.userData.wanderDir.z;
+                }
+
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    bird.userData.stateTimer = 3 + Math.random() * 3;
+                    if (Math.random() < 0.35) {
+                        bird.userData.birdState = 'wandering';
+                        bird.userData.stateTimer = 5;
+                    }
+                }
+                return;
+            }
+
+            // --- PERCHING ON TREE TRUNK ---
+            if (bird.userData.birdState === 'perching_trunk') {
+                if (bird.userData.perchTree) {
+                    var t = bird.userData.perchTree;
+                    // Stick to side of trunk
+                    bird.position.x = t.position.x + 1.2;
+                    bird.position.z = t.position.z;
+                    // Face outward from trunk
+                    bird.rotation.y = 0; // Facing +X (away from trunk)
+                }
+                bird.userData.flightState = 'grounded'; // Gripping, not flying
+
+                // Slight body sway
+                if (model) {
+                    model.rotation.z = Math.sin(time * 1.5) * 0.03;
+                }
+
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 5 + Math.random() * 5;
+                    bird.userData.perchTree = null;
+                    bird.userData.flightState = 'descending';
+                }
+                return;
+            }
+
+            // --- RESTING ON BUSH ---
+            if (bird.userData.birdState === 'resting_bush') {
+                if (bird.userData.perchBush) {
+                    bird.position.x = bird.userData.perchBush.position.x;
+                    bird.position.y = bird.userData.perchBush.position.y + 2.2;
+                    bird.position.z = bird.userData.perchBush.position.z;
+                }
+                bird.userData.flightState = 'grounded';
+
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 5;
+                    bird.userData.perchBush = null;
+                    bird.userData.flightState = 'descending';
+                }
+                return;
+            }
+
+            // --- RESTING ON ISLAND ---
+            if (bird.userData.birdState === 'resting_island') {
+                bird.userData.flightState = 'grounded';
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                bird.position.y = Math.max(gy, 1.5) + (bird.userData.groundY || 0.2);
+
+                // Slight wander on island
+                var iSpd = 1.5 * delta;
+                bird.position.x += bird.userData.wanderDir.x * iSpd;
+                bird.position.z += bird.userData.wanderDir.z * iSpd;
+                bird.rotation.y = -Math.atan2(bird.userData.wanderDir.z, bird.userData.wanderDir.x);
+
+                if (bird.userData.stateTimer <= 0) {
+                    // Fly back to forest
+                    bird.userData.targetPos = {
+                        x: (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.5,
+                        y: 8,
+                        z: -20 - Math.random() * 200
+                    };
+                    bird.userData.birdState = 'flying_to_target';
+                    bird.userData.nextState = 'wandering';
+                    bird.userData.nextStateTimer = 5;
+                }
+                return;
+            }
+
+            // === MATING SYSTEM ===
+
+            // --- CALLING (male on trunk, mouth open, calling for female) ---
+            if (bird.userData.birdState === 'calling') {
+                bird.userData.flightState = 'grounded';
+                if (bird.userData.perchTree) {
+                    bird.position.x = bird.userData.perchTree.position.x + 1.2;
+                    bird.position.z = bird.userData.perchTree.position.z;
+                }
+                // Open beak animation
+                if (model && model.userData.parts && model.userData.parts.beak) {
+                    model.userData.parts.beak.rotation.x = Math.sin(time * 4) * 0.15;
+                }
+
+                // Look for nearest female
+                var nearestFemale = null;
+                var nearestDist = 40;
+                GameState.enemies.forEach(function(e) {
+                    if (e.userData.type === 'lb_bird' && e.userData.gender === 'female' &&
+                        !e.userData.isBaby && e.userData.health > 0 &&
+                        e.userData.birdState === 'wandering' && !e.userData.nest) {
+                        var d = e.position.distanceTo(bird.position);
+                        if (d < nearestDist) { nearestDist = d; nearestFemale = e; }
+                    }
+                });
+
+                if (nearestFemale && bird.userData.stateTimer <= 6) {
+                    // Female heard the call — send her over
+                    nearestFemale.userData.birdState = 'flying_to_target';
+                    nearestFemale.userData.targetPos = {
+                        x: bird.position.x,
+                        y: bird.position.y - 0.8,
+                        z: bird.position.z
+                    };
+                    nearestFemale.userData.nextState = 'display_watching';
+                    nearestFemale.userData.nextStateTimer = 10;
+                    nearestFemale.userData.displayPartner = bird;
+
+                    bird.userData.displayPartner = nearestFemale;
+                    bird.userData.birdState = 'displaying';
+                    bird.userData.displayTimer = 0;
+                    bird.userData.displaySuccess = Math.random() > 0.3; // 70% success
+                    bird.userData.stateTimer = 8; // Display lasts 8 seconds
+                } else if (bird.userData.stateTimer <= 0) {
+                    // No female came — give up
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 5;
+                    bird.userData.perchTree = null;
+                    bird.userData.matingCooldown = 40 + Math.random() * 30;
+                }
+                return;
+            }
+
+            // --- DISPLAYING (male doing the dance!) ---
+            if (bird.userData.birdState === 'displaying') {
+                bird.userData.flightState = 'grounded';
+                bird.userData.displayTimer += delta;
+                var t = bird.userData.displayTimer;
+
+                if (model && model.userData.parts) {
+                    // Raise collar over face (0 → 1 over first 2 seconds)
+                    var collarRaise = Math.min(1, t / 2);
+                    model.userData.parts.collarRaised = collarRaise;
+                    if (model.userData.parts.collar) {
+                        // Collar feathers fan upward
+                        model.userData.parts.collar.children.forEach(function(featherGrp, idx) {
+                            featherGrp.children.forEach(function(f) {
+                                f.position.y = 0.07 + collarRaise * 0.12;
+                                f.position.z = 0.08 + collarRaise * 0.04;
+                                f.rotation.x = -0.3 - collarRaise * 0.5;
+                            });
+                        });
+                    }
+
+                    // Head shrinks into body (lower head Y)
+                    if (model.userData.parts.head) {
+                        model.userData.parts.head.position.y = 0.78 - collarRaise * 0.08;
+                    }
+
+                    // Sway side-to-side + jitter
+                    if (t > 2) {
+                        var sway = Math.sin((t - 2) * 3) * 0.15;
+                        var jitter = (Math.random() - 0.5) * 0.03;
+                        model.rotation.z = sway + jitter;
+                        bird.position.z = bird.userData.perchTree ?
+                            bird.userData.perchTree.position.z + sway * 2 :
+                            bird.position.z;
+                    }
+                }
+
+                if (bird.userData.stateTimer <= 0) {
+                    // Display finished
+                    // Reset collar
+                    if (model && model.userData.parts && model.userData.parts.collar) {
+                        model.userData.parts.collar.children.forEach(function(featherGrp) {
+                            featherGrp.children.forEach(function(f) {
+                                f.position.y = 0.07;
+                                f.position.z = 0.08;
+                                f.rotation.x = -0.3;
+                            });
+                        });
+                    }
+                    if (model) model.rotation.z = 0;
+                    if (model && model.userData.parts && model.userData.parts.head) {
+                        model.userData.parts.head.position.y = 0.78;
+                    }
+                    model.userData.parts.collarRaised = 0;
+
+                    if (bird.userData.displaySuccess) {
+                        // Success! Female goes to gather twigs
+                        var fem = bird.userData.displayPartner;
+                        if (fem && fem.userData.health > 0) {
+                            fem.userData.birdState = 'gathering_twigs';
+                            fem.userData.stateTimer = 4;
+                            fem.userData.nestTree = bird.userData.perchTree;
+                            fem.userData.nestHeight = bird.position.y;
+                        }
+                    } else {
+                        // Failed — female flies away
+                        var fem = bird.userData.displayPartner;
+                        if (fem && fem.userData.health > 0) {
+                            fem.userData.birdState = 'wandering';
+                            fem.userData.stateTimer = 5;
+                            fem.userData.displayPartner = null;
+                        }
+                    }
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 10;
+                    bird.userData.perchTree = null;
+                    bird.userData.displayPartner = null;
+                    bird.userData.matingCooldown = 60 + Math.random() * 60;
+                }
+                return;
+            }
+
+            // --- DISPLAY_WATCHING (female watching male) ---
+            if (bird.userData.birdState === 'display_watching') {
+                bird.userData.flightState = 'grounded';
+                // Stand still and face the male
+                var partner = bird.userData.displayPartner;
+                if (partner && partner.userData.health > 0) {
+                    var dx = partner.position.x - bird.position.x;
+                    var dz = partner.position.z - bird.position.z;
+                    bird.rotation.y = -Math.atan2(dz, dx);
+                }
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 5;
+                    bird.userData.displayPartner = null;
+                }
+                return;
+            }
+
+            // --- GATHERING TWIGS (female dives into bush) ---
+            if (bird.userData.birdState === 'gathering_twigs') {
+                // Find nearest bush and fly to it
+                if (!bird.userData.targetBush) {
+                    var tBush = findBerryBushForBird(bird);
+                    if (tBush) {
+                        bird.userData.targetBush = tBush;
+                    } else {
+                        bird.userData.birdState = 'wandering';
+                        bird.userData.stateTimer = 5;
+                        return;
+                    }
+                }
+                // Fly toward the bush
+                var tb = bird.userData.targetBush;
+                var dx = tb.position.x - bird.position.x;
+                var dz = tb.position.z - bird.position.z;
+                var dist = Math.sqrt(dx * dx + dz * dz);
+                bird.userData.flightState = 'flying';
+
+                if (dist > 3) {
+                    var gSpd = 8 * delta;
+                    bird.position.x += (dx / dist) * gSpd;
+                    bird.position.z += (dz / dist) * gSpd;
+                    bird.rotation.y = -Math.atan2(dz, dx);
+                    // Maintain flight height
+                    if (bird.position.y < 5) bird.position.y += delta * 4;
+                }
+
+                if (bird.userData.stateTimer <= 0 || dist <= 3) {
+                    // Got twigs — fly to nest tree
+                    bird.userData.targetBush = null;
+                    if (bird.userData.nestTree) {
+                        bird.userData.targetPos = {
+                            x: bird.userData.nestTree.position.x + 0.6,
+                            y: bird.userData.nestHeight || 3,
+                            z: bird.userData.nestTree.position.z
+                        };
+                        bird.userData.birdState = 'flying_to_target';
+                        bird.userData.nextState = 'building_nest';
+                        bird.userData.nextStateTimer = 6;
+                    } else {
+                        bird.userData.birdState = 'wandering';
+                        bird.userData.stateTimer = 5;
+                    }
+                }
+                return;
+            }
+
+            // --- BUILDING NEST (female pecking into tree, 6 seconds) ---
+            if (bird.userData.birdState === 'building_nest') {
+                bird.userData.flightState = 'grounded';
+                if (bird.userData.nestTree) {
+                    bird.position.x = bird.userData.nestTree.position.x + 0.6;
+                    bird.position.z = bird.userData.nestTree.position.z;
+                }
+
+                // Pecking animation
+                if (model && model.userData.parts && model.userData.parts.head) {
+                    model.userData.parts.head.position.y = 0.78 + Math.sin(time * 10) * 0.06;
+                }
+
+                if (bird.userData.stateTimer <= 0) {
+                    // Build the nest! — attached to the side of the trunk
+                    var nestGroup = new THREE.Group();
+                    var nestMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.9 });
+                    // Bowl shape — tilted to sit against trunk
+                    var bowl = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), nestMat);
+                    bowl.rotation.x = Math.PI;
+                    bowl.position.set(0.15, 0.05, 0);
+                    nestGroup.add(bowl);
+                    // Rim of twigs
+                    var rim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.06, 6, 10), nestMat);
+                    rim.rotation.x = Math.PI / 2;
+                    rim.position.set(0.15, 0.08, 0);
+                    nestGroup.add(rim);
+                    // Back support — twigs connecting nest to trunk
+                    var backMat = new THREE.MeshStandardMaterial({ color: 0x6B5010, roughness: 0.95 });
+                    for (var si = -1; si <= 1; si++) {
+                        var stick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.015, 0.4, 4), backMat);
+                        stick.rotation.z = -0.5;
+                        stick.position.set(-0.05, 0, si * 0.12);
+                        nestGroup.add(stick);
+                    }
+
+                    // Position tight against the trunk
+                    nestGroup.position.set(
+                        bird.userData.nestTree.position.x + 0.5,
+                        bird.position.y - 0.1,
+                        bird.userData.nestTree.position.z
+                    );
+                    GameState.scene.add(nestGroup);
+
+                    bird.userData.nest = nestGroup;
+                    bird.userData.eggs = 2 + Math.floor(Math.random() * 2); // 2-3 eggs
+                    bird.userData.eggTimer = 0;
+
+                    // Add egg meshes
+                    var eggMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e0, roughness: 0.4 });
+                    for (var ei = 0; ei < bird.userData.eggs; ei++) {
+                        var egg = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), eggMat);
+                        egg.scale.set(0.8, 1.0, 0.8);
+                        egg.position.set((ei - 1) * 0.1, 0.1, 0);
+                        nestGroup.add(egg);
+                    }
+
+                    bird.userData.birdState = 'incubating';
+                    bird.userData.stateTimer = 60; // 1 minute to hatch
+                    bird.userData.chickEntries = [];
+
+                    console.log('LB Bird nest built with ' + bird.userData.eggs + ' eggs!');
+                }
+                return;
+            }
+
+            // --- INCUBATING (sitting on nest, waiting for eggs to hatch) ---
+            if (bird.userData.birdState === 'incubating') {
+                bird.userData.flightState = 'grounded';
+                if (bird.userData.nest) {
+                    bird.position.x = bird.userData.nest.position.x;
+                    bird.position.y = bird.userData.nest.position.y + 0.3;
+                    bird.position.z = bird.userData.nest.position.z;
+                }
+
+                if (bird.userData.stateTimer <= 0 && bird.userData.eggs > 0) {
+                    // Hatch! Create chicks
+                    var chickData = window.ENEMIES.find(function(e) { return e.id === 'lb_bird_chick'; });
+                    if (chickData && bird.userData.nest) {
+                        for (var ci = 0; ci < bird.userData.eggs; ci++) {
+                            var cx = bird.userData.nest.position.x + (Math.random() - 0.5) * 2;
+                            var cz = bird.userData.nest.position.z + (Math.random() - 0.5) * 2;
+                            var chick = createEnemy(chickData, cx, cz);
+                            if (chick) {
+                                chick.userData.ignoreGravity = true;
+                                chick.userData.birdState = 'chick_wander';
+                                chick.userData.stateTimer = 3;
+                                chick.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                                chick.userData.nestPos = { x: bird.userData.nest.position.x, z: bird.userData.nest.position.z };
+                                chick.userData.growthTimer = 180; // 3 min to fledgling
+                                chick.userData.gender = Math.random() < 0.5 ? 'male' : 'female';
+                                chick.userData._walkCycle = Math.random() * 10;
+                                chick.position.y = bird.userData.nest.position.y + 0.2;
+                                GameState.enemies.push(chick);
+                                GameState.scene.add(chick);
+                                bird.userData.chickEntries.push(chick);
+                            }
+                        }
+                        // Remove egg meshes from nest
+                        var toRemove = [];
+                        bird.userData.nest.children.forEach(function(c) {
+                            if (c.geometry && c.geometry.type === 'SphereGeometry' &&
+                                c.geometry.parameters.radius < 0.1) {
+                                toRemove.push(c);
+                            }
+                        });
+                        toRemove.forEach(function(c) { bird.userData.nest.remove(c); });
+
+                        bird.userData.eggs = 0;
+                        console.log('LB Bird chicks hatched!');
+                        UI.showToast('New Life!', 'Langarts Blitting Bird chicks have hatched!');
+                    }
+                    // Mother goes back to wandering
+                    bird.userData.birdState = 'wandering';
+                    bird.userData.stateTimer = 10;
+                    bird.userData.matingCooldown = 120;
+                }
+                return;
+            }
+
+            // --- CHICK WANDER (stay near nest) ---
+            if (bird.userData.birdState === 'chick_wander') {
+                bird.userData.flightState = 'grounded';
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+                bird.position.y = gy + (bird.userData.groundY || 0.08);
+
+                var wSpd = 1.5 * delta;
+                bird.position.x += bird.userData.wanderDir.x * wSpd;
+                bird.position.z += bird.userData.wanderDir.z * wSpd;
+                bird.rotation.y = -Math.atan2(bird.userData.wanderDir.z, bird.userData.wanderDir.x);
+
+                // Stay near nest
+                if (bird.userData.nestPos) {
+                    var nd = Math.sqrt(
+                        Math.pow(bird.position.x - bird.userData.nestPos.x, 2) +
+                        Math.pow(bird.position.z - bird.userData.nestPos.z, 2)
+                    );
+                    if (nd > 5) {
+                        bird.userData.wanderDir = new THREE.Vector3(
+                            bird.userData.nestPos.x - bird.position.x,
+                            0,
+                            bird.userData.nestPos.z - bird.position.z
+                        ).normalize();
+                    }
+                }
+
+                bird.userData.stateTimer -= delta;
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    bird.userData.stateTimer = 2 + Math.random() * 3;
+                }
+
+                // Growth timer
+                bird.userData.growthTimer -= delta;
+                if (bird.userData.growthTimer <= 0) {
+                    advanceLBBirdStage(bird);
+                }
+                return;
+            }
+
+            // --- FLEDGLING HOP (hopping around, wider range) ---
+            if (bird.userData.birdState === 'fledgling_hop') {
+                bird.userData.flightState = 'grounded';
+                var gy = Environment.getTerrainHeight(bird.position.x, bird.position.z);
+
+                // Hopping motion
+                var hopCycle = Math.sin(time * 5);
+                var hopHeight = hopCycle > 0.5 ? (hopCycle - 0.5) * 0.4 : 0;
+                bird.position.y = gy + (bird.userData.groundY || 0.12) + hopHeight;
+
+                // Move in hops
+                if (hopCycle > 0.5) {
+                    var hSpd = 3 * delta;
+                    bird.position.x += bird.userData.wanderDir.x * hSpd;
+                    bird.position.z += bird.userData.wanderDir.z * hSpd;
+                    bird.rotation.y = -Math.atan2(bird.userData.wanderDir.z, bird.userData.wanderDir.x);
+                }
+
+                bird.userData.stateTimer -= delta;
+                if (bird.userData.stateTimer <= 0) {
+                    bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    bird.userData.stateTimer = 2 + Math.random() * 4;
+                }
+
+                // Growth timer
+                bird.userData.growthTimer -= delta;
+                if (bird.userData.growthTimer <= 0) {
+                    advanceLBBirdStage(bird);
+                }
+                return;
+            }
+        });
+    }
+
+    // --- LB Bird: advance growth stage ---
+    function advanceLBBirdStage(bird) {
+        var currentId = bird.userData.id;
+        var newId = null;
+        var newState = null;
+        var newGrowthTimer = 0;
+
+        if (currentId === 'lb_bird_chick') {
+            newId = 'lb_bird_fledgling';
+            newState = 'fledgling_hop';
+            newGrowthTimer = 240; // 4 min to adult
+        } else if (currentId === 'lb_bird_fledgling') {
+            // Become adult — 50/50 male or female
+            var gender = bird.userData.gender || (Math.random() < 0.5 ? 'male' : 'female');
+            newId = gender === 'male' ? 'lb_bird_male' : 'lb_bird_female';
+            newState = 'wandering';
+            newGrowthTimer = 0;
+        }
+
+        if (!newId) return;
+        var newData = window.ENEMIES.find(function(e) { return e.id === newId; });
+        if (!newData) return;
+
+        // Remove old model
+        while (bird.children.length > 0) bird.remove(bird.children[0]);
+
+        // Build new model
+        var builder = modelBuilders[newData.type || 'lb_bird'];
+        if (builder) {
+            var newModel = builder(newData.colors, newData.isBaby);
+            var size = newData.size || 1;
+            newModel.scale.set(size, size, size);
+            bird.add(newModel);
+        }
+
+        // Update stats
+        bird.userData.id = newId;
+        bird.userData.speed = newData.speed;
+        bird.userData.health = newData.health;
+        bird.userData.maxHealth = newData.health;
+        bird.userData.size = newData.size;
+        bird.userData.radius = newData.radius * (newData.size || 1);
+        bird.userData.groundY = newData.groundY;
+        bird.userData.isBaby = newData.isBaby || false;
+        bird.userData.friendly = newData.friendly;
+        bird.userData.fleeSpeed = newData.fleeSpeed;
+        bird.userData.detectionRange = newData.detectionRange;
+        bird.userData.damage = newData.damage;
+        bird.userData.chaseSpeed = newData.chaseSpeed;
+        bird.userData.gender = newData.gender || bird.userData.gender;
+
+        bird.userData.birdState = newState;
+        bird.userData.stateTimer = 5 + Math.random() * 5;
+        bird.userData.growthTimer = newGrowthTimer;
+
+        if (!newData.isBaby) {
+            bird.userData.matingCooldown = 60 + Math.random() * 60;
+            bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            bird.userData._walkCycle = 0;
+            bird.userData._wingFlap = 0;
+            UI.showToast('Bird Grown Up!', 'A Langarts Blitting Bird has reached adulthood!');
+        }
+
+        console.log('LB Bird grew: ' + currentId + ' → ' + newId);
+    }
+
+    // ========================================================================
+    // COASTAL WHISPERING TREE SNAKE — Spawn + Behavior
+    // ========================================================================
+
+    function spawnWhisperingSnakes(count) {
+        var worldSize = CONFIG.WORLD_SIZE;
+        var miniData = window.ENEMIES.find(function(e) { return e.id === 'whispering_snake_mini'; });
+        if (!miniData) return;
+
+        for (var i = 0; i < count; i++) {
+            // Spawn near birch trees in the forest
+            var tree = GameState.trees && GameState.trees.length > 0 ?
+                GameState.trees[Math.floor(Math.random() * GameState.trees.length)] : null;
+            var sx = tree ? tree.position.x + (Math.random() - 0.5) * 3 : (Math.random() - 0.5) * worldSize * 0.5;
+            var sz = tree ? tree.position.z : -20 - Math.random() * 300;
+
+            var snake = createEnemy(miniData, sx, sz);
+            if (!snake) continue;
+
+            snake.userData.ignoreGravity = true;
+            snake.userData.snakeState = 'coiled'; // coiled, slithering, hunting, shushing, striking, constricting, eating
+            snake.userData.stateTimer = 3 + Math.random() * 8;
+            snake.userData.coilTree = tree;
+            snake.userData.coilHeight = 2 + Math.random() * 3;
+            snake.userData.mealsEaten = 0;
+            snake.userData.snakeStage = 'mini';
+            snake.userData.huntTarget = null;
+            snake.userData.constricting = null;
+            snake.userData.constrictTimer = 0;
+            snake.userData.constrictingPlayer = false;
+            snake.userData._slitherPhase = Math.random() * 10;
+            snake.userData.tongueTimer = 0;
+            snake.userData.shushTimer = 0;
+
+            // Position on tree branch
+            if (tree) {
+                snake.position.set(tree.position.x + 1, tree.position.y + snake.userData.coilHeight, tree.position.z);
+            }
+
+            GameState.enemies.push(snake);
+            GameState.scene.add(snake);
+        }
+        console.log('Spawned ' + count + ' Coastal Whispering Tree Snakes');
+    }
+
+    // --- Snake prey lists by stage ---
+    var SNAKE_PREY = {
+        mini: ['basicuslin_amphipod'],
+        small: ['basicuslin_amphipod', 'lb_bird_chick', 'pilfera_coastalis_chick_male', 'pilfera_coastalis_chick_female'],
+        decent: ['lb_bird_fledgling', 'pilfera_coastalis_fledgling_male', 'pilfera_coastalis_fledgling_female'],
+        large: ['beach_weasel', 'beach_murgaya', 'gcf_deer_fawn_male', 'gcf_deer_fawn_female'],
+        monstrous: ['beach_weasel', 'beach_murgaya', 'gcf_deer_male', 'gcf_deer_female',
+                     'gcf_deer_fawn_male', 'gcf_deer_fawn_female', 'gcf_deer_stfumbler_male', 'gcf_deer_stfumbler_female']
+    };
+
+    // Survival chance when constricted (higher = more likely to escape)
+    var CONSTRICT_SURVIVAL = {
+        'gcf_deer_male': 0.5,
+        'gcf_deer_female': 0.5,
+        'gcf_deer_stfumbler_male': 0.35,
+        'gcf_deer_stfumbler_female': 0.35,
+        'gcf_deer_fawn_male': 0.15,
+        'gcf_deer_fawn_female': 0.15,
+        'beach_weasel': 0.3,
+        'beach_murgaya': 0.25,
+        'lb_bird_fledgling': 0.1,
+        'lb_bird_chick': 0.0,
+        'basicuslin_amphipod': 0.0,
+        'pilfera_coastalis_chick_male': 0.0,
+        'pilfera_coastalis_chick_female': 0.0,
+        'pilfera_coastalis_fledgling_male': 0.1,
+        'pilfera_coastalis_fledgling_female': 0.1
+    };
+
+    // --- Snake: find prey in range ---
+    function findSnakePrey(snake) {
+        var stage = snake.userData.snakeStage;
+        var preyTypes = SNAKE_PREY[stage] || [];
+        if (preyTypes.length === 0) return null;
+
+        var best = null, bestDist = snake.userData.detectionRange || 15;
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            var e = GameState.enemies[i];
+            if (e.userData.health <= 0) continue;
+            if (preyTypes.indexOf(e.userData.id) === -1) continue;
+            var d = e.position.distanceTo(snake.position);
+            if (d < bestDist) { best = e; bestDist = d; }
+        }
+        return best;
+    }
+
+    // --- Snake: animate slithering body segments ---
+    function animateSnakeSlither(snake, delta) {
+        var model = snake.children[0];
+        if (!model || !model.userData.segments) return;
+        snake.userData._slitherPhase += delta * 6;
+        var segs = model.userData.segments;
+        var segR = model.userData.segRadius || 0.07;
+        for (var i = 1; i < segs.length; i++) {
+            var wave = Math.sin(snake.userData._slitherPhase + i * 0.6) * segR * 2;
+            segs[i].position.z = wave;
+        }
+    }
+
+    // --- Snake: animate coiling around trunk (tight vertical helix) ---
+    function animateSnakeCoil(snake, time) {
+        var model = snake.children[0];
+        if (!model || !model.userData.segments) return;
+        var segs = model.userData.segments;
+        var size = snake.userData.size || 1;
+        var trunkRadius = 0.5 / size; // Scale trunk coil radius inversely so it wraps tightly
+        var segR = model.userData.segRadius || 0.25;
+        var coilSpacing = segR * 0.8 / size; // Tight spacing — segments almost touching
+        for (var i = 1; i < segs.length; i++) {
+            var angle = (i / segs.length) * Math.PI * 3.5 + time * 0.15;
+            segs[i].position.x = Math.cos(angle) * trunkRadius;
+            segs[i].position.z = Math.sin(angle) * trunkRadius;
+            segs[i].position.y = -i * coilSpacing;
+        }
+    }
+
+    // --- Snake: simple tongue flick (slides in/out) ---
+    function animateSnakeTongue(snake, delta) {
+        var model = snake.children[0];
+        if (!model || !model.userData.tongue) return;
+        snake.userData.tongueTimer += delta;
+        var t = snake.userData.tongueTimer;
+        var segR = model.userData.segRadius || 0.12;
+        // Quick flick: out for 0.15s, in for 0.15s, pause 2-4s
+        if (t < 0.15) {
+            model.userData.tongue.position.x = segR * 3.2 + (t / 0.15) * segR * 1.2;
+        } else if (t < 0.3) {
+            model.userData.tongue.position.x = segR * 3.2 + (1 - (t - 0.15) / 0.15) * segR * 1.2;
+        } else {
+            model.userData.tongue.position.x = segR * 3.2;
+            if (t > 0.3) snake.userData.tongueTimer = -(2 + Math.random() * 3);
+        }
+    }
+
+    // --- Snake: shush animation (tongue stays out longer) ---
+    function animateSnakeShush(snake, delta) {
+        var model = snake.children[0];
+        if (!model || !model.userData.tongue) return;
+        var segR = model.userData.segRadius || 0.12;
+        snake.userData.shushTimer += delta;
+        var sh = Math.min(1, snake.userData.shushTimer / 0.5);
+        model.userData.tongue.position.x = segR * 3.2 + sh * segR * 1.5;
+    }
+
+    // --- Snake: grow to next stage ---
+    function growSnake(snake) {
+        var stages = ['mini', 'small', 'decent', 'large', 'monstrous'];
+        var current = stages.indexOf(snake.userData.snakeStage);
+        if (current < 0 || current >= stages.length - 1) return;
+
+        var nextStage = stages[current + 1];
+        var newId = 'whispering_snake_' + nextStage;
+        var newData = window.ENEMIES.find(function(e) { return e.id === newId; });
+        if (!newData) return;
+
+        // Remove old model
+        while (snake.children.length > 0) snake.remove(snake.children[0]);
+
+        // Build new model
+        var builder = modelBuilders['whispering_snake'];
+        if (builder) {
+            var newModel = builder(newData.colors);
+            var size = newData.size || 1;
+            newModel.scale.set(size, size, size);
+            snake.add(newModel);
+        }
+
+        // Update stats
+        snake.userData.id = newId;
+        snake.userData.speed = newData.speed;
+        snake.userData.health = newData.health;
+        snake.userData.maxHealth = newData.health;
+        snake.userData.size = newData.size;
+        snake.userData.radius = newData.radius * (newData.size || 1);
+        snake.userData.groundY = newData.groundY;
+        snake.userData.damage = newData.damage;
+        snake.userData.chaseSpeed = newData.chaseSpeed;
+        snake.userData.detectionRange = newData.detectionRange;
+        snake.userData.snakeStage = nextStage;
+        snake.userData.mealsEaten = 0;
+
+        var mealsNeeded = newData.mealsToGrow || 0;
+        console.log('Snake grew to ' + nextStage + '! (needs ' + mealsNeeded + ' meals for next)');
+        UI.showToast('Snake Growth!', 'A Whispering Tree Snake has grown to ' + nextStage + ' size!');
+    }
+
+    // --- Snake: main behavior update ---
+    function updateWhisperingSnakeBehavior(delta) {
+        var time = GameState.clock ? GameState.clock.elapsedTime : 0;
+
+        GameState.enemies.forEach(function(snake) {
+            if (snake.userData.type !== 'whispering_snake' || snake.userData.health <= 0) return;
+            if (snake.userData.constrictingPlayer) return; // Handled by mini-game
+
+            // Initialize state for test-spawned snakes
+            if (!snake.userData.snakeState) {
+                snake.userData.ignoreGravity = true;
+                snake.userData.snakeState = 'slithering';
+                snake.userData.stateTimer = 0;
+                snake.userData.mealsEaten = 0;
+                snake.userData.snakeStage = snake.userData.snakeStage ||
+                    (snake.userData.id ? snake.userData.id.replace('whispering_snake_', '') : 'mini');
+                snake.userData.huntTarget = null;
+                snake.userData.constricting = null;
+                snake.userData.constrictTimer = 0;
+                snake.userData.constrictingPlayer = false;
+                snake.userData._slitherPhase = Math.random() * 10;
+                snake.userData.tongueTimer = 0;
+                snake.userData.shushTimer = 0;
+                // Find nearest tree to coil on
+                var nearTree = findRandomBirchTree(snake);
+                snake.userData.coilTree = nearTree;
+                snake.userData.coilHeight = 2 + Math.random() * 3;
+            }
+
+            var model = snake.children[0];
+            var stage = snake.userData.snakeStage;
+            var canAttackPlayer = (stage === 'large' || stage === 'monstrous');
+            var distToPedro = snake.position.distanceTo(GameState.peccary.position);
+
+            snake.userData.stateTimer -= delta;
+
+            // Tongue flicking (when not shushing)
+            if (snake.userData.snakeState !== 'shushing') {
+                animateSnakeTongue(snake, delta);
+            }
+
+            // === COILED on branch (idle, watching) ===
+            if (snake.userData.snakeState === 'coiled') {
+                if (snake.userData.coilTree) {
+                    snake.position.x = snake.userData.coilTree.position.x;
+                    snake.position.y = snake.userData.coilTree.position.y + snake.userData.coilHeight;
+                    snake.position.z = snake.userData.coilTree.position.z;
+                    // Head faces outward from trunk
+                    snake.rotation.y = time * 0.05; // Slowly look around
+                }
+                animateSnakeCoil(snake, time);
+
+                // Look for prey
+                var prey = findSnakePrey(snake);
+                if (prey && snake.userData.stateTimer <= 0) {
+                    snake.userData.huntTarget = prey;
+                    snake.userData.snakeState = 'shushing';
+                    snake.userData.shushTimer = 0;
+                    snake.userData.stateTimer = 2; // 2 second shush
+                    return;
+                }
+
+                // Check if player is close enough to ambush (large+ only)
+                if (canAttackPlayer && distToPedro < 12 && snake.userData.stateTimer <= 0) {
+                    snake.userData.snakeState = 'shushing';
+                    snake.userData.shushTimer = 0;
+                    snake.userData.stateTimer = 2;
+                    snake.userData.huntTarget = null; // Target is player
+                    return;
+                }
+
+                // Occasionally move to a new tree
+                if (snake.userData.stateTimer <= 0) {
+                    snake.userData.stateTimer = 15 + Math.random() * 30;
+                    if (Math.random() < 0.3) {
+                        var newTree = findRandomBirchTree(snake);
+                        if (newTree && newTree !== snake.userData.coilTree) {
+                            snake.userData.coilTree = newTree;
+                            snake.userData.snakeState = 'slithering';
+                            snake.userData.stateTimer = 0;
+                        }
+                    }
+                }
+                return;
+            }
+
+            // === SHUSHING (tongue-to-lips, about to strike) ===
+            if (snake.userData.snakeState === 'shushing') {
+                animateSnakeShush(snake, delta);
+
+                // Face the target
+                var target = snake.userData.huntTarget || GameState.peccary;
+                var dx = target.position.x - snake.position.x;
+                var dz = target.position.z - snake.position.z;
+                snake.rotation.y = -Math.atan2(dz, dx);
+
+                if (snake.userData.stateTimer <= 0) {
+                    // Reset tongue
+                    // Reset tongue position
+                    if (model && model.userData.tongue) {
+                        var segR = model.userData.segRadius || 0.12;
+                        model.userData.tongue.position.x = segR * 3.2;
+                    }
+                    snake.userData.snakeState = 'striking';
+                    snake.userData.stateTimer = 0;
+                }
+                return;
+            }
+
+            // === STRIKING (dropping from branch onto prey) ===
+            if (snake.userData.snakeState === 'striking') {
+                var target = snake.userData.huntTarget || (canAttackPlayer ? GameState.peccary : null);
+                if (!target || (target !== GameState.peccary && target.userData.health <= 0)) {
+                    snake.userData.snakeState = 'coiled';
+                    snake.userData.stateTimer = 10;
+                    return;
+                }
+
+                // Dive toward target
+                var tdx = target.position.x - snake.position.x;
+                var tdy = target.position.y - snake.position.y;
+                var tdz = target.position.z - snake.position.z;
+                var tDist = Math.sqrt(tdx * tdx + tdy * tdy + tdz * tdz);
+
+                if (tDist > 1.5) {
+                    var dropSpeed = 15 * delta;
+                    snake.position.x += (tdx / tDist) * dropSpeed;
+                    snake.position.y += (tdy / tDist) * dropSpeed;
+                    snake.position.z += (tdz / tDist) * dropSpeed;
+                    snake.rotation.y = -Math.atan2(tdz, tdx);
+                    animateSnakeSlither(snake, delta);
+                } else {
+                    // HIT! Start constriction
+                    if (target === GameState.peccary) {
+                        // Player constriction — start mini-game!
+                        snake.userData.snakeState = 'constricting';
+                        snake.userData.constrictingPlayer = true;
+                        startSnakeConstrictionMiniGame(snake);
+                    } else {
+                        // Animal constriction
+                        snake.userData.snakeState = 'constricting';
+                        snake.userData.constricting = target;
+                        snake.userData.constrictTimer = 3 + Math.random() * 2;
+                        target.userData.constricted = true;
+                        // Freeze the prey
+                        target.userData._savedState = target.userData.birdState || target.userData.deerState || target.userData.snakeState || 'wandering';
+                    }
+                }
+                return;
+            }
+
+            // === SLITHERING (moving between trees on the ground) ===
+            if (snake.userData.snakeState === 'slithering') {
+                var tree = snake.userData.coilTree;
+                if (!tree) {
+                    snake.userData.snakeState = 'coiled';
+                    snake.userData.stateTimer = 10;
+                    return;
+                }
+
+                var gy = Environment.getTerrainHeight(snake.position.x, snake.position.z);
+                snake.position.y = gy + (snake.userData.groundY || 0.05);
+
+                var sx = tree.position.x - snake.position.x;
+                var sz = tree.position.z - snake.position.z;
+                var sDist = Math.sqrt(sx * sx + sz * sz);
+
+                if (sDist > 2) {
+                    var sSpd = (snake.userData.speed || 3) * delta;
+                    snake.position.x += (sx / sDist) * sSpd;
+                    snake.position.z += (sz / sDist) * sSpd;
+                    snake.rotation.y = -Math.atan2(sz, sx);
+                    animateSnakeSlither(snake, delta);
+                } else {
+                    // Arrived at tree — climb up
+                    snake.userData.coilHeight = 2 + Math.random() * 3;
+                    snake.userData.snakeState = 'coiled';
+                    snake.userData.stateTimer = 4 + Math.random() * 8;
+                }
+                return;
+            }
+
+            // === CONSTRICTING ANIMAL ===
+            if (snake.userData.snakeState === 'constricting' && !snake.userData.constrictingPlayer) {
+                var prey = snake.userData.constricting;
+                if (!prey || prey.userData.health <= 0) {
+                    snake.userData.snakeState = 'eating';
+                    snake.userData.stateTimer = 3;
+                    return;
+                }
+
+                // Wrap around prey position
+                snake.position.x = prey.position.x;
+                snake.position.y = prey.position.y;
+                snake.position.z = prey.position.z;
+
+                // Animate coiling around prey
+                if (model && model.userData.segments) {
+                    var segs = model.userData.segments;
+                    for (var i = 1; i < segs.length; i++) {
+                        var a = time * 2 + i * 0.5;
+                        var r = (prey.userData.radius || 0.5) * 0.8;
+                        segs[i].position.x = Math.cos(a) * r;
+                        segs[i].position.z = Math.sin(a) * r;
+                        segs[i].position.y = (i / segs.length) * r * 1.5;
+                    }
+                }
+
+                // Crush damage
+                snake.userData.constrictTimer -= delta;
+                prey.userData.health -= snake.userData.damage * delta;
+
+                // Check survival
+                if (snake.userData.constrictTimer <= 0) {
+                    var survivalChance = CONSTRICT_SURVIVAL[prey.userData.id] || 0.2;
+                    if (Math.random() < survivalChance) {
+                        // Prey escapes!
+                        prey.userData.constricted = false;
+                        prey.userData.health = Math.max(1, prey.userData.health);
+                        // Make prey flee
+                        if (prey.userData.birdState !== undefined) prey.userData.birdState = 'fleeing';
+                        if (prey.userData.deerState !== undefined) prey.userData.deerState = 'fleeing';
+                        prey.userData.stateTimer = 5;
+                        prey.userData.fleeTimer = 5;
+
+                        snake.userData.constricting = null;
+                        snake.userData.snakeState = 'slithering';
+                        var newTree = findRandomBirchTree(snake);
+                        if (newTree) snake.userData.coilTree = newTree;
+                        snake.userData.stateTimer = 0;
+                        UI.showToast('Escape!', 'The prey broke free from the snake!');
+                    } else {
+                        // Prey dies
+                        prey.userData.health = 0;
+                        snake.userData.constricting = null;
+                        snake.userData.snakeState = 'eating';
+                        snake.userData.stateTimer = 4;
+                    }
+                }
+                return;
+            }
+
+            // === EATING (consuming dead prey, gaining a meal) ===
+            if (snake.userData.snakeState === 'eating') {
+                // Reset body segments
+                if (model && model.userData.segments) {
+                    var segs = model.userData.segments;
+                    var segR = model.userData.segRadius || 0.07;
+                    for (var i = 1; i < segs.length; i++) {
+                        segs[i].position.set(-i * segR * 1.6, 0, 0);
+                    }
+                }
+
+                if (snake.userData.stateTimer <= 0) {
+                    // Meal consumed!
+                    snake.userData.mealsEaten++;
+                    var needed = 0;
+                    var stageData = window.ENEMIES.find(function(e) { return e.id === snake.userData.id; });
+                    if (stageData) needed = stageData.mealsToGrow || 0;
+
+                    console.log('Snake ate! Meals: ' + snake.userData.mealsEaten + '/' + needed);
+
+                    if (needed > 0 && snake.userData.mealsEaten >= needed) {
+                        growSnake(snake);
+                    }
+
+                    // Go back to a tree
+                    var newTree = findRandomBirchTree(snake);
+                    if (newTree) snake.userData.coilTree = newTree;
+                    snake.userData.snakeState = 'slithering';
+                    snake.userData.stateTimer = 0;
+                }
+                return;
+            }
+        });
+    }
+
+    // ========================================================================
+    // SNAKE CONSTRICTION MINI-GAME (Player)
+    // ========================================================================
+    var snakeConstrictionActive = false;
+    var snakeConstrictionSnake = null;
+    var snakeConstrictionStrength = 0;
+    var snakeConstrictionDrainRate = 0;
+    var snakeConstrictionKeyListener = null;
+
+    function startSnakeConstrictionMiniGame(snake) {
+        snakeConstrictionActive = true;
+        snakeConstrictionSnake = snake;
+        snakeConstrictionStrength = 0;
+
+        // Drain rate scales with snake stage
+        var drainRates = { large: 3, monstrous: 5 };
+        snakeConstrictionDrainRate = drainRates[snake.userData.snakeStage] || 4;
+
+        // Show the UI overlay
+        var overlay = document.getElementById('snake-constrict-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            var bar = document.getElementById('snake-strength-bar');
+            if (bar) bar.style.width = '0%';
+            var stageLabel = document.getElementById('snake-constrict-stage');
+            if (stageLabel) stageLabel.textContent = snake.userData.snakeStage.toUpperCase();
+        }
+
+        // Listen for key mashing
+        snakeConstrictionKeyListener = function(e) {
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                snakeConstrictionStrength += 3.5; // Each press adds 3.5%
+                var bar = document.getElementById('snake-strength-bar');
+                if (bar) bar.style.width = Math.min(100, snakeConstrictionStrength) + '%';
+            }
+        };
+        document.addEventListener('keydown', snakeConstrictionKeyListener);
+
+        console.log('SNAKE CONSTRICTION! Mash SPACE to break free!');
+    }
+
+    function updateSnakeConstrictionMiniGame(delta) {
+        if (!snakeConstrictionActive || !snakeConstrictionSnake) return;
+
+        // Drain health
+        Game.takeDamage(snakeConstrictionDrainRate * delta, 'whispering_snake');
+
+        // Strength bar slowly decays (you have to keep mashing)
+        snakeConstrictionStrength -= 1.5 * delta;
+        if (snakeConstrictionStrength < 0) snakeConstrictionStrength = 0;
+
+        var bar = document.getElementById('snake-strength-bar');
+        if (bar) bar.style.width = Math.min(100, snakeConstrictionStrength) + '%';
+
+        // Animate snake around player
+        var snake = snakeConstrictionSnake;
+        snake.position.x = GameState.peccary.position.x;
+        snake.position.y = GameState.peccary.position.y + 0.3;
+        snake.position.z = GameState.peccary.position.z;
+
+        var model = snake.children[0];
+        if (model && model.userData.segments) {
+            var segs = model.userData.segments;
+            var time = GameState.clock ? GameState.clock.elapsedTime : 0;
+            var pRadius = GameState.peccary.userData.radius || 0.5;
+            for (var i = 1; i < segs.length; i++) {
+                var a = time * 1.5 + i * 0.5;
+                segs[i].position.x = Math.cos(a) * pRadius;
+                segs[i].position.z = Math.sin(a) * pRadius;
+                segs[i].position.y = (i / segs.length) * pRadius * 2;
+            }
+        }
+
+        // Break free!
+        if (snakeConstrictionStrength >= 100) {
+            endSnakeConstriction(true);
+        }
+
+        // Died while constricted
+        if (GameState.health <= 0) {
+            endSnakeConstriction(false);
+        }
+    }
+
+    function endSnakeConstriction(escaped) {
+        snakeConstrictionActive = false;
+
+        // Remove key listener
+        if (snakeConstrictionKeyListener) {
+            document.removeEventListener('keydown', snakeConstrictionKeyListener);
+            snakeConstrictionKeyListener = null;
+        }
+
+        // Hide UI
+        var overlay = document.getElementById('snake-constrict-overlay');
+        if (overlay) overlay.style.display = 'none';
+
+        if (snakeConstrictionSnake) {
+            snakeConstrictionSnake.userData.constrictingPlayer = false;
+            if (escaped) {
+                // Player broke free! Snake gets stunned
+                snakeConstrictionSnake.userData.snakeState = 'slithering';
+                var newTree = findRandomBirchTree(snakeConstrictionSnake);
+                if (newTree) snakeConstrictionSnake.userData.coilTree = newTree;
+                snakeConstrictionSnake.userData.stateTimer = 0;
+                // Reset segments
+                var model = snakeConstrictionSnake.children[0];
+                if (model && model.userData.segments) {
+                    var segs = model.userData.segments;
+                    var segR = model.userData.segRadius || 0.07;
+                    for (var i = 1; i < segs.length; i++) {
+                        segs[i].position.set(-i * segR * 1.6, 0, 0);
+                    }
+                }
+                UI.showToast('Escaped!', 'You broke free from the Whispering Tree Snake!');
+            }
+            snakeConstrictionSnake = null;
+        }
+        snakeConstrictionStrength = 0;
+    }
+
+    // ========================================================================
+    // COASTAL DREADMAW — Spawn + Full Behavior
+    // ========================================================================
+
+    var dreadmawGrowthTracker = []; // { croc, timer, mealsEaten }
+
+    // Prey lists by stage
+    var DREADMAW_PREY = {
+        hatchling: ['basicuslin_amphipod', 'jet_crab_male', 'jet_crab_female'],
+        juvenile: ['basicuslin_amphipod', 'jet_crab_male', 'jet_crab_female', 'slackpinch_crab_male',
+                   'slackpinch_crab_female', 'slitted_sardine_male', 'slitted_sardine_female'],
+        adolescent: ['slackpinch_crab_male', 'slackpinch_crab_female', 'pilfera_coastalis_male',
+                     'pilfera_coastalis_female', 'beach_weasel_male', 'beach_weasel_female', 'orcleton_male', 'orcleton_female'],
+        subadult: ['beach_weasel_male', 'beach_weasel_female', 'beach_murgaya_male', 'beach_murgaya_female',
+                   'gcf_deer_male', 'gcf_deer_female', 'pilfera_coastalis_male', 'pilfera_coastalis_female',
+                   'bakka_seal_male', 'bakka_seal_female'],
+        adult: ['beach_weasel_male', 'beach_weasel_female', 'beach_murgaya_male', 'beach_murgaya_female',
+                'gcf_deer_male', 'gcf_deer_female', 'bakka_seal_male', 'bakka_seal_female',
+                'uronin_seal_male', 'uronin_seal_female'],
+        elder: ['beach_murgaya_male', 'beach_murgaya_female', 'gcf_deer_male', 'gcf_deer_female',
+                'bakka_seal_male', 'bakka_seal_female', 'uronin_seal_male', 'uronin_seal_female'],
+        ocean_king: ['beach_murgaya_male', 'beach_murgaya_female', 'gcf_deer_male', 'gcf_deer_female',
+                     'bakka_seal_male', 'bakka_seal_female', 'uronin_seal_male', 'uronin_seal_female']
+    };
+
+    function spawnDreadmaws(count) {
+        var maleData = window.ENEMIES.find(function(e) { return e.id === 'dreadmaw_adult'; });
+        var femaleData = window.ENEMIES.find(function(e) { return e.id === 'dreadmaw_adult_female'; });
+        if (!maleData || !femaleData) return;
+
+        for (var i = 0; i < count; i++) {
+            var isMale = (i === 0); // First = male, rest = female
+            var data = isMale ? maleData : femaleData;
+            // Spawn in the ocean shallows
+            var sx = (Math.random() - 0.5) * 300;
+            var sz = 100 + Math.random() * 80; // Shallow water zone
+
+            var croc = createEnemy(data, sx, sz);
+            if (!croc) continue;
+
+            croc.userData.ignoreGravity = true;
+            croc.userData.gender = isMale ? 'male' : 'female';
+            croc.userData.dreadmawState = 'patrolling'; // patrolling, basking, ambushing, striking, deathrolling, dragging, eating, mating, guarding, carrying
+            croc.userData.stateTimer = 5 + Math.random() * 10;
+            croc.userData.dreadmawStage = 'adult';
+            croc.userData.swimDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            croc.userData.huntTarget = null;
+            croc.userData.deathRollTarget = null;
+            croc.userData.deathRollTimer = 0;
+            croc.userData.ambushOpacity = 1.0;
+            croc.userData.mealsEaten = 0;
+            croc.userData.matingTimer = 600 + Math.random() * 600; // 10-20 min
+            croc.userData._walkCycle = 0;
+            croc.userData.isInWater = true;
+            croc.userData.gallopTimer = 0;
+
+            // Set ridge visibility based on gender
+            var crocModel = croc.children[0];
+            if (crocModel && crocModel.userData.parts && crocModel.userData.parts.ridgeGroup) {
+                crocModel.userData.parts.ridgeGroup.visible = isMale;
+            }
+
+            // Position in water
+            croc.position.y = 0.1;
+
+            GameState.enemies.push(croc);
+            GameState.scene.add(croc);
+
+            dreadmawGrowthTracker.push({ croc: croc, timer: 0, mealsEaten: 0 });
+        }
+        console.log('Spawned ' + count + ' Coastal Dreadmaws');
+    }
+
+    function findDreadmawPrey(croc) {
+        var stage = croc.userData.dreadmawStage;
+        var preyTypes = DREADMAW_PREY[stage] || [];
+        if (preyTypes.length === 0) return null;
+
+        var best = null, bestDist = croc.userData.detectionRange || 20;
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            var e = GameState.enemies[i];
+            if (e === croc || e.userData.health <= 0) continue;
+            if (e.userData.type === 'dreadmaw') continue; // Don't eat each other
+            if (preyTypes.indexOf(e.userData.id) === -1) continue;
+            var d = e.position.distanceTo(croc.position);
+            if (d < bestDist) { best = e; bestDist = d; }
+        }
+        return best;
+    }
+
+    function animateDreadmawLegs(croc, delta) {
+        var model = croc.children[0];
+        if (!model || !model.userData.legs) return;
+        croc.userData._walkCycle += delta * (croc.userData.isInWater ? 3 : 5);
+        var cycle = croc.userData._walkCycle;
+        model.userData.legs.forEach(function(leg) {
+            var phase = leg.isFront ? 0 : Math.PI;
+            var sidePhase = leg.side === 'right' ? Math.PI : 0;
+            var swing = croc.userData.isInWater ? 0.2 : 0.35;
+            leg.group.rotation.z = Math.sin(cycle + phase + sidePhase) * swing;
+            if (leg.lowerLegGroup) {
+                leg.lowerLegGroup.rotation.z = Math.max(0, Math.sin(cycle + phase + sidePhase + 0.5)) * (swing * 0.5);
+            }
+        });
+    }
+
+    function animateDreadmawTail(croc, delta) {
+        var model = croc.children[0];
+        if (!model || !model.userData.parts || !model.userData.parts.tailGroup) return;
+        var speed = croc.userData.isInWater ? 2 : 1;
+        var time = GameState.clock ? GameState.clock.elapsedTime : 0;
+        model.userData.parts.tailGroup.rotation.y = Math.sin(time * speed) * 0.25;
+    }
+
+    function growDreadmaw(croc, newStageId) {
+        var newData = window.ENEMIES.find(function(e) { return e.id === newStageId; });
+        if (!newData) return;
+
+        var isMale = croc.userData.gender === 'male';
+
+        // Remove old model
+        while (croc.children.length > 0) croc.remove(croc.children[0]);
+
+        // Build new
+        var builder = modelBuilders['dreadmaw'];
+        if (builder) {
+            var newModel = builder(newData.colors);
+            var size = newData.size || 1;
+            newModel.scale.set(size, size, size);
+            croc.add(newModel);
+            // Ridge visibility
+            if (newModel.userData.parts && newModel.userData.parts.ridgeGroup) {
+                newModel.userData.parts.ridgeGroup.visible = isMale;
+            }
+        }
+
+        croc.userData.id = newStageId;
+        croc.userData.speed = newData.speed;
+        croc.userData.health = newData.health;
+        croc.userData.maxHealth = newData.health;
+        croc.userData.damage = newData.damage;
+        croc.userData.chaseSpeed = newData.chaseSpeed;
+        croc.userData.swimSpeed = newData.swimSpeed;
+        croc.userData.radius = newData.radius * (newData.size || 1);
+        croc.userData.groundY = newData.groundY;
+        croc.userData.detectionRange = newData.detectionRange;
+        croc.userData.dreadmawStage = newData.dreadmawStage;
+        croc.userData.canAttackPlayer = newData.canAttackPlayer;
+        croc.userData.strengthBarDifficulty = newData.strengthBarDifficulty || 5;
+        croc.userData.size = newData.size;
+        croc.userData.mealsEaten = 0;
+
+        console.log('Dreadmaw grew to ' + newData.dreadmawStage + '!');
+        UI.showToast('Dreadmaw Growth!', 'A Coastal Dreadmaw has grown to ' + newData.dreadmawStage + '!');
+    }
+
+    // --- Dreadmaw death roll mini-game (reuses snake constriction overlay) ---
+    var dreadmawDeathRollActive = false;
+    var dreadmawDeathRollCroc = null;
+    var dreadmawDeathRollStrength = 0;
+    var dreadmawDeathRollDecay = 0;
+    var dreadmawDeathRollKeyListener = null;
+
+    function startDreadmawDeathRoll(croc) {
+        dreadmawDeathRollActive = true;
+        dreadmawDeathRollCroc = croc;
+        dreadmawDeathRollStrength = 0;
+        dreadmawDeathRollDecay = croc.userData.strengthBarDifficulty || 5;
+
+        var overlay = document.getElementById('snake-constrict-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            var bar = document.getElementById('snake-strength-bar');
+            if (bar) bar.style.width = '0%';
+            var stageLabel = document.getElementById('snake-constrict-stage');
+            if (stageLabel) stageLabel.textContent = 'DREADMAW ' + (croc.userData.dreadmawStage || 'ADULT').toUpperCase();
+            // Update text
+            var titleEl = overlay.querySelector('div:first-child');
+            if (titleEl) titleEl.innerHTML = 'DEATH ROLLED BY <span id="snake-constrict-stage">DREADMAW ' +
+                (croc.userData.dreadmawStage || 'ADULT').toUpperCase() + '</span>!';
+            var subtitleEl = overlay.querySelectorAll('div')[1];
+            if (subtitleEl) subtitleEl.textContent = 'MASH [SPACE] TO BREAK FREE!';
+        }
+
+        dreadmawDeathRollKeyListener = function(e) {
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                dreadmawDeathRollStrength += 2.5;
+                var bar = document.getElementById('snake-strength-bar');
+                if (bar) bar.style.width = Math.min(100, dreadmawDeathRollStrength) + '%';
+            }
+        };
+        document.addEventListener('keydown', dreadmawDeathRollKeyListener);
+    }
+
+    function updateDreadmawDeathRollMiniGame(delta) {
+        if (!dreadmawDeathRollActive || !dreadmawDeathRollCroc) return;
+
+        // Drain health
+        var dmg = dreadmawDeathRollCroc.userData.damage * delta;
+        Game.takeDamage(dmg, 'dreadmaw');
+
+        // Decay bar
+        dreadmawDeathRollStrength -= dreadmawDeathRollDecay * delta;
+        if (dreadmawDeathRollStrength < 0) dreadmawDeathRollStrength = 0;
+
+        var bar = document.getElementById('snake-strength-bar');
+        if (bar) bar.style.width = Math.min(100, dreadmawDeathRollStrength) + '%';
+
+        // Spin camera!
+        if (GameState.camera) {
+            GameState.camera.rotation.z += delta * 4;
+        }
+
+        // Croc stays on player
+        var croc = dreadmawDeathRollCroc;
+        croc.position.x = GameState.peccary.position.x;
+        croc.position.z = GameState.peccary.position.z;
+
+        if (dreadmawDeathRollStrength >= 100) {
+            endDreadmawDeathRoll(true);
+        }
+        if (GameState.health <= 0) {
+            endDreadmawDeathRoll(false);
+        }
+    }
+
+    function endDreadmawDeathRoll(escaped) {
+        dreadmawDeathRollActive = false;
+        if (dreadmawDeathRollKeyListener) {
+            document.removeEventListener('keydown', dreadmawDeathRollKeyListener);
+            dreadmawDeathRollKeyListener = null;
+        }
+
+        var overlay = document.getElementById('snake-constrict-overlay');
+        if (overlay) overlay.style.display = 'none';
+
+        // Reset camera
+        if (GameState.camera) {
+            GameState.camera.rotation.z = 0;
+        }
+
+        if (dreadmawDeathRollCroc) {
+            dreadmawDeathRollCroc.userData.dreadmawState = 'patrolling';
+            dreadmawDeathRollCroc.userData.deathRollTarget = null;
+            if (escaped) {
+                UI.showToast('Escaped!', 'You broke free from the Dreadmaw death roll!');
+            }
+            dreadmawDeathRollCroc = null;
+        }
+        dreadmawDeathRollStrength = 0;
+    }
+
+    // --- Main Dreadmaw behavior update ---
+    function updateDreadmawBehavior(delta) {
+        var time = GameState.clock ? GameState.clock.elapsedTime : 0;
+
+        // Growth tracking
+        for (var gi = dreadmawGrowthTracker.length - 1; gi >= 0; gi--) {
+            var entry = dreadmawGrowthTracker[gi];
+            if (!entry.croc.parent || entry.croc.userData.health <= 0) {
+                dreadmawGrowthTracker.splice(gi, 1);
+                continue;
+            }
+            var stage = entry.croc.userData.dreadmawStage;
+            var stageData = window.ENEMIES.find(function(e) { return e.id === entry.croc.userData.id; });
+            if (!stageData) continue;
+
+            if (stageData.growTime && stageData.growTime > 0) {
+                // Time-based growth
+                entry.timer += delta;
+                if (entry.timer >= stageData.growTime) {
+                    entry.timer = 0;
+                    var stages = ['hatchling', 'juvenile', 'adolescent', 'subadult', 'adult', 'elder', 'ocean_king'];
+                    var idx = stages.indexOf(stage);
+                    if (idx >= 0 && idx < stages.length - 1) {
+                        var nextStage = stages[idx + 1];
+                        var nextId = 'dreadmaw_' + nextStage;
+                        // Use gendered adult
+                        if (nextStage === 'adult' && entry.croc.userData.gender === 'female') {
+                            nextId = 'dreadmaw_adult_female';
+                        }
+                        growDreadmaw(entry.croc, nextId);
+                    }
+                }
+            } else if (stageData.mealsToGrow && stageData.mealsToGrow > 0) {
+                // Eating-based growth (Elder → Ocean King)
+                if (entry.croc.userData.mealsEaten >= stageData.mealsToGrow) {
+                    var stages2 = ['hatchling', 'juvenile', 'adolescent', 'subadult', 'adult', 'elder', 'ocean_king'];
+                    var idx2 = stages2.indexOf(stage);
+                    if (idx2 >= 0 && idx2 < stages2.length - 1) {
+                        growDreadmaw(entry.croc, 'dreadmaw_' + stages2[idx2 + 1]);
+                    }
+                }
+            }
+        }
+
+        GameState.enemies.forEach(function(croc) {
+            if (croc.userData.type !== 'dreadmaw' || croc.userData.health <= 0) return;
+            if (dreadmawDeathRollActive && dreadmawDeathRollCroc === croc) return;
+
+            // Initialize test-spawned dreadmaws
+            if (!croc.userData.dreadmawState) {
+                croc.userData.ignoreGravity = true;
+                croc.userData.dreadmawState = 'patrolling';
+                croc.userData.stateTimer = 5;
+                croc.userData.dreadmawStage = croc.userData.dreadmawStage ||
+                    (croc.userData.id ? croc.userData.id.replace('dreadmaw_', '').replace('_female', '') : 'adult');
+                croc.userData.swimDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                croc.userData.huntTarget = null;
+                croc.userData.deathRollTarget = null;
+                croc.userData.ambushOpacity = 1.0;
+                croc.userData.mealsEaten = 0;
+                croc.userData._walkCycle = 0;
+                croc.userData.isInWater = croc.position.z > 0;
+                croc.userData.gender = croc.userData.gender || 'male';
+                var cm = croc.children[0];
+                if (cm && cm.userData.parts && cm.userData.parts.ridgeGroup) {
+                    cm.userData.parts.ridgeGroup.visible = (croc.userData.gender === 'male');
+                }
+                if (!dreadmawGrowthTracker.find(function(e) { return e.croc === croc; })) {
+                    dreadmawGrowthTracker.push({ croc: croc, timer: 0, mealsEaten: 0 });
+                }
+            }
+
+            var distToPedro = croc.position.distanceTo(GameState.peccary.position);
+            croc.userData.isInWater = croc.position.z > 10;
+            croc.userData.stateTimer -= delta;
+
+            // Animate tail always
+            animateDreadmawTail(croc, delta);
+
+            // === PATROLLING (swimming in ocean or walking on beach) ===
+            if (croc.userData.dreadmawState === 'patrolling') {
+                // Move
+                var speed = croc.userData.isInWater ?
+                    (croc.userData.swimSpeed || 10) * 0.3 :
+                    (croc.userData.speed || 5) * 0.3;
+                croc.position.x += croc.userData.swimDir.x * speed * delta;
+                croc.position.z += croc.userData.swimDir.z * speed * delta;
+                croc.rotation.y = -Math.atan2(croc.userData.swimDir.z, croc.userData.swimDir.x);
+
+                // Y position
+                if (croc.userData.isInWater) {
+                    croc.position.y = 0.05 + Math.sin(time * 2) * 0.03;
+                } else {
+                    var ty = Environment.getTerrainHeight(croc.position.x, croc.position.z);
+                    croc.position.y = ty + (croc.userData.groundY || 0.3);
+                }
+
+                animateDreadmawLegs(croc, delta);
+
+                // Change direction
+                if (croc.userData.stateTimer <= 0) {
+                    croc.userData.stateTimer = 8 + Math.random() * 15;
+                    var angle = Math.random() * Math.PI * 2;
+                    croc.userData.swimDir.set(Math.cos(angle), 0, Math.sin(angle)).normalize();
+
+                    // 30% chance to go ambush
+                    if (Math.random() < 0.3) {
+                        croc.userData.dreadmawState = 'ambushing';
+                        croc.userData.stateTimer = 10 + Math.random() * 20;
+                    }
+                }
+
+                // World bounds
+                var wHalf = (CONFIG.WORLD_SIZE || 500) / 2 - 10;
+                if (Math.abs(croc.position.x) > wHalf || croc.position.z > 350 || croc.position.z < -50) {
+                    croc.userData.swimDir.set(-croc.position.x * 0.01, 0, (80 - croc.position.z) * 0.01).normalize();
+                    croc.userData.stateTimer = 5;
+                }
+
+                // Spot prey
+                var prey = findDreadmawPrey(croc);
+                if (prey) {
+                    croc.userData.huntTarget = prey;
+                    croc.userData.dreadmawState = 'striking';
+                }
+                // Spot player
+                if (croc.userData.canAttackPlayer && distToPedro < (croc.userData.detectionRange || 20)) {
+                    croc.userData.dreadmawState = 'striking';
+                    croc.userData.huntTarget = null;
+                }
+                return;
+            }
+
+            // === AMBUSHING (semi-transparent, motionless, waiting) ===
+            if (croc.userData.dreadmawState === 'ambushing') {
+                // Fade to semi-transparent
+                croc.userData.ambushOpacity = Math.max(0.15, croc.userData.ambushOpacity - delta * 0.5);
+                croc.traverse(function(child) {
+                    if (child.material) child.material.transparent = true;
+                    if (child.material) child.material.opacity = croc.userData.ambushOpacity;
+                });
+
+                // Hold position
+                if (croc.userData.isInWater) {
+                    croc.position.y = -0.1 + Math.sin(time * 0.5) * 0.02; // Mostly submerged
+                }
+
+                // Spot prey or player
+                var prey2 = findDreadmawPrey(croc);
+                if (prey2 && prey2.position.distanceTo(croc.position) < 8) {
+                    croc.userData.huntTarget = prey2;
+                    croc.userData.dreadmawState = 'striking';
+                    restoreDreadmawOpacity(croc);
+                }
+                if (croc.userData.canAttackPlayer && distToPedro < 10) {
+                    croc.userData.dreadmawState = 'striking';
+                    croc.userData.huntTarget = null;
+                    restoreDreadmawOpacity(croc);
+                }
+
+                if (croc.userData.stateTimer <= 0) {
+                    croc.userData.dreadmawState = 'patrolling';
+                    croc.userData.stateTimer = 5;
+                    restoreDreadmawOpacity(croc);
+                }
+                return;
+            }
+
+            // === STRIKING (chasing prey or player) ===
+            if (croc.userData.dreadmawState === 'striking') {
+                restoreDreadmawOpacity(croc);
+                var target = croc.userData.huntTarget || (croc.userData.canAttackPlayer ? GameState.peccary : null);
+                if (!target || (target !== GameState.peccary && target.userData.health <= 0)) {
+                    croc.userData.dreadmawState = 'patrolling';
+                    croc.userData.stateTimer = 5;
+                    croc.userData.huntTarget = null;
+                    return;
+                }
+
+                var tdx = target.position.x - croc.position.x;
+                var tdz = target.position.z - croc.position.z;
+                var tDist = Math.sqrt(tdx * tdx + tdz * tdz);
+
+                var chaseSpd = croc.userData.isInWater ?
+                    (croc.userData.swimSpeed || 12) :
+                    (croc.userData.chaseSpeed || 8);
+
+                if (tDist > 1.5) {
+                    croc.position.x += (tdx / tDist) * chaseSpd * delta;
+                    croc.position.z += (tdz / tDist) * chaseSpd * delta;
+                    croc.rotation.y = -Math.atan2(tdz, tdx);
+                    animateDreadmawLegs(croc, delta);
+
+                    // Y position
+                    if (croc.position.z > 10) {
+                        croc.position.y = 0.05;
+                    } else {
+                        var ty2 = Environment.getTerrainHeight(croc.position.x, croc.position.z);
+                        croc.position.y = ty2 + (croc.userData.groundY || 0.3);
+                    }
+                } else {
+                    // CAUGHT! Start death roll
+                    if (target === GameState.peccary) {
+                        croc.userData.dreadmawState = 'deathrolling';
+                        startDreadmawDeathRoll(croc);
+                    } else {
+                        // Kill animal prey
+                        croc.userData.dreadmawState = 'eating';
+                        croc.userData.stateTimer = 4;
+                        croc.userData.huntTarget = null;
+                        damageEnemy(target, target.userData.health + 10); // Instant kill
+                        croc.userData.mealsEaten++;
+                        // Open jaw animation
+                        var cm = croc.children[0];
+                        if (cm && cm.userData.parts && cm.userData.parts.jawGroup) {
+                            cm.userData.parts.jawGroup.rotation.z = -0.4;
+                        }
+                    }
+                }
+
+                // Give up if too far
+                if (tDist > 60) {
+                    croc.userData.dreadmawState = 'patrolling';
+                    croc.userData.stateTimer = 5;
+                    croc.userData.huntTarget = null;
+                }
+                return;
+            }
+
+            // === DEATH ROLLING PLAYER (handled by mini-game) ===
+            if (croc.userData.dreadmawState === 'deathrolling') {
+                // Mini-game handles this
+                return;
+            }
+
+            // === EATING (consuming prey) ===
+            if (croc.userData.dreadmawState === 'eating') {
+                // Close jaw slowly
+                var cm2 = croc.children[0];
+                if (cm2 && cm2.userData.parts && cm2.userData.parts.jawGroup) {
+                    cm2.userData.parts.jawGroup.rotation.z *= 0.95;
+                }
+                if (croc.userData.stateTimer <= 0) {
+                    croc.userData.dreadmawState = 'patrolling';
+                    croc.userData.stateTimer = 10 + Math.random() * 15;
+                }
+                return;
+            }
+
+            // === BASKING (resting on beach) ===
+            if (croc.userData.dreadmawState === 'basking') {
+                var ty3 = Environment.getTerrainHeight(croc.position.x, croc.position.z);
+                croc.position.y = ty3 + (croc.userData.groundY || 0.3);
+                if (croc.userData.stateTimer <= 0) {
+                    croc.userData.dreadmawState = 'patrolling';
+                    croc.userData.stateTimer = 5;
+                }
+                // Still spot nearby prey/player
+                if (croc.userData.canAttackPlayer && distToPedro < 8) {
+                    croc.userData.dreadmawState = 'striking';
+                    croc.userData.huntTarget = null;
+                }
+                return;
+            }
+        });
+    }
+
+    function restoreDreadmawOpacity(croc) {
+        croc.userData.ambushOpacity = 1.0;
+        croc.traverse(function(child) {
+            if (child.material) {
+                child.material.opacity = 1.0;
+                child.material.transparent = false;
+            }
+        });
+    }
+
+    // --- Trigger LB Bird mating (test button) ---
+    function triggerLBBirdMating() {
+        var px = GameState.peccary.position.x;
+        var pz = GameState.peccary.position.z;
+
+        // Find nearest adult male and female to the player
+        var male = null, maleDist = Infinity;
+        var female = null, femaleDist = Infinity;
+        for (var i = 0; i < GameState.enemies.length; i++) {
+            var e = GameState.enemies[i];
+            if (e.userData.type !== 'lb_bird' || e.userData.health <= 0 || e.userData.isBaby) continue;
+            var d = e.position.distanceTo(GameState.peccary.position);
+            if (e.userData.gender === 'male' && d < maleDist) { male = e; maleDist = d; }
+            if (e.userData.gender === 'female' && d < femaleDist) { female = e; femaleDist = d; }
+        }
+        if (!male || !female) {
+            console.log('Need at least 1 adult male and 1 adult female LB bird!');
+            UI.showToast('No pair found', 'Need both an adult male and female LB Bird');
+            return;
+        }
+
+        // Find the nearest tree to the PLAYER so we can watch
+        var bestTree = null, bestTreeDist = Infinity;
+        for (var ti = 0; ti < GameState.trees.length; ti++) {
+            var t = GameState.trees[ti];
+            var td = Math.sqrt(Math.pow(t.position.x - px, 2) + Math.pow(t.position.z - pz, 2));
+            if (td < bestTreeDist && td > 5) { bestTree = t; bestTreeDist = td; }
+        }
+        if (!bestTree) {
+            UI.showToast('No tree nearby', 'Move near a birch tree first!');
+            return;
+        }
+
+        // Teleport male to the tree, female nearby
+        male.userData.matingCooldown = -1;
+        male.userData.perchTree = bestTree;
+        male.position.set(bestTree.position.x + 1.2, bestTree.position.y + 3, bestTree.position.z);
+        male.userData.birdState = 'calling';
+        male.userData.stateTimer = 12;
+        male.userData.flightState = 'grounded';
+
+        // Put female close so she can hear the call
+        female.position.set(bestTree.position.x + 8, Environment.getTerrainHeight(bestTree.position.x + 8, bestTree.position.z) + 0.2, bestTree.position.z + 3);
+        female.userData.birdState = 'wandering';
+        female.userData.stateTimer = 5;
+        female.userData.nest = null;
+        female.userData.displayPartner = null;
+
+        console.log('LB Bird mating triggered near player! Male on tree, female nearby.');
+        UI.showToast('Mating Triggered!', 'Look at the nearest tree — a male is calling!');
+    }
+
     /**
      * Update all enemies - AI behavior, movement, and collision.
      * @param {number} delta - Time since last frame
@@ -11573,8 +16943,11 @@ window.Enemies = (function() {
             // =================================================================
             // UNIVERSAL RETALIATION — any animal fights back when hit by player
             // This overrides normal behavior for ALL animal types
+            // Skip for beach weasels — they have their own custom retaliation
             // =================================================================
-            if (enemy.userData.retaliating || (enemy.userData.retaliationFleeing && enemy.userData.fleeTimer > 0)) {
+            if (enemy.userData.type === 'beach_weasel' || enemy.userData.type === 'beach_murgaya' || enemy.userData.type === 'gcf_deer' || enemy.userData.type === 'lb_bird' || enemy.userData.type === 'whispering_snake' || enemy.userData.type === 'dreadmaw') {
+                // Handled in their own section below — skip generic retaliation
+            } else if (enemy.userData.retaliating || (enemy.userData.retaliationFleeing && enemy.userData.fleeTimer > 0)) {
                 if (enemy.userData.retaliationFleeing) {
                     // Fleeing after retaliation hits
                     enemy.userData.fleeTimer -= delta;
@@ -15866,6 +21239,268 @@ window.Enemies = (function() {
                 }
             }
 
+            // =================================================================
+            // CRABS — Sideways scuttle + stomp detection
+            // =================================================================
+            if (enemy.userData.type === 'jet_crab' || enemy.userData.type === 'slackpinch_crab') {
+                var ud = enemy.userData;
+                // Stomp detection — Pedro walks over them, squish + eat
+                if (!ud.stomped && distance < 1.0) {
+                    ud.stomped = true;
+                    ud.health = 0;
+                    // Give food to player
+                    var foodGain = ud.foodValue || 5;
+                    GameState.hunger = Math.min(100, GameState.hunger + foodGain);
+                    GameState.score += 1;
+                    Game.playSound('collect');
+                    UI.showToast('Squish!', '+' + foodGain + ' food');
+                    // Remove after short delay
+                    (function(e, idx) {
+                        setTimeout(function() {
+                            GameState.scene.remove(e);
+                            var eIdx = GameState.enemies.indexOf(e);
+                            if (eIdx !== -1) GameState.enemies.splice(eIdx, 1);
+                        }, 300);
+                    })(enemy, i);
+                    continue;
+                }
+                if (ud.stomped) continue;
+
+                // Flee from Pedro when close
+                if (distance < 8) {
+                    var fx = enemy.position.x - GameState.peccary.position.x;
+                    var fz = enemy.position.z - GameState.peccary.position.z;
+                    var fLen = Math.sqrt(fx * fx + fz * fz);
+                    if (fLen > 0) {
+                        // Sideways scuttle — move perpendicular to flee direction
+                        var perpX = -fz / fLen * ud.scuttleDir;
+                        var perpZ = fx / fLen * ud.scuttleDir;
+                        // Also move away slightly
+                        enemy.position.x += (fx / fLen * 0.3 + perpX * 0.7) * speed * delta * 2;
+                        enemy.position.z += (fz / fLen * 0.3 + perpZ * 0.7) * speed * delta * 2;
+                        // Face sideways
+                        enemy.rotation.y = -Math.atan2(perpZ, perpX);
+                    }
+                } else {
+                    // Idle scuttle — random direction changes
+                    ud.scuttleTimer -= delta;
+                    if (ud.scuttleTimer <= 0) {
+                        ud.scuttleTimer = 2 + Math.random() * 4;
+                        ud.scuttleDir *= -1; // Reverse scuttle direction
+                        ud.wanderAngle = Math.random() * Math.PI * 2;
+                    }
+                    var wa = ud.wanderAngle || 0;
+                    enemy.position.x += Math.cos(wa) * speed * delta * 0.3;
+                    enemy.position.z += Math.sin(wa) * speed * delta * 0.3;
+                    enemy.rotation.y = -wa + Math.PI / 2; // Face sideways to movement
+                }
+
+                // Keep on beach
+                if (ud.beachMinZ !== undefined) {
+                    enemy.position.z = Math.max(ud.beachMinZ, Math.min(ud.beachMaxZ, enemy.position.z));
+                }
+                // Claw animation (subtle open/close)
+                enemy.traverse(function(child) {
+                    if (child.userData && child.userData.isClawMoving) {
+                        child.rotation.z = 0.2 + Math.sin(GameState.clock.elapsedTime * 3 + enemy.position.x) * 0.15;
+                    }
+                });
+                // Ground level
+                var crabTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                enemy.position.y = crabTerrainY;
+                continue;
+            }
+
+            // =================================================================
+            // BASICUSLIN AMPHIPOD — Buried in sand or wandering
+            // =================================================================
+            if (enemy.userData.type === 'basicuslin_amphipod') {
+                var aud = enemy.userData;
+                // Stomp detection
+                if (!aud.stomped && distance < 0.8) {
+                    aud.stomped = true;
+                    aud.health = 0;
+                    aud.buried = false;
+                    var ampFood = aud.foodValue || 3;
+                    GameState.hunger = Math.min(100, GameState.hunger + ampFood);
+                    GameState.score += 1;
+                    Game.playSound('collect');
+                    UI.showToast('Squish!', '+' + ampFood + ' food');
+                    (function(e) {
+                        setTimeout(function() {
+                            GameState.scene.remove(e);
+                            var eIdx = GameState.enemies.indexOf(e);
+                            if (eIdx !== -1) GameState.enemies.splice(eIdx, 1);
+                        }, 300);
+                    })(enemy);
+                    continue;
+                }
+                if (aud.stomped) continue;
+
+                if (aud.buried) {
+                    // Buried — mostly underground, antennae poking out, occasional twitch
+                    enemy.position.y = -0.04 + Math.sin(GameState.clock.elapsedTime * 0.5 + enemy.position.x) * 0.003;
+                    aud.buriedTimer -= delta;
+                    if (aud.buriedTimer <= 0) {
+                        // Emerge and wander
+                        aud.buried = false;
+                        aud.wanderTimer = 10 + Math.random() * 20;
+                    }
+                    continue;
+                } else {
+                    // Wandering — slow, random, eating decaying stuff
+                    aud.wanderTimer -= delta;
+                    if (aud.wanderTimer <= 0) {
+                        // Re-bury
+                        aud.buried = true;
+                        aud.buriedTimer = 30 + Math.random() * 60;
+                        enemy.position.y = -0.04;
+                        continue;
+                    }
+                    // Slow random movement
+                    if (!aud.ampWanderAngle || Math.random() < 0.01) {
+                        aud.ampWanderAngle = Math.random() * Math.PI * 2;
+                    }
+                    enemy.position.x += Math.cos(aud.ampWanderAngle) * speed * delta * 0.5;
+                    enemy.position.z += Math.sin(aud.ampWanderAngle) * speed * delta * 0.5;
+                    enemy.rotation.y = -aud.ampWanderAngle;
+                    var ampTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                    enemy.position.y = ampTerrainY;
+                    // Keep on beach
+                    if (aud.beachMinZ !== undefined) {
+                        enemy.position.z = Math.max(aud.beachMinZ, Math.min(aud.beachMaxZ, enemy.position.z));
+                    }
+                }
+                continue;
+            }
+
+            // =================================================================
+            // BEACH WEASEL — Flee with galloping animation, retaliate if attacked
+            // =================================================================
+            if (enemy.userData.type === 'beach_weasel') {
+                var wud = enemy.userData;
+                var wModel = enemy.children[0];
+
+                // Gallop animation (body undulation)
+                wud.gallopPhase = (wud.gallopPhase || 0) + delta * (wud.retaliating ? 12 : 8);
+
+                // Check if retaliating (was attacked by player)
+                if (wud.retaliating) {
+                    // Chase Pedro and attack
+                    if (distance < 2.0) {
+                        // Attack with paw swipe
+                        wud.attackTimer = (wud.attackTimer || 0) - delta;
+                        if (wud.attackTimer <= 0) {
+                            wud.attackTimer = 1.5; // Attack every 1.5s
+                            Game.takeDamage(wud.damage, 'beach_weasel');
+                            UI.showToast('Ouch!', 'Beach weasel swipe! -' + wud.damage + ' HP');
+                        }
+                    } else if (distance < 20) {
+                        // Chase
+                        var cx = GameState.peccary.position.x - enemy.position.x;
+                        var cz = GameState.peccary.position.z - enemy.position.z;
+                        var cLen = Math.sqrt(cx * cx + cz * cz);
+                        if (cLen > 0) {
+                            var cSpeed = (wud.chaseSpeed || 9) * delta;
+                            enemy.position.x += (cx / cLen) * cSpeed;
+                            enemy.position.z += (cz / cLen) * cSpeed;
+                            enemy.rotation.y = -Math.atan2(cz, cx);
+                        }
+                        // Galloping body animation
+                        if (wModel) {
+                            wModel.position.y = Math.abs(Math.sin(wud.gallopPhase)) * 0.15;
+                            wModel.rotation.x = Math.sin(wud.gallopPhase * 2) * 0.1; // Body bend
+                        }
+                    } else {
+                        // Too far — give up
+                        wud.retaliating = false;
+                    }
+                } else {
+                    // Normal behaviour — flee from Pedro when too close
+                    if (distance < 8) {
+                        // Gallop away!
+                        var flx = enemy.position.x - GameState.peccary.position.x;
+                        var flz = enemy.position.z - GameState.peccary.position.z;
+                        var flLen = Math.sqrt(flx * flx + flz * flz);
+                        if (flLen > 0) {
+                            var flSpeed = wud.speed * delta;
+                            enemy.position.x += (flx / flLen) * flSpeed;
+                            enemy.position.z += (flz / flLen) * flSpeed;
+                            enemy.rotation.y = -Math.atan2(flz, flx);
+                        }
+                        // Galloping animation — fast body undulation
+                        if (wModel) {
+                            wModel.position.y = Math.abs(Math.sin(wud.gallopPhase)) * 0.12;
+                            wModel.rotation.x = Math.sin(wud.gallopPhase * 2) * 0.08;
+                        }
+                    } else {
+                        // Idle wander — mostly in forest, sometimes venture to beach
+                        wud.wanderTimer -= delta;
+                        if (wud.wanderTimer <= 0) {
+                            wud.wanderTimer = 4 + Math.random() * 6;
+                            // 30% chance to head toward beach, 20% chance to head home, 50% random
+                            var roll = Math.random();
+                            if (roll < 0.3 && enemy.position.z < 0) {
+                                // Head to beach (positive Z)
+                                wud.wanderDir = new THREE.Vector3((Math.random() - 0.5) * 0.3, 0, 0.8 + Math.random() * 0.2).normalize();
+                            } else if (roll < 0.5 && enemy.position.z > 20) {
+                                // Head back to forest
+                                wud.wanderDir = new THREE.Vector3((Math.random() - 0.5) * 0.3, 0, -0.8 - Math.random() * 0.2).normalize();
+                            } else {
+                                var wAngle = Math.random() * Math.PI * 2;
+                                wud.wanderDir = new THREE.Vector3(Math.cos(wAngle), 0, Math.sin(wAngle));
+                            }
+                        }
+                        var wd = wud.wanderDir;
+                        if (wd) {
+                            enemy.position.x += wd.x * speed * delta;
+                            enemy.position.z += wd.z * speed * delta;
+                            enemy.rotation.y = -Math.atan2(wd.z, wd.x);
+                        }
+                        // Gentle idle sway
+                        if (wModel) {
+                            wModel.position.y = Math.sin(GameState.clock.elapsedTime * 1.5) * 0.02;
+                        }
+                    }
+                }
+
+                // Keep in bounds
+                if (wud.beachMinZ !== undefined) {
+                    enemy.position.z = Math.max(wud.beachMinZ, Math.min(wud.beachMaxZ, enemy.position.z));
+                }
+                var worldHalf = (CONFIG.WORLD_SIZE || 500) / 2 - 5;
+                enemy.position.x = Math.max(-worldHalf, Math.min(worldHalf, enemy.position.x));
+                // Ground height
+                var wTerrainY = Environment.getTerrainHeight(enemy.position.x, enemy.position.z);
+                enemy.position.y = wTerrainY + (wud.groundY || 0.2);
+                continue;
+            }
+
+            // Beach Murgaya — handled entirely by updateMurgayaBehavior
+            if (enemy.userData.type === 'beach_murgaya') {
+                continue;
+            }
+
+            // GCF Deer — handled entirely by updateGcfDeerBehavior
+            if (enemy.userData.type === 'gcf_deer') {
+                continue;
+            }
+
+            // LB Bird — handled entirely by updateLBBirdBehavior
+            if (enemy.userData.type === 'lb_bird') {
+                continue;
+            }
+
+            // Whispering Snake — handled entirely by updateWhisperingSnakeBehavior
+            if (enemy.userData.type === 'whispering_snake') {
+                continue;
+            }
+
+            // Dreadmaw — handled entirely by updateDreadmawBehavior
+            if (enemy.userData.type === 'dreadmaw') {
+                continue;
+            }
+
             // Skip generic movement + bob for deer and drongulinat cats — they have custom behavior
             if (enemy.userData.type !== 'deericus_iricus' && enemy.userData.type !== 'drongulinat_cat') {
                 // Apply water slowdown (50% speed) - unless immune
@@ -19574,6 +25209,12 @@ window.Enemies = (function() {
             enemy.userData.wasAttackedByPlayer = true;
         }
 
+        // Beach weasels fight back fiercely — persistent retaliation
+        if (enemy.userData.type === 'beach_weasel' && enemy.userData.retaliateOnAttack) {
+            enemy.userData.retaliating = true;
+            enemy.userData.attackTimer = 0; // Attack immediately
+        }
+
         // Retaliation — all animals fight back when hit (except sardines)
         // Skip if already hostile (they're already attacking) or already retaliating
         var noRetaliate = ['slitted_sardine'];
@@ -19676,6 +25317,12 @@ window.Enemies = (function() {
             if (enemy.userData.type === 'wild_dog' || enemy.userData.type === 'antelope' || enemy.userData.type === 'saltas_gazella') {
                 GameState.resourceCounts.hide = (GameState.resourceCounts.hide || 0) + 1;
                 Game.showBlockedMessage('+1 Hide!');
+            }
+
+            // GCF Deer drops — hide only
+            if (enemy.userData.type === 'gcf_deer' && !enemy.userData.isBaby) {
+                GameState.resourceCounts.hide = (GameState.resourceCounts.hide || 0) + 2;
+                Game.showBlockedMessage('+2 Hide!');
             }
 
             // Give score and coins as reward (tiered by enemy toughness)
@@ -20097,6 +25744,26 @@ window.Enemies = (function() {
         updateSeagullNests: updateSeagullNests,
         triggerSeagullMating: triggerSeagullMating,
 
+        // Coastal fauna spawning + mating
+        spawnJetCrabs: spawnJetCrabs,
+        spawnSlackpinchCrabs: spawnSlackpinchCrabs,
+        spawnAmphipods: spawnAmphipods,
+        spawnBeachWeasels: spawnBeachWeasels,
+        triggerCrabMating: triggerCrabMating,
+        updateCrabMating: updateCrabMating,
+        // Beach Murgaya
+        spawnMurgayaPack: spawnMurgayaPack,
+        triggerMurgayaMating: triggerMurgayaMating,
+        updateMurgayaBehavior: updateMurgayaBehavior,
+        updateMurgayaAdolescents: updateMurgayaAdolescents,
+
+        triggerBeachWeaselMating: triggerBeachWeaselMating,
+        updateBeachWeaselMating: updateBeachWeaselMating,
+        checkBurrowInteraction: checkBurrowInteraction,
+        peekIntoBurrow: peekIntoBurrow,
+        exitBurrowPeek: exitBurrowPeek,
+        renderBurrowPeek: renderBurrowPeek,
+
         // Uronin Seal functions
         spawnUroninSealColony: spawnUroninSealColony,
         updateUroninSealBehavior: updateUroninSealBehavior,
@@ -20114,6 +25781,25 @@ window.Enemies = (function() {
         updateCarcasses: updateCarcasses,
         convertToCarcass: convertToCarcass,
         findNearestCarcass: findNearestCarcass,
+
+        // GCF Deer functions
+        spawnGcfDeer: spawnGcfDeer,
+        updateGcfDeerBehavior: updateGcfDeerBehavior,
+
+        // Langarts Blitting Bird functions
+        spawnLBBirds: spawnLBBirds,
+        updateLBBirdBehavior: updateLBBirdBehavior,
+        triggerLBBirdMating: triggerLBBirdMating,
+
+        // Whispering Tree Snake functions
+        spawnWhisperingSnakes: spawnWhisperingSnakes,
+        updateWhisperingSnakeBehavior: updateWhisperingSnakeBehavior,
+        updateSnakeConstrictionMiniGame: updateSnakeConstrictionMiniGame,
+
+        // Coastal Dreadmaw functions
+        spawnDreadmaws: spawnDreadmaws,
+        updateDreadmawBehavior: updateDreadmawBehavior,
+        updateDreadmawDeathRollMiniGame: updateDreadmawDeathRollMiniGame,
 
         // Expose model builders for advanced use
         modelBuilders: modelBuilders

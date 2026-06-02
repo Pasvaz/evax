@@ -1927,6 +1927,1376 @@ window.ENEMIES = [
         }
     }
 
+    // ========================================================================
+    // JET CRABS — Tiny black ghost crabs on the beach
+    // ========================================================================
+    // Scuttle sideways, food source for seagulls/seals/orcletons.
+    // Males click claws to attract females. Females lay 15 eggs in sand.
+    // Pedro can stomp them by walking over, then eat them.
+
+    ,{
+        id: 'jet_crab_male',
+        type: 'jet_crab',
+        category: 'prey',
+        speed: 3.5,
+        speedVariation: 1.0,
+        damage: 0,
+        radius: 0.3,
+        size: 1.2,
+        health: 1,
+        spawnWeight: 3,
+        minimapColor: '#222222',
+        groundY: 0.0,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        stompable: true,
+        edibleAfterStomp: true,
+        foodValue: 5,
+        immuneToWater: true,
+        colors: {
+            shell: "#1a1a1a",
+            legs: "#111111",
+            claws: "#222222",
+            eyes: "#ffcc00",
+            eyeStalks: "#1a1a1a"
+        }
+    },
+
+    {
+        id: 'jet_crab_female',
+        type: 'jet_crab',
+        category: 'prey',
+        speed: 3.0,
+        speedVariation: 0.8,
+        damage: 0,
+        radius: 0.35,
+        size: 1.5,
+        health: 1,
+        spawnWeight: 3,
+        minimapColor: '#222222',
+        groundY: 0.0,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        stompable: true,
+        edibleAfterStomp: true,
+        foodValue: 5,
+        immuneToWater: true,
+        colors: {
+            shell: "#1a1a1a",
+            legs: "#111111",
+            claws: "#222222",
+            eyes: "#ffcc00",
+            eyeStalks: "#1a1a1a"
+        }
+    },
+
+    // ========================================================================
+    // SLACKPINCH CRABS — Larger yellow crabs with colourful pincers
+    // ========================================================================
+    // Males: yellow body, blue pincers with orange mobile part. Bigger claws.
+    // Females: white body, smaller claws.
+    // Same mating pattern as jet crabs. 3 HP — tougher.
+
+    {
+        id: 'slackpinch_crab_male',
+        type: 'slackpinch_crab',
+        category: 'prey',
+        speed: 2.5,
+        speedVariation: 0.8,
+        damage: 1,
+        radius: 0.4,
+        size: 1.8,
+        health: 3,
+        spawnWeight: 2,
+        minimapColor: '#ccaa00',
+        groundY: 0.0,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'male',
+        stompable: true,
+        edibleAfterStomp: true,
+        foodValue: 8,
+        immuneToWater: true,
+        colors: {
+            shell: "#eecc00",
+            legs: "#cc9900",
+            claws: "#2266dd",
+            clawTips: "#ff6600",
+            eyes: "#111111",
+            eyeStalks: "#cc9900"
+        }
+    },
+
+    {
+        id: 'slackpinch_crab_female',
+        type: 'slackpinch_crab',
+        category: 'prey',
+        speed: 2.2,
+        speedVariation: 0.6,
+        damage: 0,
+        radius: 0.35,
+        size: 1.5,
+        health: 3,
+        spawnWeight: 2,
+        minimapColor: '#ccaa00',
+        groundY: 0.0,
+        friendly: true,
+        biome: 'coastal',
+        gender: 'female',
+        stompable: true,
+        edibleAfterStomp: true,
+        foodValue: 8,
+        immuneToWater: true,
+        colors: {
+            shell: "#eeeeee",
+            legs: "#cccccc",
+            claws: "#dddddd",
+            clawTips: "#cccccc",
+            eyes: "#111111",
+            eyeStalks: "#cccccc"
+        }
+    },
+
+    // ========================================================================
+    // BASICUSLIN AMPHIPOD — Tiny white sand-dwelling crustacean
+    // ========================================================================
+    // No gender. Lives half-buried in sand with antennae poking out.
+    // Lays eggs solo. Wanders around eating decaying wood.
+
+    {
+        id: 'basicuslin_amphipod',
+        type: 'basicuslin_amphipod',
+        category: 'prey',
+        speed: 1.5,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.2,
+        size: 1.0,
+        health: 1,
+        spawnWeight: 4,
+        minimapColor: '#dddddd',
+        groundY: -0.05,
+        friendly: true,
+        biome: 'coastal',
+        stompable: true,
+        edibleAfterStomp: true,
+        foodValue: 3,
+        colors: {
+            body: "#eeeeee",
+            legs: "#cccccc",
+            antennae: "#ffffff",
+            eyes: "#333333"
+        }
+    },
+
+    // ========================================================================
+    // BEACH WEASEL — Fierce little coastal predator
+    // ========================================================================
+    // Flees from Pedro with galloping run animation.
+    // If attacked, retaliates with 6-damage paw swipe.
+    // Males fight over mated females. Females dig burrows with 4 pups.
+    // Uses same base model as grass viper weasel.
+
+    {
+        id: 'beach_weasel_male',
+        type: 'beach_weasel',
+        category: 'carnivore',
+        speed: 5.0,
+        speedVariation: 1.5,
+        chaseSpeed: 9,
+        damage: 6,
+        radius: 0.6,
+        size: 1.1,
+        health: 12,
+        spawnWeight: 1,
+        minimapColor: '#cc8844',
+        groundY: 0.2,
+        biome: 'coastal',
+        gender: 'male',
+        fleeFromPlayer: true,
+        retaliateOnAttack: true,
+        colors: {
+            body: "#C4A060",
+            snout: "#D9C090",
+            nose: "#1A1A1A",
+            eyes: "#443300",
+            eyeGlow: "#221100",
+            ears: "#B89050",
+            legs: "#A08040",
+            belly: "#E0D0A0"
+        }
+    },
+
+    {
+        id: 'beach_weasel_female',
+        type: 'beach_weasel',
+        category: 'carnivore',
+        speed: 4.5,
+        speedVariation: 1.0,
+        chaseSpeed: 8,
+        damage: 6,
+        radius: 0.55,
+        size: 0.95,
+        health: 10,
+        spawnWeight: 1,
+        minimapColor: '#cc8844',
+        groundY: 0.2,
+        biome: 'coastal',
+        gender: 'female',
+        fleeFromPlayer: true,
+        retaliateOnAttack: true,
+        colors: {
+            body: "#C4A060",
+            snout: "#D9C090",
+            nose: "#1A1A1A",
+            eyes: "#443300",
+            eyeGlow: "#221100",
+            ears: "#B89050",
+            legs: "#A08040",
+            belly: "#E0D0A0"
+        }
+    },
+
+    // ========================================================================
+    // BEACH MURGAYA — Apex coastal pack predator
+    // ========================================================================
+    // Pack canine with opening jaws. Hunts Pedro, seals, weasels, seagulls.
+    // Can swim (doggy paddle). 10 damage per bite!
+    // 6-stage lifecycle: infant → snifflet → pup → adolescent → adult.
+    // Males: grey, larger. Females: brown, smaller.
+    // Packs of 2-4. Mating every 7 min (paused while pups exist).
+    // Special hunting tactics per prey type.
+
+    {
+        id: 'beach_murgaya_male',
+        type: 'beach_murgaya',
+        category: 'carnivore',
+        speed: 4.5,
+        speedVariation: 1.0,
+        chaseSpeed: 8,
+        damage: 10,
+        radius: 0.8,
+        size: 1.3,
+        health: 25,
+        spawnWeight: 0,
+        minimapColor: '#666677',
+        groundY: 0.3,
+        biome: 'coastal',
+        gender: 'male',
+        immuneToWater: true,
+        colors: {
+            body: "#707080",
+            belly: "#909098",
+            snout: "#808090",
+            nose: "#111111",
+            eyes: "#ccaa33",
+            eyeGlow: "#554411",
+            ears: "#606070",
+            legs: "#555565",
+            jaw: "#6a6a78",
+            teeth: "#eeeeee",
+            tongue: "#cc5555",
+            tail: "#606070"
+        }
+    },
+
+    {
+        id: 'beach_murgaya_female',
+        type: 'beach_murgaya',
+        category: 'carnivore',
+        speed: 4.8,
+        speedVariation: 0.8,
+        chaseSpeed: 8.5,
+        damage: 10,
+        radius: 0.7,
+        size: 1.1,
+        health: 20,
+        spawnWeight: 0,
+        minimapColor: '#886644',
+        groundY: 0.25,
+        biome: 'coastal',
+        gender: 'female',
+        immuneToWater: true,
+        colors: {
+            body: "#8B6B4A",
+            belly: "#AA8866",
+            snout: "#9B7B5A",
+            nose: "#111111",
+            eyes: "#ccaa33",
+            eyeGlow: "#554411",
+            ears: "#7B5B3A",
+            legs: "#6B4B2A",
+            jaw: "#8a6a48",
+            teeth: "#eeeeee",
+            tongue: "#cc5555",
+            tail: "#7B5B3A"
+        }
+    },
+
+    // Infant Murgaya — pink, hairless, helpless
+    {
+        id: 'beach_murgaya_infant',
+        type: 'beach_murgaya',
+        category: 'prey',
+        speed: 0.5,
+        speedVariation: 0.2,
+        damage: 0,
+        radius: 0.2,
+        size: 0.35,
+        health: 2,
+        spawnWeight: 0,
+        minimapColor: '#ffaaaa',
+        groundY: 0.05,
+        biome: 'coastal',
+        friendly: true,
+        isBaby: true,
+        colors: {
+            body: "#ffbbbb",
+            belly: "#ffcccc",
+            snout: "#ffaaaa",
+            nose: "#cc8888",
+            eyes: "#111111",
+            ears: "#ff9999",
+            legs: "#ffaaaa",
+            jaw: "#ffbbbb",
+            teeth: "#ffffff",
+            tongue: "#ee8888",
+            tail: "#ffbbbb"
+        }
+    },
+
+    // Snifflet Murgaya — has fur, toddles around den
+    {
+        id: 'beach_murgaya_snifflet',
+        type: 'beach_murgaya',
+        category: 'prey',
+        speed: 1.5,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.3,
+        size: 0.5,
+        health: 4,
+        spawnWeight: 0,
+        minimapColor: '#aa8866',
+        groundY: 0.1,
+        biome: 'coastal',
+        friendly: true,
+        isBaby: true,
+        colors: {
+            body: "#b09070",
+            belly: "#c0a080",
+            snout: "#b89878",
+            nose: "#333333",
+            eyes: "#222222",
+            ears: "#a08060",
+            legs: "#907050",
+            jaw: "#b09070",
+            teeth: "#dddddd",
+            tongue: "#cc7777",
+            tail: "#a08060"
+        }
+    },
+
+    // Pup Murgaya — playful, goes on beach excursions
+    {
+        id: 'beach_murgaya_pup',
+        type: 'beach_murgaya',
+        category: 'prey',
+        speed: 3.0,
+        speedVariation: 1.0,
+        damage: 1,
+        radius: 0.4,
+        size: 0.65,
+        health: 8,
+        spawnWeight: 0,
+        minimapColor: '#aa8866',
+        groundY: 0.15,
+        biome: 'coastal',
+        friendly: true,
+        isBaby: true,
+        colors: {
+            body: "#998870",
+            belly: "#bbaa88",
+            snout: "#aa9878",
+            nose: "#222222",
+            eyes: "#aa8833",
+            ears: "#887060",
+            legs: "#776050",
+            jaw: "#998870",
+            teeth: "#eeeeee",
+            tongue: "#cc6666",
+            tail: "#887060"
+        }
+    },
+
+    // Adolescent Murgaya — independent, forms own pack, can swim
+    {
+        id: 'beach_murgaya_adolescent',
+        type: 'beach_murgaya',
+        category: 'carnivore',
+        speed: 4.0,
+        speedVariation: 1.0,
+        chaseSpeed: 7,
+        damage: 5,
+        radius: 0.6,
+        size: 0.85,
+        health: 15,
+        spawnWeight: 0,
+        minimapColor: '#888877',
+        groundY: 0.2,
+        biome: 'coastal',
+        immuneToWater: true,
+        colors: {
+            body: "#808070",
+            belly: "#99887a",
+            snout: "#8a8078",
+            nose: "#111111",
+            eyes: "#bbaa33",
+            ears: "#706860",
+            legs: "#605850",
+            jaw: "#808070",
+            teeth: "#eeeeee",
+            tongue: "#cc5555",
+            tail: "#706860"
+        }
+    },
+
+    // ========================================================================
+    // LESSER COSTANTINE FLANGERT DEER (GCF DEER)
+    // ========================================================================
+    // Musk deer-like solitary herbivore. Eats from flangert berry bushes.
+    // Outruns Pedro — must sneak attack while eating.
+    // Drops hide + meat. Murgayas hunt them.
+    // 4 growth stages: fawn → hipperlet → stfumbler → adult.
+
+    // Adult male — light grey, larger horns
+    {
+        id: 'gcf_deer_male',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        friendly: true,
+        speed: 7.0,
+        speedVariation: 1.0,
+        chaseSpeed: 9,
+        damage: 4,
+        radius: 1.5,
+        size: 2.2,
+        health: 14,
+        spawnWeight: 0,
+        minimapColor: '#aaaabb',
+        groundY: 0.55,
+        biome: 'coastal',
+        gender: 'male',
+        fleeSpeed: 12,
+        detectionRange: 18,
+        colors: {
+            body: "#b0b0be",
+            belly: "#c8c8d0",
+            neck: "#a0a0b0",
+            head: "#b5b5c2",
+            snout: "#c0c0cc",
+            nose: "#222222",
+            eyes: "#443300",
+            eyeRing: "#333333",
+            ears: "#a0a0ae",
+            earInner: "#c8b8b0",
+            legs: "#8a8a98",
+            hooves: "#333333",
+            horns: "#776655",
+            hornTips: "#554433",
+            tail: "#999aaa",
+            spots: "#b0b0be"
+        }
+    },
+
+    // Adult female — ginger-ish, small horns
+    {
+        id: 'gcf_deer_female',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        friendly: true,
+        speed: 7.5,
+        speedVariation: 0.8,
+        chaseSpeed: 8,
+        damage: 3,
+        radius: 1.4,
+        size: 1.9,
+        health: 12,
+        spawnWeight: 0,
+        minimapColor: '#bb8855',
+        groundY: 0.5,
+        biome: 'coastal',
+        gender: 'female',
+        fleeSpeed: 12,
+        detectionRange: 18,
+        colors: {
+            body: "#c08050",
+            belly: "#d4a070",
+            neck: "#b07040",
+            head: "#c58858",
+            snout: "#d09868",
+            nose: "#222222",
+            eyes: "#443300",
+            eyeRing: "#333333",
+            ears: "#b07848",
+            earInner: "#d0a888",
+            legs: "#906838",
+            hooves: "#333333",
+            horns: "#887766",
+            hornTips: "#665544",
+            tail: "#a07040",
+            spots: "#c08050"
+        }
+    },
+
+    // Fawn male — dark ginger-ish, white spots, big black shiny eyes
+    {
+        id: 'gcf_deer_fawn_male',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        speed: 4.0,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.6,
+        size: 0.8,
+        health: 4,
+        spawnWeight: 0,
+        minimapColor: '#996644',
+        groundY: 0.18,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        friendly: true,
+        fleeSpeed: 7,
+        detectionRange: 10,
+        colors: {
+            body: "#a06030",
+            belly: "#c08050",
+            neck: "#905528",
+            head: "#a86838",
+            snout: "#b87848",
+            nose: "#222222",
+            eyes: "#000000",
+            eyeRing: "#111111",
+            ears: "#905530",
+            earInner: "#c09070",
+            legs: "#804820",
+            hooves: "#333333",
+            horns: "#a06030",
+            hornTips: "#a06030",
+            tail: "#905528",
+            spots: "#ffffff"
+        }
+    },
+
+    // Fawn female — lighter ginger-ish, white spots, big black shiny eyes
+    {
+        id: 'gcf_deer_fawn_female',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        speed: 4.0,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.6,
+        size: 0.8,
+        health: 4,
+        spawnWeight: 0,
+        minimapColor: '#bb8866',
+        groundY: 0.18,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        friendly: true,
+        fleeSpeed: 7,
+        detectionRange: 10,
+        colors: {
+            body: "#c89060",
+            belly: "#daa878",
+            neck: "#b88050",
+            head: "#d09868",
+            snout: "#daa878",
+            nose: "#222222",
+            eyes: "#000000",
+            eyeRing: "#111111",
+            ears: "#b88058",
+            earInner: "#dab898",
+            legs: "#a87848",
+            hooves: "#333333",
+            horns: "#c89060",
+            hornTips: "#c89060",
+            tail: "#b88050",
+            spots: "#ffffff"
+        }
+    },
+
+    // Hipperlet male — dark ginger-ish with grey spots, small horn stubs
+    {
+        id: 'gcf_deer_hipperlet_male',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        speed: 5.5,
+        speedVariation: 0.8,
+        damage: 0,
+        radius: 0.85,
+        size: 1.15,
+        health: 7,
+        spawnWeight: 0,
+        minimapColor: '#997755',
+        groundY: 0.32,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        friendly: true,
+        fleeSpeed: 9,
+        detectionRange: 14,
+        colors: {
+            body: "#a06030",
+            belly: "#c08050",
+            neck: "#905528",
+            head: "#a86838",
+            snout: "#b87848",
+            nose: "#222222",
+            eyes: "#111100",
+            eyeRing: "#222211",
+            ears: "#905530",
+            earInner: "#c09070",
+            legs: "#804820",
+            hooves: "#333333",
+            horns: "#887766",
+            hornTips: "#776655",
+            tail: "#905528",
+            spots: "#99999a"
+        }
+    },
+
+    // Hipperlet female — adult female colour, no spots, no stubs
+    {
+        id: 'gcf_deer_hipperlet_female',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        speed: 5.5,
+        speedVariation: 0.8,
+        damage: 0,
+        radius: 0.8,
+        size: 1.05,
+        health: 6,
+        spawnWeight: 0,
+        minimapColor: '#bb8855',
+        groundY: 0.28,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        friendly: true,
+        fleeSpeed: 9,
+        detectionRange: 14,
+        colors: {
+            body: "#c08050",
+            belly: "#d4a070",
+            neck: "#b07040",
+            head: "#c58858",
+            snout: "#d09868",
+            nose: "#222222",
+            eyes: "#111100",
+            eyeRing: "#222211",
+            ears: "#b07848",
+            earInner: "#d0a888",
+            legs: "#906838",
+            hooves: "#333333",
+            horns: "#c08050",
+            hornTips: "#c08050",
+            tail: "#a07040",
+            spots: "#c08050"
+        }
+    },
+
+    // Stfumbler male — grey with dark ginger-ish spots, developing horns
+    {
+        id: 'gcf_deer_stfumbler_male',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        speed: 6.0,
+        speedVariation: 0.8,
+        damage: 0,
+        radius: 1.1,
+        size: 1.5,
+        health: 10,
+        spawnWeight: 0,
+        minimapColor: '#999aaa',
+        groundY: 0.42,
+        biome: 'coastal',
+        gender: 'male',
+        isBaby: true,
+        friendly: true,
+        fleeSpeed: 10,
+        detectionRange: 16,
+        colors: {
+            body: "#9898a8",
+            belly: "#b0b0b8",
+            neck: "#8888a0",
+            head: "#a0a0b0",
+            snout: "#aaaabc",
+            nose: "#222222",
+            eyes: "#000000",
+            eyeRing: "#111111",
+            ears: "#9090a0",
+            earInner: "#b8a8a0",
+            legs: "#808090",
+            hooves: "#333333",
+            horns: "#776655",
+            hornTips: "#665544",
+            tail: "#8888a0",
+            spots: "#a06030"
+        }
+    },
+
+    // Stfumbler female — smaller adult female, stubs, black shiny eyes
+    {
+        id: 'gcf_deer_stfumbler_female',
+        type: 'gcf_deer',
+        category: 'herbivore',
+        speed: 6.0,
+        speedVariation: 0.8,
+        damage: 0,
+        radius: 1.0,
+        size: 1.4,
+        health: 9,
+        spawnWeight: 0,
+        minimapColor: '#bb8855',
+        groundY: 0.38,
+        biome: 'coastal',
+        gender: 'female',
+        isBaby: true,
+        friendly: true,
+        fleeSpeed: 10,
+        detectionRange: 16,
+        colors: {
+            body: "#c08050",
+            belly: "#d4a070",
+            neck: "#b07040",
+            head: "#c58858",
+            snout: "#d09868",
+            nose: "#222222",
+            eyes: "#000000",
+            eyeRing: "#111111",
+            ears: "#b07848",
+            earInner: "#d0a888",
+            legs: "#906838",
+            hooves: "#333333",
+            horns: "#887766",
+            hornTips: "#776655",
+            tail: "#a07040",
+            spots: "#c08050"
+        }
+    },
+
+    // ========================================================================
+    // LANGARTS BLITTING BIRD (LB Bird)
+    // ========================================================================
+    // Magnificent birds of paradise. Males are sunflower yellow with deep
+    // emerald collar feathers for dazzling mating displays on tree trunks.
+    // Females look like starlings — dark iridescent plumage.
+    // Long-legged runners with zygodactyl feet for gripping tree trunks.
+    // 3 growth stages: chick (grey) → fledgling (grey, hopping) → adult.
+
+    // Adult male — sunflower yellow with emerald collar
+    {
+        id: 'lb_bird_male',
+        type: 'lb_bird',
+        category: 'omnivore',
+        friendly: true,
+        speed: 5.0,
+        speedVariation: 1.0,
+        chaseSpeed: 7,
+        damage: 3,
+        radius: 0.5,
+        size: 1.0,
+        health: 8,
+        spawnWeight: 0,
+        minimapColor: '#FFD700',
+        groundY: 0.2,
+        biome: 'coastal',
+        gender: 'male',
+        fleeSpeed: 9,
+        detectionRange: 14,
+        colors: {
+            body: "#FFD700",
+            belly: "#FFEC8B",
+            neck: "#DAA520",
+            head: "#FFD700",
+            beak: "#2a2a2a",
+            eyes: "#110800",
+            collar: "#006400",
+            collarSheen: "#0B6623",
+            wings: "#E6BE00",
+            wingTips: "#B8960F",
+            tail: "#DAA520",
+            tailTip: "#B8860B",
+            legs: "#555555",
+            toes: "#444444"
+        }
+    },
+
+    // Adult female — starling-like dark iridescent
+    {
+        id: 'lb_bird_female',
+        type: 'lb_bird',
+        category: 'omnivore',
+        friendly: true,
+        speed: 5.5,
+        speedVariation: 0.8,
+        chaseSpeed: 6,
+        damage: 2,
+        radius: 0.45,
+        size: 0.95,
+        health: 7,
+        spawnWeight: 0,
+        minimapColor: '#334455',
+        groundY: 0.18,
+        biome: 'coastal',
+        gender: 'female',
+        fleeSpeed: 10,
+        detectionRange: 14,
+        colors: {
+            body: "#2a2a35",
+            belly: "#383842",
+            neck: "#252530",
+            head: "#2e2e3a",
+            beak: "#222222",
+            eyes: "#110800",
+            collar: "#2a2a35",
+            collarSheen: "#2a2a35",
+            wings: "#1e1e28",
+            wingTips: "#181822",
+            tail: "#222230",
+            tailTip: "#1a1a28",
+            legs: "#444444",
+            toes: "#333333"
+        }
+    },
+
+    // Chick — small grey fluffball
+    {
+        id: 'lb_bird_chick',
+        type: 'lb_bird',
+        category: 'omnivore',
+        friendly: true,
+        speed: 2.0,
+        speedVariation: 0.5,
+        damage: 0,
+        radius: 0.2,
+        size: 0.35,
+        health: 3,
+        spawnWeight: 0,
+        minimapColor: '#888888',
+        groundY: 0.08,
+        biome: 'coastal',
+        isBaby: true,
+        fleeSpeed: 4,
+        detectionRange: 8,
+        colors: {
+            body: "#888888",
+            belly: "#999999",
+            neck: "#808080",
+            head: "#8a8a8a",
+            beak: "#555555",
+            eyes: "#000000",
+            collar: "#888888",
+            collarSheen: "#888888",
+            wings: "#777777",
+            wingTips: "#666666",
+            tail: "#7a7a7a",
+            tailTip: "#707070",
+            legs: "#666666",
+            toes: "#555555"
+        }
+    },
+
+    // Fledgling — medium grey, starting to hop
+    {
+        id: 'lb_bird_fledgling',
+        type: 'lb_bird',
+        category: 'omnivore',
+        friendly: true,
+        speed: 3.5,
+        speedVariation: 0.8,
+        damage: 0,
+        radius: 0.3,
+        size: 0.6,
+        health: 5,
+        spawnWeight: 0,
+        minimapColor: '#777777',
+        groundY: 0.12,
+        biome: 'coastal',
+        isBaby: true,
+        fleeSpeed: 6,
+        detectionRange: 10,
+        colors: {
+            body: "#787878",
+            belly: "#8a8a8a",
+            neck: "#707070",
+            head: "#7a7a7a",
+            beak: "#444444",
+            eyes: "#000000",
+            collar: "#787878",
+            collarSheen: "#787878",
+            wings: "#686868",
+            wingTips: "#5a5a5a",
+            tail: "#6a6a6a",
+            tailTip: "#606060",
+            legs: "#555555",
+            toes: "#444444"
+        }
+    },
+
+    // ========================================================================
+    // COASTAL WHISPERING TREE SNAKE
+    // ========================================================================
+    // Ghostly birch-coloured snake that coils on tree branches.
+    // Grows through 5 size stages by eating prey.
+    // Largest ones constrict deer, weasels, murgayas, and even the player!
+    // The "whispering" comes from the tongue-to-lips shush before striking.
+
+    // Mini — tiny hatchling, eats amphipods and eggs
+    {
+        id: 'whispering_snake_mini',
+        type: 'whispering_snake',
+        category: 'carnivore',
+        friendly: false,
+        speed: 3.0,
+        speedVariation: 0.5,
+        chaseSpeed: 4,
+        damage: 1,
+        radius: 0.3,
+        size: 0.7,
+        health: 5,
+        spawnWeight: 0,
+        minimapColor: '#c8c0b0',
+        groundY: 0.08,
+        biome: 'coastal',
+        detectionRange: 10,
+        snakeStage: 'mini',
+        mealsToGrow: 3,
+        colors: {
+            body: "#ddd5c8",
+            markings: "#3a3a3a",
+            belly: "#e8e0d8",
+            head: "#ccc4b8",
+            eyes: "#cccc44",
+            tongue: "#cc2222",
+            nostrils: "#333333"
+        }
+    },
+
+    // Small — eats amphipods, eggs, chicks
+    {
+        id: 'whispering_snake_small',
+        type: 'whispering_snake',
+        category: 'carnivore',
+        friendly: false,
+        speed: 3.5,
+        speedVariation: 0.5,
+        chaseSpeed: 5,
+        damage: 2,
+        radius: 0.4,
+        size: 1.0,
+        health: 8,
+        spawnWeight: 0,
+        minimapColor: '#c0b8a8',
+        groundY: 0.1,
+        biome: 'coastal',
+        detectionRange: 12,
+        snakeStage: 'small',
+        mealsToGrow: 4,
+        colors: {
+            body: "#d8d0c4",
+            markings: "#333333",
+            belly: "#e5ddd4",
+            head: "#c8c0b0",
+            eyes: "#cccc44",
+            tongue: "#cc2222",
+            nostrils: "#333333"
+        }
+    },
+
+    // Decent — medium, hunts weasel pups, murgaya pups, fledglings
+    {
+        id: 'whispering_snake_decent',
+        type: 'whispering_snake',
+        category: 'carnivore',
+        friendly: false,
+        speed: 4.0,
+        speedVariation: 0.5,
+        chaseSpeed: 6,
+        damage: 3,
+        radius: 0.6,
+        size: 1.4,
+        health: 14,
+        spawnWeight: 0,
+        minimapColor: '#b8b0a0',
+        groundY: 0.15,
+        biome: 'coastal',
+        detectionRange: 16,
+        snakeStage: 'decent',
+        mealsToGrow: 5,
+        colors: {
+            body: "#d0c8bc",
+            markings: "#2c2c2c",
+            belly: "#e0d8cc",
+            head: "#c0b8a8",
+            eyes: "#bbbb33",
+            tongue: "#cc2222",
+            nostrils: "#333333"
+        }
+    },
+
+    // Large — hunts beach weasels, murgayas, deer fawns. Can attack player.
+    {
+        id: 'whispering_snake_large',
+        type: 'whispering_snake',
+        category: 'carnivore',
+        friendly: false,
+        speed: 4.5,
+        speedVariation: 0.5,
+        chaseSpeed: 7,
+        damage: 5,
+        radius: 0.8,
+        size: 1.8,
+        health: 22,
+        spawnWeight: 0,
+        minimapColor: '#a8a090',
+        groundY: 0.22,
+        biome: 'coastal',
+        detectionRange: 20,
+        snakeStage: 'large',
+        mealsToGrow: 6,
+        colors: {
+            body: "#c8c0b4",
+            markings: "#252525",
+            belly: "#d8d0c4",
+            head: "#b8b0a0",
+            eyes: "#aaaa22",
+            tongue: "#bb1111",
+            nostrils: "#2a2a2a"
+        }
+    },
+
+    // Monstrous — max stage. Hunts adult deer, player. Terrifying.
+    {
+        id: 'whispering_snake_monstrous',
+        type: 'whispering_snake',
+        category: 'carnivore',
+        friendly: false,
+        speed: 5.0,
+        speedVariation: 0.5,
+        chaseSpeed: 8,
+        damage: 8,
+        radius: 1.2,
+        size: 2.5,
+        health: 35,
+        spawnWeight: 0,
+        minimapColor: '#989080',
+        groundY: 0.3,
+        biome: 'coastal',
+        detectionRange: 25,
+        snakeStage: 'monstrous',
+        mealsToGrow: 0,
+        colors: {
+            body: "#c0b8aa",
+            markings: "#1e1e1e",
+            belly: "#d0c8ba",
+            head: "#b0a898",
+            eyes: "#999900",
+            tongue: "#aa0000",
+            nostrils: "#222222"
+        }
+    },
+
+    // ========================================================================
+    // COASTAL DREADMAW
+    // ========================================================================
+    // Apex crocodilian predator — Deinosuchus-inspired.
+    // 7 growth stages. Ambushes from water/sand. Death rolls prey.
+    // Drops jawbone sword on death (adult+).
+
+    // Hatchling — tiny, yellow, vulnerable to seagulls/weasels/murgayas
+    {
+        id: 'dreadmaw_hatchling',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 3,
+        speedVariation: 0.5,
+        chaseSpeed: 4,
+        swimSpeed: 5,
+        damage: 1,
+        radius: 0.3,
+        size: 0.4,
+        health: 5,
+        spawnWeight: 0,
+        minimapColor: '#c8a848',
+        groundY: 0.05,
+        biome: 'coastal',
+        detectionRange: 8,
+        dreadmawStage: 'hatchling',
+        growTime: 300, // 5 min
+        canAttackPlayer: false,
+        colors: {
+            body: "#c8a848",
+            belly: "#e8d888",
+            plates: "#a08838",
+            head: "#b89838",
+            jaw: "#d0b860",
+            eyes: "#aacc22",
+            teeth: "#f0f0e0",
+            ridgeCrest: "#a08838"
+        }
+    },
+
+    // Juvenile — larger, starting to darken
+    {
+        id: 'dreadmaw_juvenile',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 4,
+        speedVariation: 0.5,
+        chaseSpeed: 5,
+        swimSpeed: 7,
+        damage: 3,
+        radius: 0.5,
+        size: 0.7,
+        health: 15,
+        spawnWeight: 0,
+        minimapColor: '#a89040',
+        groundY: 0.1,
+        biome: 'coastal',
+        detectionRange: 12,
+        dreadmawStage: 'juvenile',
+        growTime: 300, // 5 min
+        canAttackPlayer: false,
+        colors: {
+            body: "#a89040",
+            belly: "#d0b868",
+            plates: "#887028",
+            head: "#988030",
+            jaw: "#b8a050",
+            eyes: "#99bb22",
+            teeth: "#e8e8d8",
+            ridgeCrest: "#887028"
+        }
+    },
+
+    // Adolescent — mid-size, darker brown
+    {
+        id: 'dreadmaw_adolescent',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 4.5,
+        speedVariation: 0.5,
+        chaseSpeed: 6,
+        swimSpeed: 8,
+        damage: 5,
+        radius: 0.7,
+        size: 1.0,
+        health: 30,
+        spawnWeight: 0,
+        minimapColor: '#8a7030',
+        groundY: 0.15,
+        biome: 'coastal',
+        detectionRange: 16,
+        dreadmawStage: 'adolescent',
+        growTime: 300, // 5 min
+        canAttackPlayer: false,
+        colors: {
+            body: "#8a7030",
+            belly: "#b89850",
+            plates: "#705820",
+            head: "#7a6228",
+            jaw: "#988040",
+            eyes: "#88aa22",
+            teeth: "#e0e0d0",
+            ridgeCrest: "#705820"
+        }
+    },
+
+    // Sub-adult — dangerous, can attack player (strength bar escape)
+    {
+        id: 'dreadmaw_subadult',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 5,
+        speedVariation: 0.5,
+        chaseSpeed: 7,
+        swimSpeed: 10,
+        damage: 12,
+        radius: 0.9,
+        size: 1.3,
+        health: 55,
+        spawnWeight: 0,
+        minimapColor: '#6a5420',
+        groundY: 0.2,
+        biome: 'coastal',
+        detectionRange: 20,
+        dreadmawStage: 'subadult',
+        growTime: 480, // 8 min — longest stage
+        canAttackPlayer: true,
+        strengthBarDifficulty: 2.5, // How fast bar decays per second
+        colors: {
+            body: "#6a5420",
+            belly: "#988040",
+            plates: "#584418",
+            head: "#5e4818",
+            jaw: "#786030",
+            eyes: "#779922",
+            teeth: "#d8d8c8",
+            ridgeCrest: "#584418"
+        }
+    },
+
+    // Adult — apex predator, 120 HP, near-impossible strength bar
+    {
+        id: 'dreadmaw_adult',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 5.5,
+        speedVariation: 0.5,
+        chaseSpeed: 8,
+        swimSpeed: 12,
+        damage: 20,
+        radius: 1.2,
+        size: 1.7,
+        health: 120,
+        spawnWeight: 0,
+        minimapColor: '#4a3810',
+        groundY: 0.3,
+        biome: 'coastal',
+        detectionRange: 25,
+        dreadmawStage: 'adult',
+        growTime: 1800, // 30 min for Elder
+        canAttackPlayer: true,
+        strengthBarDifficulty: 5.0,
+        gender: 'male',
+        colors: {
+            body: "#4a3810",
+            belly: "#786028",
+            plates: "#3a2808",
+            head: "#403010",
+            jaw: "#584418",
+            eyes: "#668811",
+            teeth: "#d0d0c0",
+            ridgeCrest: "#3a2808"
+        }
+    },
+    // Adult female — slightly smaller, no head ridge
+    {
+        id: 'dreadmaw_adult_female',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 5.5,
+        speedVariation: 0.5,
+        chaseSpeed: 8,
+        swimSpeed: 12,
+        damage: 18,
+        radius: 1.1,
+        size: 1.5,
+        health: 100,
+        spawnWeight: 0,
+        minimapColor: '#5a4818',
+        groundY: 0.28,
+        biome: 'coastal',
+        detectionRange: 25,
+        dreadmawStage: 'adult',
+        canAttackPlayer: true,
+        strengthBarDifficulty: 4.5,
+        gender: 'female',
+        colors: {
+            body: "#5a4818",
+            belly: "#887030",
+            plates: "#483810",
+            head: "#504018",
+            jaw: "#685020",
+            eyes: "#668811",
+            teeth: "#d0d0c0",
+            ridgeCrest: "#483810"
+        }
+    },
+
+    // Elder — reached after 30 min + eating-based, massive
+    {
+        id: 'dreadmaw_elder',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 5,
+        speedVariation: 0.3,
+        chaseSpeed: 9,
+        swimSpeed: 14,
+        damage: 20,
+        radius: 1.5,
+        size: 2.2,
+        health: 150,
+        spawnWeight: 0,
+        minimapColor: '#3a2808',
+        groundY: 0.4,
+        biome: 'coastal',
+        detectionRange: 30,
+        dreadmawStage: 'elder',
+        mealsToGrow: 15, // Eating-based from here
+        canAttackPlayer: true,
+        strengthBarDifficulty: 6.0,
+        colors: {
+            body: "#3a2808",
+            belly: "#604818",
+            plates: "#2a1a04",
+            head: "#301e06",
+            jaw: "#483408",
+            eyes: "#557700",
+            teeth: "#c8c8b8",
+            ridgeCrest: "#2a1a04"
+        }
+    },
+
+    // Ocean King — legendary, story-important, nearly unkillable
+    {
+        id: 'dreadmaw_ocean_king',
+        type: 'dreadmaw',
+        category: 'carnivore',
+        friendly: false,
+        speed: 5,
+        speedVariation: 0.2,
+        chaseSpeed: 10,
+        swimSpeed: 16,
+        damage: 20,
+        radius: 2.0,
+        size: 3.0,
+        health: 175,
+        spawnWeight: 0,
+        minimapColor: '#1a0a00',
+        groundY: 0.5,
+        biome: 'coastal',
+        detectionRange: 40,
+        dreadmawStage: 'ocean_king',
+        mealsToGrow: 0, // Max stage
+        canAttackPlayer: true,
+        strengthBarDifficulty: 8.0,
+        colors: {
+            body: "#2a1a04",
+            belly: "#483408",
+            plates: "#1a0a00",
+            head: "#201004",
+            jaw: "#382408",
+            eyes: "#446600",
+            teeth: "#b8b8a8",
+            ridgeCrest: "#1a0a00"
+        }
+    }
+
 ];
 
 

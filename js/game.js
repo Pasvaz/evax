@@ -190,6 +190,11 @@ window.GameState = {
     tavernCamera: null,
     savedTavernPosition: null,
 
+    isInsideTimShop: false,      // Player is inside Tim's Thunder Shop
+    timShopScene: null,
+    timShopCamera: null,
+    savedTimShopPosition: null,
+
     // Shop system
     isShopOpen: false,
     shopQuantities: {},
@@ -1102,6 +1107,53 @@ window.Game = (function() {
             }
         }
 
+        // Spawn crabs on the beach
+        if (targetData.spawnCrabs) {
+            if (targetData.jetCrabs > 0) Enemies.spawnJetCrabs(targetData.jetCrabs);
+            if (targetData.slackpinchCrabs > 0) Enemies.spawnSlackpinchCrabs(targetData.slackpinchCrabs);
+        }
+        // Spawn amphipods
+        if (targetData.spawnAmphipods && targetData.amphipods > 0) {
+            Enemies.spawnAmphipods(targetData.amphipods);
+        }
+        // Spawn beach weasels
+        if (targetData.spawnBeachWeasels && targetData.beachWeasels > 0) {
+            Enemies.spawnBeachWeasels(targetData.beachWeasels);
+            GameState.beachWeaselMatingTimer = 0;
+        }
+        // Spawn Murgaya packs
+        if (targetData.spawnMurgayaPacks && targetData.murgayaPacks > 0) {
+            for (var mp = 0; mp < targetData.murgayaPacks; mp++) {
+                Enemies.spawnMurgayaPack(mp);
+            }
+            GameState.murgayaMatingTimer = 0;
+        }
+
+        // Spawn flangert berry bushes
+        if (targetData.spawnBerryBushes && targetData.berryBushes > 0) {
+            Items.spawnBerryBushes(targetData.berryBushes);
+        }
+
+        // Spawn GCF Deer
+        if (targetData.spawnGcfDeer && targetData.gcfDeerCount > 0) {
+            Enemies.spawnGcfDeer(targetData.gcfDeerCount);
+        }
+
+        // Spawn Langarts Blitting Birds
+        if (targetData.spawnLBBirds && targetData.lbBirdCount > 0) {
+            Enemies.spawnLBBirds(targetData.lbBirdCount);
+        }
+
+        // Spawn Coastal Whispering Tree Snakes
+        if (targetData.spawnWhisperingSnakes && targetData.whisperingSnakeCount > 0) {
+            Enemies.spawnWhisperingSnakes(targetData.whisperingSnakeCount);
+        }
+
+        // Spawn Coastal Dreadmaws
+        if (targetData.spawnDreadmaws && targetData.dreadmawCount > 0) {
+            Enemies.spawnDreadmaws(targetData.dreadmawCount);
+        }
+
         // Spawn treasure chest on a random island (coastal only)
         if (biomeId === 'coastal' && !GameState.chestRespawnTimer) {
             spawnTreasureChest();
@@ -1171,6 +1223,9 @@ window.Game = (function() {
 
         // Remove all artifacts from scene (but keep in inventory!)
         Items.clearArtifacts();
+
+        // Remove berry bushes
+        if (Items.clearBerryBushes) Items.clearBerryBushes();
 
         // Remove all goose nests
         GameState.nests.forEach(n => {
@@ -1335,6 +1390,22 @@ window.Game = (function() {
                 return; // Skip normal game loop
             }
 
+            // Check if peeking into weasel burrow
+            if (GameState.burrowPeekActive) {
+                if (GameState.burrowPeekScene && GameState.burrowPeekCamera) {
+                    GameState.renderer.render(GameState.burrowPeekScene, GameState.burrowPeekCamera);
+                }
+                return;
+            }
+
+            // Check if inside Tim's shop - pauses outside world
+            if (GameState.isInsideTimShop) {
+                Dialogs.updateTimShop(delta);
+                Dialogs.renderTimShop();
+                UI.updateUI();
+                return;
+            }
+
             // Pause game during piglet catching minigame
             if (GameState.pigletMinigameActive) {
                 // Still render the scene but don't update anything
@@ -1409,7 +1480,16 @@ window.Game = (function() {
             );
 
             if (isSprinting) {
-                GameState.stamina = Math.max(0, GameState.stamina - delta * SETTINGS.BALANCE.STAMINA_SPRINT_DRAIN);
+                var sprintDrain = SETTINGS.BALANCE.STAMINA_SPRINT_DRAIN;
+                // Electric crossbow penalty — 2x stamina drain while running
+                var hotbarCheck = GameState.hotbarSlots ? GameState.hotbarSlots[GameState.selectedHotbarSlot] : null;
+                if (hotbarCheck && hotbarCheck.id === 'electric_crossbow') {
+                    var cbStats = TOOL_STATS.swords.electric_crossbow;
+                    if (cbStats && cbStats.runStaminaMultiplier) {
+                        sprintDrain *= cbStats.runStaminaMultiplier;
+                    }
+                }
+                GameState.stamina = Math.max(0, GameState.stamina - delta * sprintDrain);
             } else {
                 GameState.stamina = Math.min(GameState.maxStamina, GameState.stamina + delta * SETTINGS.BALANCE.STAMINA_RECOVERY_RATE);
             }
@@ -1420,6 +1500,9 @@ window.Game = (function() {
             }
             if (GameState.thunderCooldown > 0) {
                 GameState.thunderCooldown = Math.max(0, GameState.thunderCooldown - delta);
+            }
+            if (GameState.crossbowCooldown > 0) {
+                GameState.crossbowCooldown = Math.max(0, GameState.crossbowCooldown - delta);
             }
             if (GameState.chopCooldown > 0) {
                 GameState.chopCooldown = Math.max(0, GameState.chopCooldown - delta);
@@ -1631,6 +1714,55 @@ window.Game = (function() {
                     Enemies.triggerSeagullMating();
                 }
 
+                // Crab mating timer — every 5-7 minutes (360 seconds avg)
+                GameState.crabMatingTimer = (GameState.crabMatingTimer || 0) + delta;
+                if (GameState.crabMatingTimer >= 360) {
+                    GameState.crabMatingTimer = Math.random() * 60; // 5-7 min variance
+                    Enemies.triggerCrabMating('jet_crab');
+                    Enemies.triggerCrabMating('slackpinch_crab');
+                }
+
+                // Update crab mating behaviour + egg hatching
+                Enemies.updateCrabMating(delta);
+
+                // Beach weasel mating timer — every 5 minutes
+                GameState.beachWeaselMatingTimer = (GameState.beachWeaselMatingTimer || 0) + delta;
+                if (GameState.beachWeaselMatingTimer >= 300) {
+                    GameState.beachWeaselMatingTimer = 0;
+                    Enemies.triggerBeachWeaselMating();
+                }
+
+                // Update weasel mating + burrow system
+                Enemies.updateBeachWeaselMating(delta);
+
+                // Beach Murgaya mating timer — every 7 minutes
+                GameState.murgayaMatingTimer = (GameState.murgayaMatingTimer || 0) + delta;
+                if (GameState.murgayaMatingTimer >= 420) {
+                    GameState.murgayaMatingTimer = 0;
+                    Enemies.triggerMurgayaMating();
+                }
+
+                // Update Murgaya pack behaviour, den lifecycle
+                Enemies.updateMurgayaBehavior(delta);
+                Enemies.updateMurgayaAdolescents(delta);
+
+                // Update GCF Deer behaviour (wander, eat berries, flee, grow)
+                Enemies.updateGcfDeerBehavior(delta);
+
+                // Update Langarts Blitting Birds (wander, perch, eat, mate, nest)
+                Enemies.updateLBBirdBehavior(delta);
+
+                // Update Whispering Tree Snakes (coil, hunt, constrict)
+                Enemies.updateWhisperingSnakeBehavior(delta);
+                Enemies.updateSnakeConstrictionMiniGame(delta);
+
+                // Update Coastal Dreadmaws (patrol, ambush, death roll)
+                Enemies.updateDreadmawBehavior(delta);
+                Enemies.updateDreadmawDeathRollMiniGame(delta);
+
+                // Update berry bush regrowth
+                Items.updateBerryBushRegrowth(delta);
+
                 // Fish respawn check — maintain minimum populations every 30s
                 GameState.fishRespawnTimer = (GameState.fishRespawnTimer || 0) + delta;
                 if (GameState.fishRespawnTimer >= 30) {
@@ -1749,6 +1881,12 @@ window.Game = (function() {
                     } else if (GameState.isInsideTavern) {
                         // Inside tavern - handle tavern interactions
                         Tavern.handleInteraction();
+                    } else if (GameState.burrowPeekActive) {
+                        // Exit burrow peek
+                        Enemies.exitBurrowPeek();
+                    } else if (GameState.isInsideTimShop) {
+                        // Inside Tim's shop - handle shop interactions
+                        Dialogs.handleTimShopInteraction();
                     } else if (GameState.isInsideHut) {
                         // Inside hut - handle hut interactions
                         ResearchHut.handleInteraction();
@@ -1760,6 +1898,15 @@ window.Game = (function() {
                         } else {
                             Dialogs.advanceDialog();
                         }
+                    } else if (typeof Items !== 'undefined' && Items.checkNearbyBerryBush && Items.checkNearbyBerryBush()) {
+                        // Near berry bush — pick a berry
+                        Items.collectBerryFromBush(Items.checkNearbyBerryBush());
+                    } else if (typeof Enemies !== 'undefined' && Enemies.checkBurrowInteraction && Enemies.checkBurrowInteraction()) {
+                        // Near weasel burrow — peek inside
+                        Enemies.peekIntoBurrow(Enemies.checkBurrowInteraction());
+                    } else if (Dialogs.checkEnterTimShop()) {
+                        // Near Tim's shop entrance
+                        Dialogs.enterTimShop();
                     } else if (GameState.nearbyVillager) {
                         Dialogs.openDialog(GameState.nearbyVillager);
                     } else if (Tavern.checkEnterTavern()) {
@@ -1820,8 +1967,12 @@ window.Game = (function() {
                         PigonGame.close();
                     } else if (BoardGame.isOpen()) {
                         BoardGame.close();
+                    } else if (GameState.burrowPeekActive) {
+                        Enemies.exitBurrowPeek();
                     } else if (GameState.isInsideTavern) {
                         Tavern.exitTavern();
+                    } else if (GameState.isInsideTimShop) {
+                        Dialogs.exitTimShop();
                     } else if (pigletPickerOpen) {
                         closePigletPicker();
                     } else if (document.getElementById('egg-shop-overlay').classList.contains('active')) {
@@ -1943,12 +2094,14 @@ window.Game = (function() {
                 e.preventDefault(); // Always block context menu during gameplay
 
                 if (GameState.isDialogOpen || GameState.isCraftMenuOpen || GameState.isInventoryOpen) return;
-                if (GameState.isInsideTavern || GameState.isInsideHut) return;
+                if (GameState.isInsideTavern || GameState.isInsideHut || GameState.isInsideTimShop) return;
 
                 var hotbarItem = UI.getSelectedHotbarItem();
-                if (!hotbarItem || hotbarItem.id !== 'thunder_scythe') return;
+                if (!hotbarItem) return;
 
-                fireThunderbolt(e);
+                if (hotbarItem.id === 'thunder_scythe') {
+                    fireThunderbolt(e);
+                }
             });
 
             // Start screen buttons
@@ -2505,6 +2658,12 @@ window.Game = (function() {
                 if (typeof Enemies !== 'undefined' && Enemies.triggerSeagullMating) {
                     Enemies.triggerSeagullMating();
                     console.log('Seagull nesting triggered!');
+                }
+            });
+            document.getElementById('trigger-lb-mating-btn').addEventListener('click', () => {
+                if (typeof Enemies !== 'undefined' && Enemies.triggerLBBirdMating) {
+                    Enemies.triggerLBBirdMating();
+                    console.log('LB Bird mating triggered!');
                 }
             });
 
@@ -3175,6 +3334,12 @@ window.Game = (function() {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, GameState.camera);
 
+        if (isSword && itemId === 'electric_crossbow') {
+            // CROSSBOW: ranged bolt on left click (no melee spin)
+            fireCrossbowBolt(event);
+            return;
+        }
+
         if (isSword) {
             // SWORD: spin slash — 360° AoE attack
             if (GameState.swordSpinActive) return; // Already spinning
@@ -3455,6 +3620,154 @@ window.Game = (function() {
 
         GameState.scene.add(sparkGroup);
         setTimeout(function() { GameState.scene.remove(sparkGroup); }, 400);
+    }
+
+    // ================================================================
+    // ELECTRIC CROSSBOW — Right-click rapid-fire chain lightning bolt
+    // ================================================================
+    GameState.crossbowCooldown = 0;
+
+    function fireCrossbowBolt(event) {
+        var stats = TOOL_STATS.swords.electric_crossbow;
+        if (!stats) return;
+
+        // Cooldown check
+        if (GameState.crossbowCooldown > 0) {
+            showCombatHint('Reloading! (' + GameState.crossbowCooldown.toFixed(1) + 's)');
+            return;
+        }
+
+        // Stamina cost (10% per shot)
+        var staminaCost = GameState.maxStamina * 0.10;
+        if (GameState.stamina < staminaCost) {
+            showCombatHint('Too exhausted to fire!');
+            return;
+        }
+
+        // Raycast to find target enemy
+        var mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, GameState.camera);
+
+        var closestEnemy = null;
+        var closestDist = Infinity;
+
+        GameState.enemies.forEach(function(enemy) {
+            if (!enemy.parent || !enemy.userData || enemy.userData.health <= 0) return;
+            var dist = GameState.peccary.position.distanceTo(enemy.position);
+            if (dist > stats.boltMaxRange) return;
+
+            var enemyPos = enemy.position.clone();
+            enemyPos.y += 1;
+            var toEnemy = enemyPos.clone().sub(raycaster.ray.origin);
+            var projected = toEnemy.dot(raycaster.ray.direction);
+            if (projected < 0) return;
+            var closestPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(projected));
+            var perpDist = closestPoint.distanceTo(enemyPos);
+            if (perpDist < 8 && dist < closestDist) {
+                closestDist = dist;
+                closestEnemy = enemy;
+            }
+        });
+
+        if (!closestEnemy) {
+            showCombatHint('No target in range!');
+            return;
+        }
+
+        // Apply cost
+        GameState.stamina = Math.max(0, GameState.stamina - staminaCost);
+        GameState.crossbowCooldown = stats.boltCooldown;
+
+        // Random damage in range
+        var damage = stats.boltMinDmg + Math.floor(Math.random() * (stats.boltMaxDmg - stats.boltMinDmg + 1));
+
+        // Create chain lightning bolt visual
+        createChainLightningEffect(GameState.peccary.position, closestEnemy.position);
+
+        // Apply damage
+        Enemies.damageEnemy(closestEnemy, damage);
+        Game.playSound('hurt');
+        showCombatHint('🏹 Bolt! ' + damage + ' damage!');
+    }
+
+    function createChainLightningEffect(from, to) {
+        var boltGroup = new THREE.Group();
+        var boltMat = new THREE.MeshBasicMaterial({ color: 0x66ddff });
+        var glowMat = new THREE.MeshBasicMaterial({ color: 0xaaeeff, transparent: true, opacity: 0.4 });
+        var crackMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+
+        var start = from.clone();
+        start.y += 1.2;
+        var end = to.clone();
+        end.y += 1;
+
+        // Main bolt — 6 segments with tight jitter (faster, sharper than thunderbolt)
+        var segments = 6;
+        var prev = start.clone();
+
+        for (var i = 1; i <= segments; i++) {
+            var t = i / segments;
+            var next = new THREE.Vector3().lerpVectors(start, end, t);
+            if (i < segments) {
+                next.x += (Math.random() - 0.5) * 2;
+                next.y += (Math.random() - 0.5) * 1.5;
+                next.z += (Math.random() - 0.5) * 2;
+            }
+
+            var dir = next.clone().sub(prev);
+            var len = dir.length();
+
+            // Thin bolt segment
+            var bolt = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, len), boltMat);
+            bolt.position.copy(prev.clone().add(next).multiplyScalar(0.5));
+            bolt.lookAt(next);
+            boltGroup.add(bolt);
+
+            // Glow
+            var glow = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, len), glowMat);
+            glow.position.copy(bolt.position);
+            glow.lookAt(next);
+            boltGroup.add(glow);
+
+            // Branch crackles — small forks off the main bolt (chain lightning look)
+            if (i > 1 && i < segments && Math.random() > 0.4) {
+                var branchEnd = next.clone();
+                branchEnd.x += (Math.random() - 0.5) * 4;
+                branchEnd.y += (Math.random() - 0.5) * 2;
+                branchEnd.z += (Math.random() - 0.5) * 4;
+                var branchDir = branchEnd.clone().sub(next);
+                var branchLen = branchDir.length() * 0.5;
+                var branchMid = next.clone().add(branchDir.multiplyScalar(0.5));
+                var crack = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, branchLen), crackMat);
+                crack.position.copy(branchMid);
+                crack.lookAt(branchEnd);
+                boltGroup.add(crack);
+            }
+
+            prev = next.clone();
+        }
+
+        // Small impact spark at target (smaller than thunderbolt)
+        var flash = new THREE.Mesh(
+            new THREE.SphereGeometry(0.8, 6, 6),
+            new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.6 })
+        );
+        flash.position.copy(end);
+        boltGroup.add(flash);
+
+        var light = new THREE.PointLight(0x44ccff, 1.5, 10);
+        light.position.copy(end);
+        boltGroup.add(light);
+
+        GameState.scene.add(boltGroup);
+
+        // Shorter lifetime than thunderbolt — snappy feel
+        setTimeout(function() {
+            GameState.scene.remove(boltGroup);
+        }, 200);
     }
 
     /**
