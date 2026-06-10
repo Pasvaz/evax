@@ -2543,8 +2543,47 @@ window.Tavern = (function() {
                     choices: [{ text: "Back.", nextNode: 'greeting' }]
                 };
             }
+
+            // Vermin Catchzer quest: 3 seagulls + 1 bakka seal
+            var kills = GameState.animalKills || {};
+            var seagullKills = kills['pilfera_coastalis'] || 0;
+            var sealKills = kills['bakka_seal'] || 0;
+            var seagullDone = seagullKills >= 3;
+            var sealDone = sealKills >= 1;
+
+            if (seagullDone && sealDone) {
+                // Quest complete — grant the two special board colours
+                if (!GameState.unlockedBoardColours) GameState.unlockedBoardColours = [];
+                if (GameState.unlockedBoardColours.indexOf('blotchy_pig') === -1) {
+                    GameState.unlockedBoardColours.push('blotchy_pig');
+                }
+                if (GameState.unlockedBoardColours.indexOf('pilfera_net') === -1) {
+                    GameState.unlockedBoardColours.push('pilfera_net');
+                }
+                UI.showToast('Quest Complete!', 'Vermin Catchzer — 2 special colours unlocked!');
+                return {
+                    text: '<b>Quest: Vermin Catchzer — COMPLETE!</b><br><br>' +
+                        '<i>Mon Dieu!</i> You have done it! Ze seagulls, ze seal — all dealt with! ' +
+                        'I am <i>très impressionné</i>. You are a true exterminator, non?<br><br>' +
+                        'As promised, here are your rewards — two <i>très spécial</i> colours for ze board game:<br><br>' +
+                        '🐷 <b>Le Cochon Tacheté</b> — A black pig with blotches. ' +
+                        'With zis colour, only up/down/left/right can touch — diagonals are <i>libre</i>!<br>' +
+                        '🪹 <b>Pilfera en Filet</b> — A seagull in a net. ' +
+                        'With zis colour, only diagonals can touch — ze sides are <i>libre</i>!',
+                    choices: [{ text: "Merci, Pigierre!", nextNode: 'greeting' }]
+                };
+            }
+
             return {
-                text: "Zere are rats in my cellar! Filthy vermin! Kill 5 of zem and I'll reward you with a special board colour — ze Blotchy Pig! Zey come out at night...",
+                text: '<b>Quest: Vermin Catchzer</b><br><br>' +
+                    '<i>Sacré bleu!</i> Ze vermin on ze coast are ruining my supply shipments! ' +
+                    'Zose horrible seagulls steal from my crates, and ze bakka seals — ' +
+                    'zey scratch my delivery barrels with zeir tusks!<br><br>' +
+                    'If you could travel to ze coast and kill <b>3 seagulls</b> and <b>1 bakka seal</b>, ' +
+                    'I would reward you with two <i>très rare</i> ' +
+                    'colours for Pigston\'s board game. Colours with <b>special powers</b>, oui?<br><br>' +
+                    'Seagulls: <b>' + Math.min(seagullKills, 3) + '/3</b> ' + (seagullDone ? '✓' : '') + '<br>' +
+                    'Bakka Seals: <b>' + Math.min(sealKills, 1) + '/1</b> ' + (sealDone ? '✓' : ''),
                 choices: [
                     { text: "I'll handle it.", nextNode: null },
                     { text: "Back.", nextNode: 'greeting' }

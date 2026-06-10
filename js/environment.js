@@ -46,7 +46,9 @@ window.Environment = (function() {
         for (let i = 0; i < vertices.length; i += 3) {
             // PlaneGeometry vertices already span from -WORLD_SIZE to +WORLD_SIZE
             const x = vertices[i];
-            const z = vertices[i + 1];
+            // Geometry Y maps to world -Z after ground.rotation.x = -PI/2,
+            // and RIVER_POINTS are in world coordinates — so negate!
+            const z = -vertices[i + 1];
 
             // Check if this vertex is in or near the river
             const inRiver = isInRiver(x, z);
@@ -1163,6 +1165,9 @@ window.Environment = (function() {
         // Clear ocean islands
         GameState.oceanIslands = [];
 
+        // Clear grass tufts (meshes are tracked, so just reset the list)
+        GameState.grassTufts = [];
+
         // Reset scene background and fog to defaults
         GameState.scene.background = new THREE.Color(0x87ceeb);  // Default sky blue
         GameState.scene.fog = null;
@@ -1252,7 +1257,10 @@ window.Environment = (function() {
 
             // Check if in river (only for arboreal biome)
             if (biomeData.waterFeature === 'river') {
-                const inRiver = isInRiver(x, z);
+                // Geometry Y maps to world -Z after ground.rotation.x = -PI/2,
+                // and RIVER_POINTS are in world coordinates — so negate!
+                const wz = -z;
+                const inRiver = isInRiver(x, wz);
                 const nearRiver = !inRiver && RIVER_POINTS.length > 0 && (() => {
                     let minDist = Infinity;
                     for (let j = 0; j < RIVER_POINTS.length - 1; j++) {
@@ -1262,11 +1270,11 @@ window.Environment = (function() {
                         const dz = p2.z - p1.z;
                         const len = Math.sqrt(dx * dx + dz * dz);
                         const t = Math.max(0, Math.min(1,
-                            ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+                            ((x - p1.x) * dx + (wz - p1.z) * dz) / (len * len)
                         ));
                         const closestX = p1.x + t * dx;
                         const closestZ = p1.z + t * dz;
-                        const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+                        const dist = Math.sqrt((x - closestX) ** 2 + (wz - closestZ) ** 2);
                         minDist = Math.min(minDist, dist);
                     }
                     return minDist < RIVER_WIDTH / 2 + 8;
@@ -1283,11 +1291,11 @@ window.Environment = (function() {
                         const dz = p2.z - p1.z;
                         const len = Math.sqrt(dx * dx + dz * dz);
                         const t = Math.max(0, Math.min(1,
-                            ((x - p1.x) * dx + (z - p1.z) * dz) / (len * len)
+                            ((x - p1.x) * dx + (wz - p1.z) * dz) / (len * len)
                         ));
                         const closestX = p1.x + t * dx;
                         const closestZ = p1.z + t * dz;
-                        const dist = Math.sqrt((x - closestX) ** 2 + (z - closestZ) ** 2);
+                        const dist = Math.sqrt((x - closestX) ** 2 + (wz - closestZ) ** 2);
                         minDist = Math.min(minDist, dist);
                     }
                     const edgeDist = minDist - RIVER_WIDTH / 2;
@@ -2621,6 +2629,7 @@ window.Environment = (function() {
 
             GameState.scene.add(tuft);
             GameState.grassTufts.push(tuft);
+            trackObject(tuft);
         }
     }
 
@@ -2636,10 +2645,8 @@ window.Environment = (function() {
         tuft.userData.size = Math.max(0, tuft.userData.size - 0.15);
         tuft.scale.set(tuft.userData.size, tuft.userData.size, tuft.userData.size);
 
-        // Start regrowth timer (60 seconds)
-        if (tuft.userData.size <= 0) {
-            tuft.userData.regrowthTimer = 60;
-        }
+        // (Re)start regrowth delay on every bite — partial or full (60 seconds)
+        tuft.userData.regrowthTimer = 60;
 
         // Deer gets satisfaction
         if (deer.userData.hunger) {
@@ -2655,14 +2662,15 @@ window.Environment = (function() {
         if (!GameState.grassTufts) return;
 
         GameState.grassTufts.forEach(tuft => {
-            if (tuft.userData.size < 1.0 && tuft.userData.regrowthTimer > 0) {
-                tuft.userData.regrowthTimer -= delta;
+            if (tuft.userData.size >= 1.0) return; // Fully grown — nothing to do
 
-                // Start regrowing after timer expires
-                if (tuft.userData.regrowthTimer <= 0) {
-                    tuft.userData.size = Math.min(1.0, tuft.userData.size + delta * 0.02);
-                    tuft.scale.set(tuft.userData.size, tuft.userData.size, tuft.userData.size);
-                }
+            if (tuft.userData.regrowthTimer > 0) {
+                // Still waiting for regrowth to begin
+                tuft.userData.regrowthTimer -= delta;
+            } else {
+                // Delay over — grow steadily back to full size, then stop
+                tuft.userData.size = Math.min(1.0, tuft.userData.size + delta * 0.02);
+                tuft.scale.set(tuft.userData.size, tuft.userData.size, tuft.userData.size);
             }
         });
     }
@@ -2986,6 +2994,7 @@ window.Environment = (function() {
                     tree.position.y = def.height * 0.5;
                     GameState.trees.push(tree);
                     GameState.scene.add(tree);
+                    trackObject(tree);
                 }
                 // 1-2 small decorative bushes
                 var numBushes = 1 + Math.floor(Math.random() * 2);
@@ -3000,6 +3009,7 @@ window.Environment = (function() {
                     bushMesh.position.set(bx, def.height * 0.5 + 0.5, bz);
                     bushMesh.castShadow = true;
                     GameState.scene.add(bushMesh);
+                    trackObject(bushMesh);
                 }
             }
         });

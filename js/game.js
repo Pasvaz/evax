@@ -283,6 +283,11 @@ window.Game = (function() {
 
         if (GameState.soundCooldowns[type] && now < GameState.soundCooldowns[type]) return;
 
+        // Unknown sound? Bail out before creating any audio nodes
+        // (otherwise we'd leak orphan oscillators that never start)
+        var knownSounds = ['peccary', 'badger', 'weasel', 'collect', 'hurt', 'jump', 'cat_pounce'];
+        if (knownSounds.indexOf(type) === -1) return;
+
         const oscillator = GameState.audioCtx.createOscillator();
         const gainNode = GameState.audioCtx.createGain();
         oscillator.connect(gainNode);
@@ -341,6 +346,8 @@ window.Game = (function() {
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
                 oscillator.start(now);
                 oscillator.stop(now + 0.15);
+                // Cooldown so per-frame damage (e.g. hypothermia) doesn't buzz
+                GameState.soundCooldowns.hurt = now + 0.5;
                 break;
 
             case 'jump':
@@ -493,6 +500,7 @@ window.Game = (function() {
         'uronin_seal':      "A seal attacked you in the water!",
         'orcleton':         "An Orcleton caught you!",
         'bakka_seal':       "A Bakka Seal got you!",
+        'hypothermia':      "You froze in the snowy mountains! Find shelter or craft a Fur Coat.",
         'default':          "Something got you! Better luck next time."
     };
 
@@ -607,7 +615,7 @@ window.Game = (function() {
         GameState.lastDamageSource = null;
         GameState.score = 0;
         GameState.resourceCounts = Object.assign(
-            { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0 },
+            { berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0, arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0, manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0, bakka_seal_tooth: 0, flour: 0, sugar: 0, butter: 0, hide: 0 },
             CONFIG.STARTING_RESOURCES || {}
         );
         GameState.pigCoins = CONFIG.STARTING_COINS || 0;
@@ -999,7 +1007,10 @@ window.Game = (function() {
             if (GameState.easterEventActive) {
                 applyEasterSky();
                 // Re-spawn Easter content when returning to arboreal
+                // (remove any leftovers first so re-entry never duplicates)
                 if (targetBiome === 'arboreal') {
+                    removeEasterStalls();
+                    removeCherryBlossoms();
                     spawnEasterStalls();
                     spawnCherryBlossoms();
                 }
@@ -1221,6 +1232,10 @@ window.Game = (function() {
         GameState.resources.forEach(r => GameState.scene.remove(r));
         GameState.resources = [];
 
+        // Remove treasure chest (it belongs to the old biome)
+        if (GameState.activeChest) GameState.scene.remove(GameState.activeChest);
+        GameState.activeChest = null;
+
         // Remove all artifacts from scene (but keep in inventory!)
         Items.clearArtifacts();
 
@@ -1323,6 +1338,13 @@ window.Game = (function() {
         if (GameState.tavernBuilding) {
             GameState.scene.remove(GameState.tavernBuilding);
             GameState.tavernBuilding = null;
+        }
+
+        // Remove Easter event content (stalls, NPCs, cherry trees) — it only
+        // belongs in the arboreal village and gets respawned on re-entry
+        if (GameState.easterEventActive) {
+            removeEasterStalls();
+            removeCherryBlossoms();
         }
     }
 
@@ -1464,7 +1486,14 @@ window.Game = (function() {
 
             // Testing mode - keep resources infinite
             if (GameState.isTestingMode) {
-                GameState.resourceCounts = { berries: 999, nuts: 999, mushrooms: 999, seaweed: 999, eggs: 999, arsenic_mushrooms: 999, thous_pine_wood: 999, glass: 999, manglecacia_wood: 999, seaspray_birch_wood: 999, cinnamon: 999, bakka_seal_tooth: 999, flour: 999, sugar: 999, butter: 999, hide: 999 };
+                // Top up known resources without replacing the object
+                // (replacing it would wipe extra keys like cherry_petals)
+                if (!GameState._testingResourceKeys) {
+                    GameState._testingResourceKeys = ['berries', 'nuts', 'mushrooms', 'seaweed', 'eggs', 'arsenic_mushrooms', 'thous_pine_wood', 'glass', 'manglecacia_wood', 'seaspray_birch_wood', 'cinnamon', 'bakka_seal_tooth', 'flour', 'sugar', 'butter', 'hide'];
+                }
+                for (var tr = 0; tr < GameState._testingResourceKeys.length; tr++) {
+                    GameState.resourceCounts[GameState._testingResourceKeys[tr]] = 999;
+                }
                 GameState.pigCoins = 99999;
                 GameState.score = 999999;
                 GameState.hunger = 100;
@@ -1607,9 +1636,14 @@ window.Game = (function() {
 
                 // Wild dog hunt timer - every 8-10 minutes (480-600 seconds)
                 GameState.wildDogHuntTimer += delta;
-                // Use 540 seconds (9 minutes) as average
-                if (GameState.wildDogHuntTimer >= 480 + Math.random() * 120) {
+                // Roll the threshold once per cycle (re-rolling every frame
+                // would shift the goal post each frame)
+                if (!GameState.wildDogHuntThreshold) {
+                    GameState.wildDogHuntThreshold = 480 + Math.random() * 120;
+                }
+                if (GameState.wildDogHuntTimer >= GameState.wildDogHuntThreshold) {
                     GameState.wildDogHuntTimer = 0;
+                    GameState.wildDogHuntThreshold = 480 + Math.random() * 120;
                     Enemies.triggerWildDogHunt();
                 }
 
@@ -1998,6 +2032,10 @@ window.Game = (function() {
                 // Inventory shortcuts: I=toggle, B=bestiary, Q=quest, J=journal
                 var inventoryShortcuts = { i: null, b: 'bestiary', q: 'quest', j: 'journal' };
                 var inventoryTab = inventoryShortcuts[e.key.toLowerCase()];
+                // Q is shared with piglet control: when a combat piglet is in range, Q controls it instead
+                if (e.key.toLowerCase() === 'q' && hasControllablePiglet()) {
+                    inventoryTab = undefined;
+                }
                 if (inventoryTab !== undefined && GameState.gameRunning && !GameState.isDialogOpen && !GameState.isCraftMenuOpen && !GameState.isShopOpen) {
                     if (inventoryTab) {
                         Inventory.openToTab(inventoryTab);
@@ -2027,8 +2065,8 @@ window.Game = (function() {
                     }
                 }
 
-                // Q key — take control of nearest combat piglet
-                if (e.key.toLowerCase() === 'q') {
+                // Q key — take control of nearest combat piglet (only when one is in range)
+                if (e.key.toLowerCase() === 'q' && hasControllablePiglet()) {
                     if (GameState.gameRunning && !GameState.isDialogOpen && !GameState.isShopOpen && !GameState.isInventoryOpen && !GameState.isCraftMenuOpen && !GameState.isInsideHut) {
                         handlePigletControl();
                     }
@@ -2705,8 +2743,8 @@ window.Game = (function() {
                 // Spawn a cat in a tree right next to the player for testing
                 // Use camera position if player not ready
                 let playerPos = { x: 0, z: 0 };
-                if (GameState.player && GameState.player.position) {
-                    playerPos = GameState.player.position;
+                if (GameState.peccary && GameState.peccary.position) {
+                    playerPos = GameState.peccary.position;
                 } else if (GameState.camera) {
                     playerPos = { x: GameState.camera.position.x, z: GameState.camera.position.z };
                 }
@@ -2800,7 +2838,7 @@ window.Game = (function() {
             document.getElementById('give-petals-btn').addEventListener('click', () => {
                 GameState.resourceCounts.cherry_petals = (GameState.resourceCounts.cherry_petals || 0) + 30;
                 UI.showToast('Petals Added!', 'You now have ' + GameState.resourceCounts.cherry_petals + ' cherry petals.');
-                UI.updateHUD();
+                UI.updateUI();
             });
             document.getElementById('give-choco-eggs-btn').addEventListener('click', () => {
                 GameState.chocolateEggs = (GameState.chocolateEggs || 0) + 100;
@@ -4697,7 +4735,9 @@ function toggleFurCoat() {
 function attachFurCoatToPedro() {
     // Remove existing coat mesh
     if (GameState.furCoatMesh) {
-        GameState.furCoatMesh.parent.remove(GameState.furCoatMesh);
+        if (GameState.furCoatMesh.parent) {
+            GameState.furCoatMesh.parent.remove(GameState.furCoatMesh);
+        }
         GameState.furCoatMesh = null;
     }
 
@@ -5597,10 +5637,11 @@ function dropPetalTrail(x, z) {
     );
     petal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
     GameState.scene.add(petal);
+    var petalLife = 4 + Math.random() * 2; // 4-6 second lifetime
     GameState.petalTrails.push({
         mesh: petal,
-        life: 4 + Math.random() * 2, // 4-6 second lifetime
-        maxLife: 4 + Math.random() * 2,
+        life: petalLife,
+        maxLife: petalLife,
         swaySpeed: 1 + Math.random() * 2
     });
 
@@ -6449,7 +6490,7 @@ function collectCherryPetals() {
 
     Game.playSound('collect');
     UI.showToast('Cherry Petals!', 'You collected ' + amount + ' cherry blossom petal' + (amount > 1 ? 's' : '') + '!');
-    UI.updateHUD();
+    UI.updateUI();
     return true;
 }
 
@@ -7664,6 +7705,9 @@ function updatePigletAbilities(delta) {
         GameState.pigletBuffs.invisible = false;
         GameState.pigletBuffs.charmActive = false;
         GameState.pigletBuffs.resourceFinderActive = false;
+        // If Pedro was faded when the piglet left (dismissed/knocked out),
+        // make sure he's visible again
+        restorePlayerVisibility();
         return;
     }
 
@@ -7741,6 +7785,10 @@ function updatePigletAbilities(delta) {
         // Normal single-ability piglets
         applyAbilityById(ability, piglet, ud, delta, playerPos);
     }
+
+    // No piglet kept the invisibility fade alive this frame (e.g. the
+    // invisibility piglet was swapped out or mimic shifted) — restore Pedro
+    if (!GameState.pigletBuffs.invisible) restorePlayerVisibility();
 }
 
 function applyAbilityById(abilityId, piglet, ud, delta, playerPos) {
@@ -8095,14 +8143,7 @@ function applyUtility_invisibility(piglet, ud, delta, playerPos) {
     if (moved) {
         ud.stillTimer = 0;
         // Become visible again
-        if (GameState.peccary) {
-            GameState.peccary.traverse(function(child) {
-                if (child.material) {
-                    child.material.transparent = false;
-                    child.material.opacity = 1.0;
-                }
-            });
-        }
+        restorePlayerVisibility();
         GameState.pigletBuffs.invisible = false;
     } else {
         ud.stillTimer += delta;
@@ -8110,6 +8151,7 @@ function applyUtility_invisibility(piglet, ud, delta, playerPos) {
             // Fade Pedro to near-invisible
             GameState.pigletBuffs.invisible = true;
             if (GameState.peccary) {
+                GameState._playerFaded = true;
                 GameState.peccary.traverse(function(child) {
                     if (child.material) {
                         child.material.transparent = true;
@@ -8118,6 +8160,23 @@ function applyUtility_invisibility(piglet, ud, delta, playerPos) {
                 });
             }
         }
+    }
+}
+
+/**
+ * Restore Pedro's materials after invisibility fade.
+ * Safe to call every frame — does nothing unless he's currently faded.
+ */
+function restorePlayerVisibility() {
+    if (!GameState._playerFaded) return;
+    GameState._playerFaded = false;
+    if (GameState.peccary) {
+        GameState.peccary.traverse(function(child) {
+            if (child.material) {
+                child.material.transparent = false;
+                child.material.opacity = 1.0;
+            }
+        });
     }
 }
 
@@ -8141,8 +8200,10 @@ function updatePigletCombatEffects(delta) {
                 // Deal damage over time
                 enemy.userData.health -= enemy.userData.burnDamageRate * delta;
                 if (enemy.userData.health <= 0) {
-                    // Enemy defeated by burn — give score
-                    GameState.score += 5;
+                    // Enemy defeated by burn — stop burning and run the proper
+                    // death path (carcass, drops, score) via damageEnemy
+                    enemy.userData.burning = false;
+                    Enemies.damageEnemy(enemy, 0);
                 }
             }
         }
@@ -8152,20 +8213,23 @@ function updatePigletCombatEffects(delta) {
             enemy.userData.frozenTimer -= delta;
             if (enemy.userData.frozenTimer <= 0) {
                 enemy.userData.frozen = false;
-                // Restore tint
+                // Restore original (shared) materials and discard the tinted clones
                 enemy.traverse(function(child) {
-                    if (child.material && child.userData.preFreezeColor !== undefined) {
-                        child.material.color.setHex(child.userData.preFreezeColor);
-                        delete child.userData.preFreezeColor;
+                    if (child.userData.preFreezeMaterial) {
+                        if (child.material && child.material !== child.userData.preFreezeMaterial) {
+                            child.material.dispose();
+                        }
+                        child.material = child.userData.preFreezeMaterial;
+                        delete child.userData.preFreezeMaterial;
                     }
                 });
             } else {
-                // Tint enemy blue while frozen
+                // Tint enemy blue while frozen — clone materials so shared
+                // materials on other enemies aren't tinted too
                 enemy.traverse(function(child) {
-                    if (child.material && child.userData.preFreezeColor === undefined) {
-                        child.userData.preFreezeColor = child.material.color.getHex();
-                    }
-                    if (child.material) {
+                    if (child.material && !child.userData.preFreezeMaterial) {
+                        child.userData.preFreezeMaterial = child.material;
+                        child.material = child.material.clone();
                         child.material.color.setHex(0xAFEEEE);
                     }
                 });
@@ -8207,8 +8271,8 @@ function updatePigletCombatEffects(delta) {
                     var repelLen = Math.sqrt(repelDx * repelDx + repelDz * repelDz) || 1;
                     proj.target.position.x += (repelDx / repelLen) * 5;
                     proj.target.position.z += (repelDz / repelLen) * 5;
-                    // Small damage
-                    proj.target.userData.health -= 2;
+                    // Small damage — through damageEnemy so death/rewards work
+                    Enemies.damageEnemy(proj.target, 2);
                     spawnAbilityParticle(proj.target.position, 0x8B6914, 'OUCH!');
                 }
                 GameState.scene.remove(proj.mesh);
@@ -8247,8 +8311,15 @@ function spawnAbilityParticle(position, color, text) {
     // Float up and remove after 1 second
     var startY = group.position.y;
     var life = 0;
-    var animateParticle = function() {
-        life += 0.016;
+    var lastTime;
+    var animateParticle = function(timestamp) {
+        // Real frame delta (capped so background tabs don't jump)
+        var dt = 0.016;
+        if (timestamp !== undefined && lastTime !== undefined) {
+            dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+        }
+        lastTime = timestamp;
+        life += dt;
         group.position.y = startY + life * 2;
         sphere.material.opacity = Math.max(0, 1 - life);
         sphere.material.transparent = true;
@@ -8264,6 +8335,25 @@ function spawnAbilityParticle(position, color, text) {
 // ============================================================================
 // Q KEY — TAKE CONTROL OF NEAREST COMBAT PIGLET
 // ============================================================================
+
+/**
+ * True when a controllable combat piglet is within control range of the player.
+ * Used by the Q key to decide between piglet control and the quest tab.
+ */
+function hasControllablePiglet() {
+    if (!GameState.activePiglets || GameState.activePiglets.length === 0) return false;
+    if (!GameState.peccary) return false;
+    var playerPos = GameState.peccary.position;
+    for (var i = 0; i < GameState.activePiglets.length; i++) {
+        var piglet = GameState.activePiglets[i];
+        var ability = piglet.userData.ability;
+        var isCombat = (ability === 'hair_shot' || ability === 'spice_attack' ||
+                        ability === 'fire_charge' || ability === 'freeze_aura' ||
+                        ability === 'all_abilities');
+        if (isCombat && playerPos.distanceTo(piglet.position) < 8) return true;
+    }
+    return false;
+}
 
 function handlePigletControl() {
     if (!GameState.activePiglets || GameState.activePiglets.length === 0) return;
@@ -8342,20 +8432,23 @@ function damagePiglet(piglet, amount) {
 
     ud.health -= amount;
 
-    // Flash piglet red briefly
+    // Flash piglet red briefly — clone materials so shared materials
+    // on other piglets/enemies aren't tinted permanently
     piglet.traverse(function(child) {
-        if (child.material) {
-            if (!child.userData.pigletOrigColor) {
-                child.userData.pigletOrigColor = child.material.color.getHex();
-            }
+        if (child.material && !child.userData.pigletOrigMaterial) {
+            child.userData.pigletOrigMaterial = child.material;
+            child.material = child.material.clone();
             child.material.color.setHex(0xFF0000);
         }
     });
     setTimeout(function() {
         piglet.traverse(function(child) {
-            if (child.material && child.userData.pigletOrigColor !== undefined) {
-                child.material.color.setHex(child.userData.pigletOrigColor);
-                delete child.userData.pigletOrigColor;
+            if (child.userData.pigletOrigMaterial) {
+                if (child.material && child.material !== child.userData.pigletOrigMaterial) {
+                    child.material.dispose();
+                }
+                child.material = child.userData.pigletOrigMaterial;
+                delete child.userData.pigletOrigMaterial;
             }
         });
     }, 200);
@@ -8604,7 +8697,8 @@ function startCatchMinigame(piglet) {
     // Pause the game loop
     GameState.pigletMinigameActive = true;
 
-    // Start animation
+    // Start animation (reset frame timing first)
+    catchMinigameState.lastFrameTime = undefined;
     catchMinigameAnimate();
 
     // Listen for Space key
@@ -8614,12 +8708,19 @@ function startCatchMinigame(piglet) {
 /**
  * Animate the red slider bouncing back and forth.
  */
-function catchMinigameAnimate() {
+function catchMinigameAnimate(timestamp) {
     if (!catchMinigameState.active) return;
+
+    // Real frame delta from rAF timestamps (capped so background tabs don't jump)
+    var delta = 0.016;
+    if (timestamp !== undefined && catchMinigameState.lastFrameTime !== undefined) {
+        delta = Math.min((timestamp - catchMinigameState.lastFrameTime) / 1000, 0.05);
+    }
+    catchMinigameState.lastFrameTime = timestamp;
 
     // If showing result, count down then close
     if (catchMinigameState.resultTimer > 0) {
-        catchMinigameState.resultTimer -= 0.016;
+        catchMinigameState.resultTimer -= delta;
         if (catchMinigameState.resultTimer <= 0) {
             endCatchMinigame();
             return;
@@ -8629,7 +8730,7 @@ function catchMinigameAnimate() {
     }
 
     // Move slider
-    catchMinigameState.sliderPos += catchMinigameState.sliderDirection * catchMinigameState.sliderSpeed * 0.016;
+    catchMinigameState.sliderPos += catchMinigameState.sliderDirection * catchMinigameState.sliderSpeed * delta;
 
     // Bounce at edges
     if (catchMinigameState.sliderPos >= 1) {
@@ -9075,11 +9176,9 @@ function updateFlamingoAbilities(delta) {
             GameState.scene.add(petal);
             GameState.petalTrails.push({
                 mesh: petal,
-                lifetime: 5,
-                velocityY: -3 - Math.random() * 2,
-                velocityX: (Math.random() - 0.5) * 1.5,
-                velocityZ: (Math.random() - 0.5) * 1.5,
-                rotSpeed: Math.random() * 2
+                life: 5,
+                maxLife: 5,
+                swaySpeed: Math.random() * 2
             });
         }
     }
@@ -9213,6 +9312,7 @@ function createEasterBiome() {
 
     // Cherry blossom trees (lots of them!)
     var treeCount = 25 + Math.floor(Math.random() * 10);
+    var easterBiomeTrees = []; // Trees only (easterBiomeObjects interleaves petal systems)
     for (var t = 0; t < treeCount; t++) {
         var tx = biomeCenter.x + (Math.random() - 0.5) * biomeSize * 1.5;
         var tz = biomeCenter.z + (Math.random() - 0.5) * biomeSize * 1.5;
@@ -9221,6 +9321,7 @@ function createEasterBiome() {
         tree.scale.set(0.8 + Math.random() * 0.5, 0.8 + Math.random() * 0.5, 0.8 + Math.random() * 0.5);
         GameState.scene.add(tree);
         easterBiomeObjects.push(tree);
+        easterBiomeTrees.push(tree);
 
         // Petal system for each tree
         var petals = createPetalSystem(tree.position);
@@ -9307,7 +9408,7 @@ function createEasterBiome() {
                 state: 'idle',
                 stateTimer: 2 + Math.random() * 4,
                 wanderDirection: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(),
-                homeTree: easterBiomeObjects[1 + Math.floor(Math.random() * treeCount)],
+                homeTree: easterBiomeTrees[Math.floor(Math.random() * easterBiomeTrees.length)],
                 bobPhase: Math.random() * Math.PI * 2,
                 wingPhase: 0,
                 isMounted: false

@@ -3248,7 +3248,7 @@
         <div style="color:#ff4444; font-size:28px; font-weight:bold; text-shadow:0 0 20px #ff0000; margin-bottom:8px;">
             CONSTRICTED BY <span id="snake-constrict-stage">LARGE</span> SNAKE!
         </div>
-        <div style="color:#ffcc00; font-size:22px; margin-bottom:20px; animation: pulse 0.5s infinite alternate;">
+        <div style="color:#ffcc00; font-size:22px; margin-bottom:20px; animation: constrict-pulse 0.5s infinite alternate;">
             MASH [SPACE] TO BREAK FREE!
         </div>
         <div style="width:400px; height:35px; border:3px solid #fff; border-radius:8px; background:#333; overflow:hidden; position:relative;">
@@ -3258,7 +3258,7 @@
         <div style="color:#aaa; font-size:14px; margin-top:12px;">The snake is crushing you... your health is draining!</div>
     </div>
     <style>
-        @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+        @keyframes constrict-pulse { from { opacity: 0.7; } to { opacity: 1; } }
     </style>
 
     <div id="game-over-screen" class="hidden">
@@ -3542,10 +3542,11 @@
                 </div>
                 <div id="memories-grid"></div>
             </div>
-        </div>
-        <div id="cards-panel" class="inventory-panel">
-            <h3 style="color:#ffcc00;text-align:center;margin-bottom:10px;">Card Album</h3>
-            <div id="cards-collection"></div>
+            <!-- Cards Panel (Card Album) -->
+            <div id="cards-panel" class="inventory-panel">
+                <h3 style="color:#ffcc00;text-align:center;margin-bottom:10px;">Card Album</h3>
+                <div id="cards-collection"></div>
+            </div>
         </div>
         <div id="inventory-footer">B = Bestiary | Q = Quest | J = Journal | I = Close</div>
     </div>

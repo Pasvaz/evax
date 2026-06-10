@@ -408,7 +408,7 @@ window.CardGame = (function() {
         // Build player's hand
         var playerCards = playerDeck.map(function(entry) {
             var data = CREATURE_CARDS.find(function(c) { return c.id === entry.id; });
-            return { data: data, currentHp: data.hp, energy: 0, isKO: false };
+            return { data: data, currentHp: data.hp, energy: 0, isKO: false, frozen: false, revived: false };
         });
 
         // AI deck: pick 3-4 random creatures scaled to player's average rarity
@@ -416,7 +416,7 @@ window.CardGame = (function() {
         var aiCards = [];
         for (var i = 0; i < aiCount; i++) {
             var card = rollCard(false);
-            aiCards.push({ data: card, currentHp: card.hp, energy: 0, isKO: false });
+            aiCards.push({ data: card, currentHp: card.hp, energy: 0, isKO: false, frozen: false, revived: false });
         }
 
         // Count player's energy by type
@@ -590,6 +590,23 @@ window.CardGame = (function() {
     // BATTLE ACTIONS
     // ============================================================
 
+    // Does any of this card's attacks carry the given effect?
+    // (reflect10/revive are passive traits of the card that owns them)
+    function cardHasEffect(card, effect) {
+        return card.data.attacks.some(function(a) { return a.effect === effect; });
+    }
+
+    // Returns true if the card is really KO'd, false if Revive saved it (once per battle)
+    function checkRevive(card) {
+        if (cardHasEffect(card, 'revive') && !card.revived) {
+            card.revived = true;
+            card.currentHp = Math.ceil(card.data.hp / 2);
+            battleState.log.push(card.data.name + ' bursts back to life with ' + card.currentHp + ' HP! (Revive)');
+            return false;
+        }
+        return true;
+    }
+
     function attachEnergy() {
         if (battleState.playerEnergyPool <= 0) return;
         var active = battleState.playerCards[battleState.playerActive];
@@ -617,6 +634,16 @@ window.CardGame = (function() {
         // Energy stays attached — just need enough, don't subtract
         if (active.energy < atk.energyCost) return;
 
+        // Frozen cards skip one attack (Freeze)
+        if (active.frozen) {
+            active.frozen = false;
+            battleState.log.push(active.data.name + ' is frozen solid and cannot attack!');
+            battleState.turn = 'ai';
+            renderBattle();
+            setTimeout(doAITurn, 1200);
+            return;
+        }
+
         var target = battleState.aiCards[battleState.aiActive];
 
         // Apply damage
@@ -628,9 +655,19 @@ window.CardGame = (function() {
             active.currentHp = Math.min(active.data.hp, active.currentHp + 20);
             battleState.log.push(active.data.name + ' healed 20 HP!');
         }
+        if (atk.effect === 'freeze') {
+            target.frozen = true;
+            battleState.log.push(target.data.name + ' is frozen and will skip its next attack!');
+        }
+
+        // Reflect: attacking a spiky card hurts the attacker
+        if (cardHasEffect(target, 'reflect10')) {
+            active.currentHp -= 10;
+            battleState.log.push(active.data.name + ' takes 10 reflected damage from ' + target.data.name + "'s spikes!");
+        }
 
         // Check KO
-        if (target.currentHp <= 0) {
+        if (target.currentHp <= 0 && checkRevive(target)) {
             target.currentHp = 0;
             target.isKO = true;
             battleState.log.push(target.data.name + ' is knocked out!');
@@ -643,6 +680,20 @@ window.CardGame = (function() {
             }
             battleState.aiActive = nextAI;
             battleState.log.push('Pigias sends out ' + battleState.aiCards[nextAI].data.name + '!');
+        }
+
+        // Attacker may be KO'd by reflected damage
+        if (active.currentHp <= 0 && checkRevive(active)) {
+            active.currentHp = 0;
+            active.isKO = true;
+            battleState.log.push(active.data.name + ' is knocked out by the spikes!');
+            var nextPlayer = battleState.playerCards.findIndex(function(c) { return !c.isKO; });
+            if (nextPlayer === -1) {
+                endBattle('ai');
+                return;
+            }
+            battleState.playerActive = nextPlayer;
+            battleState.log.push('You send out ' + battleState.playerCards[nextPlayer].data.name + '!');
         }
 
         // End player turn
@@ -680,6 +731,15 @@ window.CardGame = (function() {
             active = battleState.aiCards[next];
         }
 
+        // Frozen cards skip one attack (Freeze)
+        if (active.frozen) {
+            active.frozen = false;
+            battleState.log.push(active.data.name + ' is frozen solid and cannot attack!');
+            battleState.turn = 'player';
+            renderBattle();
+            return;
+        }
+
         // AI strategy: attach energy if can't attack, then attack strongest available
         var bestAtk = null;
         active.data.attacks.forEach(function(atk) {
@@ -707,7 +767,23 @@ window.CardGame = (function() {
             target.currentHp -= bestAtk.damage;
             battleState.log.push(active.data.name + ' used ' + bestAtk.name + '! ' + bestAtk.damage + ' damage!');
 
-            if (target.currentHp <= 0) {
+            // Apply effects (mirror of the player side)
+            if (bestAtk.effect === 'heal20') {
+                active.currentHp = Math.min(active.data.hp, active.currentHp + 20);
+                battleState.log.push(active.data.name + ' healed 20 HP!');
+            }
+            if (bestAtk.effect === 'freeze') {
+                target.frozen = true;
+                battleState.log.push(target.data.name + ' is frozen and will skip its next attack!');
+            }
+
+            // Reflect: attacking a spiky card hurts the attacker
+            if (cardHasEffect(target, 'reflect10')) {
+                active.currentHp -= 10;
+                battleState.log.push(active.data.name + ' takes 10 reflected damage from ' + target.data.name + "'s spikes!");
+            }
+
+            if (target.currentHp <= 0 && checkRevive(target)) {
                 target.currentHp = 0;
                 target.isKO = true;
                 battleState.log.push(target.data.name + ' is knocked out!');
@@ -718,6 +794,20 @@ window.CardGame = (function() {
                 }
                 battleState.playerActive = nextPlayer;
                 battleState.log.push('You send out ' + battleState.playerCards[nextPlayer].data.name + '!');
+            }
+
+            // Attacker may be KO'd by reflected damage
+            if (active.currentHp <= 0 && checkRevive(active)) {
+                active.currentHp = 0;
+                active.isKO = true;
+                battleState.log.push(active.data.name + ' is knocked out by the spikes!');
+                var nextAI = battleState.aiCards.findIndex(function(c) { return !c.isKO; });
+                if (nextAI === -1) {
+                    endBattle('player');
+                    return;
+                }
+                battleState.aiActive = nextAI;
+                battleState.log.push('Pigias sends out ' + battleState.aiCards[nextAI].data.name + '!');
             }
         } else {
             // Can't do anything, just pass

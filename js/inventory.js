@@ -1435,7 +1435,7 @@ window.Inventory = (function() {
 
         // Ingredient checklist
         html += '<div class="quest-ingredient-list">';
-        html += '<h3>Recipe Ingredients (' + getFoundIngredientCount(clues) + '/6)</h3>';
+        html += '<h3>Recipe Ingredients (' + getFoundIngredientCount(clues) + '/7)</h3>';
         var ingredients = [
             { name: 'Flour', clue: 'granny_trotter' },
             { name: 'Sugar', clue: 'granny_trotter' },

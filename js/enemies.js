@@ -5548,6 +5548,18 @@ window.Enemies = (function() {
             model = builder(colors, hasHorns, isBaby);
         } else if (enemyData.type === 'baluban_oxen') {
             model = builder(colors, hasHorns, enemyData.hornSize || 1, isBaby, false);
+        } else if (enemyData.type === 'antelope') {
+            // buildAntelopeModel(colors, hasHorns, hornScale, isPregnant)
+            model = builder(colors, hasHorns, enemyData.hornSize || 1, false);
+        } else if (enemyData.type === 'saltas_gazella') {
+            // buildSaltasGazellaModel(colors, hasHorns, isPregnant, isBaby, babyGender)
+            model = builder(colors, hasHorns, false, isBaby, enemyData.gender || null);
+        } else if (enemyData.type === 'wild_dog') {
+            // buildWildDogModel(colors, isAlpha, isPregnant)
+            model = builder(colors, enemyData.isAlpha || false, false);
+        } else if (enemyData.type === 'grass_viper') {
+            // buildGrassViperModel(colors, isPregnant)
+            model = builder(colors, false);
         } else {
             model = builder(colors, isBaby);
         }
@@ -5569,6 +5581,7 @@ window.Enemies = (function() {
         enemy.userData = {
             id: enemyData.id,
             type: enemyData.type,
+            category: enemyData.category,  // 'carnivore', 'herbivore', or 'omnivore'
             speed: enemyData.speed + Math.random() * enemyData.speedVariation,
             damage: enemyData.damage,
             radius: enemyData.radius * size,  // Scale hitbox with size
@@ -7011,9 +7024,14 @@ window.Enemies = (function() {
                             // Too far — give up
                             dog.userData.defendReturnTimer = 0;
                         } else if (ctDist < 1.5) {
-                            // Hit the cat!
-                            target.userData.health -= dog.userData.damage * delta * 2;
-                            target.userData.wasAttackedByPlayer = true; // Makes cat flee
+                            // Hit the target!
+                            if (target === GameState.peccary) {
+                                // Player health lives in GameState.health
+                                Game.takeDamage(dog.userData.damage * delta * 2, 'snow_caninon');
+                            } else {
+                                target.userData.health -= dog.userData.damage * delta * 2;
+                                target.userData.wasAttackedByPlayer = true; // Makes cat flee
+                            }
                             dog.userData.currentMoveSpeed = 0;
                         } else {
                             // Chase at high speed
@@ -7534,8 +7552,8 @@ window.Enemies = (function() {
             nearestPrey.userData._huntedByPack = pack;
             nearestPrey.userData._fleeDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
         } else {
-            // Simple deer hunt
-            nearestPrey.userData.isFleeing = true;
+            // Simple deer hunt — deericus state machine runs on userData.state
+            nearestPrey.userData.state = 'fleeing';
             nearestPrey.userData.fleeTarget = leader;
         }
 
@@ -7654,9 +7672,9 @@ window.Enemies = (function() {
             return;
         }
 
-        // Oxen's forward direction
-        var oxForwardX = Math.cos(-target.rotation.y);
-        var oxForwardZ = -Math.sin(-target.rotation.y);
+        // Oxen's forward direction (RULE 4: forward = cos(rotY), -sin(rotY))
+        var oxForwardX = Math.cos(target.rotation.y);
+        var oxForwardZ = -Math.sin(target.rotation.y);
 
         // Perpendicular (right side of oxen)
         var oxRightX = -oxForwardZ;
@@ -8871,6 +8889,13 @@ window.Enemies = (function() {
             oxModel2.userData.parts.neckGroup.rotation.z *= 0.95; // Smoothly return to neutral
         }
 
+        // Direction actually moved this frame (used for facing below)
+        if (!ox.userData.wanderDir) {
+            ox.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+        }
+        var moveDirX = ox.userData.wanderDir.x;
+        var moveDirZ = ox.userData.wanderDir.z;
+
         if (ox.userData.isLeader) {
             // Leader: wander slowly
             ox.userData.wanderTime -= delta;
@@ -8883,6 +8908,8 @@ window.Enemies = (function() {
             ox.position.x += ox.userData.wanderDir.x * moveSpeed * delta;
             ox.position.z += ox.userData.wanderDir.z * moveSpeed * delta;
             ox.userData.currentMoveSpeed = moveSpeed;
+            moveDirX = ox.userData.wanderDir.x;
+            moveDirZ = ox.userData.wanderDir.z;
 
             // Stay in the southern half of the biome
             var worldSize = SETTINGS.WORLD_SIZE;
@@ -8909,10 +8936,14 @@ window.Enemies = (function() {
                 ox.position.x += (ldx / lDist) * sprintSpeed * delta;
                 ox.position.z += (ldz / lDist) * sprintSpeed * delta;
                 ox.userData.currentMoveSpeed = sprintSpeed;
+                moveDirX = ldx / lDist;
+                moveDirZ = ldz / lDist;
             } else if (lDist > 25) {
                 ox.position.x += (ldx / lDist) * speed * 0.5 * delta;
                 ox.position.z += (ldz / lDist) * speed * 0.5 * delta;
                 ox.userData.currentMoveSpeed = speed * 0.5;
+                moveDirX = ldx / lDist;
+                moveDirZ = ldz / lDist;
             } else {
                 ox.userData.wanderTime -= delta;
                 if (ox.userData.wanderTime <= 0) {
@@ -8923,12 +8954,14 @@ window.Enemies = (function() {
                 ox.position.x += ox.userData.wanderDir.x * wanderSpeed * delta;
                 ox.position.z += ox.userData.wanderDir.z * wanderSpeed * delta;
                 ox.userData.currentMoveSpeed = wanderSpeed;
+                moveDirX = ox.userData.wanderDir.x;
+                moveDirZ = ox.userData.wanderDir.z;
             }
         }
 
-        // Face movement direction
+        // Face movement direction (the direction we actually moved this frame)
         if (ox.userData.currentMoveSpeed > 0.3) {
-            var targetRot = -Math.atan2(ox.userData.wanderDir.z, ox.userData.wanderDir.x);
+            var targetRot = -Math.atan2(moveDirZ, moveDirX);
             ox.rotation.y += (targetRot - ox.rotation.y) * 0.05;
         }
     }
@@ -9051,7 +9084,7 @@ window.Enemies = (function() {
         ox.position.y = terrainY + (ox.userData.groundY || 0.55);
 
         // Keep within world bounds
-        var half = (window.WORLD_SIZE || 200) / 2;
+        var half = SETTINGS.WORLD_SIZE / 2;
         ox.position.x = Math.max(-half + 5, Math.min(half - 5, ox.position.x));
         ox.position.z = Math.max(-half + 5, Math.min(half - 5, ox.position.z));
 
@@ -10198,7 +10231,8 @@ window.Enemies = (function() {
         }
         if (deer.userData.hunger > 60) { deer.userData.state = 'seeking_grass'; return; }
         if (deer.userData.hunger < 20) { deer.userData.state = 'returning_home'; return; }
-        if (!deer.userData.wanderTimer) {
+        if (deer.userData.wanderTimer === undefined || deer.userData.wanderTimer <= 0) {
+            // Re-roll a new direction when the timer expires (or first time)
             deer.userData.wanderTimer = 2 + Math.random() * 4;
             deer.userData.wanderAngle = Math.random() * Math.PI * 2;
         }
@@ -10772,6 +10806,20 @@ window.Enemies = (function() {
      * @returns {boolean} true if hunt is complete (seal should transition to next state)
      */
     function updateSealHuntingFish(seal, delta) {
+        // Returning to surface after catching fish — this phase has no target,
+        // so it must run BEFORE the missing-target bail below
+        if (seal.userData.returningFromHunt) {
+            seal.position.y += 2 * delta; // Rise
+            seal.rotation.x *= 0.9; // Level out
+            if (seal.position.y >= -0.3) {
+                seal.position.y = -0.3;
+                seal.rotation.x = 0;
+                seal.userData.returningFromHunt = false;
+                return true; // Hunt complete
+            }
+            return false;
+        }
+
         var target = seal.userData.huntTarget;
         if (!target || !target.parent || target.userData.health <= 0) {
             // Target gone — abort hunt
@@ -10809,20 +10857,8 @@ window.Enemies = (function() {
             if (idx !== -1) GameState.enemies.splice(idx, 1);
             seal.userData.huntTarget = null;
 
-            // Return to surface
+            // Return to surface (handled at the top of this function next frames)
             seal.userData.returningFromHunt = true;
-        }
-
-        // Returning to surface after catching fish
-        if (seal.userData.returningFromHunt) {
-            seal.position.y += 2 * delta; // Rise
-            seal.rotation.x *= 0.9; // Level out
-            if (seal.position.y >= -0.3) {
-                seal.position.y = -0.3;
-                seal.rotation.x = 0;
-                seal.userData.returningFromHunt = false;
-                return true; // Hunt complete
-            }
         }
 
         return false;
@@ -11058,9 +11094,12 @@ window.Enemies = (function() {
 
             if (females.length === 0 || males.length === 0) continue;
 
-            // All seals bark first
+            // All seals bark first — but don't hijack mothers raising pups
+            // (or seals mid-hunt), or the pup would never mature
+            var noBarkStates = ['swimming_to_raise', 'raising_pup', 'swimming_home', 'hunting_fish'];
             colony.members.forEach(function(seal) {
-                if (seal && seal.parent && !seal.userData.isBaby) {
+                if (seal && seal.parent && !seal.userData.isBaby &&
+                    noBarkStates.indexOf(seal.userData.lifecycleState) === -1) {
                     seal.userData.previousState = seal.userData.lifecycleState;
                     seal.userData.lifecycleState = 'barking';
                     seal.userData.stateTimer = 0;
@@ -11108,6 +11147,8 @@ window.Enemies = (function() {
 
         var state = seal.userData.lifecycleState;
         var island = GameState.oceanIslands[seal.userData.homeIslandIndex];
+        // Animation parts live on the model child, not the wrapper group
+        var parts = seal.children[0] && seal.children[0].userData ? seal.children[0].userData.parts : null;
 
         // Pregnancy timer (runs regardless of state)
         if (seal.userData.isPregnant) {
@@ -11137,8 +11178,8 @@ window.Enemies = (function() {
                 seal.position.y = groundY + (seal.userData.groundY || 0.2);
             }
             // Breathing: gentle body scale oscillation
-            if (seal.userData.parts && seal.userData.parts.body) {
-                seal.userData.parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
+            if (parts && parts.body) {
+                parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
             }
             // Randomly start waddling or hunting fish
             if (seal.userData.stateTimer > 5 + Math.random() * 10) {
@@ -11189,9 +11230,9 @@ window.Enemies = (function() {
                 seal.rotation.z = Math.sin(seal.userData.stateTimer * 4) * 0.12;
 
                 // Flipper animation
-                if (seal.userData.parts && seal.userData.parts.frontFlippers) {
-                    seal.userData.parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 4) * 0.2;
-                    seal.userData.parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 4) * 0.2;
+                if (parts && parts.frontFlippers) {
+                    parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 4) * 0.2;
+                    parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 4) * 0.2;
                 }
             }
             // Return to resting after 3-5 seconds
@@ -11204,13 +11245,13 @@ window.Enemies = (function() {
 
         case 'barking':
             // Head tilts up, territorial call
-            if (seal.userData.parts && seal.userData.parts.head) {
-                seal.userData.parts.head.rotation.z = -0.3 + Math.sin(seal.userData.stateTimer * 6) * 0.1;
+            if (parts && parts.head) {
+                parts.head.rotation.z = -0.3 + Math.sin(seal.userData.stateTimer * 6) * 0.1;
             }
             // After 2 seconds, transition to next state
             if (seal.userData.stateTimer >= 2) {
-                if (seal.userData.parts && seal.userData.parts.head) {
-                    seal.userData.parts.head.rotation.z = 0;
+                if (parts && parts.head) {
+                    parts.head.rotation.z = 0;
                 }
                 seal.userData.lifecycleState = seal.userData.afterBarkState || 'resting';
                 seal.userData.stateTimer = 0;
@@ -11402,9 +11443,9 @@ window.Enemies = (function() {
                 // Swimming undulation
                 seal.rotation.z = Math.sin(seal.userData.stateTimer * 3) * 0.15;
                 // Flipper animation
-                if (seal.userData.parts && seal.userData.parts.frontFlippers) {
-                    seal.userData.parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 5) * 0.4;
-                    seal.userData.parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                if (parts && parts.frontFlippers) {
+                    parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                    parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 5) * 0.4;
                 }
                 // Move pup along too
                 if (seal.userData.pup && seal.userData.pup.parent) {
@@ -11423,8 +11464,8 @@ window.Enemies = (function() {
                 seal.position.y = gy + (seal.userData.groundY || 0.2);
             }
             // Breathing animation
-            if (seal.userData.parts && seal.userData.parts.body) {
-                seal.userData.parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
+            if (parts && parts.body) {
+                parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 1.5) * 0.02;
             }
 
             // Pup growth: 2 minutes (120 seconds)
@@ -11499,9 +11540,9 @@ window.Enemies = (function() {
                 seal.rotation.y = -Math.atan2(hdz, hdx);
                 seal.rotation.z = Math.sin(seal.userData.stateTimer * 3) * 0.15;
 
-                if (seal.userData.parts && seal.userData.parts.frontFlippers) {
-                    seal.userData.parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 5) * 0.4;
-                    seal.userData.parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                if (parts && parts.frontFlippers) {
+                    parts.frontFlippers[0].rotation.z = 0.3 + Math.sin(seal.userData.stateTimer * 5) * 0.4;
+                    parts.frontFlippers[1].rotation.z = -0.3 - Math.sin(seal.userData.stateTimer * 5) * 0.4;
                 }
 
                 // Offspring follows
@@ -11517,8 +11558,8 @@ window.Enemies = (function() {
         case 'following_mother':
             // Pup follows mother (handled in raising_pup state)
             // Just do breathing animation
-            if (seal.userData.parts && seal.userData.parts.body) {
-                seal.userData.parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 2) * 0.02;
+            if (parts && parts.body) {
+                parts.body.scale.y = 0.7 + Math.sin(seal.userData.stateTimer * 2) * 0.02;
             }
             break;
 
@@ -11727,7 +11768,7 @@ window.Enemies = (function() {
             // Deal damage on contact
             if (distToPlayer < seal.userData.radius + 1) {
                 if (!seal.userData.lastAttackTime || seal.userData.stateTimer - seal.userData.lastAttackTime > 1) {
-                    GameState.health -= seal.userData.damage;
+                    Game.takeDamage(seal.userData.damage, 'bakka_seal');
                     seal.userData.lastAttackTime = seal.userData.stateTimer;
                     UI.updateUI();
                 }
@@ -12948,6 +12989,14 @@ window.Enemies = (function() {
             // Male display — claws raised up
             if (crab.userData.displaying) {
                 crab.userData.displayTimer += delta;
+
+                // If the approaching female died or was removed, forget her
+                // so the give-up condition below can fire
+                var fem = crab.userData.targetFemale;
+                if (fem && (!fem.parent || fem.userData.health <= 0 || fem.userData.stomped ||
+                            GameState.enemies.indexOf(fem) === -1)) {
+                    crab.userData.targetFemale = null;
+                }
                 // Animate claws raising up
                 crab.traverse(function(child) {
                     if (child.userData && child.userData.isClawMoving) {
@@ -13905,7 +13954,7 @@ window.Enemies = (function() {
                 // Keep in bounds
                 var worldHalf = (CONFIG.WORLD_SIZE || 500) / 2 - 5;
                 murg.position.x = Math.max(-worldHalf, Math.min(worldHalf, murg.position.x));
-                murg.position.z = Math.max(-100, Math.min(200, murg.position.z));
+                murg.position.z = Math.max(-300, Math.min(200, murg.position.z)); // Packs spawn down to z = -280
 
                 // Ground height
                 var terrainY = Environment.getTerrainHeight(murg.position.x, murg.position.z);
@@ -14532,7 +14581,7 @@ window.Enemies = (function() {
             // Keep in forest area
             var worldHalf = (CONFIG.WORLD_SIZE || 500) / 2 - 5;
             deer.position.x = Math.max(-worldHalf, Math.min(worldHalf, deer.position.x));
-            deer.position.z = Math.max(-100, Math.min(50, deer.position.z)); // Stay mostly in forest
+            deer.position.z = Math.max(-420, Math.min(50, deer.position.z)); // Stay in forest (spawn range z = -10..-400)
 
             var terrainY = Environment.getTerrainHeight(deer.position.x, deer.position.z);
             deer.position.y = terrainY + (deer.userData.groundY || 0.3);
@@ -15106,8 +15155,7 @@ window.Enemies = (function() {
                 if (model && model.userData.parts && model.userData.parts.head) {
                     model.userData.parts.head.position.y = 0.78 + Math.sin(time * 8) * 0.05;
                 }
-                // Eat a berry every 3-4 seconds
-                bird.userData.stateTimer -= delta;
+                // Eat a berry every 3-4 seconds (stateTimer already decremented above)
                 if (bird.userData.stateTimer <= 0) {
                     bush.userData.berriesLeft--;
                     var berryMesh = bush.userData.berryMeshes[bush.userData.berriesLeft];
@@ -15575,7 +15623,7 @@ window.Enemies = (function() {
                     }
                 }
 
-                bird.userData.stateTimer -= delta;
+                // (stateTimer already decremented above)
                 if (bird.userData.stateTimer <= 0) {
                     bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
                     bird.userData.stateTimer = 2 + Math.random() * 3;
@@ -15607,7 +15655,7 @@ window.Enemies = (function() {
                     bird.rotation.y = -Math.atan2(bird.userData.wanderDir.z, bird.userData.wanderDir.x);
                 }
 
-                bird.userData.stateTimer -= delta;
+                // (stateTimer already decremented above)
                 if (bird.userData.stateTimer <= 0) {
                     bird.userData.wanderDir = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
                     bird.userData.stateTimer = 2 + Math.random() * 4;
@@ -15739,8 +15787,10 @@ window.Enemies = (function() {
         mini: ['basicuslin_amphipod'],
         small: ['basicuslin_amphipod', 'lb_bird_chick', 'pilfera_coastalis_chick_male', 'pilfera_coastalis_chick_female'],
         decent: ['lb_bird_fledgling', 'pilfera_coastalis_fledgling_male', 'pilfera_coastalis_fledgling_female'],
-        large: ['beach_weasel', 'beach_murgaya', 'gcf_deer_fawn_male', 'gcf_deer_fawn_female'],
-        monstrous: ['beach_weasel', 'beach_murgaya', 'gcf_deer_male', 'gcf_deer_female',
+        large: ['beach_weasel_male', 'beach_weasel_female', 'beach_murgaya_male', 'beach_murgaya_female',
+                 'gcf_deer_fawn_male', 'gcf_deer_fawn_female'],
+        monstrous: ['beach_weasel_male', 'beach_weasel_female', 'beach_murgaya_male', 'beach_murgaya_female',
+                     'gcf_deer_male', 'gcf_deer_female',
                      'gcf_deer_fawn_male', 'gcf_deer_fawn_female', 'gcf_deer_stfumbler_male', 'gcf_deer_stfumbler_female']
     };
 
@@ -15752,8 +15802,10 @@ window.Enemies = (function() {
         'gcf_deer_stfumbler_female': 0.35,
         'gcf_deer_fawn_male': 0.15,
         'gcf_deer_fawn_female': 0.15,
-        'beach_weasel': 0.3,
-        'beach_murgaya': 0.25,
+        'beach_weasel_male': 0.3,
+        'beach_weasel_female': 0.3,
+        'beach_murgaya_male': 0.25,
+        'beach_murgaya_female': 0.25,
         'lb_bird_fledgling': 0.1,
         'lb_bird_chick': 0.0,
         'basicuslin_amphipod': 0.0,
@@ -16167,6 +16219,10 @@ window.Enemies = (function() {
     var snakeConstrictionKeyListener = null;
 
     function startSnakeConstrictionMiniGame(snake) {
+        // Don't start if a grab mini-game is already running (would leak the
+        // key listener and overwrite the other mini-game's state)
+        if (snakeConstrictionActive || dreadmawDeathRollActive) return;
+
         snakeConstrictionActive = true;
         snakeConstrictionSnake = snake;
         snakeConstrictionStrength = 0;
@@ -16181,8 +16237,11 @@ window.Enemies = (function() {
             overlay.style.display = 'flex';
             var bar = document.getElementById('snake-strength-bar');
             if (bar) bar.style.width = '0%';
-            var stageLabel = document.getElementById('snake-constrict-stage');
-            if (stageLabel) stageLabel.textContent = snake.userData.snakeStage.toUpperCase();
+            // Set the full title — the dreadmaw mini-game shares this overlay
+            // and rewrites the title, so restore the snake version every time
+            var titleEl = overlay.querySelector('div:first-child');
+            if (titleEl) titleEl.innerHTML = 'CONSTRICTED BY <span id="snake-constrict-stage">' +
+                snake.userData.snakeStage.toUpperCase() + '</span> SNAKE!';
         }
 
         // Listen for key mashing
@@ -16443,6 +16502,10 @@ window.Enemies = (function() {
     var dreadmawDeathRollKeyListener = null;
 
     function startDreadmawDeathRoll(croc) {
+        // Don't start if a grab mini-game is already running (would leak the
+        // key listener and overwrite the other mini-game's state)
+        if (dreadmawDeathRollActive || snakeConstrictionActive) return;
+
         dreadmawDeathRollActive = true;
         dreadmawDeathRollCroc = croc;
         dreadmawDeathRollStrength = 0;
@@ -23674,9 +23737,12 @@ window.Enemies = (function() {
                 if (type === 'wild_dog' && isBaby) {
                     // Only hunt pups if wild dog den is under cat's tree
                     const tree = cat.userData.homeTree;
-                    const denNearby = GameState.wildDogDens && GameState.wildDogDens.some(den =>
-                        den.position.distanceTo(tree.position) < 10
-                    );
+                    const denNearby = GameState.wildDogDens && GameState.wildDogDens.some(den => {
+                        // den.position is a plain {x, z} object, not a Vector3
+                        const dx = den.position.x - tree.position.x;
+                        const dz = den.position.z - tree.position.z;
+                        return (dx * dx + dz * dz) < 100; // within 10 units
+                    });
                     if (denNearby) {
                         priority = 4; // Pups from nearby den
                     }
@@ -23854,7 +23920,10 @@ window.Enemies = (function() {
     function updateCatTakedown(cat, delta) {
         const target = cat.userData.huntTarget;
 
-        if (!target || !GameState.enemies.includes(target)) {
+        // Special case: target could be the player (peccary)!
+        const isPlayer = target === GameState.peccary;
+
+        if (!target || (!isPlayer && !GameState.enemies.includes(target))) {
             cat.userData.lifecycleState = 'ascending';
             return;
         }
@@ -23867,8 +23936,10 @@ window.Enemies = (function() {
             cat.position.copy(target.position);
             cat.position.y = target.position.y + 0.5;
 
-            // Prey falls over (rotate)
-            target.rotation.z = Math.min(target.rotation.z + delta * 3, Math.PI / 2);
+            // Prey falls over (rotate) — but never tip the player over
+            if (!isPlayer) {
+                target.rotation.z = Math.min(target.rotation.z + delta * 3, Math.PI / 2);
+            }
 
             if (cat.userData.stateTimer > 0.8) {
                 cat.userData.takedownPhase = 'grabbing';
@@ -23894,14 +23965,29 @@ window.Enemies = (function() {
             // Fatal bite - prey thrashes then stops
             const thrashIntensity = Math.max(0, 1 - cat.userData.stateTimer / 2);
 
-            // Prey thrashes legs
-            if (target.children[0] && target.children[0].userData.legs) {
+            // Player takes real damage (goes through armour/invincibility)
+            if (isPlayer) {
+                Game.takeDamage(cat.userData.damage * delta, 'dronglous_cat');
+            }
+
+            // Prey thrashes legs (not the player model)
+            if (!isPlayer && target.children[0] && target.children[0].userData.legs) {
                 target.children[0].userData.legs.forEach(leg => {
                     leg.group.rotation.z = Math.sin(cat.userData.stateTimer * 15) * thrashIntensity * 0.5;
                 });
             }
 
             if (cat.userData.stateTimer > 2.5) {
+                if (isPlayer) {
+                    // Player can't be eaten — release and climb back up the tree
+                    target.userData.isBeingAttacked = false;
+                    target.userData.attackedBy = null;
+                    cat.userData.huntTarget = null;
+                    cat.userData.lifecycleState = 'ascending';
+                    cat.userData.stateTimer = 0;
+                    return;
+                }
+
                 // Prey is dead
                 cat.userData.lifecycleState = 'eating';
                 cat.userData.stateTimer = 0;
@@ -24016,7 +24102,10 @@ window.Enemies = (function() {
     function updateCatDefending(cat, delta) {
         const threat = cat.userData.defenseThreat;
 
-        if (!threat || !GameState.enemies.includes(threat)) {
+        // Special case: threat could be the player (peccary)!
+        const isPlayer = threat === GameState.peccary;
+
+        if (!threat || (!isPlayer && !GameState.enemies.includes(threat))) {
             cat.userData.lifecycleState = 'in_tree';
             cat.userData.defenseThreat = null;
             return;
@@ -24033,6 +24122,9 @@ window.Enemies = (function() {
             cat.position.x += dir.x * cat.userData.speed * 1.2 * delta;
             cat.position.z += dir.z * cat.userData.speed * 1.2 * delta;
             cat.rotation.y = -Math.atan2(dir.z, dir.x);
+        } else if (isPlayer) {
+            // Attack the player! Player health lives in GameState.health
+            Game.takeDamage(cat.userData.damage * delta, 'dronglous_cat');
         } else {
             // Attack! Deal damage
             threat.userData.health = (threat.userData.health || 10) - cat.userData.damage * delta;
@@ -24040,9 +24132,7 @@ window.Enemies = (function() {
             if (threat.userData.health <= 0) {
                 // Threat killed
                 console.log('Mother cat drove off threat!');
-                if (threat !== GameState.peccary) {
-                    convertToCarcass(threat);
-                }
+                convertToCarcass(threat);
                 cat.userData.lifecycleState = 'ascending';
                 cat.userData.defenseThreat = null;
             }
@@ -25252,22 +25342,26 @@ window.Enemies = (function() {
         enemy.userData.health -= amount;
 
         // Hit flash — turn enemy red briefly
-        const meshes = [];
-        enemy.traverse(function(child) {
-            if (child.isMesh && child.material) {
-                meshes.push({ mesh: child, origColor: child.material.color.getHex() });
-                child.material = child.material.clone();
-                child.material.color.setHex(0xff0000);
-            }
-        });
-        // Restore original colors after 150ms
-        setTimeout(function() {
-            meshes.forEach(function(entry) {
-                if (entry.mesh.material) {
-                    entry.mesh.material.color.setHex(entry.origColor);
+        // Skip on a killing blow: death handling (convertToCarcass) runs before the
+        // 150ms restore and would record red as the "original" colour
+        if (enemy.userData.health > 0) {
+            const meshes = [];
+            enemy.traverse(function(child) {
+                if (child.isMesh && child.material) {
+                    meshes.push({ mesh: child, origColor: child.material.color.getHex() });
+                    child.material = child.material.clone();
+                    child.material.color.setHex(0xff0000);
                 }
             });
-        }, 150);
+            // Restore original colors after 150ms
+            setTimeout(function() {
+                meshes.forEach(function(entry) {
+                    if (entry.mesh.material) {
+                        entry.mesh.material.color.setHex(entry.origColor);
+                    }
+                });
+            }, 150);
+        }
 
         // Check for death
         if (enemy.userData.health <= 0) {

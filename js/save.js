@@ -25,7 +25,7 @@ window.SaveSystem = (function() {
         berries: 0, nuts: 0, mushrooms: 0, seaweed: 0, eggs: 0,
         arsenic_mushrooms: 0, thous_pine_wood: 0, glass: 0,
         manglecacia_wood: 0, seaspray_birch_wood: 0, cinnamon: 0,
-        bakka_seal_tooth: 0,
+        bakka_seal_tooth: 0, hide: 0,
         flour: 0, sugar: 0, butter: 0,
         cherry_petals: 0
     };
@@ -157,23 +157,72 @@ window.SaveSystem = (function() {
     // ========================================================================
     // VALIDATE ITEM
     // ========================================================================
+    var _validItemIds = null;       // Lazily-built set of every known item id
+    var _registriesMissing = false; // True if a data registry failed to load
+
+    /**
+     * Build the set of every item id the game can legitimately grant,
+     * pulled from the data registries so new items are accepted automatically.
+     */
+    function buildValidItemIds() {
+        var ids = {};
+        _registriesMissing = false;
+
+        // Tools (axes + swords) from data/tools.js
+        if (window.TOOL_STATS) {
+            Object.keys(TOOL_STATS.axes || {}).forEach(function(id) { ids[id] = true; });
+            Object.keys(TOOL_STATS.swords || {}).forEach(function(id) { ids[id] = true; });
+        } else {
+            _registriesMissing = true;
+        }
+
+        // Crafted items are stored in the inventory under their recipe id
+        if (window.RECIPES) {
+            RECIPES.forEach(function(r) { if (r.id) ids[r.id] = true; });
+        } else {
+            _registriesMissing = true;
+        }
+
+        // Shop items that grant an inventory item (effect: { type: 'item', ... })
+        if (window.SHOP_ITEMS) {
+            SHOP_ITEMS.forEach(function(s) {
+                if (s.effect && s.effect.type === 'item' && s.effect.item) ids[s.effect.item] = true;
+            });
+        } else {
+            _registriesMissing = true;
+        }
+
+        // Easter shop items keep their own id in the hotbar/inventory
+        if (window.EASTER_SHOP_ITEMS) {
+            EASTER_SHOP_ITEMS.forEach(function(s) { if (s.id) ids[s.id] = true; });
+        } else {
+            _registriesMissing = true;
+        }
+
+        // Items granted directly by effects/chests/events
+        // (effects.js executeItem, game.js treasure chests, ui.js easter shop)
+        [
+            'arsen_bomb', 'saddle', 'basic_rook_boat', 'fishing_spear',
+            'diving_mask', 'pirate_eyepatch', 'fur_coat',
+            'thunder_scythe', 'thunder_armour', 'electric_crossbow',
+            'basic_pack', 'rare_pack', 'legendary_pack',
+            'catcher_net', 'chocolate_goggles', 'roller_skates', 'flamingo_license'
+        ].forEach(function(id) { ids[id] = true; });
+
+        return ids;
+    }
+
     /**
      * Check if an inventory/hotbar item still exists in the current game data.
      * Returns true if the item is recognized, false if it's stale.
+     * Fails OPEN (accepts everything) if the data registries didn't load —
+     * better to keep an unknown item than delete a player's gear.
      */
     function isValidItem(itemId) {
-        if (!itemId) return false;
-        // Check tools
-        if (TOOL_STATS.axes[itemId]) return true;
-        if (TOOL_STATS.swords[itemId]) return true;
-        // Check special items
-        if (itemId === 'arsen_bomb') return true;
-        if (itemId === 'saddle') return true;
-        // Check Easter items
-        if (itemId === 'catcher_net') return true;
-        if (itemId === 'chocolate_goggles') return true;
-        if (itemId === 'roller_skates') return true;
-        return false;
+        if (!itemId || typeof itemId !== 'string') return false;
+        if (!_validItemIds) _validItemIds = buildValidItemIds();
+        if (_registriesMissing) return true;
+        return _validItemIds[itemId] === true;
     }
 
     // ========================================================================
@@ -223,9 +272,13 @@ window.SaveSystem = (function() {
         // --- Step 3: Validate inventory/hotbar items ---
         var validInventory = [];
         (saveData.inventoryItems || []).forEach(function(item) {
+            if (!item || typeof item !== 'object' || typeof item.id !== 'string') {
+                warnings.push('Removed malformed inventory entry');
+                return;
+            }
             if (isValidItem(item.id)) {
                 // Refresh name/description from current TOOL_STATS
-                var toolInfo = TOOL_STATS.axes[item.id] || TOOL_STATS.swords[item.id];
+                var toolInfo = window.TOOL_STATS ? (TOOL_STATS.axes[item.id] || TOOL_STATS.swords[item.id]) : null;
                 if (toolInfo) {
                     item.name = toolInfo.name;
                     item.description = toolInfo.description;
@@ -238,8 +291,12 @@ window.SaveSystem = (function() {
 
         var validHotbar = (saveData.hotbarSlots || []).map(function(slot) {
             if (!slot) return null;
+            if (typeof slot !== 'object' || typeof slot.id !== 'string') {
+                warnings.push('Removed malformed hotbar entry');
+                return null;
+            }
             if (isValidItem(slot.id)) {
-                var toolInfo = TOOL_STATS.axes[slot.id] || TOOL_STATS.swords[slot.id];
+                var toolInfo = window.TOOL_STATS ? (TOOL_STATS.axes[slot.id] || TOOL_STATS.swords[slot.id]) : null;
                 if (toolInfo) {
                     slot.name = toolInfo.name;
                     slot.description = toolInfo.description;
@@ -323,7 +380,6 @@ window.SaveSystem = (function() {
         GameState.eyepatchEquipped = saveData.eyepatchEquipped || false;
         GameState.furCoatEquipped = saveData.furCoatEquipped || false;
         GameState.thunderArmourEquipped = saveData.thunderArmourEquipped || false;
-        if (GameState.furCoatEquipped) attachFurCoatToPedro();
         GameState.chestRespawnTimer = saveData.chestRespawnTimer || undefined;
         GameState.dehydrationTimer = 0;
 
@@ -370,6 +426,11 @@ window.SaveSystem = (function() {
         // Rebuild Pedro with the loaded skin
         Player.rebuildPeccary();
         Player.createBackSword();
+
+        // Re-attach equipped gear AFTER rebuildPeccary (which strips Pedro's children)
+        if (GameState.furCoatEquipped) attachFurCoatToPedro();
+        if (GameState.eyepatchEquipped) attachEyepatchToPedro();
+        if (GameState.thunderArmourEquipped) attachThunderArmourToPedro();
 
         // --- Step 9: Reposition player ---
         if (biomeCheck === 'ok' && saveData.playerPosition) {

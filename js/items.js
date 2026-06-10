@@ -545,7 +545,7 @@ window.Items = (function() {
      */
     function collectResource(resource) {
         const type = resource.userData.type;
-        const value = resource.userData.value;
+        let value = resource.userData.value;
 
         Game.playSound('collect');
 

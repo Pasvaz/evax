@@ -442,6 +442,7 @@ window.PigonGame = (function() {
     var opponents = [];   // All AI entities: [{entity, name, personality}]
     var turnOrder = [];   // All entities in play order (randomized): [{entity, name, isPlayer}]
     var currentTurnIndex = 0;
+    var lastResolvedTurnIndex = Infinity; // For wrap-around (new round) detection
     var currentBiome = 'happy_forest'; // 'happy_forest' or 'sandstone_valley'
     var invitedGossipers = []; // Names of invited gossipers
     var turnNumber = 0;
@@ -473,6 +474,7 @@ window.PigonGame = (function() {
         berrySpots = [];
         fishSpots = [];
         grainSpots = [];
+        cactusSpots = [];
 
         for (var r = 0; r < BOARD_SIZE; r++) {
             board[r] = [];
@@ -595,6 +597,7 @@ window.PigonGame = (function() {
         berrySpots = [];
         fishSpots = [];
         cactusSpots = [];
+        grainSpots = [];
 
         // Fill with sand
         for (var r = 0; r < BOARD_SIZE; r++) {
@@ -675,6 +678,7 @@ window.PigonGame = (function() {
         berrySpots = [];
         fishSpots = [];
         cactusSpots = [];
+        grainSpots = [];
 
         // Fill with prairie grass
         for (var r = 0; r < BOARD_SIZE; r++) {
@@ -754,6 +758,8 @@ window.PigonGame = (function() {
         board = [];
         berrySpots = [];
         fishSpots = [];
+        cactusSpots = [];
+        grainSpots = [];
 
         // Fill with snow base
         for (var r = 0; r < BOARD_SIZE; r++) {
@@ -2766,11 +2772,7 @@ window.PigonGame = (function() {
         entity.hunger -= HUNGER_DRAIN * hungerMult;
         entity.thirst -= THIRST_DRAIN * thirstMult;
 
-        // Paralyse — skip turns based on health
-        if (entity.paralysed && entity.paralysed > 0) {
-            entity.paralysed--;
-            addLog(name + ' is paralysed! Skipping turn. (' + entity.paralysed + ' turns left)', 'system');
-        }
+        // Paralyse/stun skips are handled in startNextTurn (where the skip decision happens)
 
         if (entity.poison && entity.poison.turns > 0) {
             entity.health -= entity.poison.dmg;
@@ -2795,10 +2797,6 @@ window.PigonGame = (function() {
         }
 
         entity.hopUsed = false;
-        if (entity.stunned) {
-            entity.stunned = false;
-            addLog(name + ' is no longer stunned.', 'system');
-        }
 
         entity.cooldowns.forEach(function(cd, i) {
             if (cd > 0) entity.cooldowns[i]--;
@@ -2826,11 +2824,14 @@ window.PigonGame = (function() {
 
         var current = turnOrder[currentTurnIndex];
 
-        // Increment turn number when it's the first player in order's turn again
-        if (currentTurnIndex === 0) turnNumber++;
-
-        // Regrow food each full round
-        if (currentTurnIndex === 0) regrowFood();
+        // New round when the resolved index wraps back (<= last resolved index).
+        // Can't just check index 0: if turn-slot 0's entity dies, the skip loop
+        // jumps past index 0 and the round would never advance.
+        if (currentTurnIndex <= lastResolvedTurnIndex) {
+            turnNumber++;
+            regrowFood(); // Regrow food each full round
+        }
+        lastResolvedTurnIndex = currentTurnIndex;
 
         applyTurnStart(current.entity, current.name);
 
@@ -2844,12 +2845,29 @@ window.PigonGame = (function() {
             return;
         }
 
-        // Paralysed entities skip their turn
+        // Paralysed entities skip their turn (consume one turn of paralysis here)
         if (current.entity.paralysed && current.entity.paralysed > 0) {
+            current.entity.paralysed--;
+            addLog(current.name + ' is paralysed! Skipping turn. (' + current.entity.paralysed + ' turns left)', 'system');
             updateBars();
             render();
             currentTurnIndex = (currentTurnIndex + 1) % turnOrder.length;
             setTimeout(function() { startNextTurn(); }, 800);
+            return;
+        }
+
+        // Stunned entities skip their turn exactly once (consume the stun here)
+        if (current.entity.stunned) {
+            current.entity.stunned = false;
+            if (current.isPlayer) {
+                addLog('You were stunned and skip this turn!', 'system');
+            } else {
+                addLog(current.name + ' was stunned and skips this turn!', 'system');
+            }
+            updateBars();
+            render();
+            currentTurnIndex = (currentTurnIndex + 1) % turnOrder.length;
+            setTimeout(function() { startNextTurn(); }, 600);
             return;
         }
 
@@ -2874,16 +2892,6 @@ window.PigonGame = (function() {
             }
 
             phase = 'ai_turn';
-
-            if (current.entity.stunned) {
-                addLog(current.name + ' was stunned and skips this turn!', 'pigon');
-                current.entity.stunned = false;
-                updateBars();
-                render();
-                currentTurnIndex = (currentTurnIndex + 1) % turnOrder.length;
-                setTimeout(function() { startNextTurn(); }, 600);
-                return;
-            }
 
             showBanner(current.name + "'s Turn");
             addLog("--- " + current.name + "'s turn ---", 'system');
@@ -3081,7 +3089,7 @@ window.PigonGame = (function() {
             if (canDrinkAt(ai)) {
                 actionQueue.push(function() { doDrink(ai, false); });
             } else {
-                var waterTile = findNearest(ai, [T_WATER, T_FISH, T_POOL]);
+                var waterTile = findNearest(ai, [T_WATER, T_FISH, T_POOL, T_SNOW_POOL]);
                 if (waterTile) {
                     actionQueue.push(function() { moveToward(ai, waterTile.c, waterTile.r, false); });
                 }
@@ -3100,6 +3108,7 @@ window.PigonGame = (function() {
                 if (data.canEat.indexOf('fish') !== -1) foodTypes.push(T_FISH);
                 if (data.canEat.indexOf('cactus') !== -1) foodTypes.push(T_CACTUS);
                 if (data.canEat.indexOf('flower') !== -1) foodTypes.push(T_FLOWER);
+                if (data.canEat.indexOf('grass') !== -1) foodTypes.push(T_SNOW_GRASS);
                 var foodTile = findNearest(ai, foodTypes);
                 if (foodTile) {
                     actionQueue.push(function() { moveToward(ai, foodTile.c, foodTile.r, false); });
@@ -3163,6 +3172,8 @@ window.PigonGame = (function() {
         // Priority 4b: Use dash/hop to close distance or flee (free action)
         if (!ai.hopUsed) {
             var hopOrDash = data.hopRange || data.dashRange || 0;
+            // Dash (fox) ignores obstacles by design; hops must respect terrain rules
+            var isDash = !data.hopRange && !!data.dashRange;
             if (hopOrDash > 0) {
                 var distToTarget2 = tileDistance(ai.x, ai.y, target.x, target.y);
                 if (isCarnivore && distToTarget2 > 2) {
@@ -3177,9 +3188,9 @@ window.PigonGame = (function() {
                                 var my = Math.round(ai.y + (dy2 / d2) * Math.min(hr, d2));
                                 mx = Math.max(0, Math.min(BOARD_SIZE - 1, mx));
                                 my = Math.max(0, Math.min(BOARD_SIZE - 1, my));
-                                if (board[my][mx] !== T_ROCK) {
+                                if (isDash ? board[my][mx] !== T_ROCK : canEnterTile(ai, mx, my)) {
                                     ai.x = mx; ai.y = my; ai.hopUsed = true;
-                                    addLog(entityName(ai) + ' dashed forward!', 'pigon');
+                                    addLog(entityName(ai) + (isDash ? ' dashed forward!' : ' hopped forward!'), 'pigon');
                                     updateAfterAction();
                                 }
                             }
@@ -3197,7 +3208,7 @@ window.PigonGame = (function() {
                                 var my = Math.round(ai.y + (dy2 / d2) * hr);
                                 mx = Math.max(0, Math.min(BOARD_SIZE - 1, mx));
                                 my = Math.max(0, Math.min(BOARD_SIZE - 1, my));
-                                if (board[my][mx] !== T_ROCK) {
+                                if (isDash ? board[my][mx] !== T_ROCK : canEnterTile(ai, mx, my)) {
                                     ai.x = mx; ai.y = my; ai.hopUsed = true;
                                     addLog(entityName(ai) + ' hopped away!', 'pigon');
                                     updateAfterAction();
@@ -3223,6 +3234,7 @@ window.PigonGame = (function() {
             if (data.canEat.indexOf('fish') !== -1) wanderTargets.push(T_FISH);
             if (data.canEat.indexOf('cactus') !== -1) wanderTargets.push(T_CACTUS);
             if (data.canEat.indexOf('flower') !== -1) wanderTargets.push(T_FLOWER);
+            if (data.canEat.indexOf('grass') !== -1) wanderTargets.push(T_SNOW_GRASS);
             var wanderTarget = findNearest(ai, wanderTargets);
             if (wanderTarget) {
                 actionQueue.push(function() { moveToward(ai, wanderTarget.c, wanderTarget.r, false); });
@@ -3231,7 +3243,7 @@ window.PigonGame = (function() {
 
         // Priority 7: Wander toward nearest water (proactive survival)
         if (actionQueue.length === 0 && ai.energy >= MOVE_COST) {
-            var waterTarget = findNearest(ai, [T_WATER, T_FISH, T_POOL]);
+            var waterTarget = findNearest(ai, [T_WATER, T_FISH, T_POOL, T_SNOW_POOL]);
             if (waterTarget) {
                 actionQueue.push(function() { moveToward(ai, waterTarget.c, waterTarget.r, false); });
             }
@@ -3480,7 +3492,13 @@ window.PigonGame = (function() {
         selectDiv.style.display = 'block';
         container.style.display = 'none';
 
-        var biomeName = currentBiome === 'sandstone_valley' ? 'Sandstone Valley' : 'Happy Forest';
+        var BIOME_NAMES = {
+            happy_forest: 'Happy Forest',
+            sandstone_valley: 'Sandstone Valley',
+            ancient_prairie: 'Ancient Prairie',
+            great_mountains: 'Great Mountains'
+        };
+        var biomeName = BIOME_NAMES[currentBiome] || 'Happy Forest';
         var html = '<h2>Choose Your Meeple</h2>';
         html += '<p style="color:#aaa;font-size:13px;">Biome: <strong style="color:#DAA520;">' + biomeName + '</strong> — Pick an animal to survive with!</p>';
         html += '<div style="text-align:left;margin-bottom:8px;"><button onclick="PigonGame.showBiomeSelect()" style="background:#333;color:#aaa;border:1px solid #555;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">← Back to biome select</button></div><div>';
@@ -3622,6 +3640,7 @@ window.PigonGame = (function() {
         logMessages = [];
         document.getElementById('pigon-log').innerHTML = '';
         turnNumber = 0;
+        lastResolvedTurnIndex = Infinity;
 
         var allPicks = [mData.name + ' (You)'];
         opponents.forEach(function(opp) {

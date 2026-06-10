@@ -25,6 +25,7 @@ window.UI = (function() {
         seaspray_birch_wood: { icon: '🪵',  name: 'Seaspray Birch Wood', tier: 2 },
         cinnamon:            { icon: '🌾',  name: 'Cinnamon',            tier: 2 },
         bakka_seal_tooth:    { icon: '🦷',  name: 'Bakka Seal Tooth',    tier: 2 },
+        hide:                { icon: '🟤',  name: 'Hide',                tier: 2 },
         flour:               { icon: '🌾',  name: 'Flour',               tier: 2 },
         sugar:               { icon: '🍬',  name: 'Sugar',               tier: 2 },
         butter:              { icon: '🧈',  name: 'Butter',              tier: 2 },
@@ -637,9 +638,19 @@ window.UI = (function() {
             GameState.pigCoins -= totalPrice;
         }
 
-        // Buy additional quantities
+        // Buy additional quantities — refund any that fail (e.g. one-time unlocks)
+        var failedCount = 0;
         for (let i = 1; i < quantity; i++) {
-            item.effect();
+            if (item.effect() === false) failedCount++;
+        }
+        if (failedCount > 0) {
+            var refund = item.price * failedCount;
+            if (isTokens) {
+                GameState.tavernTokens += refund;
+            } else {
+                GameState.pigCoins += refund;
+            }
+            showToast('Refunded!', 'Could only buy ' + (quantity - failedCount) + 'x ' + item.name + ' — ' + refund + ' ' + (isTokens ? '🎟️' : '🪙') + ' refunded.');
         }
 
         Game.playSound('collect');
@@ -1030,6 +1041,7 @@ window.UI = (function() {
     var toastQueue = [];
     var activeToasts = 0;
     var MAX_TOASTS = 3;
+    var toastTimeouts = [];
 
     function showToast(title, body, key, duration) {
         key = key || false;
@@ -1065,20 +1077,25 @@ window.UI = (function() {
 
         requestAnimationFrame(function() { toast.classList.add('show'); });
 
-        setTimeout(function() {
+        var hideTimeout = setTimeout(function() {
             toast.classList.remove('show');
             toast.classList.add('fade-out');
-            setTimeout(function() {
+            var removeTimeout = setTimeout(function() {
                 if (toast.parentNode) toast.parentNode.removeChild(toast);
-                activeToasts--;
+                activeToasts = Math.max(0, activeToasts - 1);
                 processToastQueue();
             }, 400);
+            toastTimeouts.push(removeTimeout);
         }, item.duration);
+        toastTimeouts.push(hideTimeout);
     }
 
     function clearToasts() {
         toastQueue.length = 0;
         activeToasts = 0;
+        // Cancel pending timeouts so they don't decrement the fresh count
+        toastTimeouts.forEach(function(id) { clearTimeout(id); });
+        toastTimeouts.length = 0;
         var container = document.getElementById('toast-container');
         if (container) container.innerHTML = '';
     }

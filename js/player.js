@@ -548,7 +548,6 @@ window.Player = (function() {
                 return;
             }
         }
-        GameState.lastKeyE = GameState.keys['e'];
 
         checkResourceUseKeys();
 
@@ -846,6 +845,10 @@ window.Player = (function() {
 
         // Update bathroom mechanic
         updateBathroom(delta);
+
+        // Sync E-key edge detection LAST, after every handler above has had a
+        // chance to see the previous frame's state (e.g. the underwater check)
+        GameState.lastKeyE = GameState.keys['e'];
     }
 
     /**
@@ -1244,11 +1247,11 @@ window.Player = (function() {
         GameState.isUnderwater = true;
         GameState.oxygenLevel = 100;
         GameState.drowningTimer = 0;
-        // Store normal fog settings
+        // Store the normal fog OBJECT — coastal uses THREE.FogExp2 which has no
+        // near/far, so we keep the whole reference and restore it on exit
+        GameState._savedFog = GameState.scene.fog || null;
         if (GameState.scene.fog) {
             GameState.normalFogColor = GameState.scene.fog.color.clone();
-            GameState.normalFogNear = GameState.scene.fog.near;
-            GameState.normalFogFar = GameState.scene.fog.far;
         }
         // Set underwater fog — blue-green, moderate visibility
         GameState.scene.fog = new THREE.Fog(0x1a5a7a, 20, 120);
@@ -1305,13 +1308,15 @@ window.Player = (function() {
         if (GameState.easterSkyActive) {
             GameState.scene.background = new THREE.Color(0xf5b8c4);
             GameState.scene.fog = new THREE.Fog(0xf0c0cc, 200, 1200);
-        } else if (GameState.normalFogColor) {
-            GameState.scene.fog = new THREE.Fog(GameState.normalFogColor, GameState.normalFogNear, GameState.normalFogFar);
-            GameState.scene.background = GameState.normalFogColor.clone();
+        } else if (GameState._savedFog) {
+            // Put back the exact fog object we saved (works for Fog AND FogExp2)
+            GameState.scene.fog = GameState._savedFog;
+            GameState.scene.background = GameState._savedFog.color.clone();
         } else {
             GameState.scene.fog = new THREE.Fog(0x87ceeb, 200, 1200);
             GameState.scene.background = new THREE.Color(0x87ceeb);
         }
+        GameState._savedFog = null;
 
         // Show the ocean surface again
         if (GameState.oceanWater) {
@@ -1536,8 +1541,8 @@ window.Player = (function() {
             return;
         }
 
-        // Animate thunder scythe fizzing sparks
-        if (isSword && hotbarItem.id === 'thunder_scythe') {
+        // Animate fizzing sparks (thunder scythe + electric crossbow)
+        if (isSword && (hotbarItem.id === 'thunder_scythe' || hotbarItem.id === 'electric_crossbow')) {
             var time = GameState.clock ? GameState.clock.elapsedTime : 0;
             GameState.backSword.children.forEach(function(child) {
                 if (child.userData && child.userData.fizzSpark) {
